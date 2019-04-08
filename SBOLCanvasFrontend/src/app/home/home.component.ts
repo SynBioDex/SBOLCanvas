@@ -7,6 +7,9 @@ import { Component, OnInit } from '@angular/core';
 })
 export class HomeComponent implements OnInit {
 
+  private rightBarOpened = true;
+  private leftBarOpened = true;
+
   constructor() { }
 
   ngOnInit() {

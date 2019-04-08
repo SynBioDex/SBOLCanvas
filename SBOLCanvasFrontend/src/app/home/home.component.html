@@ -1,11 +1,25 @@
-<p>
-  home works!
-</p>
 
 <!-- Toolbar in the header -->
 <app-toolbar></app-toolbar>
 
-<!-- Next is the glyph menu and canvas -->
+<!-- We are using the Angular Materials library for layout. -->
+<mat-sidenav-container style="height: 100vh;" [hasBackdrop]="false"><!-- A sidebar -->
 
-<!-- On the right will be the info menu and color palette -->
-<app-info-editor></app-info-editor>
+  <!-- On the left is the glyph menu -->
+  <mat-sidenav [(opened)]="leftBarOpened" position="start"
+  mode="side">
+    <app-glyph-menu></app-glyph-menu>
+  </mat-sidenav>
+
+  <!-- On the right will be the info menu and color palette -->
+  <mat-sidenav [(opened)]="rightBarOpened" position="end"
+  mode="over">
+    <app-info-editor></app-info-editor>
+  </mat-sidenav>
+
+  <!-- In the middle is the canvas -->
+  <div ng-sidebar-content>
+    <app-canvas></app-canvas>
+  </div>
+
+</mat-sidenav-container>
