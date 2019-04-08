@@ -1,3 +1,13 @@
-<p>
-  info-editor works!
-</p>
+<div *ngIf="part">
+  <h2>Details</h2>
+  <div>
+    <label>Name:
+      <input [(ngModel)]="part.name" placeholder="name" />
+    </label>
+  </div>
+  <div>
+    <label>Description:
+      <input [(ngModel)]="part.description" placeholder="description"/>
+    </label>
+  </div>
+</div>

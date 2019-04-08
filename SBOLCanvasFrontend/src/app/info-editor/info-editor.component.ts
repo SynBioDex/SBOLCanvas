@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Part } from '../part';
 
 @Component({
   selector: 'app-info-editor',
@@ -6,6 +7,11 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./info-editor.component.css']
 })
 export class InfoEditorComponent implements OnInit {
+
+  part: Part = {
+    name: 'the part',
+    description: 'the description'
+  };
 
   constructor() { }
 
