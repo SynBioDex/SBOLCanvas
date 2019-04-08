@@ -7,6 +7,7 @@ import { GlyphMenuComponent } from './glyph-menu/glyph-menu.component';
 import { CanvasComponent } from './canvas/canvas.component';
 import { ColorPaletteComponent } from './color-palette/color-palette.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
+import { HomeComponent } from './home/home.component';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import { InfoEditorComponent } from './info-editor/info-editor.component';
     GlyphMenuComponent,
     CanvasComponent,
     ColorPaletteComponent,
-    InfoEditorComponent
+    InfoEditorComponent,
+    HomeComponent
   ],
   imports: [
     BrowserModule
