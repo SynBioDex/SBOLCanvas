@@ -1,17 +1,26 @@
 
 
-<div *ngIf="part">
-  <h2>Details</h2>
-  <div>
-    <label>Name:
-      <input [(ngModel)]="part.name" placeholder="name" />
-    </label>
-  </div>
-  <div>
-    <label>Description:
-      <input [(ngModel)]="part.description" placeholder="description"/>
-    </label>
-  </div>
+<div *ngIf="part" class="info-menu-container">
+  <!--<div class="info-menu-container">-->
+
+    <mat-form-field>
+      <mat-select placeholder="Part Type">
+        <!-- TODO: Add all the possible types here. This will require a service. -->
+        <mat-option value="option">Option</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <input matInput placeholder="Display ID">
+    </mat-form-field>
+
+    <mat-form-field>
+      <input matInput placeholder="Name">
+    </mat-form-field>
+
+    <mat-form-field>
+      <textarea matInput placeholder="Description"></textarea>
+    </mat-form-field>
 </div>
 
 

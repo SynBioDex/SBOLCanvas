@@ -7,14 +7,21 @@
 
   <!-- On the left is the glyph menu -->
   <mat-sidenav [(opened)]="leftBarOpened" position="start"
-  mode="side">
+  mode="side" >
     <app-glyph-menu></app-glyph-menu>
   </mat-sidenav>
 
   <!-- On the right will be the info menu and color palette -->
   <mat-sidenav [(opened)]="rightBarOpened" position="end"
   mode="over">
-    <app-info-editor></app-info-editor>
+    <mat-tab-group>
+      <mat-tab label="Info">
+        <app-info-editor></app-info-editor>
+      </mat-tab>
+      <mat-tab label="Color">
+        <app-color-palette></app-color-palette>
+      </mat-tab>
+    </mat-tab-group>
   </mat-sidenav>
 
   <!-- In the middle is the canvas -->

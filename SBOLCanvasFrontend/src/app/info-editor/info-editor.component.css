@@ -1,0 +1,13 @@
+.info-menu-container {
+  display: flex;
+  flex-direction: column;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.info-field {
+}
+
+.info-menu-container > * {
+  width: 100%;
+}

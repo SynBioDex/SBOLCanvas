@@ -1,7 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 import { AppComponent } from './app.component';
 import { ToolbarComponent } from './toolbar/toolbar.component';
@@ -13,11 +12,20 @@ import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
 
 // ng-bootstrap stuff.
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarModule } from 'ng-sidebar';
 
 // Angular Material stuff. This is a different UI library than ng-bootstrap.
-import { BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import {MatButtonModule, MatCheckboxModule, MatSidenavModule} from '@angular/material';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {
+  MatButtonModule,
+  MatCheckboxModule,
+  MatInputModule,
+  MatListModule,
+  MatSelectModule,
+  MatSidenavModule,
+  MatTabsModule
+} from '@angular/material';
 
 @NgModule({
   declarations: [
@@ -39,7 +47,11 @@ import {MatButtonModule, MatCheckboxModule, MatSidenavModule} from '@angular/mat
     BrowserAnimationsModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatSidenavModule
+    MatSidenavModule,
+    MatTabsModule,
+    MatSelectModule,
+    MatInputModule,
+    MatListModule,
   ],
   providers: [],
   bootstrap: [AppComponent]
