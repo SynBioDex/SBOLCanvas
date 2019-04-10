@@ -26,6 +26,7 @@ import {
   MatSidenavModule,
   MatTabsModule
 } from '@angular/material';
+import {GraphService} from './graph.service';
 
 @NgModule({
   declarations: [
@@ -53,7 +54,7 @@ import {
     MatInputModule,
     MatListModule,
   ],
-  providers: [],
-  bootstrap: [AppComponent]
+  providers: [ GraphService ],
+  bootstrap: [ AppComponent ]
 })
 export class AppModule { }

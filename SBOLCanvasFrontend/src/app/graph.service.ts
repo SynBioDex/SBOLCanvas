@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { mxGraph } from 'mxGraphTypes';
 
 @Injectable({
   providedIn: 'root'
@@ -8,7 +7,7 @@ export class GraphService {
 
   constructor() { }
 
-  constructGraph(container) {
+   constructGraph(container) {
     const graph = new mxGraph(container);
 
     const parent = graph.getDefaultParent();
