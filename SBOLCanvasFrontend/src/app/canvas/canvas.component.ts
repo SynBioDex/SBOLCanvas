@@ -15,7 +15,6 @@ export class CanvasComponent implements OnInit {
   ngOnInit() {
     const canvasContainer = this.canvasContainer.nativeElement;
     const graphContainer = this.graphService.getGraphDOM();
-
     canvasContainer.appendChild(graphContainer);
   }
 
