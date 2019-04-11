@@ -13,9 +13,10 @@ export class CanvasComponent implements OnInit {
   @ViewChild('canvasContainer') canvasContainer: ElementRef;
 
   ngOnInit() {
-    const container = this.canvasContainer.nativeElement;
+    const canvasContainer = this.canvasContainer.nativeElement;
+    const graphContainer = this.graphService.getGraphDOM();
 
-    this.graphService.constructGraph(container);
+    canvasContainer.appendChild(graphContainer);
   }
 
 }
