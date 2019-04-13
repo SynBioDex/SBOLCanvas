@@ -10,6 +10,7 @@ import { ColorPaletteComponent } from './color-palette/color-palette.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
+import { HttpClientModule } from '@angular/common/http';
 
 // ng-bootstrap stuff.
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
@@ -53,6 +54,7 @@ import {GraphService} from './graph.service';
     MatSelectModule,
     MatInputModule,
     MatListModule,
+    HttpClientModule,
   ],
   providers: [ GraphService ],
   bootstrap: [ AppComponent ]
