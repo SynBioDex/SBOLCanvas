@@ -1,6 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms'; // Added for color picker.
 
 import { AppComponent } from './app.component';
 import { ToolbarComponent } from './toolbar/toolbar.component';
@@ -28,6 +29,9 @@ import {
 } from '@angular/material';
 import {GraphService} from './graph.service';
 
+// Color Picker imports.
+import { MccColorPickerModule } from 'material-community-components';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -53,6 +57,9 @@ import {GraphService} from './graph.service';
     MatSelectModule,
     MatInputModule,
     MatListModule,
+    MccColorPickerModule.forRoot({
+      used_colors: ['#000000', '#123456', '#777666']
+    }),
   ],
   providers: [ GraphService ],
   bootstrap: [ AppComponent ]

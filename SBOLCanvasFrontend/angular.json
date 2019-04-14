@@ -24,7 +24,7 @@
               {"glob":"**/*", "input":"node_modules/mxgraph/javascript/src", "output": "./mxgraph"}
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.scss"
             ],
             "scripts": [],
             "es5BrowserSupport": true
