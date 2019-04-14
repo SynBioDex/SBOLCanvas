@@ -1,17 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FilesService {
 
-  //private baseURL = 'api';
-  private baseURL = 'http://localhost:8080/SBOLCanvasBackend';
-  private saveFilesURL = this.baseURL + '/save';
-  private listFilesURL = this.baseURL + '/list';
-  private loadFilesURL = this.baseURL + '/load';
+  private saveFilesURL = environment.backendURL + '/save';
+  private listFilesURL = environment.backendURL + '/list';
+  private loadFilesURL = environment.backendURL + '/load';
 
   constructor(
     private http: HttpClient
