@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
@@ -16,10 +16,12 @@ export class FilesService {
     private http: HttpClient
   ) { }
 
-  save(filename: string, contents: string): void {
+  save(filename: string, contents: string): Observable<Object> {
     let params = new HttpParams();
-    params.append("filename", filename);
-    this.http.post(this.saveFilesURL, contents, { params: params });
+    params = params.append("filename", filename);
+    let headers = new HttpHeaders();
+    headers = headers.append("Content-Type","text/plain");
+    return this.http.post(this.saveFilesURL, contents, { headers: headers, params: params });
   }
 
   list(): Observable<string[]> {
@@ -28,8 +30,8 @@ export class FilesService {
 
   load(filename: string): Observable<string> {
     let params = new HttpParams();
-    params.append("filename", filename);
-    return this.http.get<string>(this.loadFilesURL, { params: params });
+    params = params.append("filename", filename);
+    return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
   }
 
 }

@@ -30,12 +30,14 @@ public class Load extends HttpServlet {
 			FileInputStream fileIn = new FileInputStream(file);
 			OutputStream bodyOut = response.getOutputStream();
 			IOUtils.copy(fileIn, bodyOut);
+			fileIn.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 			return;
 		}
 		
+		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setStatus(HttpStatus.SC_OK);
 	}
 	

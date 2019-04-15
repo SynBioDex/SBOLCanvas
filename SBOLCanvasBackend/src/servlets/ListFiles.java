@@ -46,6 +46,7 @@ public class ListFiles extends HttpServlet {
 			e.printStackTrace();
 		}
 		
+		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setStatus(HttpStatus.SC_OK);
 		response.addHeader("content-type", "application/json");
 	}
