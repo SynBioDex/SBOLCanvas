@@ -10,7 +10,7 @@ import { Part } from '../part';
 
 export class InfoEditorComponent implements OnInit {
 
-  private part: Part = {
+  part: Part = {
     name: 'the part',
     description: 'the description'
   };
