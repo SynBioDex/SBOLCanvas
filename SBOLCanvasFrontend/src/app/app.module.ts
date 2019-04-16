@@ -11,6 +11,7 @@ import { ColorPaletteComponent } from './color-palette/color-palette.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
+import { HttpClientModule } from '@angular/common/http';
 
 // ng-bootstrap stuff.
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
@@ -57,6 +58,7 @@ import { MccColorPickerModule } from 'material-community-components';
     MatSelectModule,
     MatInputModule,
     MatListModule,
+    HttpClientModule,
     MccColorPickerModule.forRoot({
       used_colors: ['#000000', '#123456', '#777666']
     }),
