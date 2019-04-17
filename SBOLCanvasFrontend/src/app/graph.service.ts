@@ -1,5 +1,7 @@
 import {Injectable} from '@angular/core';
-import {mxGraph, mxDragSource} from '../mxgraph';
+//import {mxGraph, mxDragSource, mxCodec} from '../mxgraph';
+import * as mxGraph from 'mxgraph';
+import * as mxDragSource from 'mxgraph';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -55,6 +57,7 @@ export class GraphService {
     const cell = new mx.mxCell('Test', new mx.mxGeometry(0, 0, 120, 40));
     cell.vertex = true;
     const cells = graph.importCells([cell], x, y, target);
+    console.log(target);
 
     if (cells != null && cells.length > 0) {
       graph.scrollCellToVisible(cells[0], false);
@@ -83,6 +86,41 @@ export class GraphService {
    */
   getGraph() {
     return this.graph;
+  }
+
+  graphToString(): string {
+    var encoder = new mx.mxCodec();
+    var result = encoder.encode(this.graph.getModel()); 
+    var xml = mx.mxUtils.getXml(result);
+    console.log(this.graphContainer);
+    console.log(this.graph.getModel().cells);
+    return xml;
+  }
+
+  stringToGraph(graphString: string){
+    var model = this.graph.model;
+    var doc = mx.mxUtils.parseXml(graphString);
+    var codec = new mx.mxCodec(doc);
+    this.graph.getModel().clear();
+    //this.graph = new mx.mxGraph(this.graphContainer);
+    var elt = doc.documentElement.firstChild.firstChild;
+    
+    var cells = [];
+    //this.graph.getModel().beginUpdate();
+    while (elt != null){
+      var cell = codec.decodeCell(elt);
+      if(cell.value != null)
+        cells.push(codec.decodeCell(elt));
+      //this.graph.addCell(codec.decodeCell(elt));
+      //this.graph.refresh();
+      elt = elt.nextSibling;
+    }
+    console.log(cells);
+    this.graph.addCells(cells);
+    //this.graph.importCells(cells, 0,0,null);
+    console.log(this.graphContainer);
+    //this.graph.getModel().endUpdate();
+    //console.log(this.graph.getModel());
   }
 
 }
