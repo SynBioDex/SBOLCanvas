@@ -19,12 +19,4 @@ export class CanvasComponent implements OnInit {
     canvasContainer.appendChild(graphContainer);
   }
 
-  printGraph(){
-    this.lastGraph = this.graphService.graphToString();
-  }
-
-  changeGraph(){
-    this.graphService.stringToGraph(this.lastGraph);
-  }
-
 }

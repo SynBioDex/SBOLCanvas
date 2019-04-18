@@ -105,14 +105,11 @@ export class GraphService {
     this.graph.getModel().beginUpdate();
     let vertecies = new Map<number, any>();
     let edges = [];
-    let sources = [];
-    let targets = [];
     while (elt != null){
       if(elt.attributes.getNamedItem("value") == null){
         elt = elt.nextSibling;
         continue;
       }
-      console.log(elt);
       var id = elt.attributes.getNamedItem("id").value;
       var value = elt.attributes.getNamedItem("value").value;
       if(elt.attributes.getNamedItem("vertex") != null){
@@ -124,25 +121,27 @@ export class GraphService {
         vertecies.set(id, this.graph.insertVertex(this.graph.getDefaultParent(), null, value, x, y, width, height));
       }else if(elt.attributes.getNamedItem("edge") != null){
         var geo = null;
+        var source = null;
         if(elt.attributes.getNamedItem("source") != null){
-          var source = elt.attributes.getNamedItem("source").value;
+          source = elt.attributes.getNamedItem("source").value;
         }else{
           geo = elt.firstChild.firstChild;
           var x = geo.attributes.getNamedItem("x").value;
           var y = geo.attributes.getNamedItem("y").value;
-          source = new mx.mxPoint(x,y);
+          source = [x,y];
         }
+        var target = null;
         if(elt.attributes.getNamedItem("target") != null){
-          var target = elt.attributes.getNamedItem("target").value;
+          target = elt.attributes.getNamedItem("target").value;
         }else{
           if(geo == null){
-            geo = source.firstChild.firstChild;
+            geo = elt.firstChild.firstChild;
           }else{
             geo = geo.nextSibling;
           }
           var x = geo.attributes.getNamedItem("x").value;
           var y = geo.attributes.getNamedItem("y").value;
-          target = new mx.mxPoint(x,y);
+          target = [x,y];
         }
         edges.push([value, source, target]);
       }
@@ -150,16 +149,24 @@ export class GraphService {
     }
     // edges have to have their source and target set after all the vertecies have been read in
     for(var i = 0; i < edges.length; i++){
-      var edge = this.graph.insertEdge(this.graph.getDefaultParent(), null, edges[i][0], vertecies.get(edges[i][1]), vertecies.get(edges[i][2]));
       var source = null;
-      if(edges[i][1] instanceof mx.mxPoint)
-        source = edges[i][1];
       var target = null;
-      if(edges[i][2] instanceof mx.mxPoint)
-        target = edges[i][2];
-      edge.geometry.points = [ source, target];
+      if(!(edges[i][1] instanceof Array))
+        source = vertecies.get(edges[i][1]);
+      if(!(edges[i][2] instanceof Array))
+        target = vertecies.get(edges[i][2]);
+      const edge = this.graph.insertEdge(this.graph.getDefaultParent(), null, edges[i][0], source, target);
+      // if you remove the /1's below the positioning of the edge scales up by 10
+      // we don't want any scaling, so there it shall stay
+      // this sure is fun
+      if(edges[i][1] instanceof Array)
+        edge.geometry.setTerminalPoint(new mx.mxPoint(edges[i][1][0]/1, edges[i][1][1]/1), true);
+      if(edges[i][2] instanceof Array)
+        edge.geometry.setTerminalPoint(new mx.mxPoint(edges[i][2][0]/1, edges[i][2][1]/1), false);
+      edge.relative = true;
     }
     this.graph.getModel().endUpdate();
+    this.graph.refresh();
   }
 
 }
