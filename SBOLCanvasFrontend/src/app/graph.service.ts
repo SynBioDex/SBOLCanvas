@@ -92,35 +92,74 @@ export class GraphService {
     var encoder = new mx.mxCodec();
     var result = encoder.encode(this.graph.getModel()); 
     var xml = mx.mxUtils.getXml(result);
-    console.log(this.graphContainer);
-    console.log(this.graph.getModel().cells);
     return xml;
   }
 
   stringToGraph(graphString: string){
-    var model = this.graph.model;
     var doc = mx.mxUtils.parseXml(graphString);
     var codec = new mx.mxCodec(doc);
     this.graph.getModel().clear();
     //this.graph = new mx.mxGraph(this.graphContainer);
     var elt = doc.documentElement.firstChild.firstChild;
-    
-    var cells = [];
-    //this.graph.getModel().beginUpdate();
+
+    this.graph.getModel().beginUpdate();
+    let vertecies = new Map<number, any>();
+    let edges = [];
+    let sources = [];
+    let targets = [];
     while (elt != null){
-      var cell = codec.decodeCell(elt);
-      if(cell.value != null)
-        cells.push(codec.decodeCell(elt));
-      //this.graph.addCell(codec.decodeCell(elt));
-      //this.graph.refresh();
+      if(elt.attributes.getNamedItem("value") == null){
+        elt = elt.nextSibling;
+        continue;
+      }
+      console.log(elt);
+      var id = elt.attributes.getNamedItem("id").value;
+      var value = elt.attributes.getNamedItem("value").value;
+      if(elt.attributes.getNamedItem("vertex") != null){
+        var geo = elt.firstChild;
+        var x = geo.attributes.getNamedItem("x").value;
+        var y = geo.attributes.getNamedItem("y").value;
+        var width = geo.attributes.getNamedItem("width").value;
+        var height = geo.attributes.getNamedItem("height").value;
+        vertecies.set(id, this.graph.insertVertex(this.graph.getDefaultParent(), null, value, x, y, width, height));
+      }else if(elt.attributes.getNamedItem("edge") != null){
+        var geo = null;
+        if(elt.attributes.getNamedItem("source") != null){
+          var source = elt.attributes.getNamedItem("source").value;
+        }else{
+          geo = elt.firstChild.firstChild;
+          var x = geo.attributes.getNamedItem("x").value;
+          var y = geo.attributes.getNamedItem("y").value;
+          source = new mx.mxPoint(x,y);
+        }
+        if(elt.attributes.getNamedItem("target") != null){
+          var target = elt.attributes.getNamedItem("target").value;
+        }else{
+          if(geo == null){
+            geo = source.firstChild.firstChild;
+          }else{
+            geo = geo.nextSibling;
+          }
+          var x = geo.attributes.getNamedItem("x").value;
+          var y = geo.attributes.getNamedItem("y").value;
+          target = new mx.mxPoint(x,y);
+        }
+        edges.push([value, source, target]);
+      }
       elt = elt.nextSibling;
     }
-    console.log(cells);
-    this.graph.addCells(cells);
-    //this.graph.importCells(cells, 0,0,null);
-    console.log(this.graphContainer);
-    //this.graph.getModel().endUpdate();
-    //console.log(this.graph.getModel());
+    // edges have to have their source and target set after all the vertecies have been read in
+    for(var i = 0; i < edges.length; i++){
+      var edge = this.graph.insertEdge(this.graph.getDefaultParent(), null, edges[i][0], vertecies.get(edges[i][1]), vertecies.get(edges[i][2]));
+      var source = null;
+      if(edges[i][1] instanceof mx.mxPoint)
+        source = edges[i][1];
+      var target = null;
+      if(edges[i][2] instanceof mx.mxPoint)
+        target = edges[i][2];
+      edge.geometry.points = [ source, target];
+    }
+    this.graph.getModel().endUpdate();
   }
 
 }
