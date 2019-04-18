@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { GraphService } from '../graph.service';
 
 @Component({
@@ -8,7 +8,7 @@ import { GraphService } from '../graph.service';
 })
 export class CanvasComponent implements OnInit {
 
-  lastGraph: string;
+  currentColor: string;
   constructor(private graphService: GraphService) {}
 
   @ViewChild('canvasContainer') canvasContainer: ElementRef;
@@ -17,6 +17,12 @@ export class CanvasComponent implements OnInit {
     const canvasContainer = this.canvasContainer.nativeElement;
     const graphContainer = this.graphService.getGraphDOM();
     canvasContainer.appendChild(graphContainer);
+  }
+
+  @Input()
+  set color(color: string){
+    this.currentColor = color;
+    console.log(color);
   }
 
 }

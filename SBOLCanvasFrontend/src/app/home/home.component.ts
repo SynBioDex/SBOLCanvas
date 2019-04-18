@@ -7,12 +7,17 @@ import { Component, OnInit } from '@angular/core';
 })
 export class HomeComponent implements OnInit {
 
+  currentColor: string;
   rightBarOpened = true;
   leftBarOpened = true;
 
   constructor() { }
 
   ngOnInit() {
+  }
+
+  onColorChanged(color: string){
+    this.currentColor = color;
   }
 
 }

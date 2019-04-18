@@ -19,14 +19,14 @@
         <app-info-editor></app-info-editor>
       </mat-tab>
       <mat-tab label="Color">
-        <app-color-palette></app-color-palette>
+        <app-color-palette (colorChanged)="onColorChanged($event)"></app-color-palette>
       </mat-tab>
     </mat-tab-group>
   </mat-sidenav>
 
   <!-- In the middle is the canvas -->
   <div ng-sidebar-content>
-    <app-canvas></app-canvas>
+    <app-canvas [color]="currentColor"></app-canvas>
   </div>
 
 </mat-sidenav-container>
