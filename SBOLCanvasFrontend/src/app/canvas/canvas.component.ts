@@ -22,7 +22,6 @@ export class CanvasComponent implements OnInit {
   @Input()
   set color(color: string){
     this.currentColor = color;
-    console.log(color);
   }
 
 }
