@@ -88,6 +88,45 @@ export class GraphService {
   }
 
   /**
+   * Makes the given element draggable in mxGraph
+   */
+  makeElementDraggable(element) {
+    element.width = glyphWidth;
+    element.height = glyphHeight;
+
+    const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
+    newGlyphStyle[mx.mxConstants.STYLE_IMAGE] = element.src;
+    const styleName = 'cellStyle:' + element.src;
+    this.graph.getStylesheet().putCellStyle(styleName, newGlyphStyle);
+
+    const insertGlyph = function(graph, evt, target, x, y) {
+      // When executed, 'this' is the dragSource, not the graphService
+
+      graph.getModel().beginUpdate();
+      try {
+        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName);
+        glyphCell.setConnectable(false);
+
+        const leftPort = graph.insertVertex(glyphCell, null, '', 1, .5, portWidth, portWidth);
+        leftPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
+        leftPort.geometry.relative = true;
+
+        const rightPort = graph.insertVertex(glyphCell, null, '', 0, .5, portWidth, portWidth);
+        rightPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
+        rightPort.geometry.relative = true;
+
+      } finally {
+        graph.getModel().endUpdate();
+      }
+    };
+
+    const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, this.glyphDragPreviewElt);
+    ds.isGridEnabled = function() {
+      return this.graph.graphHandler.guidesEnabled;
+    };
+  }
+
+  /**
    * Creates a dragsource that can be used to add glyphs to the canvas,
    * and returns the html element associated with it
    */
