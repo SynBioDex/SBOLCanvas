@@ -1,4 +1,5 @@
 import {Injectable} from '@angular/core';
+import * as mxEditor from 'mxgraph';
 import * as mxGraph from 'mxgraph';
 import * as mxDragSource from 'mxgraph';
 
@@ -11,8 +12,6 @@ const mx = require('mxgraph')({
 // Constants (there is no doubt a better way to do this
 const glyphWidth = 52;
 const glyphHeight = 104;
-const glyphWidthStr = glyphWidth + 'px';
-const glyphHeightStr = glyphHeight + 'px';
 
 const portWidth = 10;
 
@@ -22,8 +21,10 @@ const portWidth = 10;
 export class GraphService {
 
   graph: mxGraph;
+  editor: mxEditor;
   graphContainer: HTMLElement;
   glyphDragPreviewElt: HTMLElement;
+
   baseGlyphStyle;
 
   constructor() {
@@ -38,14 +39,23 @@ export class GraphService {
     this.graphContainer.style.left = '0';
     this.graphContainer.style.right = '0';
 
+    mx.mxGraphHandler.prototype.guidesEnabled = true;
 
-    this.graph = new mx.mxGraph(this.graphContainer);
+    // mxEditor is kind of a parent to mxGraph
+    // it's used mainly for 'actions', which for now means delete,
+    // later will mean undoing
+    this.editor = new mx.mxEditor();
+    this.graph = this.editor.graph;
+    this.editor.setGraphContainer(this.graphContainer);
 
     this.graph.setConnectable(true);
+    this.graph.allowDanglingEdges = false;
 
     // Enables rubberband selection
     // tslint:disable-next-line:no-unused-expression
     new mx.mxRubberband(this.graph);
+
+    // Sets the graph container and configures the editor
 
     // without this, an option appears to collapse glyphs, which hides their ports
     this.graph.isCellFoldable = function(cell) {
@@ -63,21 +73,21 @@ export class GraphService {
     // A dummy element used for previewing glyphs as they are dragged onto the graph
     this.glyphDragPreviewElt = document.createElement('div');
     this.glyphDragPreviewElt.style.border = 'dashed black 1px';
-    this.glyphDragPreviewElt.style.width = glyphWidthStr;
-    this.glyphDragPreviewElt.style.height = glyphHeightStr;
+    this.glyphDragPreviewElt.style.width = glyphWidth + 'px';
+    this.glyphDragPreviewElt.style.height = glyphHeight + 'px';
 
     this.baseGlyphStyle = {};
-    this.baseGlyphStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_IMAGE;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_PERIMETER] = mx.mxPerimeter.RectanglePerimeter;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#FFFFFF';
     this.baseGlyphStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_ALIGN] = mx.mxConstants.ALIGN_CENTER;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_VERTICAL_ALIGN] = mx.mxConstants.ALIGN_BOTTOM;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#FFFFFF';
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = mx.mxConstants.ALIGN_CENTER;
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = mx.mxConstants.ALIGN_TOP;
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(glyphWidth);
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(glyphHeight);
-    this.baseGlyphStyle[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
+
+    const style = this.graph.getStylesheet().getDefaultEdgeStyle();
+    style[mx.mxConstants.STYLE_ROUNDED] = true;
+    style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
   }
 
   /**
@@ -85,6 +95,13 @@ export class GraphService {
    */
   getGraphDOM() {
     return this.graphContainer;
+  }
+
+  /**
+   * Deletes the currently selected cell
+   */
+  delete() {
+    this.editor.execute('delete');
   }
 
   /**
