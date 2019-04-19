@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit } from '@angular/core';
 import { MccColorPickerItem, MccColorPickerService } from 'material-community-components';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 
@@ -9,8 +9,8 @@ import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 })
 export class ColorPaletteComponent implements OnInit {
 
+  @Output() colorChanged = new EventEmitter<string>();
   selectedColor: string;
-  changeColor: string;
   form: FormGroup;
 
   usedStart: string[] = [
@@ -102,6 +102,11 @@ export class ColorPaletteComponent implements OnInit {
 
   onSubmit({ value, valid }): void {
     console.log(value, valid);
+  }
+
+  showColor($event){
+    this.colorChanged.emit($event);
+    this.selectedColor = $event;
   }
 
 }
