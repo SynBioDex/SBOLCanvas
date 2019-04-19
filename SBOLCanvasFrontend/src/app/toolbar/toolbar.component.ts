@@ -23,4 +23,8 @@ export class ToolbarComponent implements OnInit {
   load() {
     this.graphService.stringToGraph(this.lastGraph);
   }
+
+  delete() {
+    this.graphService.delete();
+  }
 }
