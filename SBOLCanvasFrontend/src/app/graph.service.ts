@@ -105,18 +105,15 @@ export class GraphService {
   }
 
   /**
-   * Creates a dragsource that can be used to add glyphs to the canvas,
-   * and returns the html element associated with it
+   * Makes the given element draggable in mxGraph
    */
-  createGlyphDragSource(sourceImg) {
-    const elt = document.createElement('img');
-    elt.src = sourceImg;
-    elt.width = glyphWidth;
-    elt.height = glyphHeight;
+  makeElementDraggable(element) {
+    element.width = glyphWidth;
+    element.height = glyphHeight;
 
     const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
-    newGlyphStyle[mx.mxConstants.STYLE_IMAGE] = sourceImg;
-    const styleName = 'cellStyle:' + sourceImg;
+    newGlyphStyle[mx.mxConstants.STYLE_IMAGE] = element.src;
+    const styleName = 'cellStyle:' + element.src;
     this.graph.getStylesheet().putCellStyle(styleName, newGlyphStyle);
 
     const insertGlyph = function(graph, evt, target, x, y) {
@@ -140,12 +137,10 @@ export class GraphService {
       }
     };
 
-    const ds: mxDragSource = mx.mxUtils.makeDraggable(elt, this.graph, insertGlyph, this.glyphDragPreviewElt);
+    const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, this.glyphDragPreviewElt);
     ds.isGridEnabled = function() {
       return this.graph.graphHandler.guidesEnabled;
     };
-
-    return elt;
   }
 
   // noinspection JSUnusedGlobalSymbols

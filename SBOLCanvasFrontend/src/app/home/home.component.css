@@ -5,3 +5,8 @@
   left: 0;
   right: 0;
 }
+
+
+/deep/ .mat-tab-label {
+  min-width: 130px!important;
+}
