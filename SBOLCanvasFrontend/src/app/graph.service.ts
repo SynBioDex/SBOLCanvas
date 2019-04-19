@@ -9,8 +9,8 @@ const mx = require('mxgraph')({
 });
 
 // Constants (there is no doubt a better way to do this
-const glyphWidth = 60;
-const glyphHeight = 60;
+const glyphWidth = 52;
+const glyphHeight = 104;
 const glyphWidthStr = glyphWidth + 'px';
 const glyphHeightStr = glyphHeight + 'px';
 
@@ -66,12 +66,11 @@ export class GraphService {
     this.glyphDragPreviewElt.style.width = glyphWidthStr;
     this.glyphDragPreviewElt.style.height = glyphHeightStr;
 
-    this.baseGlyphStyle = new Object();
+    this.baseGlyphStyle = {};
     this.baseGlyphStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_IMAGE;
     this.baseGlyphStyle[mx.mxConstants.STYLE_PERIMETER] = mx.mxPerimeter.RectanglePerimeter;
     this.baseGlyphStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#FFFFFF';
     this.baseGlyphStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     this.baseGlyphStyle[mx.mxConstants.STYLE_ALIGN] = mx.mxConstants.ALIGN_CENTER;
     this.baseGlyphStyle[mx.mxConstants.STYLE_VERTICAL_ALIGN] = mx.mxConstants.ALIGN_BOTTOM;
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = mx.mxConstants.ALIGN_CENTER;
@@ -111,11 +110,11 @@ export class GraphService {
         const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName);
         glyphCell.setConnectable(false);
 
-        const leftPort = graph.insertVertex(glyphCell, null, '', 1, 1, portWidth, portWidth);
+        const leftPort = graph.insertVertex(glyphCell, null, '', 1, .5, portWidth, portWidth);
         leftPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
         leftPort.geometry.relative = true;
 
-        const rightPort = graph.insertVertex(glyphCell, null, '', 0, 1, portWidth, portWidth);
+        const rightPort = graph.insertVertex(glyphCell, null, '', 0, .5, portWidth, portWidth);
         rightPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
         rightPort.geometry.relative = true;
 
