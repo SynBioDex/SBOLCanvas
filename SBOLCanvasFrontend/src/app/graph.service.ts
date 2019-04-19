@@ -14,6 +14,8 @@ const glyphHeight = 60;
 const glyphWidthStr = glyphWidth + 'px';
 const glyphHeightStr = glyphHeight + 'px';
 
+const portWidth = 10;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -29,16 +31,38 @@ export class GraphService {
     this.graphContainer = document.createElement('div');
     this.graphContainer.id = 'graphContainer';
     this.graphContainer.style.margin = 'auto';
+    this.graphContainer.style.background = 'url(assets/grid.png)';
+    this.graphContainer.style.position = 'absolute';
+    this.graphContainer.style.top = '0';
+    this.graphContainer.style.bottom = '0';
+    this.graphContainer.style.left = '0';
+    this.graphContainer.style.right = '0';
+
 
     this.graph = new mx.mxGraph(this.graphContainer);
+
+    this.graph.setConnectable(true);
 
     // Enables rubberband selection
     // tslint:disable-next-line:no-unused-expression
     new mx.mxRubberband(this.graph);
 
+    // without this, an option appears to collapse glyphs, which hides their ports
+    this.graph.isCellFoldable = function(cell) {
+      return false;
+    };
+
+    // Ports are not used as terminals for edges, they are
+    // only used to compute the graphical connection point
+    this.graph.isPort = function(cell) {
+      // 'this' is the mxGraph, not the GraphService
+      const geo = this.getCellGeometry(cell);
+      return (geo != null) ? geo.relative : false;
+    };
+
     // A dummy element used for previewing glyphs as they are dragged onto the graph
     this.glyphDragPreviewElt = document.createElement('div');
-    this.glyphDragPreviewElt.style.border = 'dashed white 1px';
+    this.glyphDragPreviewElt.style.border = 'dashed black 1px';
     this.glyphDragPreviewElt.style.width = glyphWidthStr;
     this.glyphDragPreviewElt.style.height = glyphHeightStr;
 
@@ -54,6 +78,7 @@ export class GraphService {
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = mx.mxConstants.ALIGN_TOP;
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(glyphWidth);
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(glyphHeight);
+    this.baseGlyphStyle[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
   }
 
   /**
@@ -78,16 +103,26 @@ export class GraphService {
     const styleName = 'cellStyle:' + sourceImg;
     this.graph.getStylesheet().putCellStyle(styleName, newGlyphStyle);
 
-    const insertGlyph = function (graph, evt, target, x, y) {
+    const insertGlyph = function(graph, evt, target, x, y) {
       // When executed, 'this' is the dragSource, not the graphService
 
       graph.getModel().beginUpdate();
       try {
-        graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName);
+        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName);
+        glyphCell.setConnectable(false);
+
+        const leftPort = graph.insertVertex(glyphCell, null, '', 1, 1, portWidth, portWidth);
+        leftPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
+        leftPort.geometry.relative = true;
+
+        const rightPort = graph.insertVertex(glyphCell, null, '', 0, 1, portWidth, portWidth);
+        rightPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
+        rightPort.geometry.relative = true;
+
       } finally {
         graph.getModel().endUpdate();
       }
-    }
+    };
 
     const ds: mxDragSource = mx.mxUtils.makeDraggable(elt, this.graph, insertGlyph, this.glyphDragPreviewElt);
     ds.isGridEnabled = function() {
@@ -112,7 +147,7 @@ export class GraphService {
     return xml;
   }
 
-  stringToGraph(graphString: string){
+  stringToGraph(graphString: string) {
     var doc = mx.mxUtils.parseXml(graphString);
     var codec = new mx.mxCodec(doc);
     this.graph.getModel().clear();

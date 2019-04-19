@@ -7,10 +7,8 @@ import {GraphService} from '../graph.service';
   styleUrls: ['./glyph-menu.component.css']
 })
 export class GlyphMenuComponent implements OnInit {
-  glyphs: String[] = [];
 
   @ViewChild('glyphMenuContainer') glyphMenuContainer: ElementRef;
-  @ViewChild('glyphTileContainer') glyphTiles: ElementRef[];
 
   constructor(private graphService: GraphService) {
   }
@@ -64,12 +62,8 @@ export class GlyphMenuComponent implements OnInit {
     for (const imgName of glyphPics) {
       const dragSource = this.graphService.createGlyphDragSource(imgName);
       this.glyphMenuContainer.nativeElement.appendChild(dragSource);
-      //this.glyphs.push(imgName);
     }
 
-    // for (const tile of this.glyphTiles) {
-    //   tile.nativeElement.innerHTML = "Hi";
-    // }
   }
 
 }
