@@ -170,7 +170,8 @@ export class GraphService {
         var y = geo.attributes.getNamedItem('y').value;
         var width = geo.attributes.getNamedItem('width').value;
         var height = geo.attributes.getNamedItem('height').value;
-        vertecies.set(id, this.graph.insertVertex(this.graph.getDefaultParent(), null, value, x, y, width, height));
+        var style = elt.attributes.getNamedItem('style').value;
+        vertecies.set(id, this.graph.insertVertex(this.graph.getDefaultParent(), null, value, x, y, width, height, style));
       } else if (elt.attributes.getNamedItem('edge') != null) {
         var geo = null;
         var source = null;
