@@ -8,10 +8,6 @@ import {GraphService} from '../graph.service';
 })
 export class GlyphMenuComponent implements OnInit, AfterViewInit{
 
-  public glyphs: HTMLImageElement[] = [];
-
-  // public glyphPics: string[];
-  @ViewChild('glyphMenuContainer') glyphMenuContainer: ElementRef;
   @ViewChildren('glyphElement') glyphElements: QueryList<ElementRef>;
 
   public glyphPics: string[] = [
@@ -57,17 +53,6 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit{
   }
 
   ngOnInit() {
-    const glyphMenuContainer = this.glyphMenuContainer.nativeElement;
-
-    // Since this code happens on front end, it has no way to know
-    // what files are available - we'll need a service to do this properly.
-    // For now, use hardcoded list of image names
-
-    /*for (const imgName of this.glyphPics) {
-      const dragSource = this.graphService.createGlyphDragSource(imgName);
-      //this.glyphMenuContainer.nativeElement.appendChild(dragSource);
-      this.glyphs.push(dragSource);
-    }*/
 
   }
 
@@ -76,9 +61,5 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit{
       this.graphService.makeElementDraggable(element.nativeElement);
     }
   }
-
-  /*addGlyphDrag(dragSource: any){
-    this.glyphMenuContainer.nativeElemnt.appendChild(dragSource);
-  }*/
 
 }

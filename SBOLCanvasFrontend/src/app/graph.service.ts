@@ -126,50 +126,6 @@ export class GraphService {
     };
   }
 
-  /**
-   * Creates a dragsource that can be used to add glyphs to the canvas,
-   * and returns the html element associated with it
-   */
-  createGlyphDragSource(sourceImg) {
-    const elt = document.createElement('img');
-    elt.src = sourceImg;
-    elt.width = glyphWidth;
-    elt.height = glyphHeight;
-
-    const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
-    newGlyphStyle[mx.mxConstants.STYLE_IMAGE] = sourceImg;
-    const styleName = 'cellStyle:' + sourceImg;
-    this.graph.getStylesheet().putCellStyle(styleName, newGlyphStyle);
-
-    const insertGlyph = function(graph, evt, target, x, y) {
-      // When executed, 'this' is the dragSource, not the graphService
-
-      graph.getModel().beginUpdate();
-      try {
-        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName);
-        glyphCell.setConnectable(false);
-
-        const leftPort = graph.insertVertex(glyphCell, null, '', 1, .5, portWidth, portWidth);
-        leftPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
-        leftPort.geometry.relative = true;
-
-        const rightPort = graph.insertVertex(glyphCell, null, '', 0, .5, portWidth, portWidth);
-        rightPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
-        rightPort.geometry.relative = true;
-
-      } finally {
-        graph.getModel().endUpdate();
-      }
-    };
-
-    const ds: mxDragSource = mx.mxUtils.makeDraggable(elt, this.graph, insertGlyph, this.glyphDragPreviewElt);
-    ds.isGridEnabled = function() {
-      return this.graph.graphHandler.guidesEnabled;
-    };
-
-    return elt;
-  }
-
   // noinspection JSUnusedGlobalSymbols
   /**
    * Returns the mxGraph object. This is meant for temporary testing - any permanent code should not rely on this.
