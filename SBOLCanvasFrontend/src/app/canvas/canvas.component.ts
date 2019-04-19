@@ -8,7 +8,7 @@ import { GraphService } from '../graph.service';
 })
 export class CanvasComponent implements OnInit {
 
-  constructor(private graphService: GraphService) { }
+  constructor(private graphService: GraphService) {}
 
   @ViewChild('canvasContainer') canvasContainer: ElementRef;
 

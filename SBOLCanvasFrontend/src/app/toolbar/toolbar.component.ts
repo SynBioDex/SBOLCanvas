@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import {GraphService} from '../graph.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -7,9 +8,19 @@ import { Component, OnInit } from '@angular/core';
 })
 export class ToolbarComponent implements OnInit {
 
-  constructor() { }
+  lastGraph: string;
+  constructor(private graphService: GraphService) {}
 
   ngOnInit() {
   }
 
+
+  save(){
+    this.lastGraph = this.graphService.graphToString();
+    console.log(this.lastGraph);
+  }
+
+  load() {
+    this.graphService.stringToGraph(this.lastGraph);
+  }
 }

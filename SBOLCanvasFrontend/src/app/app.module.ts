@@ -1,7 +1,7 @@
-import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { ReactiveFormsModule } from '@angular/forms'; // Added for color picker.
+import {BrowserModule} from '@angular/platform-browser';
+import {NgModule} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {ReactiveFormsModule} from '@angular/forms'; // Added for color picker.
 
 import { AppComponent } from './app.component';
 import { ToolbarComponent } from './toolbar/toolbar.component';
@@ -13,24 +13,27 @@ import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
 
 // ng-bootstrap stuff.
-import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { SidebarModule } from 'ng-sidebar';
+import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
+import {SidebarModule} from 'ng-sidebar';
 
 // Angular Material stuff. This is a different UI library than ng-bootstrap.
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {
   MatButtonModule,
-  MatCheckboxModule,
+  MatCheckboxModule, MatGridListModule,
   MatInputModule,
   MatListModule,
   MatSelectModule,
   MatSidenavModule,
   MatTabsModule
 } from '@angular/material';
+
 import {GraphService} from './graph.service';
 
 // Color Picker imports.
-import { MccColorPickerModule } from 'material-community-components';
+import {MccColorPickerModule} from 'material-community-components';
+
+// grid list import (for glyph menu)
 
 @NgModule({
   declarations: [
@@ -60,8 +63,10 @@ import { MccColorPickerModule } from 'material-community-components';
     MccColorPickerModule.forRoot({
       used_colors: ['#000000', '#123456', '#777666']
     }),
+    MatGridListModule,
   ],
-  providers: [ GraphService ],
-  bootstrap: [ AppComponent ]
+  providers: [GraphService],
+  bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {
+}
