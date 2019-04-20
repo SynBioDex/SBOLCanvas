@@ -25,13 +25,14 @@ import {
   MatListModule,
   MatSelectModule,
   MatSidenavModule,
-  MatTabsModule
+  MatTabsModule, MatToolbarModule
 } from '@angular/material';
 
 import {GraphService} from './graph.service';
 
 // Color Picker imports.
 import {MccColorPickerModule} from 'material-community-components';
+import {MetadataService} from './metadata.service';
 
 // grid list import (for glyph menu)
 
@@ -64,8 +65,10 @@ import {MccColorPickerModule} from 'material-community-components';
       used_colors: ['#000000', '#123456', '#777666']
     }),
     MatGridListModule,
+    ReactiveFormsModule,
+    MatToolbarModule
   ],
-  providers: [GraphService],
+  providers: [GraphService, MetadataService],
   bootstrap: [AppComponent]
 })
 export class AppModule {

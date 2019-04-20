@@ -1,5 +1,20 @@
-<mcc-color-picker usedSizeColors="15" class="mcc-cp-small" [selectedColor]="selectedColor" [hideButtons] = "true" [overlay]="false" [usedColorLabel]="'My Colors'" (change)="showColor($event)">
+<mcc-color-picker usedSizeColors="15" class="mcc-cp-small" [selectedColor]="selectedColor" [hideButtons] = "true" [overlay]="true" [usedColorLabel]="'My Colors'" (change)="showColor($event)">
 
   <mcc-color-picker-collection [colors]="colors"></mcc-color-picker-collection>
 
 </mcc-color-picker>
+
+<!--<mcc-color-picker mccConnectedColorPicker [mccConnectedColorPickerOrigin]="trigger" usedSizeColors="15" class="mcc-cp-small" [selectedColor]="selectedColor" [hideButtons] = "true" [overlay]="false" [usedColorLabel]="'My Colors'" (change)="showColor($event)">
+
+  <mcc-color-picker-collection [colors]="colors"></mcc-color-picker-collection>
+
+</mcc-color-picker>
+<form novalidate [formGroup]="form" (ngSubmit)="onSubmit(form)">
+  <mat-form-field>
+    <input matInput mccColorPickerOrigin #trigger="mccColorPickerOrigin" [value]="selectedColor" formControlName="selectedColor" />
+  </mat-form-field>
+
+  <button type="submit" mat-raised-button color="primary">Submit
+    <small>(look the console)</small>
+  </button>
+</form>-->

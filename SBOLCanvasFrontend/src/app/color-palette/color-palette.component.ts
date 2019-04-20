@@ -11,7 +11,7 @@ import {GraphService} from '../graph.service';
 })
 export class ColorPaletteComponent implements OnInit {
 
-  @Output() colorChanged = new EventEmitter<string>();
+  // @Output() colorChanged = new EventEmitter<string>();
   selectedColor: string;
   form: FormGroup;
 
@@ -98,6 +98,7 @@ export class ColorPaletteComponent implements OnInit {
     this.form = this.formBuilder.group({
       selectedColor: ['#000000', Validators.required],
     });
+
 
     // Subscribe to the color metadata
     this.metadataService.color.subscribe(color => this.colorUpdated(color));
