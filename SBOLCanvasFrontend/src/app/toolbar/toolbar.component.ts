@@ -17,7 +17,7 @@ export class ToolbarComponent implements OnInit {
 
   save(){
     this.lastGraph = this.graphService.graphToString();
-    console.log(this.lastGraph);
+    //console.log(this.lastGraph);
   }
 
   load() {

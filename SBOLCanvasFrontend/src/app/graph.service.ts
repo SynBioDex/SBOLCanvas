@@ -207,8 +207,17 @@ export class GraphService {
   graphToString(): string {
     var encoder = new mx.mxCodec();
     var result = encoder.encode(this.graph.getModel());
+    console.log(result);
+    console.log(this.graph.model);
     var xml = mx.mxUtils.getXml(result);
     return xml;
+  }
+
+  oldStringToGraph(graphString: string){
+    var doc = mx.mxUtils.parseXml(graphString);
+    var codec = new mx.mxCode(doc);
+    this.graph.getModel().clear();
+    codec.decode(doc.documentElement, this.graph.getModel());
   }
 
   stringToGraph(graphString: string) {
@@ -230,20 +239,39 @@ export class GraphService {
       var value = elt.attributes.getNamedItem('value').value;
       if (elt.attributes.getNamedItem('vertex') != null) {
         var geo = elt.firstChild;
-        var x = geo.attributes.getNamedItem('x').value;
+        var x = 0.0;
+        if(geo.attributes.getNamedItem('x') != null)
+          x = <number> geo.attributes.getNamedItem('x').value;
         var y = geo.attributes.getNamedItem('y').value;
         var width = geo.attributes.getNamedItem('width').value;
         var height = geo.attributes.getNamedItem('height').value;
-        var style = elt.attributes.getNamedItem('style').value;
-        vertecies.set(id, this.graph.insertVertex(this.graph.getDefaultParent(), null, value, x, y, width, height, style));
+        var parent = this.graph.getDefaultParent();
+        if(elt.attributes.getNamedItem('parent').value != 1){
+          // ports
+          parent = vertecies.get(elt.attributes.getNamedItem('parent').value);
+          const port = this.graph.insertVertex(parent, null, '', x/1, y/1, width/1, height/1);
+          var point = geo.firstChild;
+          x = point.attributes.getNamedItem("x").value;
+          y = point.attributes.getNamedItem("y").value;
+          port.geometry.offset = new mx.mxPoint(x/1,y/1);
+          port.geometry.relative = true;
+
+          vertecies.set(id, port);
+        }else{
+          var style = elt.attributes.getNamedItem('style').value;
+          const vertex = this.graph.insertVertex(parent, null, value, x/1, y/1, width/1, height/1, style);
+          vertex.setConnectable(false);
+          vertecies.set(id, vertex);
+        }
       } else if (elt.attributes.getNamedItem('edge') != null) {
+        var style = elt.attributes.getNamedItem('style').value;
         var geo = null;
         var source = null;
         if (elt.attributes.getNamedItem('source') != null) {
           source = elt.attributes.getNamedItem('source').value;
         } else {
           geo = elt.firstChild.firstChild;
-          var x = geo.attributes.getNamedItem('x').value;
+          var x = <number> geo.attributes.getNamedItem('x').value;
           var y = geo.attributes.getNamedItem('y').value;
           source = [x, y];
         }
@@ -256,11 +284,11 @@ export class GraphService {
           } else {
             geo = geo.nextSibling;
           }
-          var x = geo.attributes.getNamedItem('x').value;
+          var x = <number> geo.attributes.getNamedItem('x').value;
           var y = geo.attributes.getNamedItem('y').value;
           target = [x, y];
         }
-        edges.push([value, source, target]);
+        edges.push([value, source, target, style]);
       }
       elt = elt.nextSibling;
     }
@@ -274,7 +302,8 @@ export class GraphService {
       if (!(edges[i][2] instanceof Array)) {
         target = vertecies.get(edges[i][2]);
       }
-      const edge = this.graph.insertEdge(this.graph.getDefaultParent(), null, edges[i][0], source, target);
+      edges[i][3];
+      const edge = this.graph.insertEdge(this.graph.getDefaultParent(), null, edges[i][0], source, target, edges[i][3]);
       // if you remove the /1's below the positioning of the edge scales up by 10
       // we don't want any scaling, so there it shall stay
       // this sure is fun
