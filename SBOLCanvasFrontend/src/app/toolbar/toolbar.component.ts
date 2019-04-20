@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {GraphService} from '../graph.service';
+import {FilesService} from '../files.service';
 
 @Component({
   selector: 'app-toolbar',
@@ -9,19 +10,21 @@ import {GraphService} from '../graph.service';
 export class ToolbarComponent implements OnInit {
 
   lastGraph: string;
-  constructor(private graphService: GraphService) {}
+  constructor(private graphService: GraphService, private filesService: FilesService) {}
 
   ngOnInit() {
   }
 
 
   save(){
-    this.lastGraph = this.graphService.graphToString();
+    this.filesService.save('filename', this.graphService.graphToString()).subscribe();
+    //this.lastGraph = this.graphService.graphToString();
     //console.log(this.lastGraph);
   }
 
   load() {
-    this.graphService.stringToGraph(this.lastGraph);
+    this.filesService.load('filename').subscribe(graph => this.graphService.stringToGraph(graph));
+    //this.graphService.stringToGraph(this.lastGraph);
   }
 
   delete() {
