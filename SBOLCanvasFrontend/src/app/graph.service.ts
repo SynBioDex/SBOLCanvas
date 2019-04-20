@@ -1,11 +1,11 @@
-import {Inject, Injectable, PLATFORM_ID} from '@angular/core';
+import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
 import * as mxEditor from 'mxgraph';
 import * as mxGraph from 'mxgraph';
 import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
-import {GlyphInfo} from './glyphInfo';
-import {MetadataService} from './metadata.service';
-import {isPlatformBrowser} from '@angular/common';
+import { GlyphInfo } from './glyphInfo';
+import { MetadataService } from './metadata.service';
+import { isPlatformBrowser } from '@angular/common';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -62,7 +62,7 @@ export class GraphService {
     // Sets the graph container and configures the editor
 
     // without this, an option appears to collapse glyphs, which hides their ports
-    this.graph.isCellFoldable = function(cell) {
+    this.graph.isCellFoldable = function (cell) {
       return false;
     };
 
@@ -71,7 +71,7 @@ export class GraphService {
 
     // Ports are not used as terminals for edges, they are
     // only used to compute the graphical connection point
-    this.graph.isPort = function(cell) {
+    this.graph.isPort = function (cell) {
       // 'this' is the mxGraph, not the GraphService
       const geo = this.getCellGeometry(cell);
       return (geo != null) ? geo.relative : false;
@@ -123,12 +123,12 @@ export class GraphService {
     const styleName = 'cellStyle:' + element.src;
     this.graph.getStylesheet().putCellStyle(styleName, newGlyphStyle);
 
-    const insertGlyph = function(graph, evt, target, x, y) {
+    const insertGlyph = function (graph, evt, target, x, y) {
       // When executed, 'this' is the dragSource, not the graphService
 
       graph.getModel().beginUpdate();
       try {
-        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName+";fillColor=#ffffff;");
+        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName + ";fillColor=#ffffff;");
         glyphCell.setConnectable(false);
         glyphCell.data = new GlyphInfo();
 
@@ -146,7 +146,7 @@ export class GraphService {
     };
 
     const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, this.glyphDragPreviewElt);
-    ds.isGridEnabled = function() {
+    ds.isGridEnabled = function () {
       return this.graph.graphHandler.guidesEnabled;
     };
   }
@@ -249,7 +249,7 @@ export class GraphService {
     return xml;
   }
 
-  oldStringToGraph(graphString: string){
+  oldStringToGraph(graphString: string) {
     var doc = mx.mxUtils.parseXml(graphString);
     var codec = new mx.mxCode(doc);
     this.graph.getModel().clear();
@@ -276,26 +276,26 @@ export class GraphService {
       if (elt.attributes.getNamedItem('vertex') != null) {
         var geo = elt.firstChild;
         var x = 0.0;
-        if(geo.attributes.getNamedItem('x') != null)
-          x = <number> geo.attributes.getNamedItem('x').value;
+        if (geo.attributes.getNamedItem('x') != null)
+          x = <number>geo.attributes.getNamedItem('x').value;
         var y = geo.attributes.getNamedItem('y').value;
         var width = geo.attributes.getNamedItem('width').value;
         var height = geo.attributes.getNamedItem('height').value;
         var parent = this.graph.getDefaultParent();
-        if(elt.attributes.getNamedItem('parent').value != 1){
+        if (elt.attributes.getNamedItem('parent').value != 1) {
           // ports
           parent = vertecies.get(elt.attributes.getNamedItem('parent').value);
-          const port = this.graph.insertVertex(parent, null, '', x/1, y/1, width/1, height/1);
+          const port = this.graph.insertVertex(parent, null, '', x / 1, y / 1, width / 1, height / 1);
           var point = geo.firstChild;
           x = point.attributes.getNamedItem("x").value;
           y = point.attributes.getNamedItem("y").value;
-          port.geometry.offset = new mx.mxPoint(x/1,y/1);
+          port.geometry.offset = new mx.mxPoint(x / 1, y / 1);
           port.geometry.relative = true;
 
           vertecies.set(id, port);
-        }else{
+        } else {
           var style = elt.attributes.getNamedItem('style').value;
-          const vertex = this.graph.insertVertex(parent, null, value, x/1, y/1, width/1, height/1, style);
+          const vertex = this.graph.insertVertex(parent, null, value, x / 1, y / 1, width / 1, height / 1, style);
           vertex.setConnectable(false);
           vertecies.set(id, vertex);
         }
@@ -307,7 +307,7 @@ export class GraphService {
           source = elt.attributes.getNamedItem('source').value;
         } else {
           geo = elt.firstChild.firstChild;
-          var x = <number> geo.attributes.getNamedItem('x').value;
+          var x = <number>geo.attributes.getNamedItem('x').value;
           var y = geo.attributes.getNamedItem('y').value;
           source = [x, y];
         }
@@ -320,7 +320,7 @@ export class GraphService {
           } else {
             geo = geo.nextSibling;
           }
-          var x = <number> geo.attributes.getNamedItem('x').value;
+          var x = <number>geo.attributes.getNamedItem('x').value;
           var y = geo.attributes.getNamedItem('y').value;
           target = [x, y];
         }
