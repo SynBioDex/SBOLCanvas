@@ -78,7 +78,7 @@ export var mxClient: {
  * background and foreground:
  *
  * The path of the graphics drawing is split into two elements, *foreground* and
- * *background*. The split is to define which part any shadow applied to the shape
+ * *background*. The split is to define which selectedGlyphInfo any shadow applied to the shape
  * is derived from (the background). This, generally, means the background is the
  * line tracing of the outside of the shape, but not always.
  *
@@ -4665,7 +4665,7 @@ export class mxXmlCanvas2D extends mxAbstractCanvas2D {
    * Paints the given text. Possible values for format are empty string for
    * plain text and html for HTML markup. Background and border color as well
    * as clipping is not available in plain text labels for VML. HTML labels
-   * are not available as part of shapes with no foreignObject support in SVG
+   * are not available as selectedGlyphInfo of shapes with no foreignObject support in SVG
    * (eg. IE9, IE10).
    *
    * Parameters:
@@ -4834,8 +4834,8 @@ export class mxSvgCanvas2D extends mxAbstractCanvas2D {
    */
   format(value: any): number;
   /**
-   * Returns the URL of the page without the hash part. This needs to use href to
-   * include any search part with no params (ie question mark alone). This is a
+   * Returns the URL of the page without the hash selectedGlyphInfo. This needs to use href to
+   * include any search selectedGlyphInfo with no params (ie question mark alone). This is a
    * workaround for the fact that window.location.search is empty if there is
    * no search string behind the question mark.
    */
@@ -4944,7 +4944,7 @@ export class mxSvgCanvas2D extends mxAbstractCanvas2D {
    * Paints the given text. Possible values for format are empty string for plain
    * text and html for HTML markup. Note that HTML markup is only supported if
    * foreignObject is supported and <foEnabled> is true. (This means IE9 and later
-   * does currently not support HTML text as part of shapes.)
+   * does currently not support HTML text as selectedGlyphInfo of shapes.)
    */
   text(x: any, y: any, w: any, h: any, str: any, align: any, valign: any, wrap: any, format: any, overflow: any, clip: any, rotation: any, dir: any): void;
   /**
@@ -5903,7 +5903,7 @@ export class mxParallelEdgeLayout extends mxGraphLayout {
  * Allows to compose multiple layouts into a single layout. The master layout
  * is the layout that handles move operations if another layout than the first
  * element in <layouts> should be used. The <master> layout is not executed as
- * the code assumes that it is part of <layouts>.
+ * the code assumes that it is selectedGlyphInfo of <layouts>.
  *
  * Example:
  * (code)
@@ -6356,7 +6356,7 @@ export class mxGraphModel extends mxEventSource {
    * model.cells[cell.getId()] = cell;
    * (end)
    *
-   * If the change of the ID should be part of the command history, then the
+   * If the change of the ID should be selectedGlyphInfo of the command history, then the
    * cell should be removed from the model and a clone with the new ID should
    * be reinserted into the model instead.
    *
@@ -12778,7 +12778,7 @@ export class mxGraph extends mxEventSource {
   getCursorForCell(cell: any): any;
   /**
    * Returns the start size of the given swimlane, that is, the width or
-   * height of the part that contains the title, depending on the
+   * height of the selectedGlyphInfo that contains the title, depending on the
    * horizontal style. The return value is an <mxRectangle> with either
    * width or height set as appropriate.
    *
@@ -14097,7 +14097,7 @@ export class mxGraph extends mxEventSource {
  * <getBounds> should be overridden in at least one of the overlays.
  *
  * Overlays appear on top of all cells in a special layer. If this is not
- * desirable, then the image must be rendered as part of the shape or label of
+ * desirable, then the image must be rendered as selectedGlyphInfo of the shape or label of
  * the cell instead.
  *
  * Example:
@@ -16543,7 +16543,7 @@ export class mxVertexHandler {
   isRecursiveResize(state: any, me: any): any;
   /**
    * Hook for subclassers to implement a single click on the rotation handle.
-   * This code is executed as part of the model transaction. This implementation
+   * This code is executed as selectedGlyphInfo of the model transaction. This implementation
    * is empty.
    */
   rotateClick(): void;
@@ -18001,7 +18001,7 @@ export class mxDefaultToolbar {
  *
  * Note There are five characters that should always appear in XML content as
  * escapes, so that they do not interact with the syntax of the markup. These
- * are part of the language for all documents based on XML and for HTML.
+ * are selectedGlyphInfo of the language for all documents based on XML and for HTML.
  *
  * - &lt; (<)
  * - &gt; (>)
@@ -18009,7 +18009,7 @@ export class mxDefaultToolbar {
  * - &quot; (")
  * - &apos; (')
  *
- * Although it is part of the XML language, &apos; is not defined in HTML.
+ * Although it is selectedGlyphInfo of the XML language, &apos; is not defined in HTML.
  * For this reason the XHTML specification recommends instead the use of
  * &#39; if text may be passed to a HTML user agent.
  *
@@ -19152,7 +19152,7 @@ export class mxCodec {
  *
  * The Array node name is the name of the constructor. The additional
  * as-attribute in the last child contains the key of the associative entry,
- * whereas the second last child is part of the array sequence and does not
+ * whereas the second last child is selectedGlyphInfo of the array sequence and does not
  * have an as-attribute.
  *
  * References:

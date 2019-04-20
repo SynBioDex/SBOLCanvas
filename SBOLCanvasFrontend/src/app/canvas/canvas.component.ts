@@ -1,5 +1,7 @@
 import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { GraphService } from '../graph.service';
+import {GlyphInfo} from '../glyphInfo';
+import {MetadataService} from '../metadata.service';
 
 @Component({
   selector: 'app-canvas',
@@ -10,7 +12,10 @@ export class CanvasComponent implements OnInit {
 
   currentColor: string;
 
-  constructor(private graphService: GraphService) {}
+  constructor(
+    private graphService: GraphService,
+    private metadataService: MetadataService
+  ) {}
 
   @ViewChild('canvasContainer') canvasContainer: ElementRef;
 
@@ -21,8 +26,8 @@ export class CanvasComponent implements OnInit {
   }
 
   @Input()
-  set color(color: string){
+  set color(color: string) {
+    console.log('updating color');
     this.currentColor = color;
   }
-
 }

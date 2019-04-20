@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
+import {GlyphInfo} from '../glyphInfo';
 
 @Component({
   selector: 'app-home',
@@ -11,13 +12,23 @@ export class HomeComponent implements OnInit {
   rightBarOpened = true;
   leftBarOpened = true;
 
+  /*public curGlyphInfo: GlyphInfo = {
+    name: 'the selectedGlyphInfo',
+    description: 'the description'
+  };*/
+
   constructor() { }
 
   ngOnInit() {
   }
 
-  onColorChanged(color: string){
+  /*onColorChanged(color: string) {
     this.currentColor = color;
-  }
+  }*/
+
+  /*onGlyphInfoChanged(part: GlyphInfo) {
+    this.curGlyphInfo = part;
+    console.log(this.curGlyphInfo);
+  }*/
 
 }

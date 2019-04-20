@@ -12,7 +12,7 @@ import { InfoEditorComponent } from './info-editor/info-editor.component';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
 
-// ng-bootstrap stuff.
+// ng-bootstrap stuff. Not currently in use.
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 import {SidebarModule} from 'ng-sidebar';
 

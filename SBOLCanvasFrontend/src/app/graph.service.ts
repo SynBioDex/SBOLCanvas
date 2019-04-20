@@ -1,7 +1,10 @@
-import {Injectable} from '@angular/core';
+import {Inject, Injectable, PLATFORM_ID} from '@angular/core';
 import * as mxEditor from 'mxgraph';
 import * as mxGraph from 'mxgraph';
 import * as mxDragSource from 'mxgraph';
+import {GlyphInfo} from './glyphInfo';
+import {MetadataService} from './metadata.service';
+import {isPlatformBrowser} from '@angular/common';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -27,7 +30,7 @@ export class GraphService {
 
   baseGlyphStyle;
 
-  constructor() {
+  constructor(private metadataService: MetadataService) {
 
     this.graphContainer = document.createElement('div');
     this.graphContainer.id = 'graphContainer';
@@ -61,6 +64,9 @@ export class GraphService {
     this.graph.isCellFoldable = function(cell) {
       return false;
     };
+
+    // Add event listeners to the graph. NOTE: MUST USE THE '=>' WAY FOR THIS TO WORK.
+    this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
 
     // Ports are not used as terminals for edges, they are
     // only used to compute the graphical connection point
@@ -141,6 +147,56 @@ export class GraphService {
     ds.isGridEnabled = function() {
       return this.graph.graphHandler.guidesEnabled;
     };
+  }
+
+  /**
+   * Find the selected cell, and if there is a cell selected, update its color.
+   */
+  updateSelectedCellColor(color: string) {
+    var selectedCell = this.graph.getSelectionCell();
+
+    if (selectedCell != null) {
+      // console.log(selectedCell);
+      // TODO: decide how you want to save this data in the cell.
+    }
+  }
+
+  /**
+   * Find the selected cell, and it there is a glyph selected, update its metadata.
+   */
+  updateSelectedCellInfo(glyphInfo: GlyphInfo) {
+    var selectedCell = this.graph.getSelectionCell();
+
+    if (selectedCell != null) {
+      // console.log(selectedCell);
+      // TODO: decide how you want to save this data in the cell.
+    }
+  }
+
+  /**
+   * Handles a click event in the graph.
+   * @param sender
+   * @param event
+   */
+  handleClickEvent(sender, event) {
+    var cell = event.getProperty('cell');
+
+    if (cell != null) {
+      console.log('cell clicked :');
+      console.log(cell);
+
+      // TODO: Pull data (glyph info, color, etc.) out of cell and pass it to the Metadata service.
+
+      // Example GlyphInfo
+      const glyphInfo = new GlyphInfo();
+      glyphInfo.name = 'clicked glyph name';
+      glyphInfo.description = 'clicked glyph description';
+      this.metadataService.setSelectedGlyphInfo(glyphInfo);
+
+      // Example Color
+      const color = '#123456';
+      this.metadataService.setColor(color);
+    }
   }
 
   // noinspection JSUnusedGlobalSymbols

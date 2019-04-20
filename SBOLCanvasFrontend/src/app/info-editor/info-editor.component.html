@@ -1,25 +1,25 @@
 
 
-<div *ngIf="part" class="info-menu-container">
+<div *ngIf="glyphInfo" class="info-menu-container">
   <!--<div class="info-menu-container">-->
 
     <mat-form-field>
-      <mat-select placeholder="Part Type">
+      <mat-select placeholder="GlyphInfo Type">
         <!-- TODO: Add all the possible types here. This will require a service. -->
         <mat-option value="option">Option</mat-option>
       </mat-select>
     </mat-form-field>
 
     <mat-form-field>
-      <input matInput placeholder="Display ID">
+      <input matInput id="displayID" placeholder="Display ID" value="{{ glyphInfo.name }}">
     </mat-form-field>
 
     <mat-form-field>
-      <input matInput placeholder="Name">
+      <input matInput id="name" placeholder="Name" value="{{ glyphInfo.name }}" (input)="onChange($event)">
     </mat-form-field>
 
     <mat-form-field>
-      <textarea matInput placeholder="Description"></textarea>
+      <textarea matInput id="description" placeholder="Description" value="{{ glyphInfo.description }}"></textarea>
     </mat-form-field>
 </div>
 

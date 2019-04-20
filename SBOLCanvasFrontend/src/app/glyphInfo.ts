@@ -1,4 +1,4 @@
-export class Part {
+export class GlyphInfo {
   name: string;
   description: string;
 }
