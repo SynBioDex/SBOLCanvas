@@ -57,7 +57,7 @@ export class InfoEditorComponent implements OnInit {
    */
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
-    //console.log('updating info in graph to : ');
+    console.log('updating info in graph to : ');
     //console.log(glyphInfo);
     this.graphService.updateSelectedCellInfo(glyphInfo);
   }

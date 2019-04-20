@@ -168,7 +168,7 @@ export class GraphService {
     var selectedCell = this.graph.getSelectionCell();
 
     if (selectedCell != null) {
-      // console.log(selectedCell);
+      console.log(selectedCell);
       // TODO: decide how you want to save this data in the cell.
     }
   }

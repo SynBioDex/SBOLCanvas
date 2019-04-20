@@ -13,7 +13,6 @@ export class ColorPaletteComponent implements OnInit {
 
   @Output() colorChanged = new EventEmitter<string>();
   selectedColor: string;
-  color: string;
   form: FormGroup;
 
   usedStart: string[] = [
@@ -97,7 +96,7 @@ export class ColorPaletteComponent implements OnInit {
 
   ngOnInit() {
     this.form = this.formBuilder.group({
-      color: ['#000000', Validators.required],
+      selectedColor: ['#000000', Validators.required],
     });
 
     // Subscribe to the color metadata
@@ -112,11 +111,12 @@ export class ColorPaletteComponent implements OnInit {
     console.log(value, valid);
   }
 
-  showColor($event){
+  showColor($event) {
     this.metadataService.setColor($event);
   }
 
   colorUpdated(color: string) {
+    console.log('changing color in picker');
     this.selectedColor = color;
 
     // Update the graph as well.

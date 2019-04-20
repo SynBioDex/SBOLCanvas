@@ -1,4 +1,4 @@
-<mcc-color-picker usedSizeColors="15" class="mcc-cp-small" [hideButtons] = "true" [overlay]="false" [usedColorLabel]="'My Colors'" (change)="showColor($event)">
+<mcc-color-picker usedSizeColors="15" class="mcc-cp-small" [selectedColor]="selectedColor" [hideButtons] = "true" [overlay]="false" [usedColorLabel]="'My Colors'" (change)="showColor($event)">
 
   <mcc-color-picker-collection [colors]="colors"></mcc-color-picker-collection>
 
