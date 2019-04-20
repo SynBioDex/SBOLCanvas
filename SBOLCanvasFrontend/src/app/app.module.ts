@@ -11,6 +11,7 @@ import { ColorPaletteComponent } from './color-palette/color-palette.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
+import { HttpClientModule } from '@angular/common/http';
 
 // ng-bootstrap stuff. Not currently in use.
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
@@ -61,6 +62,7 @@ import {MetadataService} from './metadata.service';
     MatSelectModule,
     MatInputModule,
     MatListModule,
+    HttpClientModule,
     MccColorPickerModule.forRoot({
       used_colors: ['#000000', '#123456', '#777666']
     }),
