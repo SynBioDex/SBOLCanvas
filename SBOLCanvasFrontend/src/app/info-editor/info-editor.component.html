@@ -3,23 +3,23 @@
 <div *ngIf="glyphInfo" class="info-menu-container">
   <!--<div class="info-menu-container">-->
 
-    <mat-form-field>
+    <!--<mat-form-field>
       <mat-select placeholder="GlyphInfo Type">
-        <!-- TODO: Add all the possible types here. This will require a service. -->
+        &lt;!&ndash; TODO: Add all the possible types here. This will require a service. &ndash;&gt;
         <mat-option value="option">Option</mat-option>
       </mat-select>
     </mat-form-field>
 
     <mat-form-field>
       <input matInput id="displayID" placeholder="Display ID" value="{{ glyphInfo.name }}">
-    </mat-form-field>
+    </mat-form-field>-->
 
     <mat-form-field>
       <input matInput id="name" placeholder="Name" value="{{ glyphInfo.name }}" (input)="onChange($event)">
     </mat-form-field>
 
     <mat-form-field>
-      <textarea matInput id="description" placeholder="Description" value="{{ glyphInfo.description }}"></textarea>
+      <textarea matInput id="description" placeholder="Description" value="{{ glyphInfo.description }}" (input)="onChange($event)"></textarea>
     </mat-form-field>
 </div>
 

@@ -1,3 +1,27 @@
 /* You can add global styles to this file, and also import other style files */
 @import "~@angular/material/prebuilt-themes/indigo-pink.css";
 @import '~@angular/material/theming';
+
+// App root
+app-root {
+  height: 100vh;
+  padding: 0px;
+  margin: 0px;
+}
+
+// Home component selector
+app-sbol-canvas {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+mat-sidenav-container {
+  overflow: auto;
+  flex-grow: 1;
+}
+
+// For some reason the body styling is adding margin...
+body {
+  margin: 0px;
+}

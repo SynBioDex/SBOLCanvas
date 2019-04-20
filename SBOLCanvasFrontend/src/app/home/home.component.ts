@@ -2,7 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {GlyphInfo} from '../glyphInfo';
 
 @Component({
-  selector: 'app-home',
+  selector: 'app-sbol-canvas',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })

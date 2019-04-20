@@ -2,6 +2,7 @@ import {Inject, Injectable, PLATFORM_ID} from '@angular/core';
 import * as mxEditor from 'mxgraph';
 import * as mxGraph from 'mxgraph';
 import * as mxDragSource from 'mxgraph';
+import * as mxCell from 'mxgraph';
 import {GlyphInfo} from './glyphInfo';
 import {MetadataService} from './metadata.service';
 import {isPlatformBrowser} from '@angular/common';
@@ -131,11 +132,11 @@ export class GraphService {
         glyphCell.setConnectable(false);
         glyphCell.data = new GlyphInfo();
 
-        const leftPort = graph.insertVertex(glyphCell, null, '', 1, .5, portWidth, portWidth);
+        const leftPort = graph.insertVertex(glyphCell, null, '', 1, .5, portWidth, portWidth, "fillColor=#ffffff;");
         leftPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
         leftPort.geometry.relative = true;
 
-        const rightPort = graph.insertVertex(glyphCell, null, '', 0, .5, portWidth, portWidth);
+        const rightPort = graph.insertVertex(glyphCell, null, '', 0, .5, portWidth, portWidth, "fillColor=#ffffff;");
         rightPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
         rightPort.geometry.relative = true;
 
@@ -154,11 +155,13 @@ export class GraphService {
    * Find the selected cell, and if there is a cell selected, update its color.
    */
   updateSelectedCellColor(color: string) {
-    var selectedCell = this.graph.getSelectionCell();
+    const selectedCell = this.graph.getSelectionCell();
 
     if (selectedCell != null) {
+      const cellGroup = this.getCellColorGroup(selectedCell);
+
       this.graph.getModel().beginUpdate();
-      this.graph.setCellStyles(mx.mxConstants.STYLE_FILLCOLOR, color, [selectedCell]);
+      this.graph.setCellStyles(mx.mxConstants.STYLE_FILLCOLOR, color, cellGroup);
       this.graph.getModel().endUpdate();
     }
   }
@@ -167,10 +170,10 @@ export class GraphService {
    * Find the selected cell, and it there is a glyph selected, update its metadata.
    */
   updateSelectedCellInfo(glyphInfo: GlyphInfo) {
-    var selectedCell = this.graph.getSelectionCell();
+    const selectedCell = this.graph.getSelectionCell();
 
-    if (selectedCell != null) {
-      selectedCell.data = glyphInfo;
+    if (selectedCell != null && selectedCell.isVertex()) {
+      this.getCellData(selectedCell).copyDataFrom(glyphInfo);
     }
   }
 
@@ -180,20 +183,53 @@ export class GraphService {
    * @param event
    */
   handleClickEvent(sender, event) {
-    var cell = event.getProperty('cell');
+    const cell = event.getProperty('cell');
 
-    if (cell != null) {
-      console.log('cell clicked :');
-      //console.log(cell);
+    if (cell != null && cell.isVertex()) {
 
-      // Example GlyphInfo
-      const glyphInfo = cell.data;
-      this.metadataService.setSelectedGlyphInfo(glyphInfo);
+      const glyphInfo = this.getCellData(cell);
+      this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
 
-      // Example Color
       const color = this.graph.getCellStyle(cell)['fillColor'];
       this.metadataService.setColor(color);
     }
+  }
+
+  /**
+   * Returns the GlyphInfo associated with the given cell
+   * cell must be a vertex, not an edge
+   */
+  getCellData(cell: mxCell) {
+    const defaultParent = this.graph.getDefaultParent();
+    if (cell.getParent() === defaultParent) {
+      return cell.data;
+    } else {
+      return cell.getParent().data;
+    }
+  }
+
+  /**
+   * Returns a list of cells that should be the same color as the given one
+   * ie, a glyph and its ports
+   */
+  getCellColorGroup(cell: mxCell) {
+    if (cell.isEdge()) {
+      return [cell];
+    }
+
+    let cells;
+
+    const defaultParent = this.graph.getDefaultParent();
+    if (cell.getParent() === defaultParent) {
+      cells = [cell];
+      for (const c of cell.children) {
+        cells.push(c);
+      }
+    } else {
+      cells = this.getCellColorGroup(cell.getParent());
+    }
+
+    return cells;
   }
 
   // noinspection JSUnusedGlobalSymbols

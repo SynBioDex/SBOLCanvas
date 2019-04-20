@@ -14,12 +14,6 @@ import {GraphService} from '../graph.service';
 export class InfoEditorComponent implements OnInit {
 
   glyphInfo: GlyphInfo;
-  // @Output() glyphInfoChange = new EventEmitter();
-
-  /*public glyphInfo: GlyphInfo = {
-    name: 'the selectedGlyphInfo',
-    description: 'the description'
-  };*/
 
   constructor(private graphService: GraphService, private metadataService: MetadataService) { }
 
@@ -39,6 +33,7 @@ export class InfoEditorComponent implements OnInit {
         break;
       }
       case 'description': {
+        this.glyphInfo.description = event.target.value;
         break;
       }
       default: {
@@ -58,7 +53,7 @@ export class InfoEditorComponent implements OnInit {
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
     console.log('updating info in graph to : ');
-    //console.log(glyphInfo);
+    // console.log(glyphInfo);
     this.graphService.updateSelectedCellInfo(glyphInfo);
   }
 
