@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, OnInit } from '@angular/core';
+import {Component, EventEmitter, Output, OnInit} from '@angular/core';
 import { MccColorPickerItem, MccColorPickerService } from 'material-community-components';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {MetadataService} from '../metadata.service';
@@ -96,12 +96,12 @@ export class ColorPaletteComponent implements OnInit {
 
   ngOnInit() {
     this.form = this.formBuilder.group({
-      selectedColor: ['#000000', Validators.required],
+      selectedColor: null,
     });
 
 
     // Subscribe to the color metadata
-    this.metadataService.color.subscribe(color => this.colorUpdated(color));
+    this.metadataService.color.subscribe(color => this.newSelection(color));
   }
 
   reset(): void {
@@ -113,14 +113,12 @@ export class ColorPaletteComponent implements OnInit {
   }
 
   showColor($event) {
-    this.metadataService.setColor($event);
+    this.graphService.updateSelectedCellColor($event);
   }
 
-  colorUpdated(color: string) {
+  newSelection(color: string) {
+    this.selectedColor = null;
     this.selectedColor = color;
-
-    // Update the graph as well.
-    this.graphService.updateSelectedCellColor(this.selectedColor);
   }
 
 }

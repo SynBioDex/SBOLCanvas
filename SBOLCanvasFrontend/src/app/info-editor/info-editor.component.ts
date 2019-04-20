@@ -25,9 +25,6 @@ export class InfoEditorComponent implements OnInit {
     const id = event.target.id;
 
     switch (id) {
-      case 'displayID': {
-        break;
-      }
       case 'name': {
         this.glyphInfo.name = event.target.value;
         break;
@@ -41,9 +38,8 @@ export class InfoEditorComponent implements OnInit {
         break;
       }
     }
-    // this.glyphInfoChange.emit(this.glyphInfo);
 
-    this.metadataService.setSelectedGlyphInfo(this.glyphInfo);
+    this.graphService.updateSelectedCellInfo(this.glyphInfo);
   }
 
   /**
@@ -52,9 +48,6 @@ export class InfoEditorComponent implements OnInit {
    */
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
-    console.log('updating info in graph to : ');
-    // console.log(glyphInfo);
-    this.graphService.updateSelectedCellInfo(glyphInfo);
   }
 
 }

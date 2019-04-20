@@ -10,11 +10,8 @@ import {MetadataService} from '../metadata.service';
 })
 export class CanvasComponent implements OnInit {
 
-  currentColor: string;
-
   constructor(
-    private graphService: GraphService,
-    private metadataService: MetadataService
+    private graphService: GraphService
   ) {}
 
   @ViewChild('canvasContainer') canvasContainer: ElementRef;
@@ -23,11 +20,5 @@ export class CanvasComponent implements OnInit {
     const canvasContainer = this.canvasContainer.nativeElement;
     const graphContainer = this.graphService.getGraphDOM();
     canvasContainer.appendChild(graphContainer);
-  }
-
-  @Input()
-  set color(color: string) {
-    console.log('updating color');
-    this.currentColor = color;
   }
 }

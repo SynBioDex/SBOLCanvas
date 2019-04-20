@@ -12,7 +12,7 @@ export class MetadataService {
   selectedGlyphInfo = this.glyphInfoSource.asObservable();
 
   // Color Info
-  private colorSource = new BehaviorSubject('#000000');
+  private colorSource = new BehaviorSubject(null);
   color = this.colorSource.asObservable();
 
   // TODO: DNA strand info
