@@ -117,7 +117,6 @@ export class ColorPaletteComponent implements OnInit {
   }
 
   colorUpdated(color: string) {
-    console.log('changing color in picker');
     this.selectedColor = color;
 
     // Update the graph as well.
