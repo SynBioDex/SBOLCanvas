@@ -127,8 +127,9 @@ export class GraphService {
 
       graph.getModel().beginUpdate();
       try {
-        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName);
+        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName+";fillColor=#ffffff;");
         glyphCell.setConnectable(false);
+        glyphCell.data = new GlyphInfo();
 
         const leftPort = graph.insertVertex(glyphCell, null, '', 1, .5, portWidth, portWidth);
         leftPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
@@ -156,7 +157,9 @@ export class GraphService {
     var selectedCell = this.graph.getSelectionCell();
 
     if (selectedCell != null) {
-      // console.log(selectedCell);
+      this.graph.getModel().beginUpdate();
+      this.graph.setCellStyles(mx.mxConstants.STYLE_FILLCOLOR, color, [selectedCell]);
+      this.graph.getModel().endUpdate();
       // TODO: decide how you want to save this data in the cell.
     }
   }
@@ -168,6 +171,7 @@ export class GraphService {
     var selectedCell = this.graph.getSelectionCell();
 
     if (selectedCell != null) {
+      selectedCell.data = glyphInfo;
       // console.log(selectedCell);
       // TODO: decide how you want to save this data in the cell.
     }
@@ -183,18 +187,18 @@ export class GraphService {
 
     if (cell != null) {
       console.log('cell clicked :');
-      console.log(cell);
+      //console.log(cell);
 
       // TODO: Pull data (glyph info, color, etc.) out of cell and pass it to the Metadata service.
 
       // Example GlyphInfo
-      const glyphInfo = new GlyphInfo();
-      glyphInfo.name = 'clicked glyph name';
-      glyphInfo.description = 'clicked glyph description';
+      const glyphInfo = cell.data;
+      //glyphInfo.name = 'clicked glyph name';
+      //glyphInfo.description = 'clicked glyph description';
       this.metadataService.setSelectedGlyphInfo(glyphInfo);
 
       // Example Color
-      const color = '#123456';
+      const color = this.graph.getCellStyle(cell)['fillColor'];
       this.metadataService.setColor(color);
     }
   }
