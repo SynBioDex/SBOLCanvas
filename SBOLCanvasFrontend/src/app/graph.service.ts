@@ -160,7 +160,6 @@ export class GraphService {
       this.graph.getModel().beginUpdate();
       this.graph.setCellStyles(mx.mxConstants.STYLE_FILLCOLOR, color, [selectedCell]);
       this.graph.getModel().endUpdate();
-      // TODO: decide how you want to save this data in the cell.
     }
   }
 
@@ -172,8 +171,6 @@ export class GraphService {
 
     if (selectedCell != null) {
       selectedCell.data = glyphInfo;
-      // console.log(selectedCell);
-      // TODO: decide how you want to save this data in the cell.
     }
   }
 
@@ -189,12 +186,8 @@ export class GraphService {
       console.log('cell clicked :');
       //console.log(cell);
 
-      // TODO: Pull data (glyph info, color, etc.) out of cell and pass it to the Metadata service.
-
       // Example GlyphInfo
       const glyphInfo = cell.data;
-      //glyphInfo.name = 'clicked glyph name';
-      //glyphInfo.description = 'clicked glyph description';
       this.metadataService.setSelectedGlyphInfo(glyphInfo);
 
       // Example Color
