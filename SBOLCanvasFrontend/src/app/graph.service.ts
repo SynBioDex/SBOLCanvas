@@ -291,7 +291,8 @@ export class GraphService {
         if (elt.attributes.getNamedItem('parent').value != 1) {
           // ports
           parent = vertecies.get(elt.attributes.getNamedItem('parent').value);
-          const port = this.graph.insertVertex(parent, null, '', x / 1, y / 1, width / 1, height / 1);
+          var style = elt.attributes.getNamedItem('style').value;
+          const port = this.graph.insertVertex(parent, null, '', x / 1, y / 1, width / 1, height / 1, style);
           var point = geo.firstChild;
           x = point.attributes.getNamedItem('x').value;
           y = point.attributes.getNamedItem('y').value;
