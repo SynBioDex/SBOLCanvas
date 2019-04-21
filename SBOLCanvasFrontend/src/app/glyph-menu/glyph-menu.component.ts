@@ -6,7 +6,7 @@ import {GraphService} from '../graph.service';
   templateUrl: './glyph-menu.component.html',
   styleUrls: ['./glyph-menu.component.css']
 })
-export class GlyphMenuComponent implements OnInit, AfterViewInit{
+export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
   @ViewChildren('glyphElement') glyphElements: QueryList<ElementRef>;
 
@@ -58,7 +58,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit{
 
   ngAfterViewInit() {
     for (const element of this.glyphElements.toArray()) {
-      this.graphService.makeElementDraggable(element.nativeElement);
+      this.graphService.useAsGlyphDragsource(element.nativeElement);
     }
   }
 

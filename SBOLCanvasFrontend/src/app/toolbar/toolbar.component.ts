@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {FilesService} from '../files.service';
 import {MatDialog} from '@angular/material';
@@ -43,6 +43,8 @@ export class ToolbarComponent implements OnInit {
     'serverFile16.xml'
   ]
 
+  @ViewChild('textDragSource') textDragSource: ElementRef;
+
   constructor(private graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) {}
 
   ngOnInit() {
@@ -60,6 +62,10 @@ export class ToolbarComponent implements OnInit {
 
   delete() {
     this.graphService.delete();
+  }
+
+  addTextBox() {
+    this.graphService.addTextBox();
   }
 
   openSaveDialog(): void {

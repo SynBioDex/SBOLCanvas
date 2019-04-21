@@ -13,9 +13,12 @@ const mx = require('mxgraph')({
   mxBasePath: 'mxgraph'
 });
 
-// Constants (there is no doubt a better way to do this
+// Constants (there is no doubt a better way to do this)
 const glyphWidth = 52;
 const glyphHeight = 104;
+
+const defaultTextWidth = 120;
+const defaultTextHeight = 80;
 
 const portWidth = 10;
 
@@ -28,6 +31,7 @@ export class GraphService {
   editor: mxEditor;
   graphContainer: HTMLElement;
   glyphDragPreviewElt: HTMLElement;
+  textBoxDragPreviewElt: HTMLElement;
 
   baseGlyphStyle;
 
@@ -83,14 +87,24 @@ export class GraphService {
     this.glyphDragPreviewElt.style.width = glyphWidth + 'px';
     this.glyphDragPreviewElt.style.height = glyphHeight + 'px';
 
+    this.textBoxDragPreviewElt = document.createElement('div');
+    this.textBoxDragPreviewElt.style.border = 'dashed black 1px';
+    this.textBoxDragPreviewElt.style.width = defaultTextWidth + 'px';
+    this.textBoxDragPreviewElt.style.height = defaultTextHeight + 'px';
+
     this.baseGlyphStyle = {};
     this.baseGlyphStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#FFFFFF';
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = mx.mxConstants.ALIGN_CENTER;
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = mx.mxConstants.ALIGN_TOP;
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(glyphWidth);
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(glyphHeight);
     this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
+
+    const textBoxStyle = {};
+    textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
+    textBoxStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(defaultTextWidth);
+    textBoxStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(defaultTextHeight);
+    this.graph.getStylesheet().putCellStyle('textBox', textBoxStyle);
 
     const style = this.graph.getStylesheet().getDefaultEdgeStyle();
     style[mx.mxConstants.STYLE_ROUNDED] = true;
@@ -112,9 +126,9 @@ export class GraphService {
   }
 
   /**
-   * Makes the given element draggable in mxGraph
+   * Makes the given element a drag source for putting glyphs on the graph
    */
-  makeElementDraggable(element) {
+  useAsGlyphDragsource(element) {
     element.width = glyphWidth;
     element.height = glyphHeight;
 
@@ -123,7 +137,7 @@ export class GraphService {
     const styleName = 'cellStyle:' + element.src;
     this.graph.getStylesheet().putCellStyle(styleName, newGlyphStyle);
 
-    const insertGlyph = function(graph, evt, target, x, y) {
+    const insertGlyph = (graph, evt, target, x, y) => {
       // When executed, 'this' is the dragSource, not the graphService
 
       graph.getModel().beginUpdate();
@@ -152,6 +166,19 @@ export class GraphService {
   }
 
   /**
+   * Makes the given element a drag source for putting glyphs on the graph
+   */
+  addTextBox() {
+    this.graph.getModel().beginUpdate();
+    try {
+      const glyphCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', 0, 0, defaultTextWidth, defaultTextHeight, 'textBox' + ';fillColor=#ffffff;');
+      glyphCell.setConnectable(false);
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
+  }
+
+  /**
    * Find the selected cell, and if there is a cell selected, update its color.
    */
   updateSelectedCellColor(color: string) {
@@ -173,7 +200,11 @@ export class GraphService {
     const selectedCell = this.graph.getSelectionCell();
 
     if (selectedCell != null && selectedCell.isVertex()) {
-      this.getCellData(selectedCell).copyDataFrom(glyphInfo);
+      const cellData = this.getCellData(selectedCell);
+      if (cellData != null) {
+        // cellData is null if selectedCell is a textbox
+        cellData.copyDataFrom(glyphInfo);
+      }
     }
   }
 
@@ -190,14 +221,21 @@ export class GraphService {
       this.metadataService.setSelectedGlyphInfo(null);
       return;
     }
-
     // Eventually we'll want to allow recoloring edges too
 
+    // this is the same for ports, glyphs and text boxes
     const color = this.graph.getCellStyle(cell)['fillColor'];
     this.metadataService.setColor(color);
 
-    const glyphInfo = this.getCellData(cell);
-    this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
+    if (this.getCellData(cell) == null) {
+      // text box
+      this.metadataService.setSelectedGlyphInfo(null);
+    } else {
+      // port or glyph
+      const glyphInfo = this.getCellData(cell);
+      this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
+    }
+
   }
 
   /**
@@ -225,13 +263,18 @@ export class GraphService {
     let cells;
 
     const defaultParent = this.graph.getDefaultParent();
-    if (cell.getParent() === defaultParent) {
+    if (cell.getParent() !== defaultParent) {
+      // port
+      cells = this.getCellColorGroup(cell.getParent());
+    } else if (this.getCellData(cell) == null) {
+      // text
+      cells = [cell];
+    } else {
+      // glyph
       cells = [cell];
       for (const c of cell.children) {
         cells.push(c);
       }
-    } else {
-      cells = this.getCellColorGroup(cell.getParent());
     }
 
     return cells;
@@ -283,7 +326,10 @@ export class GraphService {
         if (geo.attributes.getNamedItem('x') != null) {
           x = <number> geo.attributes.getNamedItem('x').value;
         }
-        var y = geo.attributes.getNamedItem('y').value;
+        var y = 0.0
+        if (geo.attributes.getNamedItem('y') != null) {
+          y = geo.attributes.getNamedItem('y').value;
+        }
         var width = geo.attributes.getNamedItem('width').value;
         var height = geo.attributes.getNamedItem('height').value;
         var parent = this.graph.getDefaultParent();
@@ -306,10 +352,12 @@ export class GraphService {
           // meta data
           const glyphData = new GlyphInfo();
           var meta = geo.nextSibling;
-          for(var i = 0; i < meta.attributes.length; i++){
-            var attrib = meta.attributes[i];
-            if(attrib.specified == true && attrib.name != 'as'){
-              glyphData[attrib.name] = attrib.value;
+          if (meta != null) {
+            for (var i = 0; i < meta.attributes.length; i++) {
+              var attrib = meta.attributes[i];
+              if (attrib.specified == true && attrib.name != 'as') {
+                glyphData[attrib.name] = attrib.value;
+              }
             }
           }
           vertex.data = glyphData;
