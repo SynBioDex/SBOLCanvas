@@ -248,8 +248,7 @@ export class GraphService {
   graphToString(): string {
     var encoder = new mx.mxCodec();
     var result = encoder.encode(this.graph.getModel());
-    console.log(result);
-    console.log(this.graph.model);
+    //console.log(result);
     var xml = mx.mxUtils.getXml(result);
     return xml;
   }
