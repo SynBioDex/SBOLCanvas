@@ -25,7 +25,7 @@ public class Save extends HttpServlet {
 		}
 		filename += ".xml";
 		
-		File file = new File(filename);
+		File file = new File("/opt/tomcat/"+filename);
 		try {
 			file.createNewFile();
 			FileOutputStream fileOut = new FileOutputStream(file);

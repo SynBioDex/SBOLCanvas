@@ -22,7 +22,7 @@ import com.google.gson.Gson;
 public class ListFiles extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-		File dir = Paths.get(".").toFile();
+		File dir = Paths.get("/opt/tomcat/").toFile();
 		File[] files = dir.listFiles(new FilenameFilter() {
 
 			@Override
