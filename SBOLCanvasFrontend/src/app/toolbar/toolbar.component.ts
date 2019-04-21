@@ -15,16 +15,14 @@ export class ToolbarComponent implements OnInit {
   ngOnInit() {
   }
 
-
   save(){
-    this.filesService.save('filename', this.graphService.graphToString()).subscribe();
-    //this.lastGraph = this.graphService.graphToString();
-    //console.log(this.lastGraph);
+    // this.filesService.save('filename', this.graphService.graphToString()).subscribe();
+    this.lastGraph = this.graphService.graphToString();
   }
 
   load() {
-    this.filesService.load('filename').subscribe(graph => this.graphService.stringToGraph(graph));
-    //this.graphService.stringToGraph(this.lastGraph);
+    // this.filesService.load('filename').subscribe(graph => this.graphService.stringToGraph(graph));
+    this.graphService.stringToGraph(this.lastGraph);
   }
 
   delete() {

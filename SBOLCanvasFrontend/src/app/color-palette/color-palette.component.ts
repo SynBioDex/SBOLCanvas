@@ -11,8 +11,9 @@ import {GraphService} from '../graph.service';
 })
 export class ColorPaletteComponent implements OnInit {
 
-  // @Output() colorChanged = new EventEmitter<string>();
   selectedColor: string;
+  colorChooserToggle = false;
+
   form: FormGroup;
 
   usedStart: string[] = [
@@ -117,8 +118,8 @@ export class ColorPaletteComponent implements OnInit {
   }
 
   newSelection(color: string) {
-    this.selectedColor = null;
     this.selectedColor = color;
+    this.colorChooserToggle = !this.colorChooserToggle;
   }
 
 }
