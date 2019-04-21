@@ -1,7 +1,15 @@
-<mat-toolbar color="primary">
+<mat-toolbar color="primary"
+             style="background-image:url('assets/banner.png'); background-repeat:no-repeat; background-position:center; background-size:contain">
 
-  <button mat-button (click)="openSaveDialog()">save</button>
-  <button mat-button (click)="openLoadDialog()">load</button>
-  <button mat-button (click)="delete()">delete</button>
+  <!-- title -->
+  <mat-toolbar-row>
+    <!-- An empty row to make more space for the picture -->
+  </mat-toolbar-row>
 
+  <!-- menu -->
+  <mat-toolbar-row>
+    <button mat-button (click)="openSaveDialog()">save</button>
+    <button mat-button (click)="openLoadDialog()">load</button>
+    <button mat-button (click)="delete()">delete</button>
+  </mat-toolbar-row>
 </mat-toolbar>
