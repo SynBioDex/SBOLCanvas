@@ -373,7 +373,7 @@ export class GraphService {
         } else {
           geo = elt.firstChild.firstChild;
           var x = <number> geo.attributes.getNamedItem('x').value;
-          var y = geo.attributes.getNamedItem('y').value;
+          var y = <number> geo.attributes.getNamedItem('y').value;
           source = [x, y];
         }
         var target = null;
@@ -386,7 +386,7 @@ export class GraphService {
             geo = geo.nextSibling;
           }
           var x = <number> geo.attributes.getNamedItem('x').value;
-          var y = geo.attributes.getNamedItem('y').value;
+          var y = <number> geo.attributes.getNamedItem('y').value;
           target = [x, y];
         }
         edges.push([value, source, target, style]);
