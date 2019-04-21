@@ -13,27 +13,28 @@ import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule } from '@angular/common/http';
 
-// ng-bootstrap stuff. Not currently in use.
-import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
-import {SidebarModule} from 'ng-sidebar';
-
 // Angular Material stuff. This is a different UI library than ng-bootstrap.
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import {
+import { MaterialModule } from './material.module';
+/*import {
   MatButtonModule,
   MatCheckboxModule, MatGridListModule,
   MatInputModule,
   MatListModule,
   MatSelectModule,
   MatSidenavModule,
-  MatTabsModule, MatToolbarModule
-} from '@angular/material';
+  MatTabsModule,
+  MatToolbarModule,
+  MatDialogModule
+} from '@angular/material';*/
 
 import {GraphService} from './graph.service';
 
 // Color Picker imports.
 import {MccColorPickerModule} from 'material-community-components';
 import {MetadataService} from './metadata.service';
+import { SaveGraphComponent } from './save-graph/save-graph.component';
+import { LoadGraphComponent } from './load-graph/load-graph.component';
 
 // grid list import (for glyph menu)
 
@@ -46,32 +47,25 @@ import {MetadataService} from './metadata.service';
     ColorPaletteComponent,
     InfoEditorComponent,
     HomeComponent,
+    SaveGraphComponent,
+    LoadGraphComponent,
   ],
   imports: [
     BrowserModule,
     FormsModule,
-    NgbModule,
     AppRoutingModule,
-    SidebarModule.forRoot(),
     BrowserModule, // BrowserModule must come before all @angular/material modules for some reason.
     BrowserAnimationsModule,
-    MatButtonModule,
-    MatCheckboxModule,
-    MatSidenavModule,
-    MatTabsModule,
-    MatSelectModule,
-    MatInputModule,
-    MatListModule,
     HttpClientModule,
     MccColorPickerModule.forRoot({
       used_colors: ['#000000', '#123456', '#777666']
     }),
-    MatGridListModule,
     ReactiveFormsModule,
-    MatToolbarModule
+    MaterialModule
   ],
   providers: [GraphService, MetadataService],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent ]
 })
 export class AppModule {
 }
