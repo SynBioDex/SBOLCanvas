@@ -85,7 +85,8 @@ export class GraphService {
 
     this.baseGlyphStyle = {};
     this.baseGlyphStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#FFFFFF';
+    this.baseGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = true;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = mx.mxConstants.ALIGN_CENTER;
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = mx.mxConstants.ALIGN_TOP;
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(glyphWidth);
