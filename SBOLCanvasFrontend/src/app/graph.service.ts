@@ -304,6 +304,17 @@ export class GraphService {
           var style = elt.attributes.getNamedItem('style').value;
           const vertex = this.graph.insertVertex(parent, null, value, x / 1, y / 1, width / 1, height / 1, style);
           vertex.setConnectable(false);
+          // meta data
+          const glyphData = new GlyphInfo();
+          var meta = geo.nextSibling;
+          for(var i = 0; i < meta.attributes.length; i++){
+            var attrib = meta.attributes[i];
+            if(attrib.specified == true && attrib.name != 'as'){
+              glyphData[attrib.name] = attrib.value;
+            }
+          }
+          vertex.data = glyphData;
+
           vertecies.set(id, vertex);
         }
       } else if (elt.attributes.getNamedItem('edge') != null) {
