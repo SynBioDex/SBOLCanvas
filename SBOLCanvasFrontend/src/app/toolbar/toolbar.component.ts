@@ -83,7 +83,7 @@ export class ToolbarComponent implements OnInit {
   }
 
   openLoadDialog(): void {
-    const dialogRef = this.dialog.open(LoadGraphComponent, {
+    /*const dialogRef = this.dialog.open(LoadGraphComponent, {
       width: '250px',
       // TODO use the file.service to get the filenames and delete the array hardcoded for this.filesOnServer
       data: {filesOnServer: this.filesOnServer}
@@ -94,6 +94,18 @@ export class ToolbarComponent implements OnInit {
         this.load(result);
         // console.log(result);
       }
+    });*/
+
+    this.filesService.list().subscribe(list => {
+      const dialogRef = this.dialog.open(LoadGraphComponent, {
+        width: '250px', 
+        data: {filesOnServer: list}
+      });
+      dialogRef.afterClosed().subscribe(result => {
+        if(result != null) {
+          this.load(result);
+        }
+      });
     });
   }
 

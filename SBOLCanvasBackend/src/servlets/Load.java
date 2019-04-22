@@ -25,7 +25,7 @@ public class Load extends HttpServlet {
 		}
 		filename += ".xml";
 		
-		File file = new File(filename);
+		File file = new File("/opt/tomcat/"+filename);
 		try {
 			FileInputStream fileIn = new FileInputStream(file);
 			OutputStream bodyOut = response.getOutputStream();

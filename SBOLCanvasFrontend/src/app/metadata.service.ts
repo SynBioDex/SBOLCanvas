@@ -8,7 +8,7 @@ import { BehaviorSubject } from 'rxjs';
 export class MetadataService {
 
   // Glyph Info
-  private glyphInfoSource = new BehaviorSubject(new GlyphInfo());
+  private glyphInfoSource = new BehaviorSubject(null);
   selectedGlyphInfo = this.glyphInfoSource.asObservable();
 
   // Color Info
