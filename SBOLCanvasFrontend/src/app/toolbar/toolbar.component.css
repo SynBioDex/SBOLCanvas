@@ -1,0 +1,24 @@
+/* This sets the space between sets of buttons */
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+/* This sets the css for the buttons on the row */
+.toolbar-row-button {
+  margin-right: 8px;
+  margin-left: 8px;
+}
+
+/* There is a bug with vertical dividers in
+   toolbar rows so you have to manually fix
+   the styling for the divider.
+ */
+mat-divider.toolbar-divider-style-fix {
+  height: 40px;
+  margin-left: 8px;
+  margin-right: 8px;
+}
+
+.toolbar-row {
+  padding: 8px;
+}

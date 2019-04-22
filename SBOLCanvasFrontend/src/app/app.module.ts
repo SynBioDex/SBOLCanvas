@@ -35,8 +35,8 @@ import {MccColorPickerModule} from 'material-community-components';
 import {MetadataService} from './metadata.service';
 import { SaveGraphComponent } from './save-graph/save-graph.component';
 import { LoadGraphComponent } from './load-graph/load-graph.component';
+import { BannerComponent } from './banner/banner.component';
 
-// grid list import (for glyph menu)
 
 @NgModule({
   declarations: [
@@ -49,6 +49,7 @@ import { LoadGraphComponent } from './load-graph/load-graph.component';
     HomeComponent,
     SaveGraphComponent,
     LoadGraphComponent,
+    BannerComponent,
   ],
   imports: [
     BrowserModule,
