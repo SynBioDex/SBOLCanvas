@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  backendURL: 'http://localhost:8080/SBOLCanvasBackend'
+  backendURL: 'http://localhost:8080/api'
 };
 
 /*
