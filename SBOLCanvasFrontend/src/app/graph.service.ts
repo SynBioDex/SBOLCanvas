@@ -5,7 +5,6 @@ import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
 import {GlyphInfo} from './glyphInfo';
 import {MetadataService} from './metadata.service';
-import {isPlatformBrowser} from '@angular/common';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -48,6 +47,27 @@ export class GraphService {
     this.graphContainer.style.right = '0';
 
     mx.mxGraphHandler.prototype.guidesEnabled = true;
+
+    //stuff needed for decoding
+    window['mxGraphModel'] = mx.mxGraphModel;
+    window['mxGeometry'] = mx.mxGeometry;
+    window['mxPoint'] = mx.mxPoint;
+    var glyphInfoCodec = new mx.mxObjectCodec(new GlyphInfo());
+    glyphInfoCodec.decode = function(dec, node, into){
+      const glyphData = new GlyphInfo();
+      var meta = node;
+      if (meta != null) {
+        for (var i = 0; i < meta.attributes.length; i++) {
+          var attrib = meta.attributes[i];
+          if (attrib.specified == true && attrib.name != 'as') {
+            glyphData[attrib.name] = attrib.value;
+          }
+        }
+      }
+      return glyphData;
+    }
+    mx.mxCodecRegistry.register(glyphInfoCodec);
+    window['GlyphInfo'] = GlyphInfo;
 
     // mxEditor is kind of a parent to mxGraph
     // it's used mainly for 'actions', which for now means delete,
@@ -298,14 +318,15 @@ export class GraphService {
     return xml;
   }
 
-  oldStringToGraph(graphString: string) {
-    var doc = mx.mxUtils.parseXml(graphString);
-    var codec = new mx.mxCodec(doc);
+  stringToGraph(graphString: string) {
+    // Creates the graph inside the given container
     this.graph.getModel().clear();
+    let doc = mx.mxUtils.parseXml(graphString);
+    let codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
   }
 
-  stringToGraph(graphString: string) {
+  /*stringToGraph(graphString: string) {
     var doc = mx.mxUtils.parseXml(graphString);
     var codec = new mx.mxCodec(doc);
     this.graph.getModel().clear();
@@ -420,5 +441,5 @@ export class GraphService {
     }
     this.graph.getModel().endUpdate();
     this.graph.refresh();
-  }
+  }*/
 }
