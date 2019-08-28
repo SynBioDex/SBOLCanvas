@@ -1,4 +1,10 @@
-import {Inject, Injectable, PLATFORM_ID} from '@angular/core';
+/*
+ * GraphService
+ *
+ * This service handles interactions with the mxGraph library
+ */
+
+import {Injectable} from '@angular/core';
 import * as mxEditor from 'mxgraph';
 import * as mxGraph from 'mxgraph';
 import * as mxDragSource from 'mxgraph';
@@ -12,7 +18,7 @@ const mx = require('mxgraph')({
   mxBasePath: 'mxgraph'
 });
 
-// Constants (there is no doubt a better way to do this)
+// Constants
 const glyphWidth = 52;
 const glyphHeight = 104;
 
@@ -48,24 +54,24 @@ export class GraphService {
 
     mx.mxGraphHandler.prototype.guidesEnabled = true;
 
-    //stuff needed for decoding
+    // stuff needed for decoding
     window['mxGraphModel'] = mx.mxGraphModel;
     window['mxGeometry'] = mx.mxGeometry;
     window['mxPoint'] = mx.mxPoint;
-    var glyphInfoCodec = new mx.mxObjectCodec(new GlyphInfo());
-    glyphInfoCodec.decode = function(dec, node, into){
+    const glyphInfoCodec = new mx.mxObjectCodec(new GlyphInfo());
+    glyphInfoCodec.decode = function(dec, node, into) {
       const glyphData = new GlyphInfo();
-      var meta = node;
+      const meta = node;
       if (meta != null) {
-        for (var i = 0; i < meta.attributes.length; i++) {
-          var attrib = meta.attributes[i];
+        for (let i = 0; i < meta.attributes.length; i++) {
+          const attrib = meta.attributes[i];
           if (attrib.specified == true && attrib.name != 'as') {
             glyphData[attrib.name] = attrib.value;
           }
         }
       }
       return glyphData;
-    }
+    };
     mx.mxCodecRegistry.register(glyphInfoCodec);
     window['GlyphInfo'] = GlyphInfo;
 
@@ -182,8 +188,9 @@ export class GraphService {
     };
 
     const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, this.glyphDragPreviewElt);
+
     ds.isGridEnabled = function() {
-      return this.graph.graphHandler.guidesEnabled;
+      return this.currentGraph.graphHandler.guidesEnabled;
     };
   }
 
@@ -232,8 +239,6 @@ export class GraphService {
 
   /**
    * Handles a click event in the graph.
-   * @param sender
-   * @param event
    */
   handleClickEvent(sender, event) {
     const cell = event.getProperty('cell');
@@ -310,136 +315,24 @@ export class GraphService {
     return this.graph;
   }
 
+  /**
+   * Encodes the graph to a string (xml) representation
+   */
   graphToString(): string {
-    var encoder = new mx.mxCodec();
-    var result = encoder.encode(this.graph.getModel());
-    //console.log(result);
-    var xml = mx.mxUtils.getXml(result);
-    return xml;
+    const encoder = new mx.mxCodec();
+    const result = encoder.encode(this.graph.getModel());
+    return mx.mxUtils.getXml(result);
   }
 
+  /**
+   * Decodes the given string (xml) representation of a graph and uses it to replace the current graph
+   */
   stringToGraph(graphString: string) {
     // Creates the graph inside the given container
     this.graph.getModel().clear();
-    let doc = mx.mxUtils.parseXml(graphString);
-    let codec = new mx.mxCodec(doc);
+    const doc = mx.mxUtils.parseXml(graphString);
+    const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
   }
 
-  /*stringToGraph(graphString: string) {
-    var doc = mx.mxUtils.parseXml(graphString);
-    var codec = new mx.mxCodec(doc);
-    this.graph.getModel().clear();
-    //this.graph = new mx.mxGraph(this.graphContainer);
-    var elt = doc.documentElement.firstChild.firstChild;
-
-    this.graph.getModel().beginUpdate();
-    let vertecies = new Map<number, any>();
-    let edges = [];
-    while (elt != null) {
-      if (elt.attributes.getNamedItem('value') == null) {
-        elt = elt.nextSibling;
-        continue;
-      }
-      var id = elt.attributes.getNamedItem('id').value;
-      var value = elt.attributes.getNamedItem('value').value;
-      if (elt.attributes.getNamedItem('vertex') != null) {
-        var geo = elt.firstChild;
-        var x = 0.0;
-        if (geo.attributes.getNamedItem('x') != null) {
-          x = <number> geo.attributes.getNamedItem('x').value;
-        }
-        var y = 0.0
-        if (geo.attributes.getNamedItem('y') != null) {
-          y = geo.attributes.getNamedItem('y').value;
-        }
-        var width = geo.attributes.getNamedItem('width').value;
-        var height = geo.attributes.getNamedItem('height').value;
-        var parent = this.graph.getDefaultParent();
-        if (elt.attributes.getNamedItem('parent').value != 1) {
-          // ports
-          parent = vertecies.get(elt.attributes.getNamedItem('parent').value);
-          var style = elt.attributes.getNamedItem('style').value;
-          const port = this.graph.insertVertex(parent, null, '', x / 1, y / 1, width / 1, height / 1, style);
-          var point = geo.firstChild;
-          x = point.attributes.getNamedItem('x').value;
-          y = point.attributes.getNamedItem('y').value;
-          port.geometry.offset = new mx.mxPoint(x / 1, y / 1);
-          port.geometry.relative = true;
-
-          vertecies.set(id, port);
-        } else {
-          var style = elt.attributes.getNamedItem('style').value;
-          const vertex = this.graph.insertVertex(parent, null, value, x / 1, y / 1, width / 1, height / 1, style);
-          vertex.setConnectable(false);
-          // meta data
-          const glyphData = new GlyphInfo();
-          var meta = geo.nextSibling;
-          if (meta != null) {
-            for (var i = 0; i < meta.attributes.length; i++) {
-              var attrib = meta.attributes[i];
-              if (attrib.specified == true && attrib.name != 'as') {
-                glyphData[attrib.name] = attrib.value;
-              }
-            }
-          }
-          vertex.data = glyphData;
-
-          vertecies.set(id, vertex);
-        }
-      } else if (elt.attributes.getNamedItem('edge') != null) {
-        var style = elt.attributes.getNamedItem('style').value;
-        var geo = null;
-        var source = null;
-        if (elt.attributes.getNamedItem('source') != null) {
-          source = elt.attributes.getNamedItem('source').value;
-        } else {
-          geo = elt.firstChild.firstChild;
-          var x = <number> geo.attributes.getNamedItem('x').value;
-          var y = <number> geo.attributes.getNamedItem('y').value;
-          source = [x, y];
-        }
-        var target = null;
-        if (elt.attributes.getNamedItem('target') != null) {
-          target = elt.attributes.getNamedItem('target').value;
-        } else {
-          if (geo == null) {
-            geo = elt.firstChild.firstChild;
-          } else {
-            geo = geo.nextSibling;
-          }
-          var x = <number> geo.attributes.getNamedItem('x').value;
-          var y = <number> geo.attributes.getNamedItem('y').value;
-          target = [x, y];
-        }
-        edges.push([value, source, target, style]);
-      }
-      elt = elt.nextSibling;
-    }
-    // edges have to have their source and target set after all the vertecies have been read in
-    for (var i = 0; i < edges.length; i++) {
-      var source = null;
-      var target = null;
-      if (!(edges[i][1] instanceof Array)) {
-        source = vertecies.get(edges[i][1]);
-      }
-      if (!(edges[i][2] instanceof Array)) {
-        target = vertecies.get(edges[i][2]);
-      }
-      edges[i][3];
-      const edge = this.graph.insertEdge(this.graph.getDefaultParent(), null, edges[i][0], source, target, edges[i][3]);
-      // if you remove the /1's below the positioning of the edge scales up by 10
-      // we don't want any scaling, so there it shall stay
-      // this sure is fun
-      if (edges[i][1] instanceof Array) {
-        edge.geometry.setTerminalPoint(new mx.mxPoint(edges[i][1][0] / 1, edges[i][1][1] / 1), true);
-      }
-      if (edges[i][2] instanceof Array) {
-        edge.geometry.setTerminalPoint(new mx.mxPoint(edges[i][2][0] / 1, edges[i][2][1] / 1), false);
-      }
-      edge.relative = true;
-    }
-    this.graph.getModel().endUpdate();
-    this.graph.refresh();
-  }*/
 }

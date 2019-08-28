@@ -1,4 +1,10 @@
-import {Component, ElementRef, OnInit, QueryList, ViewChild, ViewChildren, AfterViewInit } from '@angular/core';
+/*
+ * GlyphMenu
+ *
+ * A tile-view list of glyphs the user can use to add components to the graph.
+ */
+
+import {Component, ElementRef, OnInit, QueryList, ViewChildren, AfterViewInit } from '@angular/core';
 import {GraphService} from '../graph.service';
 
 @Component({
