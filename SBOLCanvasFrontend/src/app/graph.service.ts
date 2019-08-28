@@ -128,6 +128,8 @@ export class GraphService {
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(glyphHeight);
     this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
 
+    
+
     const textBoxStyle = {};
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
     textBoxStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(defaultTextWidth);
@@ -139,25 +141,33 @@ export class GraphService {
     style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
   }
 
-  addNewDNABackBone() {
+  addNewDNABackBone(element) {
 
-    this.graph.getModel().beginUpdate();
-    try {
-      const glyphCell = this.graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName + ';fillColor=#ffffff;');
-      glyphCell.setConnectable(false);
-      glyphCell.data = new GlyphInfo();
+    const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
+    newGlyphStyle[mx.mxConstants.STYLE_IMAGE] = element.src;
+    const styleName = 'cellStyle:' + element.src;
+    this.graph.getStylesheet().putCellStyle(styleName, newGlyphStyle);
 
-      const leftPort = this.graph.insertVertex(glyphCell, null, '', 1, .5, portWidth, portWidth, 'fillColor=#ffffff;');
-      leftPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
-      leftPort.geometry.relative = true;
+    const insertGlyph = (graph, evt, target, x, y) => {
+      // When executed, 'this' is the dragSource, not the graphService
 
-      const rightPort = this.graph.insertVertex(glyphCell, null, '', 0, .5, portWidth, portWidth, 'fillColor=#ffffff;');
-      rightPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
-      rightPort.geometry.relative = true;
+      graph.getModel().beginUpdate();
+      try {
 
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, 100, 5, styleName + ';fillColor=#ffffff;');
+        glyphCell.setConnectable(false);
+        glyphCell.data = new GlyphInfo();
+
+      } finally {
+        graph.getModel().endUpdate();
+      }
+    };
+
+    const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, this.glyphDragPreviewElt);
+
+    ds.isGridEnabled = function() {
+      return this.currentGraph.graphHandler.guidesEnabled;
+    };
   }
 
   /**
