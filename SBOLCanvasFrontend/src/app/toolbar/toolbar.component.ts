@@ -43,7 +43,7 @@ export class ToolbarComponent implements OnInit {
     'serverFile16.xml'
   ]
 
-  @ViewChild('textDragSource') textDragSource: ElementRef;
+  //@ViewChild('textDragSource') textDragSource: ElementRef;
 
   constructor(private graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) {}
 
@@ -66,6 +66,10 @@ export class ToolbarComponent implements OnInit {
 
   addTextBox() {
     this.graphService.addTextBox();
+  }
+
+  addNewDNABackBone() {
+    this.graphService.addNewDNABackBone()
   }
 
   openSaveDialog(): void {
@@ -98,7 +102,7 @@ export class ToolbarComponent implements OnInit {
 
     this.filesService.list().subscribe(list => {
       const dialogRef = this.dialog.open(LoadGraphComponent, {
-        width: '250px', 
+        width: '250px',
         data: {filesOnServer: list}
       });
       dialogRef.afterClosed().subscribe(result => {

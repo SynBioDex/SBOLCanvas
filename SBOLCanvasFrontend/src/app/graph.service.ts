@@ -139,6 +139,27 @@ export class GraphService {
     style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
   }
 
+  addNewDNABackBone() {
+
+    this.graph.getModel().beginUpdate();
+    try {
+      const glyphCell = this.graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName + ';fillColor=#ffffff;');
+      glyphCell.setConnectable(false);
+      glyphCell.data = new GlyphInfo();
+
+      const leftPort = this.graph.insertVertex(glyphCell, null, '', 1, .5, portWidth, portWidth, 'fillColor=#ffffff;');
+      leftPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
+      leftPort.geometry.relative = true;
+
+      const rightPort = this.graph.insertVertex(glyphCell, null, '', 0, .5, portWidth, portWidth, 'fillColor=#ffffff;');
+      rightPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
+      rightPort.geometry.relative = true;
+
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
+  }
+
   /**
    * Returns the <div> that this graph displays to
    */
