@@ -49,6 +49,10 @@ export class GraphService {
 
   constructor(private metadataService: MetadataService) {
 
+    this.setupDecodeEnv(); // Makes decoding from xml work.
+
+    this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, this.handleSelectionChange);
+
     this.graphContainer = document.createElement('div');
     this.graphContainer.id = 'graphContainer';
     this.graphContainer.style.margin = 'auto';
@@ -60,27 +64,6 @@ export class GraphService {
     this.graphContainer.style.right = '0';
 
     mx.mxGraphHandler.prototype.guidesEnabled = true;
-
-    // stuff needed for decoding
-    window['mxGraphModel'] = mx.mxGraphModel;
-    window['mxGeometry'] = mx.mxGeometry;
-    window['mxPoint'] = mx.mxPoint;
-    const glyphInfoCodec = new mx.mxObjectCodec(new GlyphInfo());
-    glyphInfoCodec.decode = function(dec, node, into) {
-      const glyphData = new GlyphInfo();
-      const meta = node;
-      if (meta != null) {
-        for (let i = 0; i < meta.attributes.length; i++) {
-          const attrib = meta.attributes[i];
-          if (attrib.specified == true && attrib.name != 'as') {
-            glyphData[attrib.name] = attrib.value;
-          }
-        }
-      }
-      return glyphData;
-    };
-    mx.mxCodecRegistry.register(glyphInfoCodec);
-    window['GlyphInfo'] = GlyphInfo;
 
     // mxEditor is kind of a parent to mxGraph
     // it's used mainly for 'actions', which for now means delete,
@@ -120,6 +103,7 @@ export class GraphService {
       {
         mouseDown: function(sender, evt)
         {
+
         },
         mouseMove: function(sender, evt)
         {
@@ -354,6 +338,45 @@ export class GraphService {
     codec.decode(doc.documentElement, this.graph.getModel());
   }
 
+  /**
+   * Runs when a user attempts to change the selection. We enforce selection logic here.
+   */
+  handleSelectionChange(sender, evt) {
+    var cellsAdded = evt.getProperty('added');
+    var cellsRemoved = evt.getProperty('removed');
+
+
+  }
+
+  /**
+   * Sets up environment variables to make decoding new graph models from xml into memory
+   */
+  setupDecodeEnv() {
+    // stuff needed for decoding
+    window['mxGraphModel'] = mx.mxGraphModel;
+    window['mxGeometry'] = mx.mxGeometry;
+    window['mxPoint'] = mx.mxPoint;
+    const glyphInfoCodec = new mx.mxObjectCodec(new GlyphInfo());
+    glyphInfoCodec.decode = function(dec, node, into) {
+      const glyphData = new GlyphInfo();
+      const meta = node;
+      if (meta != null) {
+        for (let i = 0; i < meta.attributes.length; i++) {
+          const attrib = meta.attributes[i];
+          if (attrib.specified == true && attrib.name != 'as') {
+            glyphData[attrib.name] = attrib.value;
+          }
+        }
+      }
+      return glyphData;
+    };
+    mx.mxCodecRegistry.register(glyphInfoCodec);
+    window['GlyphInfo'] = GlyphInfo;
+  }
+
+  /**
+   * Sets up all the constant styles used by the graph
+   */
   initStyles() {
     // A dummy element used for previewing glyphs as they are dragged onto the graph
     this.glyphDragPreviewElt = document.createElement('div');
