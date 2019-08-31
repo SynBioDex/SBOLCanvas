@@ -27,6 +27,13 @@ const defaultTextHeight = 80;
 
 const portWidth = 10;
 
+const circuitContainerStyleName = 'circuitContainer';
+const backboneStyleName = 'backbone';
+const textboxStyleName = 'textBox';
+
+const defaultBackboneWidth = 100;
+const defaultBackboneHeight = 5;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -107,56 +114,37 @@ export class GraphService {
       return (geo != null) ? geo.relative : false;
     };
 
-    // A dummy element used for previewing glyphs as they are dragged onto the graph
-    this.glyphDragPreviewElt = document.createElement('div');
-    this.glyphDragPreviewElt.style.border = 'dashed black 1px';
-    this.glyphDragPreviewElt.style.width = glyphWidth + 'px';
-    this.glyphDragPreviewElt.style.height = glyphHeight + 'px';
+    this.initStyles();
 
-    this.textBoxDragPreviewElt = document.createElement('div');
-    this.textBoxDragPreviewElt.style.border = 'dashed black 1px';
-    this.textBoxDragPreviewElt.style.width = defaultTextWidth + 'px';
-    this.textBoxDragPreviewElt.style.height = defaultTextHeight + 'px';
-
-    this.baseGlyphStyle = {};
-    this.baseGlyphStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = true;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = mx.mxConstants.ALIGN_CENTER;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = mx.mxConstants.ALIGN_TOP;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(glyphWidth);
-    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(glyphHeight);
-    this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
-
-    
-
-    const textBoxStyle = {};
-    textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
-    textBoxStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(defaultTextWidth);
-    textBoxStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(defaultTextHeight);
-    this.graph.getStylesheet().putCellStyle('textBox', textBoxStyle);
-
-    const style = this.graph.getStylesheet().getDefaultEdgeStyle();
-    style[mx.mxConstants.STYLE_ROUNDED] = true;
-    style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
+    this.graph.addMouseListener(
+      {
+        mouseDown: function(sender, evt)
+        {
+        },
+        mouseMove: function(sender, evt)
+        {
+        },
+        mouseUp: function(sender, evt)
+        {
+        }
+      });
   }
 
   addNewDNABackBone(element) {
 
-    const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
-    newGlyphStyle[mx.mxConstants.STYLE_IMAGE] = element.src;
-    const styleName = 'cellStyle:' + element.src;
-    this.graph.getStylesheet().putCellStyle(styleName, newGlyphStyle);
-
+    // TODO: Make drag element have same shape as backbone.
     const insertGlyph = (graph, evt, target, x, y) => {
       // When executed, 'this' is the dragSource, not the graphService
 
       graph.getModel().beginUpdate();
       try {
 
-        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, 100, 5, styleName + ';fillColor=#ffffff;');
-        glyphCell.setConnectable(false);
-        glyphCell.data = new GlyphInfo();
+        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, defaultBackboneHeight, circuitContainerStyleName);
+        const backbone = graph.insertVertex(circuitContainer, null, '', 0, 0, 100, 5, backboneStyleName);
+
+        circuitContainer.setConnectable(false);
+        backbone.setConnectable(false);
+        // TODO: glyphCell.data = new GlyphInfo();
 
       } finally {
         graph.getModel().endUpdate();
@@ -231,7 +219,7 @@ export class GraphService {
   addTextBox() {
     this.graph.getModel().beginUpdate();
     try {
-      const glyphCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', 0, 0, defaultTextWidth, defaultTextHeight, 'textBox' + ';fillColor=#ffffff;');
+      const glyphCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', 0, 0, defaultTextWidth, defaultTextHeight, textboxStyleName);
       glyphCell.setConnectable(false);
     } finally {
       this.graph.getModel().endUpdate();
@@ -364,6 +352,56 @@ export class GraphService {
     const doc = mx.mxUtils.parseXml(graphString);
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
+  }
+
+  initStyles() {
+    // A dummy element used for previewing glyphs as they are dragged onto the graph
+    this.glyphDragPreviewElt = document.createElement('div');
+    this.glyphDragPreviewElt.style.border = 'dashed black 1px';
+    this.glyphDragPreviewElt.style.width = glyphWidth + 'px';
+    this.glyphDragPreviewElt.style.height = glyphHeight + 'px';
+
+    this.textBoxDragPreviewElt = document.createElement('div');
+    this.textBoxDragPreviewElt.style.border = 'dashed black 1px';
+    this.textBoxDragPreviewElt.style.width = defaultTextWidth + 'px';
+    this.textBoxDragPreviewElt.style.height = defaultTextHeight + 'px';
+
+    this.baseGlyphStyle = {};
+    this.baseGlyphStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = true;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = mx.mxConstants.ALIGN_CENTER;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = mx.mxConstants.ALIGN_TOP;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(glyphWidth);
+    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(glyphHeight);
+    this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
+
+
+
+    const textBoxStyle = {};
+    textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
+    textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
+    textBoxStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(defaultTextWidth);
+    textBoxStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(defaultTextHeight);
+    this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
+
+    const circuitContainerStyle = {};
+    circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
+    circuitContainerStyle[mx.mxConstants.STYLE_FILLCOLOR] = 'none';
+    circuitContainerStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
+    circuitContainerStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+    this.graph.getStylesheet().putCellStyle(circuitContainerStyleName, circuitContainerStyle);
+
+    const backboneStyle = {};
+    backboneStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
+    backboneStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#000000';
+    backboneStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
+    backboneStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+    this.graph.getStylesheet().putCellStyle(backboneStyleName, backboneStyle);
+
+    const style = this.graph.getStylesheet().getDefaultEdgeStyle();
+    style[mx.mxConstants.STYLE_ROUNDED] = true;
+    style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
   }
 
 }

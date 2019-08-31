@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnInit, QueryList, ViewChild} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {FilesService} from '../files.service';
 import {MatDialog} from '@angular/material';
@@ -17,7 +17,9 @@ export interface LoadDialogData {
   templateUrl: './toolbar.component.html',
   styleUrls: ['./toolbar.component.css']
 })
-export class ToolbarComponent implements OnInit {
+export class ToolbarComponent implements OnInit, AfterViewInit {
+
+  @ViewChild('backbone') backbone: ElementRef;
 
   filename: string;
 
@@ -50,6 +52,10 @@ export class ToolbarComponent implements OnInit {
   ngOnInit() {
   }
 
+  ngAfterViewInit() {
+    this.graphService.addNewDNABackBone(this.backbone.nativeElement);
+  }
+
   save(filename: string) {
     this.filesService.save(filename, this.graphService.graphToString()).subscribe();
     // this.lastGraph = this.graphService.graphToString();
@@ -69,7 +75,7 @@ export class ToolbarComponent implements OnInit {
   }
 
   addNewDNABackBone() {
-    this.graphService.addNewDNABackBone()
+    this.graphService.addNewDNABackBone(1)
   }
 
   openSaveDialog(): void {
@@ -112,5 +118,4 @@ export class ToolbarComponent implements OnInit {
       });
     });
   }
-
 }
