@@ -51,8 +51,6 @@ export class GraphService {
 
     this.setupDecodeEnv(); // Makes decoding from xml work.
 
-    this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, this.handleSelectionChange);
-
     this.graphContainer = document.createElement('div');
     this.graphContainer.id = 'graphContainer';
     this.graphContainer.style.margin = 'auto';
@@ -87,7 +85,35 @@ export class GraphService {
     };
 
     // Add event listeners to the graph. NOTE: MUST USE THE '=>' WAY FOR THIS TO WORK.
+    // Doing it this way enables the function to keep accessing 'this' from inside.
     this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
+    this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, (sender, event) => this.handleSelectionChange(sender, event));
+
+    // Selection is delayed to mouseup if child selected.
+    //mx.mxGraphHandler.prototype.isDelayedSelection = ((cell) => this.selectionShouldBeDelayed(cell)); // examples/groups.html
+
+    // Delayed selection of parent group
+  //  mx.mxGraphHandler.prototype.selectDelayed =
+    //   function(me)
+    // {
+    //   var cell = me.getCell();
+    //
+    //   if (cell == null)
+    //   {
+    //     cell = this.cell;
+    //   }
+    //
+    //   var model = this.graph.getModel();
+    //   var parent = model.getParent(cell);
+    //
+    //   while (this.graph.isCellSelected(cell) && model.isVertex(parent) && !this.graph.isValidRoot(parent))
+    //   {
+    //     cell = parent;
+    //     parent = model.getParent(cell);
+    //   }
+    //
+    //   this.graph.selectCellForEvent(cell, me.getEvent());
+    // };
 
     // Ports are not used as terminals for edges, they are
     // only used to compute the graphical connection point
@@ -114,17 +140,61 @@ export class GraphService {
       });
   }
 
+  // doDelayedSelection(mouseEvent) {
+  //   var cell = mouseEvent.getCell();
+  //
+  //   if (cell == null)
+  //   {
+  //     cell = this.cell;
+  //   }
+  //
+  //   var model = this.graph.getModel();
+  //   var parent = model.getParent(cell);
+  //
+  //   while (this.graph.isCellSelected(cell) && model.isVertex(parent) && !this.graph.isValidRoot(parent))
+  //   {
+  //     cell = parent;
+  //     parent = model.getParent(cell);
+  //   }
+  //
+  //   this.graph.selectCellForEvent(cell, mouseEvent.getEvent());
+  // }
+
+  /**
+   * Function that is hooked into mx graph and tells it whether it
+   * should delay a selection or not.
+   * Selection is delayed to mouseup if a child is selected.
+   * @param cell
+   */
+  selectionShouldBeDelayed(cell) {
+    // var result = graphHandlerIsDelayedSelection.apply(this, arguments);
+    var result = false;
+    var model = this.graph.getModel();
+    var psel = model.getParent(this.graph.getSelectionCell());
+    var parent = model.getParent(cell);
+
+    if (psel == null || (psel != cell && psel != parent))
+    {
+      if (!this.graph.isCellSelected(cell) && model.isVertex(parent) && !this.graph.isValidRoot(parent))
+      {
+        result = true;
+      }
+    }
+
+    return result;
+  };
+
   addNewDNABackBone(element) {
 
-    // TODO: Make drag element have same shape as backbone.
+    // TODO: Make drag element outline have same shape as backbone.
     const insertGlyph = (graph, evt, target, x, y) => {
       // When executed, 'this' is the dragSource, not the graphService
 
       graph.getModel().beginUpdate();
       try {
 
-        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, defaultBackboneHeight, circuitContainerStyleName);
-        const backbone = graph.insertVertex(circuitContainer, null, '', 0, 0, 100, 5, backboneStyleName);
+        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, defaultBackboneHeight + 10, circuitContainerStyleName);
+        const backbone = graph.insertVertex(circuitContainer, null, '', 0, 0, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
 
         circuitContainer.setConnectable(false);
         backbone.setConnectable(false);
@@ -154,6 +224,28 @@ export class GraphService {
    */
   delete() {
     this.editor.execute('delete');
+  }
+
+  /**
+   * Drops a new glyph onto the current backbone
+   */
+  dropNewGlyph(element) {
+    console.log("dropNewGlyph called: " + element.src);
+
+    if (this.canDropNewGlyph()) {
+
+    }
+  }
+
+  /**
+   * Ensures that the conditions for dropping a new glyph
+   * are met, and if so, we return the backbone cell,
+   * otherwise nil
+   */
+  canDropNewGlyph(): any {
+    // Get selected cells.
+
+    // Check if all selected cells are on a singe DNA circuit.
   }
 
   /**
@@ -340,12 +432,45 @@ export class GraphService {
 
   /**
    * Runs when a user attempts to change the selection. We enforce selection logic here.
+   * NOTE: 'added' cells are actually cells that were removed from the selection
+   * and vise versa.
    */
   handleSelectionChange(sender, evt) {
     var cellsAdded = evt.getProperty('added');
     var cellsRemoved = evt.getProperty('removed');
 
+    console.log("----handleSelectionChange-----");
 
+    // Cells that are being removed from the selection.
+    // No idea why it is backwards...
+    console.log("cells added: ");
+    if (cellsAdded) {
+      for (var i = 0; i < cellsAdded.length; i++) {
+        console.log(cellsAdded[i]);
+      }
+    }
+
+    // Cells that are being added to the selection.
+    console.log("cells removed: ");
+    if (cellsRemoved) {
+      for (var i = 0; i < cellsRemoved.length; i++) {
+
+        var cell = cellsRemoved[i];
+        console.log(cell);
+
+        if (this.isABackBone(cell)) {
+          console.log("Backbone selected");
+          this.graph.getSelectionModel().addCell(cell.getParent());
+          //this.graph.addSelectionCell(cell.getParent());
+          //this.graph.setSelectionCell(cell.getParent());
+        }
+      }
+    }
+
+  }
+
+  isABackBone(cell) {
+    return cell.style.includes(backboneStyleName);
   }
 
   /**

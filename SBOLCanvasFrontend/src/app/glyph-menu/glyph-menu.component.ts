@@ -58,6 +58,10 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   constructor(private graphService: GraphService) {
   }
 
+  onGlyphClicked(event: any) {
+    this.graphService.dropNewGlyph(event.target)
+  }
+
   ngOnInit() {
 
   }
