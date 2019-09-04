@@ -31,8 +31,8 @@ const circuitContainerStyleName = 'circuitContainer';
 const backboneStyleName = 'backbone';
 const textboxStyleName = 'textBox';
 
-const defaultBackboneWidth = 100;
-const defaultBackboneHeight = 5;
+const defaultBackboneWidth = 200;
+const defaultBackboneHeight = 30;
 
 @Injectable({
   providedIn: 'root'
@@ -87,33 +87,6 @@ export class GraphService {
     // Add event listeners to the graph. NOTE: MUST USE THE '=>' WAY FOR THIS TO WORK.
     // Doing it this way enables the function to keep accessing 'this' from inside.
     this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
-    this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, (sender, event) => this.handleSelectionChange(sender, event));
-
-    // Selection is delayed to mouseup if child selected.
-    //mx.mxGraphHandler.prototype.isDelayedSelection = ((cell) => this.selectionShouldBeDelayed(cell)); // examples/groups.html
-
-    // Delayed selection of parent group
-  //  mx.mxGraphHandler.prototype.selectDelayed =
-    //   function(me)
-    // {
-    //   var cell = me.getCell();
-    //
-    //   if (cell == null)
-    //   {
-    //     cell = this.cell;
-    //   }
-    //
-    //   var model = this.graph.getModel();
-    //   var parent = model.getParent(cell);
-    //
-    //   while (this.graph.isCellSelected(cell) && model.isVertex(parent) && !this.graph.isValidRoot(parent))
-    //   {
-    //     cell = parent;
-    //     parent = model.getParent(cell);
-    //   }
-    //
-    //   this.graph.selectCellForEvent(cell, me.getEvent());
-    // };
 
     // Ports are not used as terminals for edges, they are
     // only used to compute the graphical connection point
@@ -125,64 +98,50 @@ export class GraphService {
 
     this.initStyles();
 
-    this.graph.addMouseListener(
-      {
-        mouseDown: function(sender, evt)
-        {
+    // mx.mxGraphHandler.prototype.setRemoveCellsFromParent(false);
+    // this.graph.setExtendParentsOnMove(false);
 
-        },
-        mouseMove: function(sender, evt)
-        {
-        },
-        mouseUp: function(sender, evt)
-        {
-        }
-      });
-  }
-
-  // doDelayedSelection(mouseEvent) {
-  //   var cell = mouseEvent.getCell();
-  //
-  //   if (cell == null)
-  //   {
-  //     cell = this.cell;
-  //   }
-  //
-  //   var model = this.graph.getModel();
-  //   var parent = model.getParent(cell);
-  //
-  //   while (this.graph.isCellSelected(cell) && model.isVertex(parent) && !this.graph.isValidRoot(parent))
-  //   {
-  //     cell = parent;
-  //     parent = model.getParent(cell);
-  //   }
-  //
-  //   this.graph.selectCellForEvent(cell, mouseEvent.getEvent());
-  // }
-
-  /**
-   * Function that is hooked into mx graph and tells it whether it
-   * should delay a selection or not.
-   * Selection is delayed to mouseup if a child is selected.
-   * @param cell
-   */
-  selectionShouldBeDelayed(cell) {
-    // var result = graphHandlerIsDelayedSelection.apply(this, arguments);
-    var result = false;
-    var model = this.graph.getModel();
-    var psel = model.getParent(this.graph.getSelectionCell());
-    var parent = model.getParent(cell);
-
-    if (psel == null || (psel != cell && psel != parent))
+    /**
+     * Choose which cell should be selected on mouse down
+     * TODO generalize for more than 1 level of nested cells
+     */
+    const defaultGetInitialCellForEvent = mx.mxGraphHandler.prototype.getInitialCellForEvent;
+    mx.mxGraphHandler.prototype.getInitialCellForEvent = function(evt)
     {
-      if (!this.graph.isCellSelected(cell) && model.isVertex(parent) && !this.graph.isValidRoot(parent))
-      {
-        result = true;
-      }
-    }
+      const clickedCell = defaultGetInitialCellForEvent.apply(this, arguments);
+      const selMod = this.graph.getSelectionModel();
 
-    return result;
-  };
+      if (selMod.isSelected((clickedCell)) || clickedCell.getParent() == this.graph.getDefaultParent()) {
+        return clickedCell;
+      }
+      else {
+        return clickedCell.getParent();
+      }
+    };
+
+    /**
+     * Chooses whether or not to delay selection change until after mouse up
+     * TODO generalize for more than 1 level of nested cells
+     */
+    const defaultIsDelayedSelection = mx.mxGraphHandler.prototype.isDelayedSelection;
+    mx.mxGraphHandler.prototype.isDelayedSelection = function(cellForEvent)
+    {
+      const defaultResult = defaultIsDelayedSelection.apply(this, arguments);
+      const selMod = this.graph.getSelectionModel();
+
+      if (selMod.isSelected(cellForEvent) || selMod.isSelected(cellForEvent.getParent()))
+        return true;
+      else
+        return defaultResult;
+    };
+
+    // Delayed selection of parent group
+    mx.mxGraphHandler.prototype.selectDelayed = function(evt)
+    {
+      const clickedCell = evt.getCell();
+      this.graph.selectCellForEvent(clickedCell);
+    };
+  }
 
   addNewDNABackBone(element) {
 
@@ -193,7 +152,7 @@ export class GraphService {
       graph.getModel().beginUpdate();
       try {
 
-        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, defaultBackboneHeight + 10, circuitContainerStyleName);
+        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, defaultBackboneHeight + 40, circuitContainerStyleName);
         const backbone = graph.insertVertex(circuitContainer, null, '', 0, 0, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
 
         circuitContainer.setConnectable(false);
