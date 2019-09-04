@@ -139,7 +139,12 @@ export class GraphService {
     mx.mxGraphHandler.prototype.selectDelayed = function(evt)
     {
       const clickedCell = evt.getCell();
-      this.graph.selectCellForEvent(clickedCell);
+      if (clickedCell.style.includes(backboneStyleName)) {
+        this.graph.selectCellForEvent(clickedCell.getParent());
+      }
+      else {
+        this.graph.selectCellForEvent(clickedCell);
+      }
     };
   }
 
@@ -203,6 +208,7 @@ export class GraphService {
    */
   canDropNewGlyph(): any {
     // Get selected cells.
+
 
     // Check if all selected cells are on a singe DNA circuit.
   }
