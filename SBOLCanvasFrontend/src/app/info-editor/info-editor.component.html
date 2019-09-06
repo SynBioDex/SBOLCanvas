@@ -15,12 +15,64 @@
     </mat-form-field>-->
 
     <mat-form-field>
-      <input matInput id="name" placeholder="Name" value="{{ glyphInfo.name }}" (input)="onChange($event)">
+      <mat-label>Part type</mat-label>
+      <mat-select id="partType" value="{{glyphInfo.partType}}" (selectionChange)="dropDownChange($event)">
+        <mat-option *ngFor="let type of partTypes" [value]="type[1]">
+          {{type[0]}}
+        </mat-option>
+      </mat-select>
     </mat-form-field>
 
     <mat-form-field>
-      <textarea matInput id="description" placeholder="Description" value="{{ glyphInfo.description }}" (input)="onChange($event)"></textarea>
+      <mat-label>Part role</mat-label>
+      <mat-select id="partRole" value="{{glyphInfo.partRole}}" (selectionChange)="dropDownChange($event)">
+        <mat-option *ngFor="let role of partRoles" [value]="role[1]">
+          {{role[0]}}
+        </mat-option>
+      </mat-select>
     </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Role refinement</mat-label>
+      <mat-select id="partRefinement" value="{{glyphInfo.partRole}}" (selectionChange)="dropDownChange($event)">
+        <mat-option value="none">None</mat-option>
+        <mat-option *ngFor="let refinement of partRefinements" [value]="refinement[1]">
+          {{refinement[0]}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <input matInput id="displayID" placeholder="Display ID" value="{{ glyphInfo.displayID }}" (input)="inputChange($event)">
+    </mat-form-field>
+
+    <mat-form-field>
+      <input matInput id="name" placeholder="Name" value="{{ glyphInfo.name }}" (input)="inputChange($event)">
+    </mat-form-field>
+
+    <mat-form-field>
+      <textarea matInput id="description" placeholder="Description" value="{{ glyphInfo.description }}" (input)="inputChange($event)"></textarea>
+    </mat-form-field>
+
+    <mat-form-field>
+        <textarea matInput id="version" placeholder="Version" value="{{ glyphInfo.version }}" (input)="inputChange($event)"></textarea>
+    </mat-form-field>
+
+    <mat-label>URI</mat-label>
+
+    <mat-form-field>
+      <mat-label>Sequence encoding</mat-label>
+      <mat-select id="sequenceEncoding" value="{{glyphInfo.encoding}}" (selectionChange)="dropDownChange($event)">
+        <mat-option *ngFor="let encoding of encoidings" [value]="encoding[1]">
+          {{encoding[0]}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <textarea matInput placeholder="Sequence"></textarea>
+    </mat-form-field>
+
 </div>
 
 
