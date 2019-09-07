@@ -2,7 +2,7 @@
   <div #glyphMenuContainer style="margin: auto">
     <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
       <mat-grid-tile *ngFor="let g of glyphPics;">
-        <img #glyphElement src="{{ g }}" (click)="onGlyphClicked($event)">
+        <button mat-stroked-button (click)="onGlyphClicked($event)"><img #glyphElement width="52px" height="104px" src="{{ g }}"></button>
       </mat-grid-tile>
     </mat-grid-list>
   </div>

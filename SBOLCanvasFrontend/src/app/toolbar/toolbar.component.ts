@@ -53,7 +53,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.graphService.addNewDNABackBone(this.backbone.nativeElement);
+    this.graphService.addNewBackbone(this.backbone.nativeElement);
   }
 
   save(filename: string) {
@@ -72,10 +72,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
   addTextBox() {
     this.graphService.addTextBox();
-  }
-
-  addNewDNABackBone() {
-    this.graphService.addNewDNABackBone(1)
   }
 
   openSaveDialog(): void {

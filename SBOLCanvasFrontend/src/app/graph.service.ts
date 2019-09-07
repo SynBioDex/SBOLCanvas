@@ -30,6 +30,7 @@ const portWidth = 10;
 const circuitContainerStyleName = 'circuitContainer';
 const backboneStyleName = 'backbone';
 const textboxStyleName = 'textBox';
+const glyphBaseStyleName = 'glyph';
 
 const defaultBackboneWidth = 200;
 const defaultBackboneHeight = 30;
@@ -48,8 +49,12 @@ export class GraphService {
   baseGlyphStyle;
 
   constructor(private metadataService: MetadataService) {
-
-    this.setupDecodeEnv(); // Makes decoding from xml work.
+    // constructor code is divided into helper methods for oranization,
+    // but these methods aren't entirely modular; order of some of
+    // these calls is important
+    this.initDecodeEnv();
+    this.initExtraCellMethods();
+    this.initGroupingRules();
 
     this.graphContainer = document.createElement('div');
     this.graphContainer.id = 'graphContainer';
@@ -61,11 +66,11 @@ export class GraphService {
     this.graphContainer.style.left = '0';
     this.graphContainer.style.right = '0';
 
+
     mx.mxGraphHandler.prototype.guidesEnabled = true;
 
     // mxEditor is kind of a parent to mxGraph
-    // it's used mainly for 'actions', which for now means delete,
-    // later will mean undoing
+    // it's used mainly for 'actions', which for now means delete, later will mean undoing
     this.editor = new mx.mxEditor();
     this.graph = this.editor.graph;
     this.editor.setGraphContainer(this.graphContainer);
@@ -88,67 +93,10 @@ export class GraphService {
     // Doing it this way enables the function to keep accessing 'this' from inside.
     this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
 
-    // Ports are not used as terminals for edges, they are
-    // only used to compute the graphical connection point
-    this.graph.isPort = function(cell) {
-      // 'this' is the mxGraph, not the GraphService
-      const geo = this.getCellGeometry(cell);
-      return (geo != null) ? geo.relative : false;
-    };
-
     this.initStyles();
-
-    // mx.mxGraphHandler.prototype.setRemoveCellsFromParent(false);
-    // this.graph.setExtendParentsOnMove(false);
-
-    /**
-     * Choose which cell should be selected on mouse down
-     * TODO generalize for more than 1 level of nested cells
-     */
-    const defaultGetInitialCellForEvent = mx.mxGraphHandler.prototype.getInitialCellForEvent;
-    mx.mxGraphHandler.prototype.getInitialCellForEvent = function(evt)
-    {
-      const clickedCell = defaultGetInitialCellForEvent.apply(this, arguments);
-      const selMod = this.graph.getSelectionModel();
-
-      if (selMod.isSelected((clickedCell)) || clickedCell.getParent() == this.graph.getDefaultParent()) {
-        return clickedCell;
-      }
-      else {
-        return clickedCell.getParent();
-      }
-    };
-
-    /**
-     * Chooses whether or not to delay selection change until after mouse up
-     * TODO generalize for more than 1 level of nested cells
-     */
-    const defaultIsDelayedSelection = mx.mxGraphHandler.prototype.isDelayedSelection;
-    mx.mxGraphHandler.prototype.isDelayedSelection = function(cellForEvent)
-    {
-      const defaultResult = defaultIsDelayedSelection.apply(this, arguments);
-      const selMod = this.graph.getSelectionModel();
-
-      if (selMod.isSelected(cellForEvent) || selMod.isSelected(cellForEvent.getParent()))
-        return true;
-      else
-        return defaultResult;
-    };
-
-    // Delayed selection of parent group
-    mx.mxGraphHandler.prototype.selectDelayed = function(evt)
-    {
-      const clickedCell = evt.getCell();
-      if (clickedCell.style.includes(backboneStyleName)) {
-        this.graph.selectCellForEvent(clickedCell.getParent());
-      }
-      else {
-        this.graph.selectCellForEvent(clickedCell);
-      }
-    };
   }
 
-  addNewDNABackBone(element) {
+  addNewBackbone(element) {
 
     // TODO: Make drag element outline have same shape as backbone.
     const insertGlyph = (graph, evt, target, x, y) => {
@@ -156,7 +104,6 @@ export class GraphService {
 
       graph.getModel().beginUpdate();
       try {
-
         const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, defaultBackboneHeight + 40, circuitContainerStyleName);
         const backbone = graph.insertVertex(circuitContainer, null, '', 0, 0, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
 
@@ -196,29 +143,47 @@ export class GraphService {
   dropNewGlyph(element) {
     console.log("dropNewGlyph called: " + element.src);
 
-    if (this.canDropNewGlyph()) {
-
+    let loc = this.getGlyphDropLocation();
+    if (loc != null) {
+      console.log(loc)
     }
   }
 
   /**
-   * Ensures that the conditions for dropping a new glyph
-   * are met, and if so, we return the backbone cell,
-   * otherwise nil
+   * Based on the selected cell(s) chooses a location to drop a new glyph.
+   * Returns a backbone cell marking the target location.
+   *
+   * If there is no suitable location (for example, nothing is selected),
+   * returns null.
    */
-  canDropNewGlyph(): any {
-    // Get selected cells.
+  getGlyphDropLocation(): any {
+    // TODO smart location choice using getSelectionCells
+    // but for now just let the graph choose an arbitrary one from the selection
+    const selection = this.graph.getSelectionCell();
 
+    if (selection == null) {
+      return null;
+    }
 
-    // Check if all selected cells are on a singe DNA circuit.
+    if (selection.isCircuitContainer()) {
+      return selection.getLastBackbone();
+    }
+    else if (selection.isBackbone()) {
+      return selection;
+    }
+    else if (selection.isGlyph()) {
+       // TODO
+      return null;
+    }
+    else {
+      return null;
+    }
   }
 
   /**
    * Makes the given element a drag source for putting glyphs on the graph
    */
-  useAsGlyphDragsource(element) {
-    element.width = glyphWidth;
-    element.height = glyphHeight;
+  nope(element) {
 
     const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
     newGlyphStyle[mx.mxConstants.STYLE_IMAGE] = element.src;
@@ -234,28 +199,14 @@ export class GraphService {
         glyphCell.setConnectable(false);
         glyphCell.data = new GlyphInfo();
 
-        const leftPort = graph.insertVertex(glyphCell, null, '', 1, .5, portWidth, portWidth, 'fillColor=#ffffff;');
-        leftPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
-        leftPort.geometry.relative = true;
-
-        const rightPort = graph.insertVertex(glyphCell, null, '', 0, .5, portWidth, portWidth, 'fillColor=#ffffff;');
-        rightPort.geometry.offset = new mx.mxPoint(-1 * portWidth / 2, -1 * portWidth / 2);
-        rightPort.geometry.relative = true;
-
       } finally {
         graph.getModel().endUpdate();
       }
     };
-
-    const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, this.glyphDragPreviewElt);
-
-    ds.isGridEnabled = function() {
-      return this.currentGraph.graphHandler.guidesEnabled;
-    };
   }
 
   /**
-   * Makes the given element a drag source for putting glyphs on the graph
+   * Puts a textbox in the graph's origin
    */
   addTextBox() {
     this.graph.getModel().beginUpdate();
@@ -367,14 +318,6 @@ export class GraphService {
     return cells;
   }
 
-  // noinspection JSUnusedGlobalSymbols
-  /**
-   * Returns the mxGraph object. This is meant for temporary testing - any permanent code should not rely on this.
-   */
-  getGraph() {
-    return this.graph;
-  }
-
   /**
    * Encodes the graph to a string (xml) representation
    */
@@ -396,52 +339,9 @@ export class GraphService {
   }
 
   /**
-   * Runs when a user attempts to change the selection. We enforce selection logic here.
-   * NOTE: 'added' cells are actually cells that were removed from the selection
-   * and vise versa.
-   */
-  handleSelectionChange(sender, evt) {
-    var cellsAdded = evt.getProperty('added');
-    var cellsRemoved = evt.getProperty('removed');
-
-    console.log("----handleSelectionChange-----");
-
-    // Cells that are being removed from the selection.
-    // No idea why it is backwards...
-    console.log("cells added: ");
-    if (cellsAdded) {
-      for (var i = 0; i < cellsAdded.length; i++) {
-        console.log(cellsAdded[i]);
-      }
-    }
-
-    // Cells that are being added to the selection.
-    console.log("cells removed: ");
-    if (cellsRemoved) {
-      for (var i = 0; i < cellsRemoved.length; i++) {
-
-        var cell = cellsRemoved[i];
-        console.log(cell);
-
-        if (this.isABackBone(cell)) {
-          console.log("Backbone selected");
-          this.graph.getSelectionModel().addCell(cell.getParent());
-          //this.graph.addSelectionCell(cell.getParent());
-          //this.graph.setSelectionCell(cell.getParent());
-        }
-      }
-    }
-
-  }
-
-  isABackBone(cell) {
-    return cell.style.includes(backboneStyleName);
-  }
-
-  /**
    * Sets up environment variables to make decoding new graph models from xml into memory
    */
-  setupDecodeEnv() {
+  initDecodeEnv() {
     // stuff needed for decoding
     window['mxGraphModel'] = mx.mxGraphModel;
     window['mxGeometry'] = mx.mxGeometry;
@@ -465,7 +365,117 @@ export class GraphService {
   }
 
   /**
-   * Sets up all the constant styles used by the graph
+   * Gives mxCells new methods related to our circuit/backbone rules
+   */
+  initExtraCellMethods() {
+    mx.mxCell.prototype.isBackbone = function() {
+      return this.style.includes(backboneStyleName);
+    }
+
+    mx.mxCell.prototype.isGlyph = function() {
+      return this.style.includes(glyphBaseStyleName);
+    }
+
+    mx.mxCell.prototype.isCircuitContainer = function() {
+      return this.style.includes(circuitContainerStyleName);
+    }
+
+    mx.mxCell.prototype.getLastBackbone = function() {
+      if (!this.isCircuitContainer()) {
+        console.error("getLastBackbone called on non-circuitContainer cell");
+        return null;
+      }
+
+      let lastBackbone = null;
+      let lastX = 0;
+      for (let i = 0; i < this.getChildCount(); i++) {
+        let child = this.getChildAt(i);
+        if (!child.isBackbone())
+          continue;
+
+        // first backbone found: initialize
+        if (lastBackbone == null || child.getGeometry().x > lastX) {
+          lastBackbone = child;
+          lastX = child.getGeometry().x;
+        }
+      }
+
+      return lastBackbone;
+    }
+  }
+
+  /**
+   * Sets up rules for circuits' grouping/selection behavior
+   */
+  initGroupingRules() {
+    /**
+     * Choose which cell should be selected on mouse down
+     * Functionality: when clicking part of a circuit, select the circuitContainer
+     *    instead of the individual piece selected (unless the individual piece was
+     *    already selected separately)
+     * TODO generalize for more than 1 level of nested cells
+     */
+    const defaultGetInitialCellForEvent = mx.mxGraphHandler.prototype.getInitialCellForEvent;
+    mx.mxGraphHandler.prototype.getInitialCellForEvent = function(evt)
+    {
+      const clickedCell = defaultGetInitialCellForEvent.apply(this, arguments);
+      const selMod = this.graph.getSelectionModel();
+
+      if (selMod.isSelected((clickedCell)) || clickedCell.getParent() == this.graph.getDefaultParent()) {
+        return clickedCell;
+      }
+      else {
+        return clickedCell.getParent();
+      }
+    };
+
+    /**
+     * Chooses whether or not to delay selection change until after mouse up
+     * Functionality: If the user has a circuitContainer selected, then clicks down,
+     *    the circuitContainer must stay selected so they can click-and-drag to move
+     *    the whole circuit. However, if they click and release without dragging,
+     *    the selection should change from the circuitContainer to the specific cell clicked.
+     *    That means the selection change should happen on mouse-up instead of mouse-down
+     *    (a delayed selection).
+     *   This method detects the above situation and enables delayedSelection for the event.
+     *   Note: even if delayedSelection is enabled, if the user clicks-and-drags there will be
+     *    no selection change on mouse-up (ie selectDelayed, below, won't be called).
+     * TODO generalize for more than 1 level of nested cells
+     */
+    const defaultIsDelayedSelection = mx.mxGraphHandler.prototype.isDelayedSelection;
+    mx.mxGraphHandler.prototype.isDelayedSelection = function(cellForEvent)
+    {
+      // Note: cellForEvent is the cell chosen by getInitialCellForEvent (above)
+      // not the actual cell that was clicked
+
+      const defaultResult = defaultIsDelayedSelection.apply(this, arguments);
+      const selMod = this.graph.getSelectionModel();
+
+      if (selMod.isSelected(cellForEvent))
+        return true;
+      else
+        return defaultResult;
+    };
+
+    /**
+     * Implements delayed selection changes if they are enabled by isDelayedSelection (above)
+     */
+    mx.mxGraphHandler.prototype.selectDelayed = function(evt)
+    {
+      const clickedCell = evt.getCell();
+      if (clickedCell.isBackBone()) {
+        this.graph.selectCellForEvent(clickedCell.getParent());
+      }
+      else {
+        this.graph.selectCellForEvent(clickedCell);
+      }
+    };
+  }
+
+  /**
+   * Sets up all the constant styles used by the graph.
+   *
+   * Can only be called before this.graph is initialized
    */
   initStyles() {
     // A dummy element used for previewing glyphs as they are dragged onto the graph
@@ -488,8 +498,6 @@ export class GraphService {
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(glyphWidth);
     this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(glyphHeight);
     this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
-
-
 
     const textBoxStyle = {};
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
