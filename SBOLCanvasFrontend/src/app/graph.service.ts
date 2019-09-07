@@ -25,8 +25,6 @@ const glyphHeight = 104;
 const defaultTextWidth = 120;
 const defaultTextHeight = 80;
 
-const portWidth = 10;
-
 const circuitContainerStyleName = 'circuitContainer';
 const backboneStyleName = 'backbone';
 const textboxStyleName = 'textBox';
@@ -55,6 +53,7 @@ export class GraphService {
     this.initDecodeEnv();
     this.initExtraCellMethods();
     this.initGroupingRules();
+    this.initCustomGlyphs();
 
     this.graphContainer = document.createElement('div');
     this.graphContainer.id = 'graphContainer';
@@ -145,7 +144,19 @@ export class GraphService {
 
     let loc = this.getGlyphDropLocation();
     if (loc != null) {
-      console.log(loc)
+      this.graph.getModel().beginUpdate();
+      try {
+        const glyphCell = this.graph.insertVertex(loc.getParent(), null, '', 0, 0, glyphWidth, glyphHeight, 'shape=customShape;fillColor=#ffffff;');
+        glyphCell.setConnectable(false);
+
+        const newBackbone = this.graph.insertVertex(loc.getParent(), null, '', 0, 0, 50, 50, 'fillColor=#000000;');
+        glyphCell.setConnectable(false);
+
+        var layout = new mx.mxStackLayout(this.graph, true);
+        layout.execute(loc.getParent());
+      } finally {
+        this.graph.getModel().endUpdate();
+      }
     }
   }
 
@@ -525,4 +536,34 @@ export class GraphService {
     style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
   }
 
+  initCustomGlyphs() {
+    function StupidDNAThing()
+    {
+      mx.mxShape.call(this);
+    };
+    mx.mxUtils.extend(StupidDNAThing, mx.mxShape);
+    StupidDNAThing.prototype.paintBackground = function(c, x, y, w, h)
+    {
+      h = h / 2;
+      c.translate(x, y);
+
+      c.begin();
+      c.moveTo(w / 4, 0);
+      c.lineTo(3 * w / 4, 0);
+      c.lineTo(3 * w / 4, h / 3);
+      c.lineTo(w / 2, h / 2);
+      c.lineTo(w / 4, h / 3);
+      c.close();
+      c.end();
+      c.fillAndStroke();
+
+      c.begin();
+      c.moveTo(w / 2, h / 2);
+      c.lineTo(w / 2, h);
+      c.close();
+      c.stroke(); // me so hard........
+    }
+
+    mx.mxCellRenderer.registerShape('customShape', StupidDNAThing);
+  }
 }
