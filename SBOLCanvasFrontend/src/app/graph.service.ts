@@ -11,6 +11,7 @@ import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
 import {GlyphInfo} from './glyphInfo';
 import {MetadataService} from './metadata.service';
+import {mapChildrenIntoArray} from "@angular/router/src/url_tree";
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -149,17 +150,7 @@ export class GraphService {
         const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'customShape');
         glyphCell.setConnectable(false);
 
-        // Layout all the glyphs in a horizontal line, while ignoring the backbone cell.
-        var layout = new mx.mxStackLayout(this.graph, true);
-        layout.resizeParent = true;
-        layout.isVertexIgnored = function (vertex)
-        {
-          return vertex.isBackbone()
-        }
-        layout.execute(circuitContainer);
-
-        // resize the backbone
-        circuitContainer.refreshBackbone();
+        circuitContainer.refreshCircuitContainer(this.graph);
       } finally {
         this.graph.getModel().endUpdate();
       }
@@ -361,6 +352,7 @@ export class GraphService {
    * Gives mxCells new methods related to our circuit/backbone rules
    */
   initExtraCellMethods() {
+
     mx.mxCell.prototype.isBackbone = function() {
       return this.style.includes(backboneStyleName);
     }
@@ -404,12 +396,13 @@ export class GraphService {
         this.getParent().refreshBackbone();
         return;
       } else if (!this.isCircuitContainer()) {
-        console.error("refreshBackbone: called on an invalid cell");
+        console.error("refreshBackbone: called on an invalid cell!");
         return;
       }
 
       let backbone = this.getBackbone();
 
+      // Paranoia
       backbone.geometry.x = 0;
       backbone.geometry.y = (glyphHeight / 2) - (defaultBackboneHeight / 2);
       backbone.geometry.height = defaultBackboneHeight;
@@ -421,6 +414,45 @@ export class GraphService {
       } else {
         backbone.geometry.width = glyphCount * glyphWidth;
       }
+    }
+
+    /**
+     * (Re)positions the glyphs inside the circuit containter and
+     * also refreshes the backbone.
+     */
+    mx.mxCell.prototype.refreshCircuitContainer = function(graph) {
+      if (this.isGlyph() || this.isBackbone()) {
+        this.getParent().refreshCircuitContainer()
+      } else if (!this.isCircuitContainer()) {
+        console.error("refreshCircuitContainer: called on an invalid cell!");
+        return;
+      }
+
+      // Layout all the glyphs in a horizontal line, while ignoring the backbone cell.
+      var layout = new mx.mxStackLayout(graph, true);
+      layout.resizeParent = true;
+      layout.isVertexIgnored = function (vertex)
+      {
+        return vertex.isBackbone()
+      }
+      layout.execute(this);
+
+      // resize the backbone
+      this.refreshBackbone();
+    }
+
+    /**
+     * Returns the circuit container associated with this cell.
+     */
+    mx.mxCell.prototype.getCircuitContainer = function () {
+      if (this.isGlyph() || this.isBackbone()) {
+        return this.getParent();
+      } else if (!this.isCircuitContainer()) {
+        console.error("getCircuitContainer: This cell has no circuit container!");
+        return null;
+      }
+
+      return this;
     }
   }
 
@@ -496,7 +528,7 @@ export class GraphService {
       }
     };
 
-    let moveableGlyph;
+    let movingGlyph;
     let oldX;
     let oldY;
 
@@ -511,12 +543,12 @@ export class GraphService {
         let clickedCell = this.getInitialCellForEvent(me);
         let selMod = this.graph.getSelectionModel();
 
-        if (clickedCell.isGlyph() && selMod.isSelected(clickedCell) && selMod.cells.length == 1) {
-          moveableGlyph = clickedCell;
+        if (clickedCell && clickedCell.isGlyph() && selMod.isSelected(clickedCell) && selMod.cells.length == 1) {
+          movingGlyph = clickedCell;
           oldX = clickedCell.geometry.x;
           oldY = clickedCell.geometry.y;
         } else {
-          moveableGlyph = null;
+          movingGlyph = null;
         }
       }
     }
@@ -525,10 +557,33 @@ export class GraphService {
     mx.mxGraphHandler.prototype.mouseUp = function(sender, me) {
       defaultMouseUp.apply(this, arguments);
 
-      if (moveableGlyph != null &&
-        (moveableGlyph.geometry.x != oldX || moveableGlyph.geometry.y != oldY))
+      if (movingGlyph != null &&
+        (movingGlyph.geometry.x != oldX || movingGlyph.geometry.y != oldY))
       {
         console.log("Detected");
+        console.log("old x = " + oldX + ", old y = " + oldY);
+        console.log("x = " + movingGlyph.geometry.x + ", y = " + movingGlyph.geometry.y);
+
+        let circuitContainer = movingGlyph.getCircuitContainer();
+        let movingGlyphChildIndex = circuitContainer.getIndex(movingGlyph);
+
+        let children = circuitContainer.children;
+        children.splice(movingGlyphChildIndex, 1);
+
+        var insertIndex = null;
+        for (let i = 0; i < children.length; i++) {
+          if (children[i].geometry.x > movingGlyph.geometry.x) {
+            insertIndex = i;
+            break;
+          }
+        }
+        if (insertIndex == null) {
+          insertIndex = children.length;
+        }
+
+        children.splice(insertIndex, 0, movingGlyph);
+
+        circuitContainer.refreshCircuitContainer(this.graph);
       }
     }
   }
@@ -564,6 +619,7 @@ export class GraphService {
 
     const circuitContainerStyle = {};  // TODO: figure out how to eliminate border of circuit container to render circuit container invisible.
     circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
+    circuitContainerStyle[mx.mxConstants.STYLE_STROKECOLOR] = 'none';
     circuitContainerStyle[mx.mxConstants.STYLE_FILLCOLOR] = 'none';
     circuitContainerStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     circuitContainerStyle[mx.mxConstants.STYLE_EDITABLE] = false;
