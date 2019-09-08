@@ -53,7 +53,6 @@ export class GraphService {
     this.initDecodeEnv();
     this.initExtraCellMethods();
     this.initGroupingRules();
-    this.initCustomGlyphs();
 
     this.graphContainer = document.createElement('div');
     this.graphContainer.id = 'graphContainer';
@@ -64,7 +63,6 @@ export class GraphService {
     this.graphContainer.style.bottom = '0';
     this.graphContainer.style.left = '0';
     this.graphContainer.style.right = '0';
-
 
     mx.mxGraphHandler.prototype.guidesEnabled = true;
 
@@ -93,6 +91,7 @@ export class GraphService {
     this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
 
     this.initStyles();
+    this.initCustomGlyphs();
   }
 
   addNewBackbone(element) {
@@ -103,8 +102,10 @@ export class GraphService {
 
       graph.getModel().beginUpdate();
       try {
-        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, defaultBackboneHeight, circuitContainerStyleName);
+        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, glyphHeight, circuitContainerStyleName);
         const backbone = graph.insertVertex(circuitContainer, null, '', 0, glyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
+
+        backbone.refreshBackbone();
 
         circuitContainer.setConnectable(false);
         backbone.setConnectable(false);
@@ -146,15 +147,9 @@ export class GraphService {
     if (circuitContainer != null) {
       this.graph.getModel().beginUpdate();
       try {
-        // Resize backbone
-        let backbone = this.getBackBone(circuitContainer);
-        let geom = backbone.getGeometry();
-        console.log(geom.width);
-        geom.width = geom.width + glyphWidth;
-        console.log(geom.width);
-
         // Insert new glyph
-        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, 'shape=customShape;fillColor=#ffffff;');
+        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'customShape');
+        glyphCell.setConnectable(false);
 
         // Layout all the glyphs in a horizontal line, while ignoring the backbone cell.
         var layout = new mx.mxStackLayout(this.graph, true);
@@ -163,30 +158,13 @@ export class GraphService {
         {
           return vertex.isBackbone()
         }
-
         layout.execute(circuitContainer);
+
+        // resize the backbone
+        circuitContainer.refreshBackbone();
       } finally {
         this.graph.getModel().endUpdate();
       }
-    }
-  }
-
-  /**
-   * Returns the backbone of the given circuit container.
-   */
-  getBackBone(circuitContainer) : any {
-    if (circuitContainer != null) {
-      let children = this.graph.getModel().getChildren(circuitContainer);
-      for (let i = 0; i < children.length; i++) {
-        if (children[i].isBackbone()) {
-          return children[i]
-        }
-      }
-      console.error("No backbone found in circuit container!");
-      return null;
-    }
-    else {
-      console.warn("Nothing passed in for circuit container");
     }
   }
 
@@ -218,31 +196,6 @@ export class GraphService {
     else {
       return null;
     }
-  }
-
-  /**
-   * Makes the given element a drag source for putting glyphs on the graph
-   */
-  nope(element) {
-
-    const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
-    newGlyphStyle[mx.mxConstants.STYLE_IMAGE] = element.src;
-    const styleName = 'cellStyle:' + element.src;
-    this.graph.getStylesheet().putCellStyle(styleName, newGlyphStyle);
-
-    const insertGlyph = (graph, evt, target, x, y) => {
-      // When executed, 'this' is the dragSource, not the graphService
-
-      graph.getModel().beginUpdate();
-      try {
-        const glyphCell = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, glyphWidth, glyphHeight, styleName + ';fillColor=#ffffff;');
-        glyphCell.setConnectable(false);
-        glyphCell.data = new GlyphInfo();
-
-      } finally {
-        graph.getModel().endUpdate();
-      }
-    };
   }
 
   /**
@@ -422,27 +375,54 @@ export class GraphService {
       return this.style.includes(circuitContainerStyleName);
     }
 
-    mx.mxCell.prototype.getLastBackbone = function() {
-      if (!this.isCircuitContainer()) {
-        console.error("getLastBackbone called on non-circuitContainer cell");
+    /**
+     * Returns the backbone associated with this cell
+     */
+    mx.mxCell.prototype.getBackbone = function() {
+      if (this.isGlyph()) {
+        return this.getParent().getBackbone();
+      } else if (this.isBackbone()) {
+        return this;
+      } else if (!this.isCircuitContainer()) {
+        console.error("getBackbone: called on an invalid cell");
         return null;
       }
 
-      let lastBackbone = null;
-      let lastX = 0;
-      for (let i = 0; i < this.getChildCount(); i++) {
-        let child = this.getChildAt(i);
-        if (!child.isBackbone())
-          continue;
-
-        // first backbone found: initialize
-        if (lastBackbone == null || child.getGeometry().x > lastX) {
-          lastBackbone = child;
-          lastX = child.getGeometry().x;
+      for (let i = 0; i < this.children.length; i++) {
+        if (this.children[i].isBackbone()) {
+          return this.children[i]
         }
       }
 
-      return lastBackbone;
+      console.error("getBackbone(): No backbone found in circuit container!");
+      return null;
+    }
+
+    /**
+     * Positions and sizes the backbone associated with this cell
+     */
+    mx.mxCell.prototype.refreshBackbone = function() {
+      if (this.isGlyph() || this.isBackbone()) {
+        this.getParent().refreshBackbone();
+        return;
+      } else if (!this.isCircuitContainer()) {
+        console.error("refreshBackbone: called on an invalid cell");
+        return;
+      }
+
+      let backbone = this.getBackbone();
+
+      backbone.geometry.x = 0;
+      backbone.geometry.y = (glyphHeight / 2) - (defaultBackboneHeight / 2);
+      backbone.geometry.height = defaultBackboneHeight;
+
+      // width:
+      let glyphCount = this.getChildCount() - 1;
+      if (glyphCount == 0) {
+        backbone.geometry.width = defaultBackboneWidth;
+      } else {
+        backbone.geometry.width = glyphCount * glyphWidth;
+      }
     }
   }
 
@@ -533,13 +513,10 @@ export class GraphService {
     this.textBoxDragPreviewElt.style.height = defaultTextHeight + 'px';
 
     this.baseGlyphStyle = {};
-    this.baseGlyphStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
+    this.baseGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     this.baseGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = true;
     this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = mx.mxConstants.ALIGN_CENTER;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = mx.mxConstants.ALIGN_TOP;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(glyphWidth);
-    this.baseGlyphStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(glyphHeight);
     this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
 
     const textBoxStyle = {};
@@ -597,5 +574,9 @@ export class GraphService {
     }
 
     mx.mxCellRenderer.registerShape('customShape', StupidDNAThing);
+
+    const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
+    newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = 'customShape';
+    this.graph.getStylesheet().putCellStyle(glyphBaseStyleName + 'customShape', newGlyphStyle);
   }
 }
