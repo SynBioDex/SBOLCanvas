@@ -4,6 +4,7 @@ import {FormGroup} from '@angular/forms';
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 import { MatSelectChange } from '@angular/material';
+import {DataService} from '../data.service';
 
 
 @Component({
@@ -14,17 +15,7 @@ import { MatSelectChange } from '@angular/material';
 
 export class InfoEditorComponent implements OnInit {
 
-  //TODO get these from the backend
-partTypes:[string, string][] = [
-  // name and uri pairs
-  ["All_Types","1"],
-  ["DNA","2"],
-  ["Complex","3"],
-  ["Effector","4"],
-  ["Protien","5"],
-  ["RNA","6"],
-  ["Small_molecule","7"]
-];
+partTypes:[string, string][];
 
 //TODO get these from the backend (will depend on type) will also determine rendered glyph
 partRoles:[string, string][] =[
@@ -44,10 +35,21 @@ encodings:[string, string][] = [
 
   glyphInfo: GlyphInfo;
 
-  constructor(private graphService: GraphService, private metadataService: MetadataService) { }
+  constructor(private graphService: GraphService, private metadataService: MetadataService, private dataService: DataService) { }
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
+    this.getTypes();
+  }
+
+  getTypes(){
+    console.log("start");
+    this.dataService.getTypes().subscribe(types => this.partTypes = types);
+    console.log("end");
+  }
+
+  getRoles(){
+    
   }
 
   dropDownChange(event: MatSelectChange){
