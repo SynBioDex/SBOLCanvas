@@ -141,8 +141,6 @@ export class GraphService {
    * Drops a new glyph onto the current backbone
    */
   dropNewGlyph(element) {
-    console.log("dropNewGlyph called: " + element.src);
-
     let circuitContainer = this.getSelectionContainer();
     if (circuitContainer != null) {
       this.graph.getModel().beginUpdate();
@@ -493,6 +491,8 @@ export class GraphService {
         }
       }
     };
+
+
   }
 
   /**
@@ -522,8 +522,6 @@ export class GraphService {
     const textBoxStyle = {};
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
     textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
-    textBoxStyle[mx.mxConstants.STYLE_IMAGE_WIDTH] = String(defaultTextWidth);
-    textBoxStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(defaultTextHeight);
     this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
 
     const circuitContainerStyle = {};  // TODO: figure out how to eliminate border of circuit container to render circuit container invisible.
