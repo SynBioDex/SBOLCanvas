@@ -428,6 +428,10 @@ export class GraphService {
    * Sets up rules for circuits' grouping/selection behavior
    */
   initGroupingRules() {
+    // Cells can be moved outside their parent's bounding box without being disowned
+    mx.mxGraphHandler.prototype.setRemoveCellsFromParent(false);
+    mx.mxGraph.prototype.setConstrainChildren(false);
+
     /**
      * Choose which cell should be selected on mouse down
      * Functionality: when clicking part of a circuit, select the circuitContainer
@@ -492,7 +496,41 @@ export class GraphService {
       }
     };
 
+    let moveableGlyph;
+    let oldX;
+    let oldY;
 
+    const defaultMouseDown = mx.mxGraphHandler.prototype.mouseDown;
+    mx.mxGraphHandler.prototype.mouseDown = function(sender, me) {
+      defaultMouseDown.apply(this, arguments);
+
+      if (this.isEnabled() && this.graph.isEnabled() &&
+        me.getState() != null && !mx.mxEvent.isMultiTouchEvent(me.getEvent()))
+      {
+
+        let clickedCell = this.getInitialCellForEvent(me);
+        let selMod = this.graph.getSelectionModel();
+
+        if (clickedCell.isGlyph() && selMod.isSelected(clickedCell) && selMod.cells.length == 1) {
+          moveableGlyph = clickedCell;
+          oldX = clickedCell.geometry.x;
+          oldY = clickedCell.geometry.y;
+        } else {
+          moveableGlyph = null;
+        }
+      }
+    }
+
+    const defaultMouseUp = mx.mxGraphHandler.prototype.mouseUp;
+    mx.mxGraphHandler.prototype.mouseUp = function(sender, me) {
+      defaultMouseUp.apply(this, arguments);
+
+      if (moveableGlyph != null &&
+        (moveableGlyph.geometry.x != oldX || moveableGlyph.geometry.y != oldY))
+      {
+        console.log("Detected");
+      }
+    }
   }
 
   /**
