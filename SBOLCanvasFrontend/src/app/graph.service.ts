@@ -30,8 +30,8 @@ const backboneStyleName = 'backbone';
 const textboxStyleName = 'textBox';
 const glyphBaseStyleName = 'glyph';
 
-const defaultBackboneWidth = 200;
-const defaultBackboneHeight = 30;
+const defaultBackboneWidth = glyphWidth;
+const defaultBackboneHeight = 4;
 
 @Injectable({
   providedIn: 'root'
@@ -103,8 +103,8 @@ export class GraphService {
 
       graph.getModel().beginUpdate();
       try {
-        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, defaultBackboneHeight + 40, circuitContainerStyleName);
-        const backbone = graph.insertVertex(circuitContainer, null, '', 0, 0, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
+        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, defaultBackboneHeight, circuitContainerStyleName);
+        const backbone = graph.insertVertex(circuitContainer, null, '', 0, glyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
 
         circuitContainer.setConnectable(false);
         backbone.setConnectable(false);
@@ -142,21 +142,51 @@ export class GraphService {
   dropNewGlyph(element) {
     console.log("dropNewGlyph called: " + element.src);
 
-    let loc = this.getGlyphDropLocation();
-    if (loc != null) {
+    let circuitContainer = this.getSelectionContainer();
+    if (circuitContainer != null) {
       this.graph.getModel().beginUpdate();
       try {
-        const glyphCell = this.graph.insertVertex(loc.getParent(), null, '', 0, 0, glyphWidth, glyphHeight, 'shape=customShape;fillColor=#ffffff;');
-        glyphCell.setConnectable(false);
+        // Resize backbone
+        let backbone = this.getBackBone(circuitContainer);
+        let geom = backbone.getGeometry();
+        console.log(geom.width);
+        geom.width = geom.width + glyphWidth;
+        console.log(geom.width);
 
-        const newBackbone = this.graph.insertVertex(loc.getParent(), null, '', 0, 0, 50, 50, 'fillColor=#000000;');
-        glyphCell.setConnectable(false);
+        // Insert new glyph
+        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, 'shape=customShape;fillColor=#ffffff;');
 
+        // Layout all the glyphs in a horizontal line, while ignoring the backbone cell.
         var layout = new mx.mxStackLayout(this.graph, true);
-        layout.execute(loc.getParent());
+        layout.resizeParent = true;
+        layout.isVertexIgnored = function (vertex)
+        {
+          return vertex.isBackbone()
+        }
+
+        layout.execute(circuitContainer);
       } finally {
         this.graph.getModel().endUpdate();
       }
+    }
+  }
+
+  /**
+   * Returns the backbone of the given circuit container.
+   */
+  getBackBone(circuitContainer) : any {
+    if (circuitContainer != null) {
+      let children = this.graph.getModel().getChildren(circuitContainer);
+      for (let i = 0; i < children.length; i++) {
+        if (children[i].isBackbone()) {
+          return children[i]
+        }
+      }
+      console.error("No backbone found in circuit container!");
+      return null;
+    }
+    else {
+      console.warn("Nothing passed in for circuit container");
     }
   }
 
@@ -167,7 +197,7 @@ export class GraphService {
    * If there is no suitable location (for example, nothing is selected),
    * returns null.
    */
-  getGlyphDropLocation(): any {
+  getSelectionContainer(): any {
     // TODO smart location choice using getSelectionCells
     // but for now just let the graph choose an arbitrary one from the selection
     const selection = this.graph.getSelectionCell();
@@ -177,14 +207,13 @@ export class GraphService {
     }
 
     if (selection.isCircuitContainer()) {
-      return selection.getLastBackbone();
-    }
-    else if (selection.isBackbone()) {
       return selection;
     }
+    else if (selection.isBackbone()) {
+      return selection.getParent();
+    }
     else if (selection.isGlyph()) {
-       // TODO
-      return null;
+      return selection.getParent();
     }
     else {
       return null;
@@ -328,6 +357,8 @@ export class GraphService {
 
     return cells;
   }
+
+
 
   /**
    * Encodes the graph to a string (xml) representation
@@ -474,11 +505,12 @@ export class GraphService {
     mx.mxGraphHandler.prototype.selectDelayed = function(evt)
     {
       const clickedCell = evt.getCell();
-      if (clickedCell.isBackBone()) {
-        this.graph.selectCellForEvent(clickedCell.getParent());
-      }
-      else {
-        this.graph.selectCellForEvent(clickedCell);
+      if (clickedCell) {
+        if (clickedCell.isBackbone()) {
+          this.graph.selectCellForEvent(clickedCell.getParent());
+        } else {
+          this.graph.selectCellForEvent(clickedCell);
+        }
       }
     };
   }
@@ -517,7 +549,7 @@ export class GraphService {
     textBoxStyle[mx.mxConstants.STYLE_IMAGE_HEIGHT] = String(defaultTextHeight);
     this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
 
-    const circuitContainerStyle = {};
+    const circuitContainerStyle = {};  // TODO: figure out how to eliminate border of circuit container to render circuit container invisible.
     circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
     circuitContainerStyle[mx.mxConstants.STYLE_FILLCOLOR] = 'none';
     circuitContainerStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
