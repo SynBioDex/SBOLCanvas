@@ -19,13 +19,18 @@ import com.google.gson.Gson;
 import utils.SBOLData;
 
 @SuppressWarnings("serial")
-@WebServlet(urlPatterns = {"/data/types"})
+@WebServlet(urlPatterns = {"/data/*"})
 public class Data extends HttpServlet {
 	
 		protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 			// setup the json
 			Gson gson = new Gson();
-			String body = gson.toJson(SBOLData.getTypes());
+			String body = null;
+			if(request.getPathInfo().equals("/types")) {
+				body = gson.toJson(SBOLData.getTypes());
+			}else if(request.getPathInfo().equals("/roles")) {
+				body = gson.toJson(SBOLData.getRoles());
+			}
 			
 			// write it to the response body
 			ServletOutputStream outputStream = response.getOutputStream();

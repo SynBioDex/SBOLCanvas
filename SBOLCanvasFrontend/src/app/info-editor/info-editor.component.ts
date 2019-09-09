@@ -4,7 +4,6 @@ import {FormGroup} from '@angular/forms';
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 import { MatSelectChange } from '@angular/material';
-import {DataService} from '../data.service';
 
 
 @Component({
@@ -15,41 +14,36 @@ import {DataService} from '../data.service';
 
 export class InfoEditorComponent implements OnInit {
 
-partTypes:[string, string][];
+  //placeholders that get generated from http calls
+  partTypes:[string, string][];
+  partRoles:[string, string][];
 
-//TODO get these from the backend (will depend on type) will also determine rendered glyph
-partRoles:[string, string][] =[
-  ["Pro (promoter)","1"],
-  ["Ter (terminator)", "2"]
-];
+  //TODO get these from the backend (will depend on role)
+  partRefinements:[string, string][] = [
 
-//TODO get these from the backend (will depend on role)
-partRefinements:[string, string][] = [
+  ];
 
-];
+  //TODO get these from the backend
+  encodings:[string, string][] = [
 
-//TODO get these from the backend
-encodings:[string, string][] = [
-
-];
+  ];
 
   glyphInfo: GlyphInfo;
 
-  constructor(private graphService: GraphService, private metadataService: MetadataService, private dataService: DataService) { }
+  constructor(private graphService: GraphService, private metadataService: MetadataService) { }
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
     this.getTypes();
+    this.getRoles();
   }
 
   getTypes(){
-    console.log("start");
-    this.dataService.getTypes().subscribe(types => this.partTypes = types);
-    console.log("end");
+    this.metadataService.loadTypes().subscribe(types => this.partTypes = types);
   }
 
   getRoles(){
-    
+    this.metadataService.loadRoles().subscribe(roles => this.partRoles = roles);
   }
 
   dropDownChange(event: MatSelectChange){
