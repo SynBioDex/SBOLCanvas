@@ -101,7 +101,8 @@ export class ColorPaletteComponent implements OnInit {
     });
 
 
-    // Subscribe to the color metadata
+    // Subscribe to the color metadata; the 'color' variable is made available
+    // to the metadata service.
     this.metadataService.color.subscribe(color => this.newSelection(color));
   }
 

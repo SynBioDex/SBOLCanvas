@@ -21,6 +21,10 @@ export class InfoEditorComponent implements OnInit {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
   }
 
+  /**
+   * This gets called when a user changes anything in the info menu.
+   * @param event
+   */
   onChange(event: any) {
     const id = event.target.id;
 

@@ -89,7 +89,7 @@ export class GraphService {
 
     // Add event listeners to the graph. NOTE: MUST USE THE '=>' WAY FOR THIS TO WORK.
     // Doing it this way enables the function to keep accessing 'this' from inside.
-    this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
+    //this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
 
     this.initStyles();
     this.initCustomGlyphs();
@@ -148,6 +148,8 @@ export class GraphService {
       try {
         // Insert new glyph
         const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'customShape');
+        glyphCell.data = new GlyphInfo();
+        glyphCell.data.name = 'bob';
         glyphCell.setConnectable(false);
 
         circuitContainer.refreshCircuitContainer(this.graph);
@@ -221,10 +223,9 @@ export class GraphService {
   updateSelectedCellInfo(glyphInfo: GlyphInfo) {
     const selectedCell = this.graph.getSelectionCell();
 
-    if (selectedCell != null && selectedCell.isVertex()) {
-      const cellData = this.getCellData(selectedCell);
+    if (selectedCell != null && selectedCell.isGlyph()) {
+      const cellData = selectedCell.getGlyphMetadata();
       if (cellData != null) {
-        // cellData is null if selectedCell is a textbox
         cellData.copyDataFrom(glyphInfo);
       }
     }
@@ -247,15 +248,14 @@ export class GraphService {
     const color = this.graph.getCellStyle(cell)['fillColor'];
     this.metadataService.setColor(color);
 
-    if (this.getCellData(cell) == null) {
+    if (cell.getGlyphMetadata() == null) {
       // text box
       this.metadataService.setSelectedGlyphInfo(null);
     } else {
       // port or glyph
-      const glyphInfo = this.getCellData(cell);
+      const glyphInfo = cell.getGlyphMetadata();
       this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
     }
-
   }
 
   /**
@@ -454,6 +454,16 @@ export class GraphService {
 
       return this;
     }
+
+    /**
+     * Returns the metadata associated with this cell.
+     * Usually this cell will be a glyph.
+     */
+    mx.mxCell.prototype.getGlyphMetadata = function() {
+      if (this.isGlyph()) {
+        return this.data;
+      }
+    }
   }
 
   /**
@@ -476,8 +486,9 @@ export class GraphService {
     {
       const clickedCell = defaultGetInitialCellForEvent.apply(this, arguments);
       const selMod = this.graph.getSelectionModel();
+      const currentlySelectedCell = this.graph.getSelectionCell();
 
-      if (selMod.isSelected((clickedCell)) || clickedCell.getParent() == this.graph.getDefaultParent()) {
+      if (selMod.isSelected((clickedCell)) || (currentlySelectedCell != null && currentlySelectedCell.isGlyph()) || clickedCell.getParent() == this.graph.getDefaultParent()) {
         return clickedCell;
       }
       else {
@@ -528,6 +539,8 @@ export class GraphService {
       }
     };
 
+    // Used for tracking glyph movement for moving the position of
+    // a glyph in a circuit.
     let movingGlyph;
     let oldX;
     let oldY;
@@ -560,12 +573,18 @@ export class GraphService {
       if (movingGlyph != null &&
         (movingGlyph.geometry.x != oldX || movingGlyph.geometry.y != oldY))
       {
-        console.log("Detected");
-        console.log("old x = " + oldX + ", old y = " + oldY);
-        console.log("x = " + movingGlyph.geometry.x + ", y = " + movingGlyph.geometry.y);
+        // Debugging glyph telemetry.
+        console.debug("Detected");
+        console.debug("old x = " + oldX + ", old y = " + oldY);
+        console.debug("x = " + movingGlyph.geometry.x + ", y = " + movingGlyph.geometry.y);
 
+        // What we do here is get the circuit container, figure out what
+        // the index of the moving glyph is, take that glyph out of the list
+        // of glyphs that are in the circuit container, and reinsert the moving
+        // glyph into the list based on its x coordinates.
         let circuitContainer = movingGlyph.getCircuitContainer();
         let movingGlyphChildIndex = circuitContainer.getIndex(movingGlyph);
+
 
         let children = circuitContainer.children;
         children.splice(movingGlyphChildIndex, 1);
