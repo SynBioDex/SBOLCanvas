@@ -15,13 +15,9 @@ import { MatSelectChange } from '@angular/material';
 export class InfoEditorComponent implements OnInit {
 
   //placeholders that get generated from http calls
-  partTypes:[string, string][];
-  partRoles:[string, string][];
-
-  //TODO get these from the backend (will depend on role)
-  partRefinements:[string, string][] = [
-
-  ];
+  partTypes:{[key:string]:string}[];
+  partRoles:{[key:string]:string}[];
+  partRefinements:{[key:string]:string}[]; //these depend on role
 
   //TODO get these from the backend
   encodings:[string, string][] = [
@@ -46,6 +42,10 @@ export class InfoEditorComponent implements OnInit {
     this.metadataService.loadRoles().subscribe(roles => this.partRoles = roles);
   }
 
+  getRefinements(role:string){
+    this.metadataService.loadRefinements(role).subscribe(refinements => this.partRefinements = refinements);
+  }
+
   dropDownChange(event: MatSelectChange){
     const id = event.source.id;
 
@@ -56,11 +56,13 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'partRole':{
         this.glyphInfo.partRole = event.value;
+        this.glyphInfo.partRefine = "";
+        this.getRefinements(event.value);
         break;
       }
       case 'partRefinement':{
         if(event.value != "none"){
-          this.glyphInfo.partRole = event.value;
+          this.glyphInfo.partRefine = event.value;
         }
         break;
       }default:{

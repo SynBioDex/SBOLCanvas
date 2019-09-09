@@ -1,55 +1,71 @@
 package utils;
 
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Set;
+
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.SequenceOntology;
 
 public class SBOLData {
 
-	public static String[][] getTypes() {
-		String[][] types = { { "Complex", ComponentDefinition.COMPLEX.toString() },
-				{ "DNA molecule", ComponentDefinition.DNA_MOLECULE.toString() },
-				{ "DNA region", ComponentDefinition.DNA_REGION.toString() },
-				{ "Effector", ComponentDefinition.EFFECTOR.toString() },
-				{ "Protein", ComponentDefinition.PROTEIN.toString() },
-				{ "RNA molecule", ComponentDefinition.RNA_MOLECULE.toString() },
-				{ "RNA region", ComponentDefinition.RNA_REGION.toString() },
-				{ "Small molecule", ComponentDefinition.SMALL_MOLECULE.toString() } };
+	public static HashMap<String,String> getTypes() {
+		HashMap<String, String> types = new HashMap<String,String>();
+		types.put(ComponentDefinition.COMPLEX.toString(), "Complex");
+		types.put(ComponentDefinition.DNA_MOLECULE.toString(), "DNA molecule");
+		types.put(ComponentDefinition.DNA_REGION.toString(), "DNA region");
+		types.put(ComponentDefinition.EFFECTOR.toString(), "Effector");
+		types.put(ComponentDefinition.PROTEIN.toString(), "Protein");
+		types.put(ComponentDefinition.RNA_MOLECULE.toString(), "RNA molecule");
+		types.put(ComponentDefinition.RNA_REGION.toString(), "RNA region");
+		types.put(ComponentDefinition.SMALL_MOLECULE.toString(), "Small molecule");
 		return types;
 	}
 
-	public static String[][] getRoles() {
-		String[][] roles = { { "Gen (Engineered Region)", SequenceOntology.ENGINEERED_REGION.toString() },
-				{ "Pro (Promoter)", SequenceOntology.PROMOTER.toString() },
-				{ "RBS (Ribosome Binding Site)", SequenceOntology.RIBOSOME_ENTRY_SITE.toString() },
-				{ "CDS (Coding Sequence)", SequenceOntology.CDS.toString() },
-				{ "Ter (Terminator)", SequenceOntology.TERMINATOR.toString() },
-				{ "Cir (Circular Backbone)", SequenceOntology.CIRCULAR.toString() },
-				{ "gRNA (Non-Coding RNA gene)", "http://identifiers.org/so/SO:0001263" },
-				{ "Ori (Origin of Replication)", SequenceOntology.ORIGIN_OF_REPLICATION.toString() },
-				{ "OriT (Origin of Transfer)", "http://identifiers.org/so/SO:0000724" },
-				{ "PBS (Primer Binding Site)", SequenceOntology.PRIMER_BINDING_SITE.toString() },
-				{ "CUT (Sticky End Restriction Enzyme Cleavage Site)", "http://identifiers.org/so/SO:0001975" },
-				{ "Scar (Assembly Scar)", "http://identifiers.org/so/SO:0001953" },
-				{ "Op (Operator)", SequenceOntology.OPERATOR.toString() },
-				{ "Ins (Insulator)", SequenceOntology.INSULATOR.toString() },
-				{ "BRS (Blunt Restriction Site)", "http://identifiers.org/so/SO:0001691" },
-				{ "_5OH (5' Overhang)", "http://identifiers.org/so/SO:0001932" },
-				{ "_3OH (3' Overhang)", "http://identifiers.org/so/SO:0001933" },
-				{ "APT (Aptamer)", "http://identifiers.org/so/SO:0000031" },
-				{ "PolyA (PolyA Site)", "http://identifiers.org/so/SO:0000553" },
-				{ "SRS (Specific Recombination Site)", "http://identifiers.org/so/SO:0000299" },
-				{ "NGA (No Glyph Assigned)", SequenceOntology.SEQUENCE_FEATURE.toString() },
-				{ "Sig (Signature)", "http://identifiers.org/so/SO:0001978" },
-				{ "BS (Base)", "http://identifiers.org/so/SO:0001236" },
-				{ "Jun (Junction)", "http://identifiers.org/so/SO:0000699" },
-				{ "AA (Amino Acid)", "http://identifiers.org/so/SO:0001237" },
-				{ "RERS (Restriction Enzyme Recognition Site)",
-						SequenceOntology.RESTRICTION_ENZYME_RECOGNITION_SITE.toString() },
-				{ "RS (Ribonuclease Site)", "http://identifiers.org/so/SO:0001977" },
-				{ "PS (Protease Site)", "http://identifiers.org/so/SO:0001956" },
-				{ "RSE (RNA Stability Element)", "http://identifiers.org/so/SO:0001979" },
-				{ "PSE (Protein Stability Element)", "http://identifiers.org/so/SO:0001955" } };
+	public static HashMap<String,String> getRoles() {
+		HashMap<String,String> roles = new HashMap<String,String>();
+		roles.put(SequenceOntology.ENGINEERED_REGION.toString(), "Gen (Engineered Region)");
+		roles.put(SequenceOntology.PROMOTER.toString(), "Pro (Promoter)");
+		roles.put(SequenceOntology.RIBOSOME_ENTRY_SITE.toString(), "RBS (Ribosome Binding Site)");
+		roles.put(SequenceOntology.CDS.toString(), "CDS (Coding Sequence)");
+		roles.put(SequenceOntology.TERMINATOR.toString(), "Ter (Terminator)");
+		roles.put(SequenceOntology.CIRCULAR.toString(), "Cir (Circular Backbone)");
+		roles.put("http://identifiers.org/so/SO:0001263", "gRNA (Non-Coding RNA gene)");
+		roles.put(SequenceOntology.ORIGIN_OF_REPLICATION.toString(), "Ori (Origin of Replication)");
+		roles.put("http://identifiers.org/so/SO:0000724", "OriT (Origin of Transfer)");
+		roles.put(SequenceOntology.PRIMER_BINDING_SITE.toString(), "PBS (Primer Binding Site)");
+		roles.put("http://identifiers.org/so/SO:0001975", "CUT (Sticky End Restriction Enzyme Cleavage Site)");
+		roles.put("http://identifiers.org/so/SO:0001953", "Scar (Assembly Scar)");
+		roles.put(SequenceOntology.OPERATOR.toString(), "Op (Operator)");
+		roles.put(SequenceOntology.INSULATOR.toString(), "Ins (Insulator)");
+		roles.put("http://identifiers.org/so/SO:0001691", "BRS (Blunt Restriction Site)");
+		roles.put("http://identifiers.org/so/SO:0001932", "_5OH (5' Overhang)");
+		roles.put("http://identifiers.org/so/SO:0001933", "_3OH (3' Overhang)");
+		roles.put("http://identifiers.org/so/SO:0000031", "APT (Aptamer)");
+		roles.put("http://identifiers.org/so/SO:0000553", "PolyA (PolyA Site)");
+		roles.put("http://identifiers.org/so/SO:0000299", "SRS (Specific Recombination Site)");
+		roles.put(SequenceOntology.SEQUENCE_FEATURE.toString(), "NGA (No Glyph Assigned)");
+		roles.put("http://identifiers.org/so/SO:0001978", "Sig (Signature)");
+		roles.put("http://identifiers.org/so/SO:0001236", "BS (Base)");
+		roles.put("http://identifiers.org/so/SO:0000699", "Jun (Junction)");
+		roles.put("http://identifiers.org/so/SO:0001237", "AA (Amino Acid)");
+		roles.put(SequenceOntology.RESTRICTION_ENZYME_RECOGNITION_SITE.toString(), "RERS (Restriction Enzyme Recognition Site)");
+		roles.put("http://identifiers.org/so/SO:0001977", "RS (Ribonuclease Site)");
+		roles.put("http://identifiers.org/so/SO:0001956", "PS (Protease Site)");
+		roles.put("http://identifiers.org/so/SO:0001979", "RSE (RNA Stability Element)");
+		roles.put("http://identifiers.org/so/SO:0001955", "PSE (Protein Stability Element)");
 		return roles;
+	}
+	
+	public static HashMap<String,String> getRefinement(String parentURI){
+		SequenceOntology so = new SequenceOntology();
+		Set<URI> descendants = so.getDescendantURIsOf(URI.create(parentURI));
+		HashMap<String,String> refinements = new HashMap<String,String>();
+		for(URI uri : descendants) {
+			refinements.put(uri.toString(), so.getName(uri));
+		}
+		return refinements;
+		
 	}
 
 }

@@ -1,6 +1,7 @@
 export class GlyphInfo {
   partType: string;
   partRole: string;
+  partRefine: string;
   displayID: string;
   name: string;
   description: string;
@@ -10,6 +11,7 @@ export class GlyphInfo {
     const copy: GlyphInfo = new GlyphInfo();
     copy.partType = this.partType;
     copy.partRole = this.partRole;
+    copy.partRefine = this.partRefine;
     copy.displayID = this.displayID;
     copy.name = this.name;
     copy.description = this.description;
@@ -20,6 +22,7 @@ export class GlyphInfo {
   copyDataFrom(other: GlyphInfo) {
     this.partType = other.partType;
     this.partRole = other.partRole;
+    this.partRefine = other.partRefine;
     this.displayID = other.displayID;
     this.name = other.name;
     this.description = other.description;

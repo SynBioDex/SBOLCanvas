@@ -30,6 +30,13 @@ public class Data extends HttpServlet {
 				body = gson.toJson(SBOLData.getTypes());
 			}else if(request.getPathInfo().equals("/roles")) {
 				body = gson.toJson(SBOLData.getRoles());
+			}else if(request.getPathInfo().equals("/refine")) {
+				String parent = request.getParameter("parent");
+				if(parent == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				body = gson.toJson(SBOLData.getRefinement(parent));
 			}
 			
 			// write it to the response body
