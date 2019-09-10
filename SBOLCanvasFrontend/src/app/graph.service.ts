@@ -488,7 +488,10 @@ export class GraphService {
       const selMod = this.graph.getSelectionModel();
       const currentlySelectedCell = this.graph.getSelectionCell();
 
-      if (selMod.isSelected((clickedCell)) || (currentlySelectedCell != null && currentlySelectedCell.isGlyph()) || clickedCell.getParent() == this.graph.getDefaultParent()) {
+      if (selMod.isSelected((clickedCell))
+        || (currentlySelectedCell != null && currentlySelectedCell.isGlyph())
+        || clickedCell.getParent() == this.graph.getDefaultParent()) {
+
         return clickedCell;
       }
       else {
