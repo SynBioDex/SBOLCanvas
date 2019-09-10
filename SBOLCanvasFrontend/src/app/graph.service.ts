@@ -89,7 +89,7 @@ export class GraphService {
 
     // Add event listeners to the graph. NOTE: MUST USE THE '=>' WAY FOR THIS TO WORK.
     // Doing it this way enables the function to keep accessing 'this' from inside.
-    //this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
+    this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
 
     this.initStyles();
     this.initCustomGlyphs();
@@ -300,6 +300,31 @@ export class GraphService {
     return cells;
   }
 
+  /**
+   * Updates the data in the metadata service according to the cells properties
+   */
+  updateAngularMetadata(cell) {
+    if (cell == null || cell.isEdge()) {
+      this.metadataService.setColor(null);
+      this.metadataService.setSelectedGlyphInfo(null);
+      return;
+    }
+    // Eventually we'll want to allow recoloring edges too
+
+    // this is the same for ports, glyphs and text boxes
+    const color = this.graph.getCellStyle(cell)['fillColor'];
+    this.metadataService.setColor(color);
+
+    if (cell.getGlyphMetadata() == null) {
+      // text box
+      this.metadataService.setSelectedGlyphInfo(null);
+    } else {
+      // glyph
+      const glyphInfo = cell.getGlyphMetadata();
+      this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
+    }
+
+  }
 
 
   /**
@@ -488,9 +513,10 @@ export class GraphService {
       const selMod = this.graph.getSelectionModel();
       const currentlySelectedCell = this.graph.getSelectionCell();
 
-      if (selMod.isSelected((clickedCell))
-        || (currentlySelectedCell != null && currentlySelectedCell.isGlyph())
-        || clickedCell.getParent() == this.graph.getDefaultParent()) {
+      // TODO: special case: If we already have a glyph clicked and are clicking on a different one within the same strand,
+      // TODO: we want to unselect the selected glyph, and select the new one.
+
+      if (selMod.isSelected((clickedCell)) || clickedCell.getParent() == this.graph.getDefaultParent()) {
 
         return clickedCell;
       }
