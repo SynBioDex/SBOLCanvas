@@ -51,7 +51,7 @@ export class ToolbarComponent implements OnInit {
   }
 
   save(filename: string) {
-    this.filesService.save(filename, this.graphService.graphToString()).subscribe();
+    this.filesService.saveLocal(filename, this.graphService.graphToString());
     // this.lastGraph = this.graphService.graphToString();
   }
 

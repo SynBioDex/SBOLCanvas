@@ -11,10 +11,11 @@ import org.sbolstandard.core2.SBOLConversionException;
 import org.sbolstandard.core2.SBOLDocument;
 import org.sbolstandard.core2.SBOLValidationException;
 import org.sbolstandard.core2.SBOLWriter;
+import org.w3c.dom.Document;
 
 public class Converter {
 
-	public static String toSBOL(String graph, OutputStream body) {
+	public static void toSBOL(Document graph, OutputStream body) {
 		// create the document
 		String uriPrefix = "https://sbolcanvas.org/";
 		SBOLDocument document = new SBOLDocument();
@@ -56,8 +57,6 @@ public class Converter {
 		} catch (SBOLValidationException | SBOLConversionException e) {
 			e.printStackTrace();
 		}
-
-		return null;
 	}
 
 	public static String toGraph(String sbol) {
