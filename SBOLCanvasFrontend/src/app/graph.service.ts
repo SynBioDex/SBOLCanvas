@@ -89,10 +89,70 @@ export class GraphService {
 
     // Add event listeners to the graph. NOTE: MUST USE THE '=>' WAY FOR THIS TO WORK.
     // Doing it this way enables the function to keep accessing 'this' from inside.
-    this.graph.addListener(mx.mxEvent.CLICK, (sender, event) => this.handleClickEvent(sender, event));
+    this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, (sender, event) => this.handleSelectionChange(sender, event));
 
     this.initStyles();
     this.initCustomGlyphs();
+  }
+
+  handleSelectionChange(sender, evt) {
+    var cellsAdded = evt.getProperty('added');
+    var cellsRemoved = evt.getProperty('removed');
+
+    console.log("----handleSelectionChange-----");
+
+    // Cells that are being removed from the selection.
+    // No idea why it is backwards...
+    console.log("cells added: ");
+    if (cellsAdded) {
+      for (var i = 0; i < cellsAdded.length; i++) {
+        console.log(cellsAdded[i]);
+      }
+    }
+
+    // Cells that are being added to the selection.
+    console.log("cells removed: ");
+    if (cellsRemoved) {
+      this.updateAngularMetadata(cellsRemoved);
+    }
+  }
+
+  /**
+   * Updates the data in the metadata service according to the cells properties
+   */
+  updateAngularMetadata(cells) {
+
+    // If we're only selecting one cell, then we can
+    // show some info about it.
+    if (cells.length < 1) {
+      // Null the info out
+      this.metadataService.setColor(null);
+      this.metadataService.setSelectedGlyphInfo(null);
+    }
+    else if (cells.length == 1) {
+      let cell = cells[0];
+
+      if (cell.isGlyph()) {
+
+        let color = this.graph.getCellStyle(cell)['fillColor'];
+        this.metadataService.setColor(color);
+
+        const glyphInfo = cell.getGlyphMetadata();
+        if(glyphInfo) {
+          this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
+        } else {
+          this.metadataService.setSelectedGlyphInfo(null);
+        }
+
+      }
+      else { // Not a glyph
+        this.metadataService.setColor(null);
+        this.metadataService.setSelectedGlyphInfo(null);
+      }
+    }
+    else { // We have some group selection going on here...
+
+    }
   }
 
   addNewBackbone(element) {
@@ -147,7 +207,8 @@ export class GraphService {
       this.graph.getModel().beginUpdate();
       try {
         // Insert new glyph
-        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'customShape');
+        //const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'customShape');
+        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, 'shape=or');
         glyphCell.data = new GlyphInfo();
         glyphCell.data.name = 'bob';
         glyphCell.setConnectable(false);
@@ -232,33 +293,6 @@ export class GraphService {
   }
 
   /**
-   * Handles a click event in the graph.
-   */
-  handleClickEvent(sender, event) {
-    const cell = event.getProperty('cell');
-
-    if (cell == null || cell.isEdge()) {
-      this.metadataService.setColor(null);
-      this.metadataService.setSelectedGlyphInfo(null);
-      return;
-    }
-    // Eventually we'll want to allow recoloring edges too
-
-    // this is the same for ports, glyphs and text boxes
-    const color = this.graph.getCellStyle(cell)['fillColor'];
-    this.metadataService.setColor(color);
-
-    if (cell.getGlyphMetadata() == null) {
-      // text box
-      this.metadataService.setSelectedGlyphInfo(null);
-    } else {
-      // port or glyph
-      const glyphInfo = cell.getGlyphMetadata();
-      this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
-    }
-  }
-
-  /**
    * Returns the GlyphInfo associated with the given cell
    * cell must be a vertex, not an edge
    */
@@ -298,32 +332,6 @@ export class GraphService {
     }
 
     return cells;
-  }
-
-  /**
-   * Updates the data in the metadata service according to the cells properties
-   */
-  updateAngularMetadata(cell) {
-    if (cell == null || cell.isEdge()) {
-      this.metadataService.setColor(null);
-      this.metadataService.setSelectedGlyphInfo(null);
-      return;
-    }
-    // Eventually we'll want to allow recoloring edges too
-
-    // this is the same for ports, glyphs and text boxes
-    const color = this.graph.getCellStyle(cell)['fillColor'];
-    this.metadataService.setColor(color);
-
-    if (cell.getGlyphMetadata() == null) {
-      // text box
-      this.metadataService.setSelectedGlyphInfo(null);
-    } else {
-      // glyph
-      const glyphInfo = cell.getGlyphMetadata();
-      this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
-    }
-
   }
 
 
@@ -686,13 +694,11 @@ export class GraphService {
   }
 
   initCustomGlyphs() {
-    function StupidDNAThing()
-    {
+    function StabilityElement() {
       mx.mxShape.call(this);
     };
-    mx.mxUtils.extend(StupidDNAThing, mx.mxShape);
-    StupidDNAThing.prototype.paintBackground = function(c, x, y, w, h)
-    {
+    mx.mxUtils.extend(StabilityElement, mx.mxShape);
+    StabilityElement.prototype.paintBackground = function(c, x, y, w, h) {
       h = h / 2;
       c.translate(x, y);
 
@@ -710,13 +716,39 @@ export class GraphService {
       c.moveTo(w / 2, h / 2);
       c.lineTo(w / 2, h);
       c.close();
-      c.stroke(); // me so hard........
+      c.stroke();
+    }
+    function CDS() {
+      mx.mxShape.call(this);
+    };
+    mx.mxUtils.extend(CDS, mx.mxShape);
+    CDS.prototype.paintBackground = function(c,x,y,w,h) {
+      c.translate(x, y);
+
+      c.begin();
+      c.moveTo(w/4, h/2);
     }
 
-    mx.mxCellRenderer.registerShape('customShape', StupidDNAThing);
+    mx.mxCellRenderer.registerShape('customShape', StabilityElement);
 
     const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
     newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = 'customShape';
     this.graph.getStylesheet().putCellStyle(glyphBaseStyleName + 'customShape', newGlyphStyle);
+
+
+    // Load the xml stencils into the registry.
+    let req = mx.mxUtils.load('assets/glyph_stencils/stencils.xml');
+    let root = req.getDocumentElement();
+    let shape = root.firstChild;
+
+    while (shape != null)
+    {
+      if (shape.nodeType == mx.mxConstants.NODETYPE_ELEMENT)
+      {
+        mx.mxStencilRegistry.addStencil(shape.getAttribute('name'), new mx.mxStencil(shape));
+      }
+
+      shape = shape.nextSibling;
+    }
   }
 }
