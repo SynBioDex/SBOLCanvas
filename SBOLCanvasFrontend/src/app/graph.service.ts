@@ -102,25 +102,24 @@ export class GraphService {
     var cellsRemoved = evt.getProperty('added');
     var cellsAdded = evt.getProperty('removed');
 
-    console.log("----handleSelectionChange-----");
+    console.debug("----handleSelectionChange-----");
 
-    console.log("cells removed: ");
+    console.debug("cells removed: ");
     if (cellsRemoved) {
       for (var i = 0; i < cellsRemoved.length; i++) {
-        console.log(cellsRemoved[i]);
+        console.debug(cellsRemoved[i]);
       }
     }
 
     // Cells that are being added to the selection.
-    console.log("cells added: ");
+    console.debug("cells added: ");
     if (cellsAdded) {
       for (var i = 0; i < cellsAdded.length; i++) {
-        console.log(cellsAdded[i]);
+        console.debug(cellsAdded[i]);
       }
     }
-    if (cellsAdded) {
-      this.updateAngularMetadata(cellsAdded);
-    }
+
+    this.updateAngularMetadata(cellsAdded);
   }
 
   /**
@@ -128,12 +127,15 @@ export class GraphService {
    */
   updateAngularMetadata(cells) {
 
+    if (cells == null) {
+      this.nullifyMetadata();
+      return;
+    }
     // If we're only selecting one cell, then we can
     // show some info about it.
     if (cells.length < 1) {
       // Null the info out
-      this.metadataService.setColor(null);
-      this.metadataService.setSelectedGlyphInfo(null);
+      this.nullifyMetadata()
     }
     else if (cells.length == 1) {
       let cell = cells[0];
@@ -152,13 +154,17 @@ export class GraphService {
 
       }
       else { // Not a glyph
-        this.metadataService.setColor(null);
-        this.metadataService.setSelectedGlyphInfo(null);
+        this.nullifyMetadata()
       }
     }
     else { // We have some group selection going on here...
-
+      this.nullifyMetadata()
     }
+  }
+
+  nullifyMetadata() {
+    this.metadataService.setColor(null);
+    this.metadataService.setSelectedGlyphInfo(null);
   }
 
   addNewBackbone(element) {
