@@ -14,7 +14,7 @@ import { MatSelectChange } from '@angular/material';
 
 export class InfoEditorComponent implements OnInit {
 
-  //placeholders that get generated from http calls
+  // placeholders that get generated from http calls
   partTypes:{[key:string]:string}[];
   partRoles:{[key:string]:string}[];
   partRefinements:{[key:string]:string}[]; //these depend on role

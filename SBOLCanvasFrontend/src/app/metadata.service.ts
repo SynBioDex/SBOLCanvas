@@ -10,6 +10,32 @@ import { environment } from 'src/environments/environment';
 })
 export class MetadataService {
 
+  /**
+   * The metadata service can be a confusing object so here is some explanation:
+   * Making a variable in the metadata service observable makes it available to
+   * other objects asynchronously.
+   *
+   * The purpose of this is to allow changes to be made to a shared piece of information,
+   * and for that information to be made available to whoever is interested without
+   * blocking the entire application.
+   *
+   * In order for another object to use a variable in the metadata service, they need to
+   * subscribe to it, and provide a method to handle the new data that was passed to
+   * it.
+   * For example, for the color pallet component to update the selected color when a new glyph is
+   * selected, it makes this call in the constructor:
+   * 'this.metadataService.color.subscribe(color => this.newSelection(color));'
+   *
+   * Now, whenever the color is updated by selecting a new glyph, the color will be updated in
+   * this service, then color pallet will be notified of the event and be passed the new color.
+   * The color pallet will then call newSelection(color), which will update it's pallet
+   * to reflect the color of the newly selected glyph.
+   *
+   * In order to track data that is being passed around, all data passed to the UI components
+   * should be passed through here, even it is not asynchronous.
+   */
+
+  // Glyph Info
   //URLs
   private typesURL = environment.backendURL + '/data/types';
   private rolesURL = environment.backendURL + '/data/roles';

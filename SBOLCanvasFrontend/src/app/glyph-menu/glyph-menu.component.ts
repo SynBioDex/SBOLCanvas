@@ -4,7 +4,7 @@
  * A tile-view list of glyphs the user can use to add components to the graph.
  */
 
-import {Component, ElementRef, OnInit, QueryList, ViewChildren, AfterViewInit } from '@angular/core';
+import {Component, OnInit, AfterViewInit } from '@angular/core';
 import {GraphService} from '../graph.service';
 
 @Component({
@@ -13,8 +13,6 @@ import {GraphService} from '../graph.service';
   styleUrls: ['./glyph-menu.component.css']
 })
 export class GlyphMenuComponent implements OnInit, AfterViewInit {
-
-  @ViewChildren('glyphElement') glyphElements: QueryList<ElementRef>;
 
   public glyphPics: string[] = [
     'assets/glyphs/amino-acid.png',
@@ -58,14 +56,15 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   constructor(private graphService: GraphService) {
   }
 
+  onGlyphClicked(event: any) {
+    this.graphService.dropNewGlyph(event.target)
+  }
+
   ngOnInit() {
 
   }
 
   ngAfterViewInit() {
-    for (const element of this.glyphElements.toArray()) {
-      this.graphService.useAsGlyphDragsource(element.nativeElement);
-    }
   }
 
 }

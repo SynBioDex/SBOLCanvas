@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnInit, QueryList, ViewChild} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {FilesService} from '../files.service';
 import {MatDialog} from '@angular/material';
@@ -17,7 +17,9 @@ export interface LoadDialogData {
   templateUrl: './toolbar.component.html',
   styleUrls: ['./toolbar.component.css']
 })
-export class ToolbarComponent implements OnInit {
+export class ToolbarComponent implements OnInit, AfterViewInit {
+
+  @ViewChild('backbone') backbone: ElementRef;
 
   filename: string;
 
@@ -43,11 +45,15 @@ export class ToolbarComponent implements OnInit {
     'serverFile16.xml'
   ]
 
-  @ViewChild('textDragSource') textDragSource: ElementRef;
+  //@ViewChild('textDragSource') textDragSource: ElementRef;
 
   constructor(private graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) {}
 
   ngOnInit() {
+  }
+
+  ngAfterViewInit() {
+    this.graphService.addNewBackbone(this.backbone.nativeElement);
   }
 
   save(filename: string) {
@@ -98,7 +104,7 @@ export class ToolbarComponent implements OnInit {
 
     this.filesService.list().subscribe(list => {
       const dialogRef = this.dialog.open(LoadGraphComponent, {
-        width: '250px', 
+        width: '250px',
         data: {filesOnServer: list}
       });
       dialogRef.afterClosed().subscribe(result => {
@@ -108,5 +114,4 @@ export class ToolbarComponent implements OnInit {
       });
     });
   }
-
 }
