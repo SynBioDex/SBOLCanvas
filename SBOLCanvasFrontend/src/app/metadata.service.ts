@@ -1,11 +1,19 @@
 import { Injectable } from '@angular/core';
 import {GlyphInfo} from './glyphInfo';
 import { BehaviorSubject } from 'rxjs';
+import { Observable } from 'rxjs';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MetadataService {
+
+  //URLs
+  private typesURL = environment.backendURL + '/data/types';
+  private rolesURL = environment.backendURL + '/data/roles';
+  private refinementsURL = environment.backendURL + '/data/refine';
 
   // Glyph Info
   private glyphInfoSource = new BehaviorSubject(null);
@@ -17,7 +25,21 @@ export class MetadataService {
 
   // TODO: DNA strand info
 
-  constructor() { }
+  constructor(private http: HttpClient) { }
+
+  loadTypes(): Observable<any> {
+    return this.http.get(this.typesURL);
+  }
+
+  loadRoles(): Observable<any> {
+    return this.http.get(this.rolesURL);
+  }
+
+  loadRefinements(parent:string): Observable<any> {
+    let params = new HttpParams();
+    params = params.append("parent", parent);
+    return this.http.get(this.refinementsURL, {params: params});
+  }
 
   setSelectedGlyphInfo(newInfo: GlyphInfo) {
     this.glyphInfoSource.next(newInfo);

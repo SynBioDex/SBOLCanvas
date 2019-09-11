@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import * as FileSaver from 'file-saver';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +12,8 @@ export class FilesService {
   private saveFilesURL = environment.backendURL + '/save';
   private listFilesURL = environment.backendURL + '/list';
   private loadFilesURL = environment.backendURL + '/load';
+  private toSBOLURL = environment.backendURL + '/convert/toSBOL';
+  private toMxGraphURL = environment.backendURL + '/convert/toMxGraph';
 
   constructor(
     private http: HttpClient
@@ -32,6 +35,23 @@ export class FilesService {
     let params = new HttpParams();
     params = params.append("filename", filename);
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
+  }
+
+
+
+  saveLocal(filename: string, contents: string){
+    this.convertToSBOL(contents).subscribe(result => {
+      var file = new File([result], filename+".xml", {type: 'text/plain;charset=utf-8'});
+      FileSaver.saveAs(file);
+    });
+  }
+
+  convertToSBOL(mxGraphXML: string): Observable<string>{
+    return this.http.post(this.toSBOLURL, mxGraphXML, {responseType: 'text'});
+  }
+
+  convertToMxGraph(sbolXML: string): Observable<string>{
+    return this.http.post(this.toMxGraphURL, sbolXML, {responseType: 'text'});
   }
 
 }
