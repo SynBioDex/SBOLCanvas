@@ -114,6 +114,11 @@ export class GraphService {
     // Cells that are being added to the selection.
     console.log("cells added: ");
     if (cellsAdded) {
+      for (var i = 0; i < cellsAdded.length; i++) {
+        console.log(cellsAdded[i]);
+      }
+    }
+    if (cellsAdded) {
       this.updateAngularMetadata(cellsAdded);
     }
   }
@@ -209,7 +214,7 @@ export class GraphService {
       try {
         // Insert new glyph
         //const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'customShape');
-        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, 'shape=promoter');
+        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'promoter');
         glyphCell.data = new GlyphInfo();
         glyphCell.data.name = 'bob';
         glyphCell.setConnectable(false);
@@ -746,7 +751,13 @@ export class GraphService {
     {
       if (shape.nodeType == mx.mxConstants.NODETYPE_ELEMENT)
       {
-        mx.mxStencilRegistry.addStencil(shape.getAttribute('name'), new mx.mxStencil(shape));
+        let name = shape.getAttribute('name');
+
+        mx.mxStencilRegistry.addStencil(name, new mx.mxStencil(shape));
+
+        const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
+        newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
+        this.graph.getStylesheet().putCellStyle(glyphBaseStyleName + name, newGlyphStyle);
       }
 
       shape = shape.nextSibling;
