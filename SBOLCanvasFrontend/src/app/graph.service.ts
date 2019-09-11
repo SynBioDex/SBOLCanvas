@@ -96,24 +96,25 @@ export class GraphService {
   }
 
   handleSelectionChange(sender, evt) {
-    var cellsAdded = evt.getProperty('added');
-    var cellsRemoved = evt.getProperty('removed');
-
-    console.log("----handleSelectionChange-----");
 
     // Cells that are being removed from the selection.
     // No idea why it is backwards...
-    console.log("cells added: ");
-    if (cellsAdded) {
-      for (var i = 0; i < cellsAdded.length; i++) {
-        console.log(cellsAdded[i]);
+    var cellsRemoved = evt.getProperty('added');
+    var cellsAdded = evt.getProperty('removed');
+
+    console.log("----handleSelectionChange-----");
+
+    console.log("cells removed: ");
+    if (cellsRemoved) {
+      for (var i = 0; i < cellsRemoved.length; i++) {
+        console.log(cellsRemoved[i]);
       }
     }
 
     // Cells that are being added to the selection.
-    console.log("cells removed: ");
-    if (cellsRemoved) {
-      this.updateAngularMetadata(cellsRemoved);
+    console.log("cells added: ");
+    if (cellsAdded) {
+      this.updateAngularMetadata(cellsAdded);
     }
   }
 
@@ -208,7 +209,7 @@ export class GraphService {
       try {
         // Insert new glyph
         //const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'customShape');
-        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, 'shape=or');
+        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, 'shape=promoter');
         glyphCell.data = new GlyphInfo();
         glyphCell.data.name = 'bob';
         glyphCell.setConnectable(false);
