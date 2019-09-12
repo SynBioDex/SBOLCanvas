@@ -15,14 +15,12 @@ import { MatSelectChange } from '@angular/material';
 export class InfoEditorComponent implements OnInit {
 
   // placeholders that get generated from http calls
-  partTypes:{[key:string]:string}[];
-  partRoles:{[key:string]:string}[];
-  partRefinements:{[key:string]:string}[]; //these depend on role
+  partTypes:string[];
+  partRoles:string[];
+  partRefinements:string[]; //these depend on role
 
   //TODO get these from the backend
-  encodings:[string, string][] = [
-
-  ];
+  encodings:string[];
 
   glyphInfo: GlyphInfo;
 
@@ -79,7 +77,7 @@ export class InfoEditorComponent implements OnInit {
 
     switch (id) {
       case 'displayID':{
-        this.glyphInfo.displayID;
+        this.glyphInfo.displayID = event.target.value;
         break;
       }
       case 'name': {

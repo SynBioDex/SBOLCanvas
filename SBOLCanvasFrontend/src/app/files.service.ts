@@ -37,8 +37,6 @@ export class FilesService {
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
   }
 
-
-
   saveLocal(filename: string, contents: string){
     this.convertToSBOL(contents).subscribe(result => {
       var file = new File([result], filename+".xml", {type: 'text/plain;charset=utf-8'});

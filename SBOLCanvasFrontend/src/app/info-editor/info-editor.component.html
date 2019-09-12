@@ -18,8 +18,8 @@
       <mat-label>Part type</mat-label>
       <mat-select id="partType" value="{{glyphInfo.partType}}" (selectionChange)="dropDownChange($event)">
         <mat-option value="">All_types</mat-option>
-        <mat-option *ngFor="let type of partTypes | keyvalue" [value]="type.key">
-          {{type.value}}
+        <mat-option *ngFor="let type of partTypes" [value]="type">
+          {{type}}
         </mat-option>
       </mat-select>
     </mat-form-field>
@@ -28,8 +28,8 @@
       <mat-label>Part role</mat-label>
       <mat-select id="partRole" value="{{glyphInfo.partRole}}" (selectionChange)="dropDownChange($event)">
         <mat-option value="">IDK (Unspecified)</mat-option>
-        <mat-option *ngFor="let role of partRoles | keyvalue" [value]="role.key">
-          {{role.value}}
+        <mat-option *ngFor="let role of partRoles" [value]="role">
+          {{role}}
         </mat-option>
       </mat-select>
     </mat-form-field>
@@ -38,8 +38,8 @@
       <mat-label>Role refinement</mat-label>
       <mat-select id="partRefinement" value="{{glyphInfo.partRefine}}" (selectionChange)="dropDownChange($event)">
         <mat-option value="">None</mat-option>
-        <mat-option *ngFor="let refinement of partRefinements | keyvalue" [value]="refinement.key">
-          {{refinement.value}}
+        <mat-option *ngFor="let refinement of partRefinements" [value]="refinement">
+          {{refinement}}
         </mat-option>
       </mat-select>
     </mat-form-field>
@@ -65,8 +65,8 @@
     <mat-form-field>
       <mat-label>Sequence encoding</mat-label>
       <mat-select id="sequenceEncoding" value="{{glyphInfo.encoding}}" (selectionChange)="dropDownChange($event)">
-        <mat-option *ngFor="let encoding of encoidings" [value]="encoding[1]">
-          {{encoding[0]}}
+        <mat-option *ngFor="let encoding of encoidings" [value]="encoding">
+          {{encoding}}
         </mat-option>
       </mat-select>
     </mat-form-field>
