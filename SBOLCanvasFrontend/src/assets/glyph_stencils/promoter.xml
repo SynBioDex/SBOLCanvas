@@ -1,0 +1,23 @@
+<shapes>
+  <shape aspect="variable" h="69" name="promoter" strokewidth="inherit" w="45">
+    <connections/>
+    <foreground>
+      <strokecolor color="#000000"/>
+      <strokewidth width="3"/>
+      <linejoin join="round"/>
+      <linecap cap="round"/>
+      <path>
+        <move x="21.5" y="0"/>
+        <line x="30" y="7.5"/>
+        <line x="21.5" y="14.83"/>
+      </path>
+      <stroke/>
+      <path>
+        <move x="0" y="34.5"/>
+        <line x="0" y="7.5"/>
+        <line x="29" y="7.5"/>
+      </path>
+      <stroke/>
+    </foreground>
+  </shape>
+</shapes>

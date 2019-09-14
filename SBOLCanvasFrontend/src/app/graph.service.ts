@@ -1,7 +1,7 @@
 /*
  * GraphService
  *
- * This service handles interactions with the mxGraph library
+ * This service controls the main editing canvas
  */
 
 import {Injectable} from '@angular/core';
@@ -11,7 +11,7 @@ import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
 import {GlyphInfo} from './glyphInfo';
 import {MetadataService} from './metadata.service';
-import {mapChildrenIntoArray} from "@angular/router/src/url_tree";
+import {GlyphService} from './glyph.service';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -47,7 +47,7 @@ export class GraphService {
 
   baseGlyphStyle;
 
-  constructor(private metadataService: MetadataService) {
+  constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
     // constructor code is divided into helper methods for oranization,
     // but these methods aren't entirely modular; order of some of
     // these calls is important
@@ -211,16 +211,15 @@ export class GraphService {
   }
 
   /**
-   * Drops a new glyph onto the current backbone
+   * Drops a new glyph onto the selected backbone
    */
-  dropNewGlyph(element) {
+  dropNewGlyph(name) {
     let circuitContainer = this.getSelectionContainer();
     if (circuitContainer != null) {
       this.graph.getModel().beginUpdate();
       try {
         // Insert new glyph
-        //const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'customShape');
-        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + 'promoter');
+        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + name);
         glyphCell.data = new GlyphInfo();
         glyphCell.data.name = 'bob';
         glyphCell.setConnectable(false);
@@ -706,67 +705,16 @@ export class GraphService {
   }
 
   initCustomGlyphs() {
-    function StabilityElement() {
-      mx.mxShape.call(this);
-    };
-    mx.mxUtils.extend(StabilityElement, mx.mxShape);
-    StabilityElement.prototype.paintBackground = function(c, x, y, w, h) {
-      h = h / 2;
-      c.translate(x, y);
+    const stencils = this.glyphService.getStencils();
 
-      c.begin();
-      c.moveTo(w / 4, 0);
-      c.lineTo(3 * w / 4, 0);
-      c.lineTo(3 * w / 4, h / 3);
-      c.lineTo(w / 2, h / 2);
-      c.lineTo(w / 4, h / 3);
-      c.close();
-      c.end();
-      c.fillAndStroke();
+    for (const name in stencils) {
+      const stencil = stencils[name];
 
-      c.begin();
-      c.moveTo(w / 2, h / 2);
-      c.lineTo(w / 2, h);
-      c.close();
-      c.stroke();
-    }
-    function CDS() {
-      mx.mxShape.call(this);
-    };
-    mx.mxUtils.extend(CDS, mx.mxShape);
-    CDS.prototype.paintBackground = function(c,x,y,w,h) {
-      c.translate(x, y);
+      mx.mxStencilRegistry.addStencil(name, stencil);
 
-      c.begin();
-      c.moveTo(w/4, h/2);
-    }
-
-    mx.mxCellRenderer.registerShape('customShape', StabilityElement);
-
-    const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
-    newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = 'customShape';
-    this.graph.getStylesheet().putCellStyle(glyphBaseStyleName + 'customShape', newGlyphStyle);
-
-
-    // Load the xml stencils into the registry.
-    let req = mx.mxUtils.load('assets/glyph_stencils/stencils.xml');
-    let root = req.getDocumentElement();
-    let shape = root.firstChild;
-
-    while (shape != null)
-    {
-      if (shape.nodeType == mx.mxConstants.NODETYPE_ELEMENT)
-      {
-        let name = shape.getAttribute('name');
-
-        mx.mxStencilRegistry.addStencil(name, new mx.mxStencil(shape));
-
-        const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
-        newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
-        this.graph.getStylesheet().putCellStyle(glyphBaseStyleName + name, newGlyphStyle);
-      }
-
-      shape = shape.nextSibling;
+      const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
+      newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
+      this.graph.getStylesheet().putCellStyle(glyphBaseStyleName + name, newGlyphStyle);
     }
   }
 }
