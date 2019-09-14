@@ -708,9 +708,20 @@ export class GraphService {
     const stencils = this.glyphService.getStencils();
 
     for (const name in stencils) {
-      const stencil = stencils[name];
 
-      mx.mxStencilRegistry.addStencil(name, stencil);
+      // Create a new copy of the stencil for the graph.
+      const stencil = stencils[name];
+      let customStencil = new mx.mxStencil(stencil.desc);
+
+      // Change the copied stencil for mxgraph
+      let origDrawShape = mx.mxStencil.prototype.drawShape;
+
+      customStencil.drawShape = function (canvas, shape, x, y, w, h) {
+        h = h/2;
+        origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
+      }
+
+      mx.mxStencilRegistry.addStencil(name, customStencil);
 
       const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
       newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
