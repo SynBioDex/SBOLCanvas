@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output, SystemJsNgModuleLoader} from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
 import {FormGroup} from '@angular/forms';
 import {MetadataService} from '../metadata.service';
@@ -107,6 +107,13 @@ export class InfoEditorComponent implements OnInit {
    */
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
+    if(glyphInfo != null){
+      if(glyphInfo.partRole != null){
+        this.getRefinements(glyphInfo.partRole);
+      }else{
+        this.partRefinements = [];
+      }
+    }
   }
 
 }
