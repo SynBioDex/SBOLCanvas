@@ -13,7 +13,8 @@ export class GlyphService {
 
   // TODO load list of xml files from server
   private xmlUrls: string[] = [
-    'assets/glyph_stencils/promoter.xml'
+    'assets/glyph_stencils/promoter.xml',
+    'assets/glyph_stencils/origin-of-transfer.xml'
   ];
 
   private stencils: any = {};
@@ -40,15 +41,21 @@ export class GlyphService {
     return this.stencils;
   }
 
-  getSvg() {
-    let elt = document.createElement('svg');
+  getSvgElements() {
+    const svgs = {};
 
-    let canvas = new mx.mxSvgCanvas2D(elt);
-    let stencil = this.stencils['promoter'];
-    let shape = new mx.mxShape(stencil);
+    for (const name in this.stencils) {
+      const stencil = this.stencils[name];
 
-    stencil.drawShape(canvas, shape, 0, 0, 52, 104);
+      let elt = document.createElement('svg');
+      let canvas = new mx.mxSvgCanvas2D(elt);
+      let shape = new mx.mxShape(stencil);
 
-    return elt;
+      stencil.drawShape(canvas, shape, 0, 0, 52, 104);
+
+      svgs[name] = elt;
+    }
+
+    return svgs;
   }
 }

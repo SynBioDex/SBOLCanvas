@@ -1,0 +1,24 @@
+<shapes name="mxGraph.home.thayer.Desktop">
+<shape aspect="variable" h="25.69" name="origin-of-transfer" strokewidth="inherit" w="26.11">
+    <connections/>
+    <foreground>
+        <strokecolor color="#000000"/>
+        <strokewidth width="3"/>
+        <linejoin join="round"/>
+        <linecap cap="round"/>
+        <ellipse h="24" w="24" x="0" y="1.69"/>
+        <stroke/>
+        <fillcolor color="#000000"/>
+        <strokewidth width="2.56858516"/>
+        <miterlimit limit="4"/>
+        <dashpattern pattern="none"/>
+        <dashed dashed="1"/>
+        <alpha alpha="1"/>
+        <path>
+            <move x="12.16" y="13.95"/>
+            <line x="26.11" y="0"/>
+        </path>
+        <fillstroke/>
+    </foreground>
+</shape>
+</shapes>

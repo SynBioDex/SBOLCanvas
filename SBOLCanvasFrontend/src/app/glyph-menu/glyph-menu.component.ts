@@ -19,15 +19,20 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   @ViewChildren('glyphSvg')
   container: ElementRef;
 
-  public glyphPics: SafeHtml[] = [];
+  public glyphDict = {};
 
   constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer) {
-    let svg = this.glyphService.getSvg();
-    this.glyphPics.push(this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML));
+    const svgElts = this.glyphService.getSvgElements();
+
+    for (const name in svgElts) {
+      const svg = svgElts[name];
+
+      this.glyphDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
   }
 
-  onGlyphClicked(event: any) {
-    this.graphService.dropNewGlyph('promoter');
+  onGlyphClicked(name: string) {
+    this.graphService.dropNewGlyph(name);
   }
 
   ngOnInit() {
