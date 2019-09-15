@@ -178,7 +178,7 @@ export class GraphService {
         const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, glyphHeight, circuitContainerStyleName);
         const backbone = graph.insertVertex(circuitContainer, null, '', 0, glyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
 
-        backbone.refreshBackbone();
+        backbone.refreshBackbone(graph);
 
         circuitContainer.setConnectable(false);
         backbone.setConnectable(false);
@@ -211,6 +211,20 @@ export class GraphService {
    */
   delete() {
     this.editor.execute('delete');
+  }
+
+  /**
+   * Undoes the most recent changes encapsulated by a begin/end update
+   */
+  undo(){
+    this.editor.execute('undo');
+  }
+
+  /**
+   * Redoes the most recent changes encapsulated by a begin/end update
+   */
+  redo(){
+    this.editor.execute('redo');
   }
 
   /**
@@ -438,29 +452,39 @@ export class GraphService {
     /**
      * Positions and sizes the backbone associated with this cell
      */
-    mx.mxCell.prototype.refreshBackbone = function() {
+    mx.mxCell.prototype.refreshBackbone = function(graph) {
       if (this.isGlyph() || this.isBackbone()) {
-        this.getParent().refreshBackbone();
+        this.getParent().refreshBackbone(graph);
         return;
       } else if (!this.isCircuitContainer()) {
         console.error("refreshBackbone: called on an invalid cell!");
         return;
       }
 
-      let backbone = this.getBackbone();
+      const backbone = this.getBackbone();
 
+      // put it first in the children array so it is drawn before glyphs
+      // (meaning it appears behind them)
+      const oldIdx = this.children.indexOf(backbone);
+      this.children.splice(oldIdx, 1);
+      this.children.splice(0, 0, backbone);
+
+      const geo = new mx.mxGeometry(0,0,0,0);
       // Paranoia
-      backbone.geometry.x = 0;
-      backbone.geometry.y = (glyphHeight / 2) - (defaultBackboneHeight / 2);
-      backbone.geometry.height = defaultBackboneHeight;
+      geo.x = 0;
+      geo.y = (glyphHeight / 2) - (defaultBackboneHeight / 2);
+      geo.height = defaultBackboneHeight;
 
       // width:
       let glyphCount = this.getChildCount() - 1;
       if (glyphCount == 0) {
-        backbone.geometry.width = defaultBackboneWidth;
+        geo.width = defaultBackboneWidth;
       } else {
-        backbone.geometry.width = glyphCount * glyphWidth;
+        geo.width = glyphCount * glyphWidth;
       }
+
+      graph.getModel().setGeometry(backbone,geo);
+
     }
 
     /**
@@ -475,17 +499,17 @@ export class GraphService {
         return;
       }
 
+      // resize the backbone
+      this.refreshBackbone(graph);
+
       // Layout all the glyphs in a horizontal line, while ignoring the backbone cell.
-      var layout = new mx.mxStackLayout(graph, true);
+      const layout = new mx.mxStackLayout(graph, true);
       layout.resizeParent = true;
       layout.isVertexIgnored = function (vertex)
       {
         return vertex.isBackbone()
       }
       layout.execute(this);
-
-      // resize the backbone
-      this.refreshBackbone();
     }
 
     /**
@@ -618,6 +642,7 @@ export class GraphService {
     }
 
     const defaultMouseUp = mx.mxGraphHandler.prototype.mouseUp;
+    const service = this;
     mx.mxGraphHandler.prototype.mouseUp = function(sender, me) {
       defaultMouseUp.apply(this, arguments);
 
@@ -633,6 +658,9 @@ export class GraphService {
         // the index of the moving glyph is, take that glyph out of the list
         // of glyphs that are in the circuit container, and reinsert the moving
         // glyph into the list based on its x coordinates.
+        let newx = movingGlyph.geometry.x;
+        service.editor.execute('undo');
+        this.graph.getModel().beginUpdate();
         let circuitContainer = movingGlyph.getCircuitContainer();
         let movingGlyphChildIndex = circuitContainer.getIndex(movingGlyph);
 
@@ -642,7 +670,7 @@ export class GraphService {
 
         var insertIndex = null;
         for (let i = 0; i < children.length; i++) {
-          if (children[i].geometry.x > movingGlyph.geometry.x) {
+          if (children[i].geometry.x > newx) {
             insertIndex = i;
             break;
           }
@@ -654,6 +682,7 @@ export class GraphService {
         children.splice(insertIndex, 0, movingGlyph);
 
         circuitContainer.refreshCircuitContainer(this.graph);
+        this.graph.getModel().endUpdate();
       }
     }
   }

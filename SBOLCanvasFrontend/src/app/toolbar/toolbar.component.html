@@ -30,5 +30,13 @@
 
     <button #backbone class="toolbar-row-button">New Strand</button>
 
+    <button mat-stroked-button
+            class="toolbar-row-button"
+            (click)="undoChange()">Undo</button>
+    
+    <button mat-stroked-button
+            class="toolbar-row-button"
+            (click)="redoChange()">Redo</button>
+
   </mat-toolbar-row>
 </mat-toolbar>
