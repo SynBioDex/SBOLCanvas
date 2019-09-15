@@ -13,8 +13,7 @@ export class GlyphService {
 
   // TODO load list of xml files from server
   private xmlUrls: string[] = [
-    'assets/glyph_stencils/promoter.xml',
-    'assets/glyph_stencils/origin-of-transfer.xml'
+    'assets/glyph_stencils/stencils.xml'
   ];
 
   private stencils: any = {};
