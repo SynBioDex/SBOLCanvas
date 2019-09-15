@@ -13,7 +13,8 @@ export class GlyphService {
 
   // TODO load list of xml files from server
   private xmlUrls: string[] = [
-    'assets/glyph_stencils/stencils.xml'
+    'assets/glyph_stencils/promoter.xml',
+    'assets/glyph_stencils/cds.xml'
   ];
 
   private stencils: any = {};
@@ -50,7 +51,7 @@ export class GlyphService {
       let canvas = new mx.mxSvgCanvas2D(elt);
       let shape = new mx.mxShape(stencil);
 
-      stencil.drawShape(canvas, shape, 0, 0, 52, 104);
+      stencil.drawShape(canvas, shape, 0, 0, 52, 52);
 
       svgs[name] = elt;
     }
