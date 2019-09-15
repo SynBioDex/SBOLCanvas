@@ -447,7 +447,13 @@ export class GraphService {
         return;
       }
 
-      let backbone = this.getBackbone();
+      const backbone = this.getBackbone();
+
+      // put it first in the children array so it is drawn before glyphs
+      // (meaning it appears behind them)
+      const oldIdx = this.children.indexOf(backbone);
+      this.children.splice(oldIdx, 1);
+      this.children.splice(0, 0, backbone);
 
       // Paranoia
       backbone.geometry.x = 0;
@@ -475,17 +481,17 @@ export class GraphService {
         return;
       }
 
+      // resize the backbone
+      this.refreshBackbone();
+
       // Layout all the glyphs in a horizontal line, while ignoring the backbone cell.
-      var layout = new mx.mxStackLayout(graph, true);
+      const layout = new mx.mxStackLayout(graph, true);
       layout.resizeParent = true;
       layout.isVertexIgnored = function (vertex)
       {
         return vertex.isBackbone()
       }
       layout.execute(this);
-
-      // resize the backbone
-      this.refreshBackbone();
     }
 
     /**
