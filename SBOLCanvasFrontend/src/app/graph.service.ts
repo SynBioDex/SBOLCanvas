@@ -216,16 +216,38 @@ export class GraphService {
   /**
    * Undoes the most recent changes encapsulated by a begin/end update
    */
-  undo(){
+  undo() {
     this.editor.execute('undo');
-    console.log(this.editor.undoManager);
+    this.simplifySelection();
   }
 
   /**
    * Redoes the most recent changes encapsulated by a begin/end update
    */
-  redo(){
+  redo() {
     this.editor.execute('redo');
+    this.simplifySelection();
+  }
+
+  /**
+   * Simplifies the graph's selection model and makes sure it follows our selection rules
+   * Intended for use after undo or redo
+   */
+  simplifySelection() {
+    const messySelection = this.graph.getSelectionCells();
+    const cleanSelection = [];
+    for (let i = 0; i < messySelection.length; i++) {
+      const cell = messySelection[i];
+      const circuit = cell.getCircuitContainer();
+
+      if (circuit == null || !cleanSelection.includes(circuit)) {
+        cleanSelection.push(circuit);
+      }
+    }
+
+    const selMod = this.graph.getSelectionModel();
+    selMod.clear();
+    selMod.addCells(cleanSelection);
   }
 
   /**
@@ -435,7 +457,6 @@ export class GraphService {
       } else if (this.isBackbone()) {
         return this;
       } else if (!this.isCircuitContainer()) {
-        console.error("getBackbone: called on an invalid cell");
         return null;
       }
 
@@ -519,7 +540,6 @@ export class GraphService {
       if (this.isGlyph() || this.isBackbone()) {
         return this.getParent();
       } else if (!this.isCircuitContainer()) {
-        console.error("getCircuitContainer: This cell has no circuit container!");
         return null;
       }
 
