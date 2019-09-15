@@ -1,0 +1,18 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="location-dna" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokecolor color="#000000" />
+        <strokewidth width="3.1" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="24.0" y="48.0" />
+            <line x="24.0" y="25.5" />
+        </path>
+        <fillstroke />
+        <ellipse h="19.6875" w="19.6875" x="14.15625" y="3.0" />
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>
