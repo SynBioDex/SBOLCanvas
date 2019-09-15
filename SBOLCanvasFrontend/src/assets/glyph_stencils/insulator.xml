@@ -2,7 +2,6 @@
 <shape aspect="variable" centered="True" h="100" name="insulator" strokewidth="inherit" w="100">
     <connections />
     <foreground>
-        <strokecolor color="#000000" />
         <strokewidth width="6" />
         <linejoin join="round" />
         <linecap cap="round" />

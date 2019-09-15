@@ -10,7 +10,7 @@ import argparse
 HEIGHT_MAX 	= 48
 WIDTH_MAX 	= 48
 
-MIN_X_PADDING = 3
+MIN_X_PADDING = 5
 MIN_Y_PADDING = 3
 
 STROKE_WIDTH = 2.88
@@ -40,7 +40,7 @@ def main():
 
 		set_stroke_width(shape, STROKE_WIDTH)
 
-		#remove_stroke_color_setting(shape)
+		remove_stroke_color_setting(shape)
 
 		if not is_centered(shape):
 			set_centered_attribute(shape, CENTERED)
@@ -66,7 +66,6 @@ def parse_args():
 		global FILL_ALL 
 		FILL_ALL = True
 	if args.centered == True:
-		print('setting centered')
 		global CENTERED
 		CENTERED = True
 
@@ -202,8 +201,6 @@ def is_centered(shape):
 			setting_found = True
 			if 'true' in val.lower():
 				return True
-	if not setting_found:
-		print("'centered' attribute not found in shape, assuming it is not centered.")
 	
 	return False
 

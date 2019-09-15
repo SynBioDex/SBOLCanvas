@@ -1,0 +1,30 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="location-protein" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <save />
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <miterlimit limit="4" />
+        <dashpattern pattern="none" />
+        <dashed dashed="1" />
+        <alpha alpha="1" />
+        <path>
+            <move x="22.086357039187227" y="21.143686502177065" />
+            <curve x1="33.672714078374455" x2="33.98621190130624" x3="21.890420899854863" y1="18.62264150943396" y2="31.43686502177068" y3="29.516690856313495" />
+            <curve x1="33.829462989840344" x2="33.38534107402032" x3="21.772859216255444" y1="26.224963715529753" y2="40.03193033381712" y3="37.785195936139324" />
+            <curve x1="33.607402031930334" x2="33.515965166908565" x3="21.68142235123367" y1="34.5587808417997" y2="48.0" y3="45.93613933236574" />
+        </path>
+        <fillstroke />
+        <restore />
+        <rect />
+        <fillstroke />
+        <strokewidth width="3" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <ellipse h="18.287373004354134" w="18.287373004354134" x="14.01378809869376" y="3.0" />
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>
