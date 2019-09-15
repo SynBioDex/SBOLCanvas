@@ -674,16 +674,21 @@ export class GraphService {
         console.debug("old x = " + oldX + ", old y = " + oldY);
         console.debug("x = " + movingGlyph.geometry.x + ", y = " + movingGlyph.geometry.y);
 
+        // The graph already moved the cell and registered it as an undoable edit.
+        // We need to refine the position and formatting in another undoable edit,
+        // but at the end there should only be one action on the undo stack.
+        // To fix that, undo to get rid of the graph's action (but remember the x
+        // position for later)
+        let newx = movingGlyph.geometry.x;
+        service.editor.execute('undo');
+
         // What we do here is get the circuit container, figure out what
         // the index of the moving glyph is, take that glyph out of the list
         // of glyphs that are in the circuit container, and reinsert the moving
         // glyph into the list based on its x coordinates.
-        let newx = movingGlyph.geometry.x;
-        service.editor.execute('undo');
         this.graph.getModel().beginUpdate();
         let circuitContainer = movingGlyph.getCircuitContainer();
         let movingGlyphChildIndex = circuitContainer.getIndex(movingGlyph);
-
 
         let children = circuitContainer.children;
         children.splice(movingGlyphChildIndex, 1);

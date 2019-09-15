@@ -2,7 +2,6 @@
 <shape aspect="variable" h="100" name="aptamer" strokewidth="inherit" w="100">
     <connections />
     <foreground>
-        <strokecolor color="#000000" />
         <strokewidth width="7" />
         <path>
             <move x="39.30412371134023" y="100.0" />

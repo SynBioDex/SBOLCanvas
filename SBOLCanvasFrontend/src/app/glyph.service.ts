@@ -56,6 +56,9 @@ export class GlyphService {
       let canvas = new mx.mxSvgCanvas2D(elt);
       let shape = new mx.mxShape(stencil);
 
+      canvas.setStrokeColor('#000000');
+      canvas.setFillColor('none');
+
       stencil.drawShape(canvas, shape, 0, 0, 52, 52);
 
       svgs[name] = elt;
