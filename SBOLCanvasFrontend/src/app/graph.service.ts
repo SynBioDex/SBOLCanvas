@@ -642,6 +642,7 @@ export class GraphService {
     }
 
     const defaultMouseUp = mx.mxGraphHandler.prototype.mouseUp;
+    const service = this;
     mx.mxGraphHandler.prototype.mouseUp = function(sender, me) {
       defaultMouseUp.apply(this, arguments);
 
@@ -657,6 +658,9 @@ export class GraphService {
         // the index of the moving glyph is, take that glyph out of the list
         // of glyphs that are in the circuit container, and reinsert the moving
         // glyph into the list based on its x coordinates.
+        let newx = movingGlyph.geometry.x;
+        service.editor.execute('undo');
+        this.graph.getModel().beginUpdate();
         let circuitContainer = movingGlyph.getCircuitContainer();
         let movingGlyphChildIndex = circuitContainer.getIndex(movingGlyph);
 
@@ -666,7 +670,7 @@ export class GraphService {
 
         var insertIndex = null;
         for (let i = 0; i < children.length; i++) {
-          if (children[i].geometry.x > movingGlyph.geometry.x) {
+          if (children[i].geometry.x > newx) {
             insertIndex = i;
             break;
           }
@@ -678,6 +682,7 @@ export class GraphService {
         children.splice(insertIndex, 0, movingGlyph);
 
         circuitContainer.refreshCircuitContainer(this.graph);
+        this.graph.getModel().endUpdate();
       }
     }
   }
