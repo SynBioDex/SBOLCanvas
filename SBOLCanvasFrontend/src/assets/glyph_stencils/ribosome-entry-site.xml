@@ -1,0 +1,19 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="ribosome-entry-site" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="5.0" y="48.0" />
+            <line x="43.0" y="48.0" />
+            <line x="43.0" y="40.69230769230769" />
+            <curve x1="43.0" x2="34.230769230769226" x3="24.0" y1="26.076923076923077" y2="18.76923076923077" y3="18.76923076923077" />
+            <curve x1="13.769230769230768" x2="5.0" x3="5.0" y1="18.76923076923077" y2="26.076923076923077" y3="40.69230769230769" />
+            <close />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

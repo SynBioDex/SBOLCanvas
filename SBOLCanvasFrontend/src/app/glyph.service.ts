@@ -24,6 +24,7 @@ export class GlyphService {
     'assets/glyph_stencils/five-prime-sticky-restriction-site.xml',
     'assets/glyph_stencils/location-rna.xml',
     'assets/glyph_stencils/location-protein.xml',
+    'assets/glyph_stencils/ribosome-entry-site.xml',
     //'assets/glyph_stencils/downloads.xml'
   ];
 
