@@ -295,13 +295,13 @@ export class GraphService {
    * Find the selected cell, and if there is a cell selected, update its color.
    */
   updateSelectedCellColor(color: string) {
-    const selectedCell = this.graph.getSelectionCell();
+    const selectedCell = this.graph.getSelectionCells();
 
+    
     if (selectedCell != null) {
-      const cellGroup = this.getCellColorGroup(selectedCell);
 
       this.graph.getModel().beginUpdate();
-      this.graph.setCellStyles(mx.mxConstants.STYLE_FILLCOLOR, color, cellGroup);
+      this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, color, selectedCell);
       this.graph.getModel().endUpdate();
     }
   }

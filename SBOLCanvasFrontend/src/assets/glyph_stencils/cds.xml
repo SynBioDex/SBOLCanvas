@@ -2,7 +2,6 @@
 <shape aspect="variable" centered="true" h="100" name="cds" strokewidth="inherit" w="100">
     <connections />
     <foreground>
-        <strokecolor color="#000000" />
         <strokewidth width="5" />
         <linejoin join="round" />
         <linecap cap="round" />

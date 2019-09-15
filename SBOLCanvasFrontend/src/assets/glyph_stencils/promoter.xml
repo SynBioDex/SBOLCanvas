@@ -2,7 +2,6 @@
 <shape aspect="variable" centered="false" h="100" name="promoter" strokewidth="inherit" w="100">
     <connections />
     <foreground>
-        <strokecolor color="#000000" />
         <strokewidth width="7" />
         <linejoin join="round" />
         <linecap cap="round" />

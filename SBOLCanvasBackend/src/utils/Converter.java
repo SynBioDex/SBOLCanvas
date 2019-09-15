@@ -82,11 +82,11 @@ public class Converter {
 				cell.setInfo(info);
 			}
 
-			if (cell.getStyle().equals("circuitContainer")) {
+			if (cell.getStyle().contains("circuitContainer")) {
 				containers.put(cell.getId(), cell);
-			} else if (cell.getStyle().equals("backbone")) {
+			} else if (cell.getStyle().contains("backbone")) {
 				backbones.put(cell.getId(), cell);
-			} else if (cell.getStyle().startsWith("glyph")) {
+			} else if (cell.getStyle().contains("glyph")) {
 				components.put(cell.getId(), cell);
 			}
 		}
