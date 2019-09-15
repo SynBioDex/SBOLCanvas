@@ -9,8 +9,10 @@ import sys
 HEIGHT_MAX 	= 100
 WIDTH_MAX 	= 100
 
-MIN_X_PADDING = 5
-MIN_Y_PADDING = 2
+MIN_X_PADDING = 10
+MIN_Y_PADDING = 8
+
+STROKE_WIDTH = 5
 
 def main(inputPath, outputPath):
 	tree = et.parse(inputPath)
@@ -25,6 +27,7 @@ def main(inputPath, outputPath):
 	for shape in root.iter('shape'):
 		name = shape.attrib['name']
 		print(name)
+		set_stroke_width(shape, STROKE_WIDTH)
 		fixShape(shape)
 
 	#tree.write(outputPath + '/' + name + '.xml')
@@ -32,13 +35,8 @@ def main(inputPath, outputPath):
 
 
 def fixShape(shape):
-	# scale_shape(shape, 1)
-	# shift_x_direction(shape, 0)
-	# shift_y_direction(shape, 0)
 
-	''' Scales the shape according to HEIGHT_MAX and WIDTH_MAX
-	to keep the shape in the bounds and gives it a minimum spacing distance from
-	the sides '''
+	''' Scales the shape and ajusts its placement on the SVG 'page' '''
 	shape.set('h', str(HEIGHT_MAX))
 	shape.set('w', str(WIDTH_MAX))
 
@@ -63,15 +61,28 @@ def fixShape(shape):
 	scale = min(x_scale, y_scale)
 	scale_shape(shape, scale)
 
+	#
 	# Now that the shape is a managable size, we need to place it on the SVG 'page' perfectly
+	# Get the data again because our coords have changed.
+	#
 	data = get_data(shape)
 
-	# At this point, we should only need the beginning x value to place it correctly in the horizontal direction...
-	x_adjustment_dist = data['min_x'] - MIN_X_PADDING
+	# We take the width and center it 
+	glyph_width = data['max_x'] - data['min_x']
+	print(glyph_width)
+	desired_dist = (WIDTH_MAX - glyph_width) / 2
+	print(desired_dist)
+	x_adjustment_dist = (data['min_x'] - desired_dist) * -1 if data['min_x'] - desired_dist >= 0 else desired_dist - data['min_x']
+	print("x_adjustment_dist = {x}".format(x=x_adjustment_dist))
 	shift_x_direction(shape, x_adjustment_dist)
 
 	# Y direction might be a bit trickier depending on the glyph.
-	y_adjustment_dist = 	
+	y_adjustment_dist = (data['min_y'] - MIN_Y_PADDING) * -1 if data['min_y'] >= 0 else MIN_X_PADDING - data['min_y']
+	print("y_adjustment_dist = {y}".format(y=y_adjustment_dist))
+	shift_y_direction(shape, y_adjustment_dist)
+
+
+############################## Helper functions ########################################
 
 def shift_x_direction(shape, distance):
 	for path in shape.findall('./foreground/path'):
@@ -101,6 +112,13 @@ def scale_shape(shape, factor):
 				elif 'y' in key or 'Y' in key:
 					val *= factor
 				child.attrib[key] = str(val)
+
+def set_stroke_width(shape, width):
+	setting = shape.find('./foreground/strokewidth')
+	for key, val in setting.attrib.items():
+		if 'width' in key:
+			val = width
+		setting.attrib[key] = str(val)
 
 def get_data(shape):
 	data = {

@@ -15,7 +15,9 @@ export class GlyphService {
   private xmlUrls: string[] = [
     'assets/glyph_stencils/promoter.xml',
     'assets/glyph_stencils/cds.xml',
-    'assets/glyph_stencils/aptamer.xml'
+    'assets/glyph_stencils/aptamer.xml',
+    'assets/glyph_stencils/dna-stability-element.xml',
+    //'assets/glyph_stencils/downloads.xml'
   ];
 
   private stencils: any = {};
