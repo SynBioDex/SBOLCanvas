@@ -24,7 +24,7 @@
             <line x="30.55004677268475" y="41.53539133146242" />
             <close />
         </path>
-        <stroke />
+        <fillstroke />
     </foreground>
 </shape>
 </shapes>
