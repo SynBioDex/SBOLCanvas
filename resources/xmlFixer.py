@@ -5,19 +5,23 @@
 
 import xml.etree.ElementTree as et
 import sys
+import argparse
 
-HEIGHT_MAX 	= 100
-WIDTH_MAX 	= 100
+HEIGHT_MAX 	= 48
+WIDTH_MAX 	= 48
 
-MIN_X_PADDING = 15
-MIN_Y_PADDING = 8
+MIN_X_PADDING = 3
+MIN_Y_PADDING = 3
 
-STROKE_WIDTH = 6
+STROKE_WIDTH = 2.88
 
 CENTERED = False
+FILL_ALL = False
 
-def main(inputPath, outputPath):
-	tree = et.parse(inputPath)
+def main():
+	args = parse_args()
+
+	tree = et.parse(args.source)
 
 	root = tree.getroot()
 	try:
@@ -30,12 +34,43 @@ def main(inputPath, outputPath):
 	for shape in root.iter('shape'):
 		name = shape.attrib['name']
 		print(name)
+
+		if FILL_ALL:
+			set_all_strokes_to_fillstroke(shape)
+
 		set_stroke_width(shape, STROKE_WIDTH)
+
+		#remove_stroke_color_setting(shape)
+
+		if not is_centered(shape):
+			set_centered_attribute(shape, CENTERED)
+			
 		fixShape(shape)
 
-	#tree.write(outputPath + '/' + name + '.xml')
-	tree.write(outputPath)
+	tree.write(args.dest)
 
+def parse_args():
+	parser = argparse.ArgumentParser()
+	parser.add_argument("source")
+	parser.add_argument("dest")
+	parser.add_argument("-sw", "--stroke_width", action="store", type=float, help="sets the stroke width of the stencil")
+	parser.add_argument("--fill", action="store_true", help="sets all strokes to be fillstrokes instead")
+	parser.add_argument("--centered", action="store_true", help="centers the glyph horizontally and sets the attribute 'centered' to true")
+
+	args = parser.parse_args()
+
+	if args.stroke_width:
+		global STROKE_WIDTH
+		STROKE_WIDTH = args.stroke_width
+	if args.fill == True:
+		global FILL_ALL 
+		FILL_ALL = True
+	if args.centered == True:
+		print('setting centered')
+		global CENTERED
+		CENTERED = True
+
+	return args
 
 def fixShape(shape):
 
@@ -81,10 +116,12 @@ def fixShape(shape):
 
 	# Y direction might be a bit trickier depending on if the glyph is centered horizontally.
 	glyph_height = data['max_y'] - data['min_y']
+	print(glyph_height)
 	desired_dist = HEIGHT_MAX - glyph_height
 
 	if is_centered(shape):
 		desired_dist = (HEIGHT_MAX - glyph_height) / 2
+		print(desired_dist)
 
 	y_adjustment_dist = (data['min_y'] - desired_dist) * -1 if data['min_y'] >= 0 else desired_dist - data['min_y']
 		
@@ -94,23 +131,30 @@ def fixShape(shape):
 
 ############################## Helper functions ########################################
 
+
 def shift_x_direction(shape, distance):
 	for path in shape.findall('./foreground/path'):
 		for child in path.getchildren():
 			for key, val in child.attrib.items():
 				val = float(val)
-				if 'x' in key or 'X' in key:
+				if 'x' in key.lower():
 					val += distance
 				child.attrib[key] = str(val)
+
+	for ellipse in get_ellipses(shape):
+		set_elipse_attrib(ellipse, 'x', float(get_elipse_attrib(ellipse, 'x')) + distance)
 
 def shift_y_direction(shape, distance):
 	for path in shape.findall('./foreground/path'):
 		for child in path.getchildren():
 			for key, val in child.attrib.items():
 				val = float(val)
-				if 'y' in key or 'Y' in key:
+				if 'y' in key.lower():
 					val += distance
 				child.attrib[key] = str(val)
+
+	for ellipse in get_ellipses(shape):
+		set_elipse_attrib(ellipse, 'y', float(get_elipse_attrib(ellipse, 'y')) + distance)
 
 def scale_shape(shape, factor):
 	for path in shape.findall('./foreground/path'):
@@ -123,6 +167,14 @@ def scale_shape(shape, factor):
 					val *= factor
 				child.attrib[key] = str(val)
 
+	for ellipse in get_ellipses(shape):
+		set_elipse_attrib(ellipse, 'w', float(get_elipse_attrib(ellipse, 'w')) * factor)
+		set_elipse_attrib(ellipse, 'h', float(get_elipse_attrib(ellipse, 'h')) * factor)
+
+
+#
+# Document settings helpers
+#
 def set_stroke_width(shape, width):
 	setting = shape.find('./foreground/strokewidth')
 	for key, val in setting.attrib.items():
@@ -130,18 +182,61 @@ def set_stroke_width(shape, width):
 			val = width
 		setting.attrib[key] = str(val)
 
+def set_all_strokes_to_fillstroke(shape):
+	fore = shape.find('./foreground')
+	for stroke_element in fore.iter('stroke'):
+		stroke_element.tag = 'fillstroke'
+
+def remove_stroke_color_setting(shape):
+	fore = shape.find('./foreground')
+	for stroke_color_element in fore.iter('strokecolor'):
+		fore.remove(stroke_color_element)
+
+def set_centered_attribute(shape, is_centered):
+	shape.set('centered', str(is_centered))
+
 def is_centered(shape):
 	setting_found = False
 	for key, val in shape.attrib.items():
 		if 'centered' in key:
 			setting_found = True
-			if 'true' in val:
+			if 'true' in val.lower():
 				return True
 	if not setting_found:
 		print("'centered' attribute not found in shape, assuming it is not centered.")
 	
 	return False
 
+#
+# Path helpers
+#
+
+#
+# Ellipse helpers
+#
+def get_ellipses(shape):
+	return shape.findall('./foreground/ellipse')
+
+def get_elipse_attrib(ellipse, key_arg):
+	for key, val in ellipse.attrib.items():
+		if key_arg.lower() in key or key_arg.upper() in key:
+			return val
+	assert(False), "Failed to find {key} attribute in ellipse".format(key=key_arg)
+
+def set_elipse_attrib(ellipse, key_arg, val_arg):
+	for key, val in ellipse.attrib.items():
+		if key_arg.lower() in key:
+			ellipse.attrib[key] = str(val_arg)
+			return
+		elif key_arg.upper() in key:
+			ellipse.attrib[key] = str(val_arg)
+			return
+	assert(False), "Failed to set {key} attribute in ellipse".format(key=key_arg)
+
+
+#
+# Main Data scraper
+#
 def get_data(shape):
 	data = {
 		'min_y' : 0,
@@ -180,20 +275,38 @@ def get_data(shape):
 					# Look for maximum y
 					if data['max_y'] < val:
 						data['max_y'] = val
+	for ellipse in get_ellipses(shape):
+		x = float(get_elipse_attrib(ellipse, 'x'))
+		y = float(get_elipse_attrib(ellipse, 'y'))
+		w = float(get_elipse_attrib(ellipse, 'w'))
+		h = float(get_elipse_attrib(ellipse, 'h'))
+		
+		# Look for minimum x,y
+		if is_first_path_x:
+			data['min_x'] = x
+			is_first_path_x = False
+		elif data['min_x'] > x:
+			data['min_x'] = x
+		if is_first_path_y:
+			is_first_path_y = False
+		elif data['min_y'] > y:
+			data['min_y'] = y
 
+		# Look for maximum x,y
+		if data['max_x'] < x + w:
+			data['max_x'] = x + w
+		if data['max_y'] < y + h:
+			data['max_y'] = y + h
 			
 	is_first_path_x = True
 	is_first_path_y = True
 
-	assert (data['min_y'] < data['max_y']), "y-coords messed up!"
-	assert (data['min_x'] < data['max_x']), "x-coords messed up!"
+	assert (data['min_y'] <= data['max_y']), "y-coords messed up!"
+	assert (data['min_x'] <= data['max_x']), "x-coords messed up!"
 
 	return data
 
 
 
 if __name__ == '__main__':
-	if len(sys.argv) != 3:
-		print('Usage: python3 xmlFixer.py <path/to/input.xml> <path/to/output/folder>')
-		exit()
-	main(sys.argv[1], sys.argv[2])
+	main()

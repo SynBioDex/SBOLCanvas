@@ -1,0 +1,27 @@
+<shapes>
+<shape aspect="variable" centered="True" h="100" name="insulator" strokewidth="inherit" w="100">
+    <connections />
+    <foreground>
+        <strokecolor color="#000000" />
+        <strokewidth width="6" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+          <path>
+            <move x="15.0" y="85.0" />
+            <line x="85.0" y="85.0" />
+            <line x="85.0" y="15.0" />
+            <line x="15.0" y="15.0" />
+            <close />
+          </path>
+        <fillstroke />
+        <path>
+          <move x="31.333333333333336" y="68.66666666666667" />
+          <line x="68.66666666666667" y="68.66666666666667" />
+          <line x="68.66666666666667" y="31.333333333333336" />
+          <line x="31.333333333333336" y="31.333333333333336" />
+          <close />
+        </path>
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>

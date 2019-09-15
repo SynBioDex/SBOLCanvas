@@ -17,6 +17,8 @@ export class GlyphService {
     'assets/glyph_stencils/cds.xml',
     'assets/glyph_stencils/aptamer.xml',
     'assets/glyph_stencils/dna-stability-element.xml',
+    'assets/glyph_stencils/insulator.xml',
+    'assets/glyph_stencils/location-dna.xml',
     //'assets/glyph_stencils/downloads.xml'
   ];
 
@@ -35,7 +37,7 @@ export class GlyphService {
 
           const stencil = new mx.mxStencil(shape);
 
-          this.stencils[name] = [stencil, (centered == 'true')];
+          this.stencils[name] = [stencil, (centered && centered.toLowerCase() == 'true')];
         }
         shape = shape.nextSibling;
       }
