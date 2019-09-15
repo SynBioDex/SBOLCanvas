@@ -1,26 +1,26 @@
 <shapes>
-<shape aspect="variable" centered="false" h="100" name="dna-stability-element" strokewidth="inherit" w="100">
+<shape aspect="variable" centered="False" h="48" name="dna-stability-element" strokewidth="inherit" w="48">
     <connections />
     <foreground>
-        <strokewidth width="5" />
+        <strokewidth width="2.88" />
         <linejoin join="round" />
         <linecap cap="round" />
         <path>
-            <move x="49.74181478016838" y="100.0" />
-            <line x="49.74181478016838" y="55.36264421577799" />
+            <move x="23.87371375116932" y="48.0" />
+            <line x="23.87371375116932" y="26.166510757717493" />
         </path>
-        <stroke />
+        <fillstroke />
         <linecap cap="butt" />
         <miterlimit limit="4" />
         <dashpattern pattern="none" />
         <dashed dashed="1" />
         <alpha alpha="1" />
         <path>
-            <move x="30.55004677268475" y="8.0" />
-            <line x="69.44995322731525" y="8.0" />
-            <line x="69.44995322731525" y="42.16651075771749" />
-            <line x="49.885251013408165" y="56.5675085749922" />
-            <line x="30.55004677268475" y="41.53539133146242" />
+            <move x="14.486435921421888" y="3.0" />
+            <line x="33.51356407857811" y="3.0" />
+            <line x="33.51356407857811" y="19.711880261927032" />
+            <line x="23.943872778297475" y="26.75584658559401" />
+            <line x="14.486435921421888" y="19.40318054256314" />
             <close />
         </path>
         <fillstroke />
