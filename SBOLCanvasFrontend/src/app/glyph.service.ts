@@ -14,7 +14,8 @@ export class GlyphService {
   // TODO load list of xml files from server
   private xmlUrls: string[] = [
     'assets/glyph_stencils/promoter.xml',
-    'assets/glyph_stencils/cds.xml'
+    'assets/glyph_stencils/cds.xml',
+    'assets/glyph_stencils/aptamer.xml'
   ];
 
   private stencils: any = {};
@@ -28,9 +29,11 @@ export class GlyphService {
       while (shape != null) {
         if (shape.nodeType == mx.mxConstants.NODETYPE_ELEMENT) {
           const name = shape.getAttribute('name');
+          const centered = shape.getAttribute('centered');
+
           const stencil = new mx.mxStencil(shape);
 
-          this.stencils[name] = stencil;
+          this.stencils[name] = [stencil, (centered == 'true')];
         }
         shape = shape.nextSibling;
       }
@@ -45,7 +48,7 @@ export class GlyphService {
     const svgs = {};
 
     for (const name in this.stencils) {
-      const stencil = this.stencils[name];
+      const stencil = this.stencils[name][0];
 
       let elt = document.createElement('svg');
       let canvas = new mx.mxSvgCanvas2D(elt);

@@ -710,16 +710,26 @@ export class GraphService {
     for (const name in stencils) {
 
       // Create a new copy of the stencil for the graph.
-      const stencil = stencils[name];
+      const stencil = stencils[name][0];
+      const centered = stencils[name][1];
       let customStencil = new mx.mxStencil(stencil.desc);
 
       // Change the copied stencil for mxgraph
       let origDrawShape = mx.mxStencil.prototype.drawShape;
 
-      customStencil.drawShape = function (canvas, shape, x, y, w, h) {
-        h = h/2;
-        origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
+      if (centered) {
+        customStencil.drawShape = function (canvas, shape, x, y, w, h) {
+          h /= 2;
+          y += h/2;
+          origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
+        }
+      } else {
+        customStencil.drawShape = function (canvas, shape, x, y, w, h) {
+          h = h/2;
+          origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
+        }
       }
+
 
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
