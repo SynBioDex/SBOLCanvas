@@ -2,7 +2,6 @@
 <shape aspect="variable" centered="False" h="48" name="location-dna" strokewidth="inherit" w="48">
     <connections />
     <foreground>
-        <strokecolor color="#000000" />
         <strokewidth width="3.1" />
         <linejoin join="round" />
         <linecap cap="round" />

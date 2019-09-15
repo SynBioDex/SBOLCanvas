@@ -167,36 +167,57 @@ export class GraphService {
     this.metadataService.setSelectedGlyphInfo(null);
   }
 
-  addNewBackbone(element) {
+  // TODO: this is code for making a dragsource (instead of a button as it is now)
+  // addNewBackbone(element) {
+  //
+  //   // TODO: Make drag element outline have same shape as backbone.
+  //   const insertGlyph = (graph, evt, target, x, y) => {
+  //     // When executed, 'this' is the dragSource, not the graphService
+  //
+  //     graph.getModel().beginUpdate();
+  //     try {
+  //       const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, glyphHeight, circuitContainerStyleName);
+  //       const backbone = graph.insertVertex(circuitContainer, null, '', 0, glyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
+  //
+  //       backbone.refreshBackbone(graph);
+  //
+  //       circuitContainer.setConnectable(false);
+  //       backbone.setConnectable(false);
+  //       // TODO: glyphCell.data = new GlyphInfo();
+  //
+  //       const selection = graph.getSelectionModel();
+  //       selection.clear();
+  //       selection.addCell(circuitContainer);
+  //     } finally {
+  //       graph.getModel().endUpdate();
+  //     }
+  //   };
+  //
+  //   const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, this.glyphDragPreviewElt);
+  //
+  //   ds.isGridEnabled = function() {
+  //     return this.currentGraph.graphHandler.guidesEnabled;
+  //   };
+  // }
 
-    // TODO: Make drag element outline have same shape as backbone.
-    const insertGlyph = (graph, evt, target, x, y) => {
-      // When executed, 'this' is the dragSource, not the graphService
+  addNewBackbone() {
+    this.graph.getModel().beginUpdate();
+    try {
+      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0, defaultBackboneWidth, glyphHeight, circuitContainerStyleName);
+      const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, glyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
 
-      graph.getModel().beginUpdate();
-      try {
-        const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, glyphHeight, circuitContainerStyleName);
-        const backbone = graph.insertVertex(circuitContainer, null, '', 0, glyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
+      backbone.refreshBackbone(this.graph);
 
-        backbone.refreshBackbone(graph);
+      circuitContainer.setConnectable(false);
+      backbone.setConnectable(false);
+      // TODO: glyphCell.data = new GlyphInfo();
 
-        circuitContainer.setConnectable(false);
-        backbone.setConnectable(false);
-        // TODO: glyphCell.data = new GlyphInfo();
-
-        const selection = graph.getSelectionModel();
-        selection.clear();
-        selection.addCell(circuitContainer);
-      } finally {
-        graph.getModel().endUpdate();
-      }
-    };
-
-    const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, this.glyphDragPreviewElt);
-
-    ds.isGridEnabled = function() {
-      return this.currentGraph.graphHandler.guidesEnabled;
-    };
+      const selection = this.graph.getSelectionModel();
+      selection.clear();
+      selection.addCell(circuitContainer);
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
   }
 
   /**
@@ -319,7 +340,6 @@ export class GraphService {
   updateSelectedCellColor(color: string) {
     const selectedCell = this.graph.getSelectionCells();
 
-    
     if (selectedCell != null) {
 
       this.graph.getModel().beginUpdate();
@@ -739,6 +759,7 @@ export class GraphService {
     const textBoxStyle = {};
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
     textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
+    textBoxStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
 
     const circuitContainerStyle = {};

@@ -45,15 +45,14 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     'serverFile16.xml'
   ]
 
-  //@ViewChild('textDragSource') textDragSource: ElementRef;
-
   constructor(private graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) {}
 
   ngOnInit() {
   }
 
   ngAfterViewInit() {
-    this.graphService.addNewBackbone(this.backbone.nativeElement);
+    // TODO this is code for making the 'new strand' a dragsource
+    // this.graphService.addNewBackbone(this.backbone.nativeElement);
   }
 
   save(filename: string) {
@@ -76,6 +75,10 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
   redoChange(){
     this.graphService.redo();
+  }
+
+  addStrand() {
+    this.graphService.addNewBackbone();
   }
 
   addTextBox() {
