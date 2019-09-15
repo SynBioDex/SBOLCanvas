@@ -70,6 +70,14 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.graphService.delete();
   }
 
+  undoChange(){
+    this.graphService.undo();
+  }
+
+  redoChange(){
+    this.graphService.redo();
+  }
+
   addTextBox() {
     this.graphService.addTextBox();
   }

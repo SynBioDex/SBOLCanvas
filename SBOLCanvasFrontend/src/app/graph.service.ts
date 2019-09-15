@@ -178,7 +178,7 @@ export class GraphService {
         const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, glyphHeight, circuitContainerStyleName);
         const backbone = graph.insertVertex(circuitContainer, null, '', 0, glyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
 
-        backbone.refreshBackbone();
+        backbone.refreshBackbone(graph);
 
         circuitContainer.setConnectable(false);
         backbone.setConnectable(false);
@@ -211,6 +211,20 @@ export class GraphService {
    */
   delete() {
     this.editor.execute('delete');
+  }
+
+  /**
+   * Undoes the most recent changes encapsulated by a begin/end update
+   */
+  undo(){
+    this.editor.execute('undo');
+  }
+
+  /**
+   * Redoes the most recent changes encapsulated by a begin/end update
+   */
+  redo(){
+    this.editor.execute('redo');
   }
 
   /**
@@ -438,9 +452,9 @@ export class GraphService {
     /**
      * Positions and sizes the backbone associated with this cell
      */
-    mx.mxCell.prototype.refreshBackbone = function() {
+    mx.mxCell.prototype.refreshBackbone = function(graph) {
       if (this.isGlyph() || this.isBackbone()) {
-        this.getParent().refreshBackbone();
+        this.getParent().refreshBackbone(graph);
         return;
       } else if (!this.isCircuitContainer()) {
         console.error("refreshBackbone: called on an invalid cell!");
@@ -449,18 +463,22 @@ export class GraphService {
 
       let backbone = this.getBackbone();
 
+      const geo = new mx.mxGeometry(0,0,0,0);
       // Paranoia
-      backbone.geometry.x = 0;
-      backbone.geometry.y = (glyphHeight / 2) - (defaultBackboneHeight / 2);
-      backbone.geometry.height = defaultBackboneHeight;
+      geo.x = 0;
+      geo.y = (glyphHeight / 2) - (defaultBackboneHeight / 2);
+      geo.height = defaultBackboneHeight;
 
       // width:
       let glyphCount = this.getChildCount() - 1;
       if (glyphCount == 0) {
-        backbone.geometry.width = defaultBackboneWidth;
+        geo.width = defaultBackboneWidth;
       } else {
-        backbone.geometry.width = glyphCount * glyphWidth;
+        geo.width = glyphCount * glyphWidth;
       }
+
+      graph.getModel().setGeometry(backbone,geo);
+
     }
 
     /**
@@ -485,7 +503,7 @@ export class GraphService {
       layout.execute(this);
 
       // resize the backbone
-      this.refreshBackbone();
+      this.refreshBackbone(graph);
     }
 
     /**
