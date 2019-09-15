@@ -4,8 +4,10 @@
  * A tile-view list of glyphs the user can use to add components to the graph.
  */
 
-import {Component, OnInit, AfterViewInit } from '@angular/core';
+import {Component, OnInit, AfterViewInit} from '@angular/core';
 import {GraphService} from '../graph.service';
+import {GlyphService} from '../glyph.service';
+import {DomSanitizer} from '@angular/platform-browser';
 
 @Component({
   selector: 'app-glyph-menu',
@@ -14,54 +16,23 @@ import {GraphService} from '../graph.service';
 })
 export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
-  public glyphPics: string[] = [
-    'assets/glyphs/amino-acid.png',
-    'assets/glyphs/aptamer.png',
-    'assets/glyphs/arrowcds.png',
-    'assets/glyphs/assembly-junction.png',
-    'assets/glyphs/base.png',
-    'assets/glyphs/blank-backbone.png',
-    'assets/glyphs/blunt-restriction-site.png',
-    'assets/glyphs/cds.png',
-    'assets/glyphs/cut2.png',
-    'assets/glyphs/cut.png',
-    'assets/glyphs/dna-stability-element.png',
-    'assets/glyphs/engineered-region.png',
-    'assets/glyphs/five-prime-overhang.png',
-    'assets/glyphs/insulator.png',
-    'assets/glyphs/junction.png',
-    'assets/glyphs/no-glyph-assigned.png',
-    'assets/glyphs/non-coding-rna-gene.png',
-    'assets/glyphs/omitted-detail.png',
-    'assets/glyphs/operator.png',
-    'assets/glyphs/origin-of-replication.png',
-    'assets/glyphs/origin-of-transfer.png',
-    'assets/glyphs/poly-a-site.png',
-    'assets/glyphs/primer-binding-site.png',
-    'assets/glyphs/promoter.png',
-    'assets/glyphs/protease-site.png',
-    'assets/glyphs/protein-stability-element.png',
-    'assets/glyphs/restriction-enzyme-recognition-site.png',
-    'assets/glyphs/restriction-site-with-no-overhang.png',
-    'assets/glyphs/ribonuclease-site.png',
-    'assets/glyphs/rna-stability-element.png',
-    'assets/glyphs/signature.png',
-    'assets/glyphs/specific-recombination-site.png',
-    'assets/glyphs/terminator.png',
-    'assets/glyphs/three-prime-overhang.png',
-    'assets/glyphs/translational-start-site.png',
-    'assets/glyphs/unspecified.png',
-  ];
+  public glyphDict = {};
 
-  constructor(private graphService: GraphService) {
+  constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer) {
   }
 
-  onGlyphClicked(event: any) {
-    this.graphService.dropNewGlyph(event.target)
+  onGlyphClicked(name: string) {
+    this.graphService.dropNewGlyph(name);
   }
 
   ngOnInit() {
+    const svgElts = this.glyphService.getSvgElements();
 
+    for (const name in svgElts) {
+      const svg = svgElts[name];
+
+      this.glyphDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
   }
 
   ngAfterViewInit() {

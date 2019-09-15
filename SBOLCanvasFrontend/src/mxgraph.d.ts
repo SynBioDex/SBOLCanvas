@@ -753,7 +753,7 @@ export class mxShape {
  * Code to add stencils.
  *
  * (code)
- * var req = mxUtils.load('test/stencils.xml');
+ * var req = mxUtils.load('test/promoter.xml');
  * var root = req.getDocumentElement();
  * var shape = root.firstChild;
  *

@@ -1,0 +1,20 @@
+<shapes>
+<shape aspect="variable" centered="true" h="100" name="cds" strokewidth="inherit" w="100">
+    <connections />
+    <foreground>
+        <strokecolor color="#000000" />
+        <strokewidth width="5" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="10.0" y="76.44701788723971" />
+            <line x="64.7708367313652" y="76.44701788723971" />
+            <line x="90.0" y="50.0" />
+            <line x="64.7708367313652" y="23.55298211276029" />
+            <line x="10.0" y="23.55298211276029" />
+            <close />
+        </path>
+      <fillstroke />
+    </foreground>
+</shape>
+</shapes>

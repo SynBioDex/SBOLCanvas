@@ -1,8 +1,10 @@
 <div class="glyphContainer">
-  <div #glyphMenuContainer style="margin: auto">
+  <div style="margin: auto">
     <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
-      <mat-grid-tile *ngFor="let g of glyphPics;">
-        <button mat-stroked-button (click)="onGlyphClicked($event)"><img #glyphElement width="52px" height="104px" src="{{ g }}"></button>
+      <mat-grid-tile *ngFor="let pair of glyphDict | keyvalue">
+        <button mat-stroked-button (click)="onGlyphClicked(pair.key)">
+          <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
+        </button>
       </mat-grid-tile>
     </mat-grid-list>
   </div>
