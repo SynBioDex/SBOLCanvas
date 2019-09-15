@@ -184,6 +184,9 @@ export class GraphService {
         backbone.setConnectable(false);
         // TODO: glyphCell.data = new GlyphInfo();
 
+        const selection = graph.getSelectionModel();
+        selection.clear();
+        selection.addCell(circuitContainer);
       } finally {
         graph.getModel().endUpdate();
       }
@@ -684,7 +687,7 @@ export class GraphService {
     textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
     this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
 
-    const circuitContainerStyle = {};  // TODO: figure out how to eliminate border of circuit container to render circuit container invisible.
+    const circuitContainerStyle = {};
     circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
     circuitContainerStyle[mx.mxConstants.STYLE_STROKECOLOR] = 'none';
     circuitContainerStyle[mx.mxConstants.STYLE_FILLCOLOR] = 'none';
