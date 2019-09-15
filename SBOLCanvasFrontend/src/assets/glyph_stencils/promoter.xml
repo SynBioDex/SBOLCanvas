@@ -1,23 +1,23 @@
-<shapes name="mxGraph.home.thayer.Desktop">
-<shape aspect="variable" h="48" name="promoter" strokewidth="inherit" w="48" centered="false">
-    <connections/>
+<shapes>
+<shape aspect="variable" centered="false" h="100" name="promoter" strokewidth="inherit" w="100">
+    <connections />
     <foreground>
-        <strokecolor color="#000000"/>
-        <strokewidth width="3"/>
-        <linejoin join="round"/>
-        <linecap cap="round"/>
+        <strokecolor color="#000000" />
+        <strokewidth width="7" />
+        <linejoin join="round" />
+        <linecap cap="round" />
         <path>
-            <move x="30.933" y="9.577"/>
-            <line x="40" y="17.577"/>
-            <line x="30.933" y="25.399"/>
+            <move x="65.1659375" y="19.515312499999993" />
+            <line x="85.0" y="37.01531249999999" />
+            <line x="65.1659375" y="54.12593749999999" />
         </path>
-        <stroke/>
+        <stroke />
         <path>
-            <move x="8" y="46.37"/>
-            <line x="8" y="17.577"/>
-            <line x="38.933" y="17.577"/>
+            <move x="15.0" y="100.0" />
+            <line x="15.0" y="37.01531249999999" />
+            <line x="82.6659375" y="37.01531249999999" />
         </path>
-        <stroke/>
+        <stroke />
     </foreground>
 </shape>
 </shapes>

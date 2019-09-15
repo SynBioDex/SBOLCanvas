@@ -1,20 +1,20 @@
-<shapes name="mxGraph.home.thayer.Desktop">
-<shape aspect="variable" h="48" name="cds" strokewidth="inherit" w="48" centered="true">
-    <connections/>
+<shapes>
+<shape aspect="variable" centered="true" h="100" name="cds" strokewidth="inherit" w="100">
+    <connections />
     <foreground>
-        <strokecolor color="#000000"/>
-        <strokewidth width="2.99544764"/>
-        <linejoin join="round"/>
-        <linecap cap="round"/>
+        <strokecolor color="#000000" />
+        <strokewidth width="5" />
+        <linejoin join="round" />
+        <linecap cap="round" />
         <path>
-            <move x="5.607" y="36.161"/>
-            <line x="30.792" y="36.161"/>
-            <line x="42.393" y="24"/>
-            <line x="30.792" y="11.839"/>
-            <line x="5.607" y="11.839"/>
-            <close/>
+            <move x="10.0" y="76.44701788723971" />
+            <line x="64.7708367313652" y="76.44701788723971" />
+            <line x="90.0" y="50.0" />
+            <line x="64.7708367313652" y="23.55298211276029" />
+            <line x="10.0" y="23.55298211276029" />
+            <close />
         </path>
-      <fillstroke/>
+      <fillstroke />
     </foreground>
 </shape>
 </shapes>

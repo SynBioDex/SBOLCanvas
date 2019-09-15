@@ -9,10 +9,12 @@ import sys
 HEIGHT_MAX 	= 100
 WIDTH_MAX 	= 100
 
-MIN_X_PADDING = 10
+MIN_X_PADDING = 15
 MIN_Y_PADDING = 8
 
-STROKE_WIDTH = 5
+STROKE_WIDTH = 6
+
+CENTERED = False
 
 def main(inputPath, outputPath):
 	tree = et.parse(inputPath)
@@ -23,6 +25,7 @@ def main(inputPath, outputPath):
 	 		del root.attrib['name']
 	except:
 		pass
+
 
 	for shape in root.iter('shape'):
 		name = shape.attrib['name']
@@ -44,6 +47,7 @@ def fixShape(shape):
 	# First we decide the scaling factor and rescale.
 	#
 	data = get_data(shape)
+	print(data)
 
 	# What is the scaling factor we need to fit in the x direction?
 	# The total distance from min_x to max_x needs to be < WIDTH_MAX - MIN_X_PADDING * 2 // *2 because the x padding is on both sides.
@@ -66,18 +70,24 @@ def fixShape(shape):
 	# Get the data again because our coords have changed.
 	#
 	data = get_data(shape)
+	print(data)
 
 	# We take the width and center it 
 	glyph_width = data['max_x'] - data['min_x']
-	print(glyph_width)
 	desired_dist = (WIDTH_MAX - glyph_width) / 2
-	print(desired_dist)
 	x_adjustment_dist = (data['min_x'] - desired_dist) * -1 if data['min_x'] - desired_dist >= 0 else desired_dist - data['min_x']
 	print("x_adjustment_dist = {x}".format(x=x_adjustment_dist))
 	shift_x_direction(shape, x_adjustment_dist)
 
-	# Y direction might be a bit trickier depending on the glyph.
-	y_adjustment_dist = (data['min_y'] - MIN_Y_PADDING) * -1 if data['min_y'] >= 0 else MIN_X_PADDING - data['min_y']
+	# Y direction might be a bit trickier depending on if the glyph is centered horizontally.
+	glyph_height = data['max_y'] - data['min_y']
+	desired_dist = HEIGHT_MAX - glyph_height
+
+	if is_centered(shape):
+		desired_dist = (HEIGHT_MAX - glyph_height) / 2
+
+	y_adjustment_dist = (data['min_y'] - desired_dist) * -1 if data['min_y'] >= 0 else desired_dist - data['min_y']
+		
 	print("y_adjustment_dist = {y}".format(y=y_adjustment_dist))
 	shift_y_direction(shape, y_adjustment_dist)
 
@@ -120,6 +130,18 @@ def set_stroke_width(shape, width):
 			val = width
 		setting.attrib[key] = str(val)
 
+def is_centered(shape):
+	setting_found = False
+	for key, val in shape.attrib.items():
+		if 'centered' in key:
+			setting_found = True
+			if 'true' in val:
+				return True
+	if not setting_found:
+		print("'centered' attribute not found in shape, assuming it is not centered.")
+	
+	return False
+
 def get_data(shape):
 	data = {
 		'min_y' : 0,
@@ -160,8 +182,8 @@ def get_data(shape):
 						data['max_y'] = val
 
 			
-		is_first_path_x = True
-		is_first_path_y = True
+	is_first_path_x = True
+	is_first_path_y = True
 
 	assert (data['min_y'] < data['max_y']), "y-coords messed up!"
 	assert (data['min_x'] < data['max_x']), "x-coords messed up!"
