@@ -218,6 +218,7 @@ export class GraphService {
    */
   undo(){
     this.editor.execute('undo');
+    console.log(this.editor.undoManager);
   }
 
   /**
@@ -238,7 +239,6 @@ export class GraphService {
         // Insert new glyph
         const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + name);
         glyphCell.data = new GlyphInfo();
-        glyphCell.data.name = 'bob';
         glyphCell.setConnectable(false);
 
         circuitContainer.refreshCircuitContainer(this.graph);

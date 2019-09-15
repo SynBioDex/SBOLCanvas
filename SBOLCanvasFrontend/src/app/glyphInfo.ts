@@ -1,4 +1,5 @@
 export class GlyphInfo {
+  static counter: number = 0;
   partType: string;
   partRole: string;
   partRefine: string;
@@ -6,6 +7,10 @@ export class GlyphInfo {
   name: string;
   description: string;
   version: string;
+
+  constructor(){
+    this.displayID = 'id'+(GlyphInfo.counter++);
+  }
 
   makeCopy() {
     const copy: GlyphInfo = new GlyphInfo();
