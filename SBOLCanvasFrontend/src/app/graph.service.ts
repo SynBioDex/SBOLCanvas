@@ -142,7 +142,7 @@ export class GraphService {
 
       if (cell.isGlyph()) {
 
-        let color = this.graph.getCellStyle(cell)['fillColor'];
+        let color = this.graph.getCellStyle(cell)['strokeColor'];
         this.metadataService.setColor(color);
 
         const glyphInfo = cell.getGlyphMetadata();
