@@ -16,17 +16,6 @@ import { HttpClientModule } from '@angular/common/http';
 // Angular Material stuff. This is a different UI library than ng-bootstrap.
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import { MaterialModule } from './material.module';
-/*import {
-  MatButtonModule,
-  MatCheckboxModule, MatGridListModule,
-  MatInputModule,
-  MatListModule,
-  MatSelectModule,
-  MatSidenavModule,
-  MatTabsModule,
-  MatToolbarModule,
-  MatDialogModule
-} from '@angular/material';*/
 
 import {GraphService} from './graph.service';
 

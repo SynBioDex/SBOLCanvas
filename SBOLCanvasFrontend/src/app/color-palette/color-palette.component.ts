@@ -1,6 +1,6 @@
-import {Component, EventEmitter, Output, OnInit} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import { MccColorPickerItem, MccColorPickerService } from 'material-community-components';
-import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {FormBuilder, FormGroup} from '@angular/forms';
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 

@@ -45,7 +45,7 @@ export class GraphService {
   glyphDragPreviewElt: HTMLElement;
   textBoxDragPreviewElt: HTMLElement;
 
-  baseGlyphStyle;
+  baseGlyphStyle: any;
 
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
     // constructor code is divided into helper methods for oranization,
@@ -210,7 +210,6 @@ export class GraphService {
 
       circuitContainer.setConnectable(false);
       backbone.setConnectable(false);
-      // TODO: glyphCell.data = new GlyphInfo();
 
       const selection = this.graph.getSelectionModel();
       selection.clear();
@@ -361,49 +360,6 @@ export class GraphService {
       }
     }
   }
-
-  /**
-   * Returns the GlyphInfo associated with the given cell
-   * cell must be a vertex, not an edge
-   */
-  getCellData(cell: mxCell) {
-    const defaultParent = this.graph.getDefaultParent();
-    if (cell.getParent() === defaultParent) {
-      return cell.data;
-    } else {
-      return cell.getParent().data;
-    }
-  }
-
-  /**
-   * Returns a list of cells that should be the same color as the given one
-   * ie, a glyph and its ports
-   */
-  getCellColorGroup(cell: mxCell) {
-    if (cell.isEdge()) {
-      return [cell];
-    }
-
-    let cells;
-
-    const defaultParent = this.graph.getDefaultParent();
-    if (cell.getParent() !== defaultParent) {
-      // port
-      cells = this.getCellColorGroup(cell.getParent());
-    } else if (this.getCellData(cell) == null) {
-      // text
-      cells = [cell];
-    } else {
-      // glyph
-      cells = [cell];
-      for (const c of cell.children) {
-        cells.push(c);
-      }
-    }
-
-    return cells;
-  }
-
 
   /**
    * Encodes the graph to a string (xml) representation
@@ -807,7 +763,6 @@ export class GraphService {
           origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
         }
       }
-
 
       mx.mxStencilRegistry.addStencil(name, customStencil);
 

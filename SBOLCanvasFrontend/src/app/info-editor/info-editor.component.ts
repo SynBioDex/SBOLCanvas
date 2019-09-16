@@ -1,6 +1,5 @@
-import {Component, EventEmitter, Input, OnInit, Output, SystemJsNgModuleLoader} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
-import {FormGroup} from '@angular/forms';
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 import { MatSelectChange } from '@angular/material';
