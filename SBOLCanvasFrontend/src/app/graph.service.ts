@@ -685,6 +685,8 @@ export class GraphService {
         circuitContainer.refreshCircuitContainer(this.graph);
         this.graph.getModel().endUpdate();
       }
+
+      movingGlyph = null;
     }
   }
 
