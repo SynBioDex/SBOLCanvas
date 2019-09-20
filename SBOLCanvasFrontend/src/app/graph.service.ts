@@ -403,6 +403,25 @@ export class GraphService {
       }
       return glyphData;
     };
+    glyphInfoCodec.encode = function(enc, object){
+      var node = enc.document.createElement('GlyphInfo');
+      if(object.partType)
+        node.setAttribute("partType", object.partType);
+      if(object.partRole)
+        node.setAttribute("partRole", object.partRole);
+      if(object.partRefine)
+        node.setAttribute("partRefine", object.partRefine);
+      if(object.displayID)
+        node.setAttribute("displayID", object.displayID);
+      if(object.name)
+        node.setAttribute("name", object.name);
+      if(object.description)
+        node.setAttribute("description", object.description);
+      if(object.version)
+        node.setAttribute("version", object.version);
+
+      return node;
+    }
     mx.mxCodecRegistry.register(glyphInfoCodec);
     window['GlyphInfo'] = GlyphInfo;
   }

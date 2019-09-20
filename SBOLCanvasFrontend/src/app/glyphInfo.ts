@@ -1,4 +1,5 @@
 export class GlyphInfo {
+  // Remember that when you change this you need to change the encode function in graph service
   static counter: number = 0;
   partType: string;
   partRole: string;
