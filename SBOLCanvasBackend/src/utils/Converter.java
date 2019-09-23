@@ -93,6 +93,7 @@ public class Converter {
 
 		// create the document
 		String uriPrefix = "https://sbolcanvas.org/";
+		String annPrefix = "mxGraph";
 		SBOLDocument document = new SBOLDocument();
 		document.setDefaultURIprefix(uriPrefix);
 		document.setComplete(true);
@@ -107,17 +108,17 @@ public class Converter {
 				cd.addRole(SequenceOntology.ENGINEERED_REGION);
 				
 				// container annotations
-				cd.createAnnotation(new QName(uriPrefix, "containerCell", "id"), container.getId());
-				cd.createAnnotation(new QName(uriPrefix, "containerGeometry", "x"), container.getGeometry().getX());
-				cd.createAnnotation(new QName(uriPrefix, "containerGeometry", "y"), container.getGeometry().getY());
-				cd.createAnnotation(new QName(uriPrefix, "containerGeometry", "width"), container.getGeometry().getWidth());
-				cd.createAnnotation(new QName(uriPrefix, "containerGeometry", "height"), container.getGeometry().getHeight());
+				cd.createAnnotation(new QName(uriPrefix, "containerCellID", annPrefix), container.getId());
+				cd.createAnnotation(new QName(uriPrefix, "containerGeometryX", annPrefix), container.getGeometry().getX());
+				cd.createAnnotation(new QName(uriPrefix, "containerGeometryY", annPrefix), container.getGeometry().getY());
+				cd.createAnnotation(new QName(uriPrefix, "containerGeometryWidth", annPrefix), container.getGeometry().getWidth());
+				cd.createAnnotation(new QName(uriPrefix, "containerGeometryHeight", annPrefix), container.getGeometry().getHeight());
 				
 				// backbone geometry
-				cd.createAnnotation(new QName(uriPrefix, "backboneGeometry", "x"), cell.getGeometry().getX());
-				cd.createAnnotation(new QName(uriPrefix, "backboneGeometry", "y"), cell.getGeometry().getY());
-				cd.createAnnotation(new QName(uriPrefix, "backboneGeometry", "width"), cell.getGeometry().getWidth());
-				cd.createAnnotation(new QName(uriPrefix, "backboneGeometry", "height"), cell.getGeometry().getHeight());
+				cd.createAnnotation(new QName(uriPrefix, "backboneGeometryX", annPrefix), cell.getGeometry().getX());
+				cd.createAnnotation(new QName(uriPrefix, "backboneGeometryY", annPrefix), cell.getGeometry().getY());
+				cd.createAnnotation(new QName(uriPrefix, "backboneGeometryWidth", annPrefix), cell.getGeometry().getWidth());
+				cd.createAnnotation(new QName(uriPrefix, "backboneGeometryHeight", annPrefix), cell.getGeometry().getHeight());
 			}
 
 			// create the things needed for parts
@@ -136,16 +137,16 @@ public class Converter {
 						.createComponent(cell.getInfo().getDisplayID(), AccessType.PUBLIC, componentCD.getDisplayId());
 				
 				// cell annotation
-				component.createAnnotation(new QName(uriPrefix, "cell", "id"), cell.getId());
-				component.createAnnotation(new QName(uriPrefix, "cell", "style"), cell.getStyle());
-				component.createAnnotation(new QName(uriPrefix, "cell", "id"), cell.getId());
-				component.createAnnotation(new QName(uriPrefix, "cell", "connectable"), cell.isConnectable());
+				component.createAnnotation(new QName(uriPrefix, "cellID", annPrefix), cell.getId());
+				component.createAnnotation(new QName(uriPrefix, "cellStyle", annPrefix), cell.getStyle());
+				component.createAnnotation(new QName(uriPrefix, "cellVertex", annPrefix), cell.getVertex());
+				component.createAnnotation(new QName(uriPrefix, "cellConnectable", annPrefix), cell.isConnectable());
 				
 				// geometry annotation
-				component.createAnnotation(new QName(uriPrefix, "geometry", "x"), cell.getGeometry().getX());
-				component.createAnnotation(new QName(uriPrefix, "geometry", "y"), cell.getGeometry().getY());
-				component.createAnnotation(new QName(uriPrefix, "geometry", "width"), cell.getGeometry().getWidth());
-				component.createAnnotation(new QName(uriPrefix, "geometry", "height"), cell.getGeometry().getHeight());
+				component.createAnnotation(new QName(uriPrefix, "geometryX", annPrefix), cell.getGeometry().getX());
+				component.createAnnotation(new QName(uriPrefix, "geometryY", "y"), cell.getGeometry().getY());
+				component.createAnnotation(new QName(uriPrefix, "geometryWidth", annPrefix), cell.getGeometry().getWidth());
+				component.createAnnotation(new QName(uriPrefix, "geometryHeight", annPrefix), cell.getGeometry().getHeight());
 			}
 
 			// create sequence constraints
@@ -156,8 +157,8 @@ public class Converter {
 
 					@Override
 					public int compare(Component o1, Component o2) {
-						return o1.getAnnotation(new QName(uriPrefix, "geometry", "x")).getDoubleValue() < o2
-								.getAnnotation(new QName(uriPrefix, "geometry", "x")).getDoubleValue() ? -1 : 1;
+						return o1.getAnnotation(new QName(uriPrefix, "geometryX", annPrefix)).getDoubleValue() < o2
+								.getAnnotation(new QName(uriPrefix, "geometryX", annPrefix)).getDoubleValue() ? -1 : 1;
 					}
 
 				});
