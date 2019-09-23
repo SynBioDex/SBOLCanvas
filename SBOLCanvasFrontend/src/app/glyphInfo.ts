@@ -8,6 +8,7 @@ export class GlyphInfo {
   name: string;
   description: string;
   version: string;
+  sequence: string;
 
   constructor(){
     this.displayID = 'id'+(GlyphInfo.counter++);
@@ -22,6 +23,7 @@ export class GlyphInfo {
     copy.name = this.name;
     copy.description = this.description;
     copy.version = this.version;
+    copy.sequence = this.sequence;
     return copy;
   }
 
@@ -33,6 +35,7 @@ export class GlyphInfo {
     this.name = other.name;
     this.description = other.description;
     this.version = other.version;
+    this.sequence = other.sequence;
   }
 
 }

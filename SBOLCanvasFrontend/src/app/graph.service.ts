@@ -419,6 +419,8 @@ export class GraphService {
         node.setAttribute("description", object.description);
       if(object.version)
         node.setAttribute("version", object.version);
+      if(object.sequence)
+        node.setAttribute("sequence", object.sequence);
 
       return node;
     }

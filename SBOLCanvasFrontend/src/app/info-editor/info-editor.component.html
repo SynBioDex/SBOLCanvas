@@ -72,7 +72,7 @@
     </mat-form-field>
 
     <mat-form-field>
-      <textarea matInput placeholder="Sequence"></textarea>
+      <textarea matInput id="sequence" placeholder="Sequence" value="{{glyphInfo.sequence}}" (input)="inputChange($event)"></textarea>
     </mat-form-field>
 
 </div>
