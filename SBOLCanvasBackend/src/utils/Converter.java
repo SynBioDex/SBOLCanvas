@@ -1,8 +1,6 @@
 package utils;
 
 import java.io.OutputStream;
-import java.net.URI;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Set;
@@ -13,12 +11,14 @@ import javax.xml.namespace.QName;
 import org.sbolstandard.core2.AccessType;
 import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
+import org.sbolstandard.core2.OrientationType;
 import org.sbolstandard.core2.RestrictionType;
 import org.sbolstandard.core2.SBOLConversionException;
 import org.sbolstandard.core2.SBOLDocument;
 import org.sbolstandard.core2.SBOLValidationException;
 import org.sbolstandard.core2.SBOLWriter;
 import org.sbolstandard.core2.Sequence;
+import org.sbolstandard.core2.SequenceAnnotation;
 import org.sbolstandard.core2.SequenceOntology;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -99,10 +99,11 @@ public class Converter {
 			}
 
 			if (cell.getStyle().contains("circuitContainer")) {
-				// TODO remove me when the user can set the displayID
-				cell.getInfo().setDisplayID("cd" + cell.getId());
 				containers.put(cell.getId(), cell);
 			} else if (cell.getStyle().contains("backbone")) {
+				// TODO remove me when the user can set the displayID
+				cell.setInfo(new GlyphInfo());
+				cell.getInfo().setDisplayID("cd"+cell.getId());
 				backbones.put(cell.getId(), cell);
 			} else if (cell.getStyle().contains("glyph")) {
 				if (glyphSets.get(cell.getParent()) != null) {
@@ -118,7 +119,6 @@ public class Converter {
 		// create the document
 		String uriPrefix = "https://sbolcanvas.org/";
 		String annPrefix = "mxGraph";
-		HashMap<Integer, ComponentDefinition> rootCDs = new HashMap<Integer, ComponentDefinition>();
 		SBOLDocument document = new SBOLDocument();
 		document.setDefaultURIprefix(uriPrefix);
 		document.setComplete(true);
@@ -126,85 +126,92 @@ public class Converter {
 
 		try {
 			// create the top level component definitions, aka strands
-			for (MxCell cell : backbones.values()) {
-				MxCell container = containers.get(cell.getParent());
-				ComponentDefinition cd = document.createComponentDefinition(container.getInfo().getDisplayID(),
+			for (MxCell backboneCell : backbones.values()) {
+				MxCell containerCell = containers.get(backboneCell.getParent());
+				ComponentDefinition backboneCD = document.createComponentDefinition(backboneCell.getInfo().getDisplayID(),
 						ComponentDefinition.DNA_REGION);
-				cd.addRole(SequenceOntology.ENGINEERED_REGION);
+				backboneCD.addRole(SequenceOntology.ENGINEERED_REGION);
 
 				// container annotations
-				cd.createAnnotation(new QName(uriPrefix, "containerCellID", annPrefix), container.getId());
-				cd.createAnnotation(new QName(uriPrefix, "containerGeometryX", annPrefix),
-						container.getGeometry().getX());
-				cd.createAnnotation(new QName(uriPrefix, "containerGeometryY", annPrefix),
-						container.getGeometry().getY());
-				cd.createAnnotation(new QName(uriPrefix, "containerGeometryWidth", annPrefix),
-						container.getGeometry().getWidth());
-				cd.createAnnotation(new QName(uriPrefix, "containerGeometryHeight", annPrefix),
-						container.getGeometry().getHeight());
+				backboneCD.createAnnotation(new QName(uriPrefix, "containerCellID", annPrefix), containerCell.getId());
+				backboneCD.createAnnotation(new QName(uriPrefix, "containerGeometryX", annPrefix),
+						containerCell.getGeometry().getX());
+				backboneCD.createAnnotation(new QName(uriPrefix, "containerGeometryY", annPrefix),
+						containerCell.getGeometry().getY());
+				backboneCD.createAnnotation(new QName(uriPrefix, "containerGeometryWidth", annPrefix),
+						containerCell.getGeometry().getWidth());
+				backboneCD.createAnnotation(new QName(uriPrefix, "containerGeometryHeight", annPrefix),
+						containerCell.getGeometry().getHeight());
 
 				// backbone geometry
-				cd.createAnnotation(new QName(uriPrefix, "backboneGeometryX", annPrefix), cell.getGeometry().getX());
-				cd.createAnnotation(new QName(uriPrefix, "backboneGeometryY", annPrefix), cell.getGeometry().getY());
-				cd.createAnnotation(new QName(uriPrefix, "backboneGeometryWidth", annPrefix),
-						cell.getGeometry().getWidth());
-				cd.createAnnotation(new QName(uriPrefix, "backboneGeometryHeight", annPrefix),
-						cell.getGeometry().getHeight());
+				backboneCD.createAnnotation(new QName(uriPrefix, "backboneGeometryX", annPrefix),
+						backboneCell.getGeometry().getX());
+				backboneCD.createAnnotation(new QName(uriPrefix, "backboneGeometryY", annPrefix),
+						backboneCell.getGeometry().getY());
+				backboneCD.createAnnotation(new QName(uriPrefix, "backboneGeometryWidth", annPrefix),
+						backboneCell.getGeometry().getWidth());
+				backboneCD.createAnnotation(new QName(uriPrefix, "backboneGeometryHeight", annPrefix),
+						backboneCell.getGeometry().getHeight());
 
-				rootCDs.put(cell.getId(), cd);
-			}
-
-			// create the things needed for parts
-			for (int parentID : glyphSets.keySet()) {
-				ComponentDefinition parent = rootCDs.get(parentID);
+				// create the things needed for components
 				Component previous = null;
-				int constraintCount = 0;
-				for (MxCell cell : glyphSets.get(parentID)) {
+				int count = 0;
+				int start = 0, end = 0;
+				for (MxCell glyphCell : glyphSets.get(containerCell.getId())) {
+
 					// component definition
-					ComponentDefinition componentCD = document.createComponentDefinition(cell.getInfo().getDisplayID(),
-							SBOLData.types.get(cell.getInfo().getPartType()));
-					if (cell.getInfo().getPartRefine() == null || cell.getInfo().getPartRefine().equals("")) {
-						componentCD.addRole(SBOLData.roles.get(cell.getInfo().getPartRole()));
+					ComponentDefinition componentCD = document.createComponentDefinition(
+							glyphCell.getInfo().getDisplayID(), SBOLData.types.get(glyphCell.getInfo().getPartType()));
+					if (glyphCell.getInfo().getPartRefine() == null || glyphCell.getInfo().getPartRefine().equals("")) {
+						componentCD.addRole(SBOLData.roles.get(glyphCell.getInfo().getPartRole()));
 					} else {
-						componentCD.addRole(SBOLData.refinements.get(cell.getInfo().getPartRefine()));
+						componentCD.addRole(SBOLData.refinements.get(glyphCell.getInfo().getPartRefine()));
 					}
-					componentCD.setName(cell.getInfo().getName());
-					componentCD.setDescription(cell.getInfo().getDescription());
+					componentCD.setName(glyphCell.getInfo().getName());
+					componentCD.setDescription(glyphCell.getInfo().getDescription());
 
 					// component
-					Component component = document
-							.getComponentDefinition(containers.get(cell.getParent()).getInfo().getDisplayID(), null)
-							.createComponent(cell.getInfo().getDisplayID(), AccessType.PUBLIC,
-									componentCD.getDisplayId());
+					Component component = backboneCD.createComponent(
+									glyphCell.getInfo().getDisplayID(), AccessType.PUBLIC, componentCD.getDisplayId());
 
-					// sequence
-					if (cell.getInfo().getSequence() != null) {
+					// component sequence
+					if (glyphCell.getInfo().getSequence() != null) {
 						Sequence seq = document.createSequence(componentCD.getDisplayId() + "Sequence",
-								cell.getInfo().getSequence(), Sequence.IUPAC_DNA);
+								glyphCell.getInfo().getSequence(), Sequence.IUPAC_DNA);
 						componentCD.addSequence(seq.getIdentity());
 					}
 
 					// cell annotation
-					component.createAnnotation(new QName(uriPrefix, "cellID", annPrefix), cell.getId());
-					component.createAnnotation(new QName(uriPrefix, "cellStyle", annPrefix), cell.getStyle());
-					component.createAnnotation(new QName(uriPrefix, "cellVertex", annPrefix), cell.getVertex());
+					component.createAnnotation(new QName(uriPrefix, "cellID", annPrefix), glyphCell.getId());
+					component.createAnnotation(new QName(uriPrefix, "cellStyle", annPrefix), glyphCell.getStyle());
+					component.createAnnotation(new QName(uriPrefix, "cellVertex", annPrefix), glyphCell.getVertex());
 					component.createAnnotation(new QName(uriPrefix, "cellConnectable", annPrefix),
-							cell.isConnectable());
+							glyphCell.isConnectable());
 
 					// geometry annotation
-					component.createAnnotation(new QName(uriPrefix, "geometryX", annPrefix), cell.getGeometry().getX());
-					component.createAnnotation(new QName(uriPrefix, "geometryY", "y"), cell.getGeometry().getY());
+					component.createAnnotation(new QName(uriPrefix, "geometryX", annPrefix),
+							glyphCell.getGeometry().getX());
+					component.createAnnotation(new QName(uriPrefix, "geometryY", annPrefix), glyphCell.getGeometry().getY());
 					component.createAnnotation(new QName(uriPrefix, "geometryWidth", annPrefix),
-							cell.getGeometry().getWidth());
+							glyphCell.getGeometry().getWidth());
 					component.createAnnotation(new QName(uriPrefix, "geometryHeight", annPrefix),
-							cell.getGeometry().getHeight());
+							glyphCell.getGeometry().getHeight());
 
 					// sequence constraints
 					if (previous != null) {
-						parent.createSequenceConstraint("constraint" + (constraintCount++), RestrictionType.PRECEDES,
-								previous.getIdentity(), component.getIdentity());
+						backboneCD.createSequenceConstraint(backboneCD.getDisplayId()+"Constraint" + count,
+								RestrictionType.PRECEDES, previous.getIdentity(), component.getIdentity());
 						previous = component;
 					}
+
+					// container sequence
+					start = end + 1;
+					end = start + glyphCell.getInfo().getSequence().length()-1;
+					SequenceAnnotation annotation = backboneCD.createSequenceAnnotation(backboneCD.getDisplayId()+"Annotation" + count,
+							"location" + count, start, end, OrientationType.INLINE);
+					annotation.setComponent(component.getIdentity());
+					
+					count++;
 				}
 			}
 
