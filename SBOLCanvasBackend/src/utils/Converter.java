@@ -225,6 +225,7 @@ public class Converter {
 	}
 
 	public static String toGraph(String sbol) {
+		
 		return null;
 
 	}

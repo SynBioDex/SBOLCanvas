@@ -9,7 +9,7 @@ export interface SaveDialogData {
   filename: string;
 }
 export interface LoadDialogData {
-  filesOnServer: string[];
+  file: File;
 }
 
 @Component({
@@ -37,8 +37,8 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.filesService.saveLocal(filename, this.graphService.graphToString());
   }
 
-  load(filename: string) {
-    this.filesService.load(filename).subscribe(graph => this.graphService.stringToGraph(graph));
+  load(file: File) {
+    this.filesService.loadLocal(file, this.graphService.stringToGraph);
   }
 
   delete() {
@@ -70,22 +70,18 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result != null) {
         this.save(result);
-        // console.log(result);
       }
     });
   }
 
   openLoadDialog(): void {
-    this.filesService.list().subscribe(list => {
-      const dialogRef = this.dialog.open(LoadGraphComponent, {
-        width: '250px',
-        data: {filesOnServer: list}
-      });
-      dialogRef.afterClosed().subscribe(result => {
-        if(result != null) {
-          this.load(result);
-        }
-      });
+    const dialogRef = this.dialog.open(LoadGraphComponent, {
+      data: {file: null}
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if(result != null){
+        this.load(result);
+      }
     });
   }
 }

@@ -9,8 +9,16 @@ import {LoadDialogData} from '../toolbar/toolbar.component';
 })
 export class LoadGraphComponent implements OnInit {
 
-  constructor(public dialogRef: MatDialogRef<LoadGraphComponent>,
-              @Inject(MAT_DIALOG_DATA) public data: LoadDialogData) { }
+  file:any;
+  filename:any;
+
+  constructor(public dialogRef: MatDialogRef<LoadGraphComponent>, @Inject(MAT_DIALOG_DATA) public data: LoadDialogData) { }
+
+  onFileSelected(){
+    const fileInput: any = document.querySelector('#file');
+    this.filename = fileInput.files[0].name;
+    this.data.file = fileInput.files[0];
+  }
 
   ngOnInit() {
   }
