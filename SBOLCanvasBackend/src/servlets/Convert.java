@@ -6,13 +6,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.http.HttpStatus;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 import utils.Converter;
 
@@ -25,18 +20,21 @@ public class Convert extends HttpServlet {
 		if(request.getPathInfo().equals("/toSBOL")) {
 			try {
 				response.addHeader("Access-Control-Allow-Origin", "*");
-				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-				DocumentBuilder builder = factory.newDocumentBuilder();
-				Document doc = builder.parse(request.getInputStream());
-				
-				Converter.toSBOL(doc, response.getOutputStream());
-			} catch (IOException | ParserConfigurationException | SAXException e) {
+				Converter.toSBOL(request.getInputStream(), response.getOutputStream());
+			} catch (IOException e) {
 				e.printStackTrace();
 				response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 				return;
 			}
 		}else if(request.getPathInfo().equals("/toMxGraph")) {
-			
+			try {
+				response.addHeader("Access-Control-Allow-Origin", "*");
+				Converter.toGraph(request.getInputStream(), response.getOutputStream());
+			} catch (IOException e) {
+				e.printStackTrace();
+				response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+				return;
+			}
 		}else {
 			response.setStatus(HttpStatus.SC_METHOD_NOT_ALLOWED);
 			return;

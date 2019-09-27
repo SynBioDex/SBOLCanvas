@@ -2,7 +2,6 @@ package utils;
 
 import java.net.URI;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -11,12 +10,13 @@ import org.sbolstandard.core2.SequenceOntology;
 
 public class SBOLData {
 
-	public static HashMap<String, URI> types;
-	public static HashMap<String, URI> roles;
-	public static HashMap<String, URI> refinements;
+	public static BiMap<String, URI> types;
+	public static BiMap<String, URI> roles;
+	public static BiMap<String, URI> refinements;
 	
 	static {
-		types = new HashMap<String, URI>();
+		
+		types = new BiMap<String, URI>();
 		types.put("Complex", ComponentDefinition.COMPLEX);
 		types.put("DNA molecule", ComponentDefinition.DNA_MOLECULE);
 		types.put("DNA region", ComponentDefinition.DNA_REGION);
@@ -26,7 +26,7 @@ public class SBOLData {
 		types.put("RNA region", ComponentDefinition.RNA_REGION);
 		types.put("Small molecule", ComponentDefinition.SMALL_MOLECULE);
 		
-		roles = new HashMap<String, URI>();
+		roles = new BiMap<String, URI>();
 		roles.put("Gen (Engineered Region)", SequenceOntology.ENGINEERED_REGION);
 		roles.put("Pro (Promoter)", SequenceOntology.PROMOTER);
 		roles.put("RBS (Ribosome Binding Site)", SequenceOntology.RIBOSOME_ENTRY_SITE);
@@ -58,7 +58,7 @@ public class SBOLData {
 		roles.put("RSE (RNA Stability Element)", URI.create("http://identifiers.org/so/SO:0001979"));
 		roles.put("PSE (Protein Stability Element)", URI.create("http://identifiers.org/so/SO:0001955"));
 		
-		refinements = new HashMap<String, URI>();
+		refinements = new BiMap<String, URI>();
 		for(URI uri : roles.values()) {
 			SequenceOntology so = new SequenceOntology();
 			Set<URI> descendants = so.getDescendantURIsOf(uri);
@@ -69,13 +69,13 @@ public class SBOLData {
 	}
 	
 	public static String[] getTypes() {
-		String[] typeNames = types.keySet().toArray(new String[0]);
+		String[] typeNames = types.keys().toArray(new String[0]);
 		Arrays.sort(typeNames);
 		return typeNames;
 	}
 
 	public static String[] getRoles() {
-		String[] roleNames = roles.keySet().toArray(new String[0]);
+		String[] roleNames = roles.keys().toArray(new String[0]);
 		Arrays.sort(roleNames);
 		return roleNames;
 	}
@@ -83,12 +83,18 @@ public class SBOLData {
 	public static String[] getRefinement(String parentName){
 		TreeSet<String> refinementNames = new TreeSet<String>();
 		SequenceOntology so = new SequenceOntology();
-		Set<URI> descendants = so.getDescendantURIsOf(roles.get(parentName));
+		Set<URI> descendants = so.getDescendantURIsOf(roles.getValue(parentName));
 		for(URI uri : descendants) {
 			refinementNames.add(so.getName(uri));
 		}
 		return refinementNames.toArray(new String[0]);
 		
+	}
+	
+	public static URI getParent(URI refinement) {
+		
+		//TODO come back to me
+		return null;
 	}
 
 }

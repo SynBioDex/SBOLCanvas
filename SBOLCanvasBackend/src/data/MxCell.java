@@ -27,7 +27,7 @@ public class MxCell {
 		this.value = value;
 	}
 
-	public boolean getVertex() {
+	public boolean isVertex() {
 		return vertex;
 	}
 
