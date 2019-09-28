@@ -9,6 +9,7 @@ export class GlyphInfo {
   description: string;
   version: string;
   sequence: string;
+  model: string;
 
   constructor() {
     this.displayID = 'id'+(GlyphInfo.counter++);
@@ -25,6 +26,7 @@ export class GlyphInfo {
     copy.description = this.description;
     copy.version = this.version;
     copy.sequence = this.sequence;
+    copy.model = this.model;
     return copy;
   }
 
@@ -37,6 +39,30 @@ export class GlyphInfo {
     this.description = other.description;
     this.version = other.version;
     this.sequence = other.sequence;
+    this.model = other.model;
   }
 
+  encode(enc: any) {
+    let node = enc.document.createElement('GlyphInfo');
+    if(this.partType)
+      node.setAttribute("partType", this.partType);
+    if(this.partRole)
+      node.setAttribute("partRole", this.partRole);
+    if(this.partRefine)
+      node.setAttribute("partRefine", this.partRefine);
+    if(this.displayID)
+      node.setAttribute("displayID", this.displayID);
+    if(this.name)
+      node.setAttribute("name", this.name);
+    if(this.description)
+      node.setAttribute("description", this.description);
+    if(this.version)
+      node.setAttribute("version", this.version);
+    if(this.sequence)
+      node.setAttribute("sequence", this.sequence);
+    if(this.model)
+      node.setAttribute("model", this.model);
+
+    return node;
+  }
 }
