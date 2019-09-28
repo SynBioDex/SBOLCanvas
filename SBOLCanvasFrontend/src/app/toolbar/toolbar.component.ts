@@ -34,11 +34,11 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   save(filename: string) {
-    this.filesService.saveLocal(filename, this.graphService.graphToString());
+    this.filesService.saveLocal(filename, this.graphService.getTopLevelXML());
   }
 
   load(filename: string) {
-    this.filesService.load(filename).subscribe(graph => this.graphService.stringToGraph(graph));
+    this.filesService.load(filename).subscribe(graph => this.graphService.setModelWithXML(graph));
   }
 
   delete() {
@@ -51,6 +51,14 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
   redoChange(){
     this.graphService.redo();
+  }
+
+  zoom(){
+    this.graphService.zoom();
+  }
+
+  unzoom(){
+    this.graphService.unzoom();
   }
 
   addStrand() {

@@ -45,9 +45,15 @@ export class GraphService {
   glyphDragPreviewElt: HTMLElement;
   textBoxDragPreviewElt: HTMLElement;
 
+  // First string is the XML representing an mxGraph model. Second string is the ID of the cell
+  // that was zoomed in on when the 'frame' was created.
+  zoomStack: Array<[string, string]>;
+
   baseGlyphStyle: any;
 
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
+    this.zoomStack = new Array<[string, string]>()
+
     // constructor code is divided into helper methods for oranization,
     // but these methods aren't entirely modular; order of some of
     // these calls is important
@@ -165,6 +171,33 @@ export class GraphService {
   nullifyMetadata() {
     this.metadataService.setColor(null);
     this.metadataService.setSelectedGlyphInfo(null);
+  }
+
+  zoom() {
+    let selectionCells = this.graph.getSelectionCells();
+
+    // If we have a single glyph selected, then we zoom in on it. Otherwise do nothing.
+    if (selectionCells.length == 1) {
+      if (selectionCells[0].isGlyph()) {
+        this.zoomStack.push([this.getModelXML(), selectionCells[0].getId()]);
+        this.setModelWithXML(selectionCells[0].data.model);
+      }
+    }
+  }
+
+  unzoom() {
+
+    if (this.zoomStack.length > 0) {
+      let newFrame = this.zoomStack.pop();
+      let oldFrame = this.getModelXML();
+      this.setModelWithXML(newFrame[0]);
+      let selectedCell = this.graph.getModel().getCell(newFrame[1]);
+      selectedCell.data.model = oldFrame;
+
+      const selMod = this.graph.getSelectionModel();
+      selMod.clear();
+      selMod.addCell(selectedCell);
+    }
   }
 
   // TODO: this is code for making a dragsource (instead of a button as it is now)
@@ -364,7 +397,7 @@ export class GraphService {
   /**
    * Encodes the graph to a string (xml) representation
    */
-  graphToString(): string {
+  getModelXML(): string {
     const encoder = new mx.mxCodec();
     const result = encoder.encode(this.graph.getModel());
     return mx.mxUtils.getXml(result);
@@ -373,12 +406,33 @@ export class GraphService {
   /**
    * Decodes the given string (xml) representation of a graph and uses it to replace the current graph
    */
-  stringToGraph(graphString: string) {
+  setModelWithXML(graphString: string) {
     // Creates the graph inside the given container
     this.graph.getModel().clear();
     const doc = mx.mxUtils.parseXml(graphString);
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
+  }
+
+  /**
+   *
+   */
+  getTopLevelXML(): string {
+    const encoder = new mx.mxCodec();
+
+    let model = this.graph.getModel();
+    for (let i = this.zoomStack.length - 1; i >= 0; i--) {
+      const xmlString = mx.mxUtils.getXml(encoder.encode(model));
+
+      const doc = mx.mxUtils.parseXml(this.zoomStack[i][0])
+      const codec = new mx.mxCodec(doc);
+      model = codec.decode(doc.documentElement, model);
+
+      let cell = model.getCell(this.zoomStack[i][1])
+      cell.data.model = xmlString
+    }
+
+    return mx.mxUtils.getXml(encoder.encode(model));
   }
 
   /**
@@ -404,23 +458,7 @@ export class GraphService {
       return glyphData;
     };
     glyphInfoCodec.encode = function(enc, object){
-      var node = enc.document.createElement('GlyphInfo');
-      if(object.partType)
-        node.setAttribute("partType", object.partType);
-      if(object.partRole)
-        node.setAttribute("partRole", object.partRole);
-      if(object.partRefine)
-        node.setAttribute("partRefine", object.partRefine);
-      if(object.displayID)
-        node.setAttribute("displayID", object.displayID);
-      if(object.name)
-        node.setAttribute("name", object.name);
-      if(object.description)
-        node.setAttribute("description", object.description);
-      if(object.version)
-        node.setAttribute("version", object.version);
-
-      return node;
+      return object.encode(enc);
     }
     mx.mxCodecRegistry.register(glyphInfoCodec);
     window['GlyphInfo'] = GlyphInfo;
