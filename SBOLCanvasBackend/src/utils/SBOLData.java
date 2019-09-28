@@ -39,13 +39,15 @@ public class SBOLData {
 		roles.put("Ori (Origin of Replication)", SequenceOntology.ORIGIN_OF_REPLICATION);
 		roles.put("OriT (Origin of Transfer)", URI.create("http://identifiers.org/so/SO:0000724"));
 		roles.put("PBS (Primer Binding Site)", SequenceOntology.PRIMER_BINDING_SITE);
-		roles.put("CUT (Sticky End Restriction Enzyme Cleavage Site)", URI.create("http://identifiers.org/so/SO:0001975"));
+		roles.put("SRS5 (5' Sticky Restriction Site)", URI.create("http://identifiers.org/so/SO:0001975"));
+		roles.put("SRS3 (3' Sticky Restriction Site)", URI.create("http://identifiers.org/so/SO:0001976"));
 		roles.put("Scar (Assembly Scar)", URI.create("http://identifiers.org/so/SO:0001953"));
+		roles.put("Bind (Binding Site)", URI.create("http://identifiers.org/so/SO:0000409"));
 		roles.put("Op (Operator)", SequenceOntology.OPERATOR);
 		roles.put("Ins (Insulator)", SequenceOntology.INSULATOR);
 		roles.put("BRS (Blunt Restriction Site)", URI.create("http://identifiers.org/so/SO:0001691"));
-		roles.put("_5OH (5' Overhang)", URI.create("http://identifiers.org/so/SO:0001932"));
-		roles.put("_3OH (3' Overhang)", URI.create("http://identifiers.org/so/SO:0001933"));
+		roles.put("OH5 (5' Overhang)", URI.create("http://identifiers.org/so/SO:0001932"));
+		roles.put("OH3 (3' Overhang)", URI.create("http://identifiers.org/so/SO:0001933"));
 		roles.put("APT (Aptamer)", URI.create("http://identifiers.org/so/SO:0000031"));
 		roles.put("PolyA (PolyA Site)", URI.create("http://identifiers.org/so/SO:0000553"));
 		roles.put("SRS (Specific Recombination Site)", URI.create("http://identifiers.org/so/SO:0000299"));
