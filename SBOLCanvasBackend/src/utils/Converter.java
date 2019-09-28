@@ -345,18 +345,21 @@ public class Converter {
 					if(SBOLData.roles.containsValue(glyphRole)) {
 						glyphInfo.setPartRole(SBOLData.roles.getKey(glyphRole));
 					}else {
-						glyphInfo.setPartRole(SBOLData.roles.getKey(SBOLData.getParent(glyphRole)));
+						glyphInfo.setPartRole(SBOLData.roles.getKey(SBOLData.parents.get(glyphRole)));
 						glyphInfo.setPartRefine(SBOLData.refinements.getKey(glyphRole));
 					}
 					URI glyphType = glyphComponent.getDefinition().getTypes().toArray(new URI[0])[0];
 					glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
 					glyphInfo.setSequence(glyphComponent.getDefinition().getSequences().toArray(new String[0])[0]);
 					glyphInfo.setVersion(glyphComponent.getVersion());
-					
+					glyphCell.setInfo(glyphInfo);
+					cells.add(glyphCell);
 					
 				}
 			}
-
+			
+			// convert the objects to the graph xml
+			
 			// convert the objects to an MxGraph
 			
 		} catch (SBOLValidationException | IOException | SBOLConversionException e) {

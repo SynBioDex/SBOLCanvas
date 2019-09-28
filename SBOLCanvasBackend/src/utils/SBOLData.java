@@ -2,6 +2,7 @@ package utils;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -13,6 +14,7 @@ public class SBOLData {
 	public static BiMap<String, URI> types;
 	public static BiMap<String, URI> roles;
 	public static BiMap<String, URI> refinements;
+	public static HashMap<URI, URI> parents;
 	
 	static {
 		
@@ -59,11 +61,13 @@ public class SBOLData {
 		roles.put("PSE (Protein Stability Element)", URI.create("http://identifiers.org/so/SO:0001955"));
 		
 		refinements = new BiMap<String, URI>();
+		parents = new HashMap<URI, URI>();
 		for(URI uri : roles.values()) {
 			SequenceOntology so = new SequenceOntology();
 			Set<URI> descendants = so.getDescendantURIsOf(uri);
 			for(URI dURI : descendants) {
 				refinements.put(so.getName(dURI), dURI);
+				parents.put(dURI, uri);
 			}
 		}
 	}
@@ -87,14 +91,7 @@ public class SBOLData {
 		for(URI uri : descendants) {
 			refinementNames.add(so.getName(uri));
 		}
-		return refinementNames.toArray(new String[0]);
-		
-	}
-	
-	public static URI getParent(URI refinement) {
-		
-		//TODO come back to me
-		return null;
+		return refinementNames.toArray(new String[0]);	
 	}
 
 }
