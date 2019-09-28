@@ -10,8 +10,9 @@ export class GlyphInfo {
   version: string;
   sequence: string;
 
-  constructor(){
+  constructor() {
     this.displayID = 'id'+(GlyphInfo.counter++);
+    this.partType = 'DNA region';
   }
 
   makeCopy() {

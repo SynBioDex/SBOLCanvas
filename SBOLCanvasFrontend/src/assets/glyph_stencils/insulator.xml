@@ -1,5 +1,5 @@
 <shapes>
-<shape aspect="variable" centered="True" h="100" name="insulator" strokewidth="inherit" w="100">
+<shape aspect="variable" centered="True" h="100" name="Ins (Insulator)" strokewidth="inherit" w="100">
     <connections />
     <foreground>
         <strokewidth width="6" />

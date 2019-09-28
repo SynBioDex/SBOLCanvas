@@ -1,5 +1,5 @@
 <shapes>
-<shape aspect="variable" centered="True" h="48" name="five-prime-sticky-restriction-site" strokewidth="inherit" w="48">
+<shape aspect="variable" centered="True" h="48" name="SRS5 (5' Sticky Restriction Site)" strokewidth="inherit" w="48">
     <connections />
     <foreground>
         <strokewidth width="2.88" />

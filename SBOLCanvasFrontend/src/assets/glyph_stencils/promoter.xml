@@ -1,5 +1,5 @@
 <shapes>
-<shape aspect="variable" centered="false" h="100" name="promoter" strokewidth="inherit" w="100">
+<shape aspect="variable" centered="false" h="100" name="Pro (Promoter)" strokewidth="inherit" w="100">
     <connections />
     <foreground>
         <strokewidth width="7" />
