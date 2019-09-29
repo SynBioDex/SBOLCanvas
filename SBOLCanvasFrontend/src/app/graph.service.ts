@@ -508,6 +508,11 @@ export class GraphService {
     codec.decode(doc.documentElement, this.graph.getModel());
   }
 
+  setTopLevelModelWithXML(graphString: string){
+    this.zoomStack = new Array<[string, string]>();
+    this.setModelWithXML(graphString);
+  }
+
   /**
    *
    */
