@@ -20,11 +20,11 @@ const mx = require('mxgraph')({
 });
 
 // Constants
-const sequenceFeatureGlyphWidth = 52;
-const sequenceFeatureGlyphHeight = 104;
+const sequenceFeatureGlyphWidth = 50;
+const sequenceFeatureGlyphHeight = 100;
 
-const molecularSpeciesGlyphWidth = 48;
-const molecularSpeciesGlyphHeight = 48;
+const molecularSpeciesGlyphWidth = 50;
+const molecularSpeciesGlyphHeight = 50;
 
 const defaultTextWidth = 120;
 const defaultTextHeight = 80;
@@ -34,9 +34,6 @@ const backboneStyleName = 'backbone';
 const textboxStyleName = 'textBox';
 const sequenceFeatureGlyphBaseStyleName = 'sequenceFeatureGlyph';
 const molecularSpeciesGlyphBaseStyleName = 'molecularSpeciesGlyph';
-
-const defaultBackboneWidth = sequenceFeatureGlyphWidth;
-const defaultBackboneHeight = 4;
 
 @Injectable({
   providedIn: 'root'
@@ -251,8 +248,8 @@ export class GraphService {
   addNewBackbone() {
     this.graph.getModel().beginUpdate();
     try {
-      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0, defaultBackboneWidth, sequenceFeatureGlyphHeight, circuitContainerStyleName);
-      const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, sequenceFeatureGlyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
+      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, circuitContainerStyleName);
+      const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, sequenceFeatureGlyphHeight/2, sequenceFeatureGlyphWidth, 1, backboneStyleName);
 
       backbone.refreshBackbone(this.graph);
 
@@ -419,8 +416,15 @@ export class GraphService {
   setSelectedCellColor(color: string) {
     const selectedCells = this.graph.getSelectionCells();
 
-    if (selectedCells != null) {
+    // changing style of circuitContainers changes the backbone instead
+    for (let i = 0; i < selectedCells.length; i++) {
+      const cell = selectedCells[i];
+      if (cell.isCircuitContainer()) {
+        selectedCells.splice(i, 1, cell.getBackbone());
+      }
+    }
 
+    if (selectedCells != null) {
       this.graph.getModel().beginUpdate();
       this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, color, selectedCells);
       this.graph.getModel().endUpdate();
@@ -577,13 +581,13 @@ export class GraphService {
       const geo = new mx.mxGeometry(0,0,0,0);
       // Paranoia
       geo.x = 0;
-      geo.y = (sequenceFeatureGlyphHeight / 2) - (defaultBackboneHeight / 2);
-      geo.height = defaultBackboneHeight;
+      geo.y = sequenceFeatureGlyphHeight / 2;
+      geo.height = 1;
 
       // width:
       let glyphCount = this.getChildCount() - 1;
       if (glyphCount == 0) {
-        geo.width = defaultBackboneWidth;
+        geo.width = sequenceFeatureGlyphWidth;
       } else {
         geo.width = glyphCount * sequenceFeatureGlyphWidth;
       }
@@ -831,8 +835,9 @@ export class GraphService {
 
     // Backbone settings.
     const backboneStyle = {};
-    backboneStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
-    backboneStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#000000';
+    backboneStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LINE;
+    backboneStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
+    backboneStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
     backboneStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     backboneStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.graph.getStylesheet().putCellStyle(backboneStyleName, backboneStyle);
