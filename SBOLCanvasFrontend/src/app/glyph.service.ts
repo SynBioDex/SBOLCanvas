@@ -90,15 +90,19 @@ export class GlyphService {
     return svgs;
   }
 
-  getSequenceFeatures() {
+  getSequenceFeatureGlyphs() {
     return this.sequenceFeatures;
+  }
+
+  getMolecularSpeciesGlyphs() {
+    return this.molecularSpecies;
   }
 
   getInteractionElements() {
     return this.getElements(this.interactions);
   }
 
-  getMolecularSpecieElements() {
+  getMolecularSpeciesElements() {
     return this.getElements(this.molecularSpecies);
   }
 

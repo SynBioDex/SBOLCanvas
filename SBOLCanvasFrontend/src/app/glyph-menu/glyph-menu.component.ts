@@ -22,13 +22,17 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer) {
   }
 
-  onGlyphClicked(name: string) {
-    this.graphService.dropNewGlyph(name);
+  onSequenceFeatureGlyphClicked(name: string) {
+    this.graphService.addSequenceFeatureGlyph(name);
+  }
+
+  onMolecularSpeciesGlyphClicked(name: string) {
+    this.graphService.addMolecularSpeciesGlyph(name);
   }
 
   ngOnInit() {
     const sfElts = this.glyphService.getSequenceFeatureElements();
-    const msElts = this.glyphService.getMolecularSpecieElements();
+    const msElts = this.glyphService.getMolecularSpeciesElements();
     const iElts = this.glyphService.getInteractionElements();
 
     for (const name in sfElts) {

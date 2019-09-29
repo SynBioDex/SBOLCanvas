@@ -1,7 +1,7 @@
 <div class="glyphContainer">
   <div style="margin: auto">
 
-    <mat-expansion-panel>
+    <mat-expansion-panel [expanded]="true">
       <mat-expansion-panel-header>
         <mat-panel-title>
           Util
@@ -25,7 +25,7 @@
           </button>
         </mat-grid-tile>
         <mat-grid-tile *ngFor="let pair of miscDict | keyvalue">
-          <button mat-button (click)="onGlyphClicked(pair.key)">
+          <button mat-button (click)="onMolecularSpeciesGlyphClicked(pair.key)">
             <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>
@@ -33,7 +33,7 @@
 
     </mat-expansion-panel>
 
-    <mat-expansion-panel>
+    <mat-expansion-panel [expanded]="true">
       <mat-expansion-panel-header>
         <mat-panel-title>
           Sequence
@@ -45,7 +45,7 @@
 
       <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue">
-          <button mat-button (click)="onGlyphClicked(pair.key)">
+          <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)">
             <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>
