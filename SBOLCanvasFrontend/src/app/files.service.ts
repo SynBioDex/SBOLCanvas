@@ -44,7 +44,7 @@ export class FilesService {
 
       reader.onload = (e:any) => {
         this.convertToMxGraph(String(reader.result)).subscribe(result => {
-          graphService.setModelWithXML(result);
+          graphService.setTopLevelModelWithXML(result);
         });
       };
 
