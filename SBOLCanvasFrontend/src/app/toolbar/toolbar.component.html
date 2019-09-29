@@ -6,13 +6,6 @@
 
 <!-- menu -->
   <mat-toolbar-row class="toolbar-row">
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="addStrand()">New Strand</button>
-
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="addTextBox()">Text</button>
 
     <button mat-stroked-button
             class="toolbar-row-button"
@@ -42,11 +35,15 @@
 
     <button mat-stroked-button
             class="toolbar-row-button"
-            (click)="zoom()">zoom</button>
+            (click)="zoom()">Zoom</button>
 
     <button mat-stroked-button
             class="toolbar-row-button"
-            (click)="unzoom()">unzoom</button>
+            (click)="unzoom()">Unzoom</button>
+
+    <button mat-stroked-button
+            class="toolbar-row-button"
+            (click)="flipGlyph()">Flip</button>
 
   </mat-toolbar-row>
 </mat-toolbar>

@@ -12,6 +12,7 @@ import * as mxCell from 'mxgraph';
 import {GlyphInfo} from './glyphInfo';
 import {MetadataService} from './metadata.service';
 import {GlyphService} from './glyph.service';
+import {forEach} from "@angular/router/src/utils/collection";
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -20,8 +21,11 @@ const mx = require('mxgraph')({
 });
 
 // Constants
-const glyphWidth = 52;
-const glyphHeight = 104;
+const sequenceFeatureGlyphWidth = 50;
+const sequenceFeatureGlyphHeight = 100;
+
+const molecularSpeciesGlyphWidth = 50;
+const molecularSpeciesGlyphHeight = 50;
 
 const defaultTextWidth = 120;
 const defaultTextHeight = 80;
@@ -29,10 +33,8 @@ const defaultTextHeight = 80;
 const circuitContainerStyleName = 'circuitContainer';
 const backboneStyleName = 'backbone';
 const textboxStyleName = 'textBox';
-const glyphBaseStyleName = 'glyph';
-
-const defaultBackboneWidth = glyphWidth;
-const defaultBackboneHeight = 4;
+const sequenceFeatureGlyphBaseStyleName = 'sequenceFeatureGlyph';
+const molecularSpeciesGlyphBaseStyleName = 'molecularSpeciesGlyph';
 
 @Injectable({
   providedIn: 'root'
@@ -98,7 +100,7 @@ export class GraphService {
     this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, (sender, event) => this.handleSelectionChange(sender, event));
 
     this.initStyles();
-    this.initCustomGlyphs();
+    this.initCustomShapes();
   }
 
   handleSelectionChange(sender, evt) {
@@ -143,10 +145,10 @@ export class GraphService {
       // Null the info out
       this.nullifyMetadata()
     }
-    else if (cells.length == 1) {
+    else if (cells.length == 1) { // If there is only one cell selected
       let cell = cells[0];
 
-      if (cell.isGlyph()) {
+      if (cell.isSequenceFeatureGlyph()) { // If it's a sequence feature.
 
         let color = this.graph.getCellStyle(cell)['strokeColor'];
         this.metadataService.setColor(color);
@@ -173,22 +175,91 @@ export class GraphService {
     this.metadataService.setSelectedGlyphInfo(null);
   }
 
+  addInteraction() {
+
+  }
+
+  flipSequenceFeatureGlyph() {
+    let selectionCells = this.graph.getSelectionCells();
+
+    // If we have a single glyph selected, then we flip it along the x-axis. Otherwise do nothing.
+    if (selectionCells.length = 1) {
+      if (selectionCells[0].isSequenceFeatureGlyph()) {
+        let cell = selectionCells[0];
+
+        // Make the cell do a 180 degree turn with the center point as the axis of rotation.
+        this.graph.getModel().beginUpdate();
+
+        let rotation = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_ROTATION];
+        console.debug("current glyph rotation setting = " + rotation);
+
+        if (rotation == undefined) {
+          console.warn("rotation style undefined. Assuming 0, and rotating to 180");
+          this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
+        } else if (rotation == 0) {
+          this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
+          console.debug("rotating to 180")
+        } else if (rotation == 180) {
+          this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 0, [cell]);
+          console.debug("rotating to 0")
+        }
+
+        this.graph.getModel().endUpdate();
+      } else { console.debug("not a sequence feature glyph selected, not doing anything")}
+    } else { console.debug("more than 1 cell selected, not doing anything")}
+  }
+
+  /**
+   * 'Zooms in' to view the component definition of the currently selected glyph.
+   * This changes which component definition is displayed on the canvas,
+   * not the canvas's scale.
+   */
   zoom() {
     let selectionCells = this.graph.getSelectionCells();
 
     // If we have a single glyph selected, then we zoom in on it. Otherwise do nothing.
     if (selectionCells.length == 1) {
-      if (selectionCells[0].isGlyph()) {
+      if (selectionCells[0].isSequenceFeatureGlyph()) {
         this.zoomStack.push([this.getModelXML(), selectionCells[0].getId()]);
         this.setModelWithXML(selectionCells[0].data.model);
+
+        // We have to do a few things here. Since component definitions can only have 1
+        // DNA strand, we must drop a new DNA backbone if there is not one.
+        // We also have to notify the metadata service that we are now in component definition
+        // mode.
+
+        // Now that we are in a new model, lets check if we have a circuit container yet.
+        if (!this.modelHasAtLeastOneCircuitContainer()) {
+          this.addNewBackbone();
+        }
+
+        // Now we notify the metadata service that we are in component definition mode. The
+        // metadata service will then notify the UI components so they can disable certain
+        // features.
+        this.metadataService.setComponentDefinitionMode(true);
+        console.log("something")
       }
     }
   }
 
+  /**
+   * 'Zooms out' to view a higher level of the sbol document.
+   * This changes which component definition is displayed on the canvas,
+   * not the canvas's scale.
+   */
   unzoom() {
 
+    // If we are not at the top level, then we pop the frame stack.
     if (this.zoomStack.length > 0) {
       let newFrame = this.zoomStack.pop();
+
+      // If we are now at the top of the frame stack. This means we are no longer
+      // in component definition mode, so we need to notify the metadata service
+      // so it can notify the UI components.
+      if (this.zoomStack.length == 0) {
+        this.metadataService.setComponentDefinitionMode(false);
+      }
+
       let oldFrame = this.getModelXML();
       this.setModelWithXML(newFrame[0]);
       let selectedCell = this.graph.getModel().getCell(newFrame[1]);
@@ -200,44 +271,28 @@ export class GraphService {
     }
   }
 
-  // TODO: this is code for making a dragsource (instead of a button as it is now)
-  // addNewBackbone(element) {
-  //
-  //   // TODO: Make drag element outline have same shape as backbone.
-  //   const insertGlyph = (graph, evt, target, x, y) => {
-  //     // When executed, 'this' is the dragSource, not the graphService
-  //
-  //     graph.getModel().beginUpdate();
-  //     try {
-  //       const circuitContainer = graph.insertVertex(graph.getDefaultParent(), null, '', x, y, defaultBackboneWidth, glyphHeight, circuitContainerStyleName);
-  //       const backbone = graph.insertVertex(circuitContainer, null, '', 0, glyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
-  //
-  //       backbone.refreshBackbone(graph);
-  //
-  //       circuitContainer.setConnectable(false);
-  //       backbone.setConnectable(false);
-  //       // TODO: glyphCell.data = new GlyphInfo();
-  //
-  //       const selection = graph.getSelectionModel();
-  //       selection.clear();
-  //       selection.addCell(circuitContainer);
-  //     } finally {
-  //       graph.getModel().endUpdate();
-  //     }
-  //   };
-  //
-  //   const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, this.glyphDragPreviewElt);
-  //
-  //   ds.isGridEnabled = function() {
-  //     return this.currentGraph.graphHandler.guidesEnabled;
-  //   };
-  // }
+  /**
+   * This checks if there is a circuit container in the current graph model.
+   * This tells us whether there is a component definition already present.
+   * @param cells
+   */
+  modelHasAtLeastOneCircuitContainer(): boolean {
+    let cells = this.graph.getChildVertices(this.graph.getDefaultParent());
+
+    for (let i = 0; i < cells.length; i++) {
+      if (cells[i].isCircuitContainer()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 
   addNewBackbone() {
     this.graph.getModel().beginUpdate();
     try {
-      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0, defaultBackboneWidth, glyphHeight, circuitContainerStyleName);
-      const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, glyphHeight/2, defaultBackboneWidth, defaultBackboneHeight, backboneStyleName);
+      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, circuitContainerStyleName);
+      const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, sequenceFeatureGlyphHeight/2, sequenceFeatureGlyphWidth, 1, backboneStyleName);
 
       backbone.refreshBackbone(this.graph);
 
@@ -263,7 +318,23 @@ export class GraphService {
    * Deletes the currently selected cell
    */
   delete() {
-    this.editor.execute('delete');
+    this.graph.getModel().beginUpdate();
+    try {
+      const selectedCells = this.graph.getSelectionCells();
+      let circuitContainers = [];
+      for (let cell of selectedCells) {
+        if (cell.isSequenceFeatureGlyph())
+          circuitContainers.push(cell.getCircuitContainer());
+      }
+
+      this.editor.execute('delete');
+
+      for (let cell of circuitContainers) {
+        cell.refreshCircuitContainer(this.graph);
+      }
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
   }
 
   /**
@@ -306,13 +377,14 @@ export class GraphService {
   /**
    * Drops a new glyph onto the selected backbone
    */
-  dropNewGlyph(name) {
+  addSequenceFeatureGlyph(name) {
     let circuitContainer = this.getSelectionContainer();
     if (circuitContainer != null) {
       this.graph.getModel().beginUpdate();
       try {
         // Insert new glyph
-        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0, glyphWidth, glyphHeight, glyphBaseStyleName + name);
+        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0,
+          sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
         glyphCell.data = new GlyphInfo();
         glyphCell.data.partRole = name;
         glyphCell.setConnectable(false);
@@ -321,6 +393,20 @@ export class GraphService {
       } finally {
         this.graph.getModel().endUpdate();
       }
+    }
+  }
+
+  /**
+   * Drops a new floating element on the canvas
+   */
+  addMolecularSpeciesGlyph(name) {
+    this.graph.getModel().beginUpdate();
+    try {
+      const glyphCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0,
+        molecularSpeciesGlyphWidth, molecularSpeciesGlyphHeight, molecularSpeciesGlyphBaseStyleName + name);
+      glyphCell.setConnectable(false);
+    } finally {
+      this.graph.getModel().endUpdate();
     }
   }
 
@@ -346,7 +432,7 @@ export class GraphService {
     else if (selection.isBackbone()) {
       return selection.getParent();
     }
-    else if (selection.isGlyph()) {
+    else if (selection.isSequenceFeatureGlyph()) {
       return selection.getParent();
     }
     else {
@@ -370,13 +456,20 @@ export class GraphService {
   /**
    * Find the selected cell, and if there is a cell selected, update its color.
    */
-  updateSelectedCellColor(color: string) {
-    const selectedCell = this.graph.getSelectionCells();
+  setSelectedCellColor(color: string) {
+    const selectedCells = this.graph.getSelectionCells();
 
-    if (selectedCell != null) {
+    // changing style of circuitContainers changes the backbone instead
+    for (let i = 0; i < selectedCells.length; i++) {
+      const cell = selectedCells[i];
+      if (cell.isCircuitContainer()) {
+        selectedCells.splice(i, 1, cell.getBackbone());
+      }
+    }
 
+    if (selectedCells != null) {
       this.graph.getModel().beginUpdate();
-      this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, color, selectedCell);
+      this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, color, selectedCells);
       this.graph.getModel().endUpdate();
     }
   }
@@ -384,10 +477,10 @@ export class GraphService {
   /**
    * Find the selected cell, and it there is a glyph selected, update its metadata.
    */
-  updateSelectedCellInfo(glyphInfo: GlyphInfo) {
+  setSelectedCellInfo(glyphInfo: GlyphInfo) {
     const selectedCell = this.graph.getSelectionCell();
 
-    if (selectedCell != null && selectedCell.isGlyph()) {
+    if (selectedCell != null && selectedCell.isSequenceFeatureGlyph()) {
       const cellData = selectedCell.getGlyphMetadata();
       if (cellData != null) {
         cellData.copyDataFrom(glyphInfo);
@@ -474,8 +567,12 @@ export class GraphService {
       return this.style.includes(backboneStyleName);
     }
 
-    mx.mxCell.prototype.isGlyph = function() {
-      return this.style.includes(glyphBaseStyleName);
+    mx.mxCell.prototype.isSequenceFeatureGlyph = function() {
+      return this.style.includes(sequenceFeatureGlyphBaseStyleName);
+    }
+
+    mx.mxCell.prototype.isMolecularSpeciesGlyph = function() {
+      return this.style.includes(molecularSpeciesGlyphBaseStyleName);
     }
 
     mx.mxCell.prototype.isCircuitContainer = function() {
@@ -486,7 +583,7 @@ export class GraphService {
      * Returns the backbone associated with this cell
      */
     mx.mxCell.prototype.getBackbone = function() {
-      if (this.isGlyph()) {
+      if (this.isSequenceFeatureGlyph()) {
         return this.getParent().getBackbone();
       } else if (this.isBackbone()) {
         return this;
@@ -508,7 +605,7 @@ export class GraphService {
      * Positions and sizes the backbone associated with this cell
      */
     mx.mxCell.prototype.refreshBackbone = function(graph) {
-      if (this.isGlyph() || this.isBackbone()) {
+      if (this.isSequenceFeatureGlyph() || this.isBackbone()) {
         this.getParent().refreshBackbone(graph);
         return;
       } else if (!this.isCircuitContainer()) {
@@ -527,15 +624,15 @@ export class GraphService {
       const geo = new mx.mxGeometry(0,0,0,0);
       // Paranoia
       geo.x = 0;
-      geo.y = (glyphHeight / 2) - (defaultBackboneHeight / 2);
-      geo.height = defaultBackboneHeight;
+      geo.y = sequenceFeatureGlyphHeight / 2;
+      geo.height = 1;
 
       // width:
       let glyphCount = this.getChildCount() - 1;
       if (glyphCount == 0) {
-        geo.width = defaultBackboneWidth;
+        geo.width = sequenceFeatureGlyphWidth;
       } else {
-        geo.width = glyphCount * glyphWidth;
+        geo.width = glyphCount * sequenceFeatureGlyphWidth;
       }
 
       graph.getModel().setGeometry(backbone,geo);
@@ -547,7 +644,7 @@ export class GraphService {
      * also refreshes the backbone.
      */
     mx.mxCell.prototype.refreshCircuitContainer = function(graph) {
-      if (this.isGlyph() || this.isBackbone()) {
+      if (this.isSequenceFeatureGlyph() || this.isBackbone()) {
         this.getParent().refreshCircuitContainer()
       } else if (!this.isCircuitContainer()) {
         console.error("refreshCircuitContainer: called on an invalid cell!");
@@ -571,7 +668,7 @@ export class GraphService {
      * Returns the circuit container associated with this cell.
      */
     mx.mxCell.prototype.getCircuitContainer = function () {
-      if (this.isGlyph() || this.isBackbone()) {
+      if (this.isSequenceFeatureGlyph() || this.isBackbone()) {
         return this.getParent();
       } else if (!this.isCircuitContainer()) {
         return null;
@@ -585,7 +682,7 @@ export class GraphService {
      * Usually this cell will be a glyph.
      */
     mx.mxCell.prototype.getGlyphMetadata = function() {
-      if (this.isGlyph()) {
+      if (this.isSequenceFeatureGlyph()) {
         return this.data;
       }
     }
@@ -685,7 +782,7 @@ export class GraphService {
         let clickedCell = this.getInitialCellForEvent(me);
         let selMod = this.graph.getSelectionModel();
 
-        if (clickedCell && clickedCell.isGlyph() && selMod.isSelected(clickedCell) && selMod.cells.length == 1) {
+        if (clickedCell && clickedCell.isSequenceFeatureGlyph() && selMod.isSelected(clickedCell) && selMod.cells.length == 1) {
           movingGlyph = clickedCell;
           oldX = clickedCell.geometry.x;
           oldY = clickedCell.geometry.y;
@@ -754,30 +851,23 @@ export class GraphService {
    * Can only be called before this.graph is initialized
    */
   initStyles() {
-    // A dummy element used for previewing glyphs as they are dragged onto the graph
-    this.glyphDragPreviewElt = document.createElement('div');
-    this.glyphDragPreviewElt.style.border = 'dashed black 1px';
-    this.glyphDragPreviewElt.style.width = glyphWidth + 'px';
-    this.glyphDragPreviewElt.style.height = glyphHeight + 'px';
-
-    this.textBoxDragPreviewElt = document.createElement('div');
-    this.textBoxDragPreviewElt.style.border = 'dashed black 1px';
-    this.textBoxDragPreviewElt.style.width = defaultTextWidth + 'px';
-    this.textBoxDragPreviewElt.style.height = defaultTextHeight + 'px';
-
+    // Main glyph settings. These are applied to sequence feature glyphs and molecular species glyphs
     this.baseGlyphStyle = {};
     this.baseGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
     this.baseGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     this.baseGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = true;
     this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_ROTATION] = 0;
 
+    // Text box settings.
     const textBoxStyle = {};
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
     textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
     textBoxStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
 
+    // Circuit container settings.
     const circuitContainerStyle = {};
     circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
     circuitContainerStyle[mx.mxConstants.STYLE_STROKECOLOR] = 'none';
@@ -786,23 +876,25 @@ export class GraphService {
     circuitContainerStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.graph.getStylesheet().putCellStyle(circuitContainerStyleName, circuitContainerStyle);
 
+    // Backbone settings.
     const backboneStyle = {};
-    backboneStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
-    backboneStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#000000';
+    backboneStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LINE;
+    backboneStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
+    backboneStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
     backboneStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     backboneStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.graph.getStylesheet().putCellStyle(backboneStyleName, backboneStyle);
 
+    // Edge settings.
     const style = this.graph.getStylesheet().getDefaultEdgeStyle();
     style[mx.mxConstants.STYLE_ROUNDED] = true;
     style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
   }
 
-  initCustomGlyphs() {
-    const stencils = this.glyphService.getStencils();
+  initCustomShapes() {
+    let stencils = this.glyphService.getSequenceFeatureGlyphs();
 
     for (const name in stencils) {
-
       // Create a new copy of the stencil for the graph.
       const stencil = stencils[name][0];
       const centered = stencils[name][1];
@@ -824,11 +916,25 @@ export class GraphService {
         }
       }
 
+      // Add the stencil to the registry and set its style.
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
       const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
       newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
-      this.graph.getStylesheet().putCellStyle(glyphBaseStyleName + name, newGlyphStyle);
+      this.graph.getStylesheet().putCellStyle(sequenceFeatureGlyphBaseStyleName + name, newGlyphStyle);
+    }
+
+    // molecularSpecies glyphs are simpler, since we don't have to morph
+    // them to always be centred on the strand
+    stencils = this.glyphService.getMolecularSpeciesGlyphs();
+    for (const name in stencils) {
+      const stencil = stencils[name][0];
+      let customStencil = new mx.mxStencil(stencil.desc);
+      mx.mxStencilRegistry.addStencil(name, customStencil);
+
+      const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
+      newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
+      this.graph.getStylesheet().putCellStyle(molecularSpeciesGlyphBaseStyleName + name, newGlyphStyle);
     }
   }
 }

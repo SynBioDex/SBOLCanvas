@@ -68,7 +68,7 @@ export class InfoEditorComponent implements OnInit {
       }
     }
 
-    this.graphService.updateSelectedCellInfo(this.glyphInfo);
+    this.graphService.setSelectedCellInfo(this.glyphInfo);
   }
 
   inputChange(event: any) {
@@ -100,7 +100,7 @@ export class InfoEditorComponent implements OnInit {
       }
     }
 
-    this.graphService.updateSelectedCellInfo(this.glyphInfo);
+    this.graphService.setSelectedCellInfo(this.glyphInfo);
   }
 
   /**

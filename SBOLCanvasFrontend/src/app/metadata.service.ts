@@ -49,6 +49,12 @@ export class MetadataService {
   private colorSource = new BehaviorSubject(null);
   color = this.colorSource.asObservable();
 
+  // This boolean tells us if the application is zoomed into a component definition or single glyph
+  // If this is true, the UI will disable some things like adding a new DNA strand, because a component
+  // Definition cannot have multiple strands.
+  private componentDefinitionModeSource = new BehaviorSubject(null);
+  componentDefinitionMode = this.componentDefinitionModeSource.asObservable();
+
   // TODO: DNA strand info
 
   constructor(private http: HttpClient) { }
@@ -73,5 +79,9 @@ export class MetadataService {
 
   setColor(newColor: string) {
     this.colorSource.next(newColor);
+  }
+
+  setComponentDefinitionMode(newSetting: boolean) {
+    this.componentDefinitionModeSource.next(newSetting)
   }
 }

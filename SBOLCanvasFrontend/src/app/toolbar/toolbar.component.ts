@@ -61,12 +61,8 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.graphService.unzoom();
   }
 
-  addStrand() {
-    this.graphService.addNewBackbone();
-  }
-
-  addTextBox() {
-    this.graphService.addTextBox();
+  flipGlyph() {
+    this.graphService.flipSequenceFeatureGlyph();
   }
 
   openSaveDialog(): void {

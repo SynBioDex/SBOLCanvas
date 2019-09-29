@@ -325,7 +325,7 @@ public class Converter {
 				cell.setInfo(new GlyphInfo());
 				cell.getInfo().setDisplayID("cd" + cell.getId());
 				backbones.put(cell.getId(), cell);
-			} else if (cell.getStyle().contains("glyph")) {
+			} else if (cell.getStyle().contains("sequenceFeatureGlyph")) {
 				if (glyphSets.get(cell.getParent()) != null) {
 					glyphSets.get(cell.getParent()).add(cell);
 				} else {
