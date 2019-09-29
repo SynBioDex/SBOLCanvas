@@ -47,7 +47,7 @@ export class DesignMenuComponent implements OnInit {
   }
 
   showColor($event) {
-    this.graphService.updateSelectedCellColor($event);
+    this.graphService.setSelectedCellColor($event);
     console.log($event);
   }
 
