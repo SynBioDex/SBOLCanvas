@@ -2,7 +2,6 @@ import {Component, Inject, OnInit} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material';
 import { SaveDialogData } from '../toolbar/toolbar.component';
 
-
 @Component({
   selector: 'app-save-graph',
   templateUrl: './save-graph.component.html',
