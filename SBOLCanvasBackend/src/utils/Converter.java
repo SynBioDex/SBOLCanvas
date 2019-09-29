@@ -13,6 +13,12 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.sbolstandard.core2.AccessType;
 import org.sbolstandard.core2.Component;
@@ -201,7 +207,7 @@ public class Converter {
 							AccessType.PUBLIC, componentCD.getDisplayId());
 
 					// component sequence
-					if (glyphCell.getInfo().getSequence() != null || !glyphCell.getInfo().getSequence().equals("")) {
+					if (glyphCell.getInfo().getSequence() != null && !glyphCell.getInfo().getSequence().equals("")) {
 						Sequence seq = document.createSequence(componentCD.getDisplayId() + "Sequence",
 								glyphCell.getInfo().getSequence(), Sequence.IUPAC_DNA);
 						componentCD.addSequence(seq.getIdentity());
@@ -271,49 +277,40 @@ public class Converter {
 			Set<ComponentDefinition> backboneCDs = document.getRootComponentDefinitions();
 			TreeSet<MxCell> cells = new TreeSet<MxCell>(cellComparator);
 
-			// cells that need to be there for some reason
-			MxCell first = new MxCell();
-			first.setId(0);
-			cells.add(first);
-			MxCell second = new MxCell();
-			second.setId(1);
-			second.setParent(0);
-			cells.add(second);
-
 			// top level component definitions
 			for (ComponentDefinition backboneCD : backboneCDs) {
 				
 				// container data
 				MxCell containerCell = new MxCell();
 				containerCell.setParent(1);
-				containerCell.setId(backboneCD.getAnnotation(new QName(uriPrefix, "Cid", annPrefix)).getIntegerValue());
-				containerCell.setVertex(backboneCD.getAnnotation(new QName(uriPrefix, "Cvertex", annPrefix)).getBooleanValue());
-				containerCell.setConnectable(backboneCD.getAnnotation(new QName(uriPrefix, "Cconnectable", annPrefix)).getBooleanValue());
+				containerCell.setId(Integer.parseInt(backboneCD.getAnnotation(new QName(uriPrefix, "Cid", annPrefix)).getStringValue()));
+				containerCell.setVertex(Boolean.parseBoolean(backboneCD.getAnnotation(new QName(uriPrefix, "Cvertex", annPrefix)).getStringValue()));
+				containerCell.setConnectable(Boolean.parseBoolean(backboneCD.getAnnotation(new QName(uriPrefix, "Cconnectable", annPrefix)).getStringValue()));
 				containerCell.setStyle(backboneCD.getAnnotation(new QName(uriPrefix, "Cstyle", annPrefix)).getStringValue());
 				
 				// container geometry
 				MxGeometry containerGeometry = new MxGeometry();
-				containerGeometry.setX(backboneCD.getAnnotation(new QName(uriPrefix, "Cx", annPrefix)).getDoubleValue());
-				containerGeometry.setY(backboneCD.getAnnotation(new QName(uriPrefix, "Cy", annPrefix)).getDoubleValue());
-				containerGeometry.setWidth(backboneCD.getAnnotation(new QName(uriPrefix, "Cwidth", annPrefix)).getDoubleValue());
-				containerGeometry.setHeight(backboneCD.getAnnotation(new QName(uriPrefix, "Cheight", annPrefix)).getDoubleValue());
+				containerGeometry.setX(Double.parseDouble(backboneCD.getAnnotation(new QName(uriPrefix, "Cx", annPrefix)).getStringValue()));
+				containerGeometry.setY(Double.parseDouble(backboneCD.getAnnotation(new QName(uriPrefix, "Cy", annPrefix)).getStringValue()));
+				containerGeometry.setWidth(Double.parseDouble(backboneCD.getAnnotation(new QName(uriPrefix, "Cwidth", annPrefix)).getStringValue()));
+				containerGeometry.setHeight(Double.parseDouble(backboneCD.getAnnotation(new QName(uriPrefix, "Cheight", annPrefix)).getStringValue()));
 				containerCell.setGeometry(containerGeometry);
 				cells.add(containerCell);
 				
 				// backbone data
 				MxCell backboneCell = new MxCell();
 				backboneCell.setParent(containerCell.getId());
-				backboneCell.setId(backboneCD.getAnnotation(new QName(uriPrefix, "Bid", annPrefix)).getIntegerValue());
-				backboneCell.setVertex(backboneCD.getAnnotation(new QName(uriPrefix, "Bvertex", annPrefix)).getBooleanValue());
-				backboneCell.setConnectable(backboneCD.getAnnotation(new QName(uriPrefix, "Bconnectable", annPrefix)).getBooleanValue());
+				backboneCell.setId(Integer.parseInt(backboneCD.getAnnotation(new QName(uriPrefix, "Bid", annPrefix)).getStringValue()));
+				backboneCell.setVertex(Boolean.parseBoolean(backboneCD.getAnnotation(new QName(uriPrefix, "Bvertex", annPrefix)).getStringValue()));
+				backboneCell.setConnectable(Boolean.parseBoolean(backboneCD.getAnnotation(new QName(uriPrefix, "Bconnectable", annPrefix)).getStringValue()));
 				backboneCell.setStyle(backboneCD.getAnnotation(new QName(uriPrefix, "Bstyle", annPrefix)).getStringValue());
 				
 				// backbone geometry
 				MxGeometry backboneGeometry = new MxGeometry();
-				backboneGeometry.setX(backboneCD.getAnnotation(new QName(uriPrefix, "Bx", annPrefix)).getDoubleValue());
-				backboneGeometry.setY(backboneCD.getAnnotation(new QName(uriPrefix, "By", annPrefix)).getDoubleValue());
-				backboneGeometry.setWidth(backboneCD.getAnnotation(new QName(uriPrefix, "Bwidth", annPrefix)).getDoubleValue());
-				backboneGeometry.setHeight(backboneCD.getAnnotation(new QName(uriPrefix, "Bheight", annPrefix)).getDoubleValue());
+				backboneGeometry.setX(Double.parseDouble(backboneCD.getAnnotation(new QName(uriPrefix, "Bx", annPrefix)).getStringValue()));
+				backboneGeometry.setY(Double.parseDouble(backboneCD.getAnnotation(new QName(uriPrefix, "By", annPrefix)).getStringValue()));
+				backboneGeometry.setWidth(Double.parseDouble(backboneCD.getAnnotation(new QName(uriPrefix, "Bwidth", annPrefix)).getStringValue()));
+				backboneGeometry.setHeight(Double.parseDouble(backboneCD.getAnnotation(new QName(uriPrefix, "Bheight", annPrefix)).getStringValue()));
 				backboneCell.setGeometry(backboneGeometry);
 				cells.add(backboneCell);
 				
@@ -323,17 +320,17 @@ public class Converter {
 					// glyph data
 					MxCell glyphCell = new MxCell();
 					glyphCell.setParent(containerCell.getId());
-					glyphCell.setId(glyphComponent.getAnnotation(new QName(uriPrefix, "id", annPrefix)).getIntegerValue());
-					glyphCell.setVertex(glyphComponent.getAnnotation(new QName(uriPrefix, "vertex", annPrefix)).getBooleanValue());
-					glyphCell.setConnectable(glyphComponent.getAnnotation(new QName(uriPrefix, "connectable", annPrefix)).getBooleanValue());
+					glyphCell.setId(Integer.parseInt(glyphComponent.getAnnotation(new QName(uriPrefix, "id", annPrefix)).getStringValue()));
+					glyphCell.setVertex(Boolean.parseBoolean(glyphComponent.getAnnotation(new QName(uriPrefix, "vertex", annPrefix)).getStringValue()));
+					glyphCell.setConnectable(Boolean.parseBoolean(glyphComponent.getAnnotation(new QName(uriPrefix, "connectable", annPrefix)).getStringValue()));
 					glyphCell.setStyle(glyphComponent.getAnnotation(new QName(uriPrefix, "style", annPrefix)).getStringValue());
 					
 					// glyph geometry
 					MxGeometry glyphGeometry = new MxGeometry();
-					glyphGeometry.setX(glyphComponent.getAnnotation(new QName(uriPrefix, "x", annPrefix)).getDoubleValue());
-					glyphGeometry.setY(glyphComponent.getAnnotation(new QName(uriPrefix, "y", annPrefix)).getDoubleValue());
-					glyphGeometry.setWidth(glyphComponent.getAnnotation(new QName(uriPrefix, "width", annPrefix)).getDoubleValue());
-					glyphGeometry.setHeight(glyphComponent.getAnnotation(new QName(uriPrefix, "height", annPrefix)).getDoubleValue());
+					glyphGeometry.setX(Double.parseDouble(glyphComponent.getAnnotation(new QName(uriPrefix, "x", annPrefix)).getStringValue()));
+					glyphGeometry.setY(Double.parseDouble(glyphComponent.getAnnotation(new QName(uriPrefix, "y", annPrefix)).getStringValue()));
+					glyphGeometry.setWidth(Double.parseDouble(glyphComponent.getAnnotation(new QName(uriPrefix, "width", annPrefix)).getStringValue()));
+					glyphGeometry.setHeight(Double.parseDouble(glyphComponent.getAnnotation(new QName(uriPrefix, "height", annPrefix)).getStringValue()));
 					glyphCell.setGeometry(glyphGeometry);
 					
 					// glyph info
@@ -341,7 +338,7 @@ public class Converter {
 					glyphInfo.setDescription(glyphComponent.getDescription());
 					glyphInfo.setDisplayID(glyphComponent.getDisplayId());
 					glyphInfo.setName(glyphComponent.getName());
-					URI glyphRole = glyphComponent.getRoles().toArray(new URI[0])[0];
+					URI glyphRole = glyphComponent.getDefinition().getRoles().toArray(new URI[0])[0];
 					if(SBOLData.roles.containsValue(glyphRole)) {
 						glyphInfo.setPartRole(SBOLData.roles.getKey(glyphRole));
 					}else {
@@ -350,7 +347,8 @@ public class Converter {
 					}
 					URI glyphType = glyphComponent.getDefinition().getTypes().toArray(new URI[0])[0];
 					glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
-					glyphInfo.setSequence(glyphComponent.getDefinition().getSequences().toArray(new String[0])[0]);
+					if(glyphComponent.getDefinition().getSequences().size() > 0)
+						glyphInfo.setSequence(glyphComponent.getDefinition().getSequences().toArray(new Sequence[0])[0].toString());
 					glyphInfo.setVersion(glyphComponent.getVersion());
 					glyphCell.setInfo(glyphInfo);
 					cells.add(glyphCell);
@@ -359,6 +357,88 @@ public class Converter {
 			}
 			
 			// convert the objects to the graph xml
+			try {
+				DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
+				DocumentBuilder documentBuilder = documentFactory.newDocumentBuilder();
+				Document graphDocument = documentBuilder.newDocument();
+				
+				// top items needed for mxgraph
+				Element mxGraphModel = graphDocument.createElement("mxGraphModel");
+				graphDocument.appendChild(mxGraphModel);
+				
+				Element root = graphDocument.createElement("root");
+				mxGraphModel.appendChild(root);
+				
+				// cells that need to be there for some reason
+				Element first = graphDocument.createElement("mxCell");
+				first.setAttribute("id", "0");
+				root.appendChild(first);
+				Element second = graphDocument.createElement("mxCell");
+				second.setAttribute("id", "1");
+				second.setAttribute("parent", "0");
+				root.appendChild(second);
+				
+				for(MxCell cell : cells) {
+					// cell
+					Element mxCell = graphDocument.createElement("mxCell");
+					mxCell.setAttribute("id", ""+cell.getId());
+					mxCell.setAttribute("style", cell.getStyle());
+					mxCell.setAttribute("vertex", cell.isVertex() ? "1" : "0");
+					mxCell.setAttribute("connectable", cell.isConnectable() ? "1" : "0");
+					mxCell.setAttribute("parent", ""+cell.getParent());
+					root.appendChild(mxCell);
+					
+					// geometry
+					MxGeometry geometry = cell.getGeometry();
+					Element mxGeometry = graphDocument.createElement("mxGeometry");
+					if(geometry.getX() != 0)
+						mxGeometry.setAttribute("x", ""+geometry.getX());
+					if(geometry.getY() != 0)
+						mxGeometry.setAttribute("y", ""+geometry.getY());
+					if(geometry.getWidth() != 0)
+						mxGeometry.setAttribute("width", ""+geometry.getWidth());
+					if(geometry.getHeight() != 0)
+						mxGeometry.setAttribute("height", ""+geometry.getHeight());
+					mxGeometry.setAttribute("as", "geometry");
+					mxCell.appendChild(mxGeometry);
+					
+					// GlyphInfo
+					if(cell.getInfo() != null) {
+						GlyphInfo info = cell.getInfo();
+						Element glyphInfo = graphDocument.createElement("GlyphInfo");
+						if(info.getDescription() != null)
+							glyphInfo.setAttribute("description", info.getDescription());
+						if(info.getDisplayID() != null)
+							glyphInfo.setAttribute("displayID", info.getDisplayID());
+						if(info.getName() != null)
+							glyphInfo.setAttribute("name", info.getName());
+						if(info.getPartRefine() != null)
+							glyphInfo.setAttribute("partRefine", info.getPartRefine());
+						if(info.getPartRole() != null)
+							glyphInfo.setAttribute("partRole", info.getPartRole());
+						if(info.getPartType() != null)
+							glyphInfo.setAttribute("partType", info.getPartType());
+						if(info.getSequence() != null)
+							glyphInfo.setAttribute("sequence", info.getSequence());
+						if(info.getVersion() != null)
+							glyphInfo.setAttribute("version", info.getVersion());
+						glyphInfo.setAttribute("as", "data");
+						mxCell.appendChild(glyphInfo);
+					}
+				}
+				
+				TransformerFactory transformerFactory = TransformerFactory.newInstance();
+				Transformer transformer = transformerFactory.newTransformer();
+				DOMSource domSource = new DOMSource(graphDocument);
+				StreamResult result = new StreamResult(mxGraphStream);
+				transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+				transformer.transform(domSource, result);
+				
+				
+				
+			} catch (ParserConfigurationException | TransformerException e) {
+				e.printStackTrace();
+			}
 			
 			// convert the objects to an MxGraph
 			

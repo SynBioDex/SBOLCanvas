@@ -38,13 +38,13 @@ export class FilesService {
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
   }
 
-  loadLocal(file: File, callback: (sbol: string) => void){
+  loadLocal(file: File, graphService: GraphService){
     if(typeof (FileReader) !== 'undefined'){
       const reader = new FileReader();
 
       reader.onload = (e:any) => {
         this.convertToMxGraph(String(reader.result)).subscribe(result => {
-          callback(result);
+          graphService.setModelWithXML(result);
         });
       };
 
