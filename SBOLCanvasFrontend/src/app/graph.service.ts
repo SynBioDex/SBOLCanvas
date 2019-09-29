@@ -12,6 +12,7 @@ import * as mxCell from 'mxgraph';
 import {GlyphInfo} from './glyphInfo';
 import {MetadataService} from './metadata.service';
 import {GlyphService} from './glyph.service';
+import {forEach} from "@angular/router/src/utils/collection";
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -224,6 +225,22 @@ export class GraphService {
       if (selectionCells[0].isSequenceFeatureGlyph()) {
         this.zoomStack.push([this.getModelXML(), selectionCells[0].getId()]);
         this.setModelWithXML(selectionCells[0].data.model);
+
+        // We have to do a few things here. Since component definitions can only have 1
+        // DNA strand, we must drop a new DNA backbone if there is not one.
+        // We also have to notify the metadata service that we are now in component definition
+        // mode.
+
+        // Now that we are in a new model, lets check if we have a circuit container yet.
+        if (!this.modelHasAtLeastOneCircuitContainer()) {
+          this.addNewBackbone();
+        }
+
+        // Now we notify the metadata service that we are in component definition mode. The
+        // metadata service will then notify the UI components so they can disable certain
+        // features.
+        this.metadataService.setComponentDefinitionMode(true);
+        console.log("something")
       }
     }
   }
@@ -235,8 +252,17 @@ export class GraphService {
    */
   unzoom() {
 
+    // If we are not at the top level, then we pop the frame stack.
     if (this.zoomStack.length > 0) {
       let newFrame = this.zoomStack.pop();
+
+      // If we are now at the top of the frame stack. This means we are no longer
+      // in component definition mode, so we need to notify the metadata service
+      // so it can notify the UI components.
+      if (this.zoomStack.length == 0) {
+        this.metadataService.setComponentDefinitionMode(false);
+      }
+
       let oldFrame = this.getModelXML();
       this.setModelWithXML(newFrame[0]);
       let selectedCell = this.graph.getModel().getCell(newFrame[1]);
@@ -246,6 +272,23 @@ export class GraphService {
       selMod.clear();
       selMod.addCell(selectedCell);
     }
+  }
+
+  /**
+   * This checks if there is a circuit container in the current graph model.
+   * This tells us whether there is a component definition already present.
+   * @param cells
+   */
+  modelHasAtLeastOneCircuitContainer(): boolean {
+    let cells = this.graph.getChildVertices(this.graph.getDefaultParent());
+
+    for (let i = 0; i < cells.length; i++) {
+      if (cells[i].isCircuitContainer()) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   addNewBackbone() {

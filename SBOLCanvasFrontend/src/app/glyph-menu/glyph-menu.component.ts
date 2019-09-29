@@ -8,7 +8,7 @@ import {Component, OnInit, AfterViewInit} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {GlyphService} from '../glyph.service';
 import {DomSanitizer} from '@angular/platform-browser';
-import {MatIconRegistry} from "@angular/material/icon";
+import {MetadataService} from '../metadata.service';
 
 @Component({
   selector: 'app-glyph-menu',
@@ -22,7 +22,10 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   public interactionsDict = {};
   public miscDict = {};
 
-  constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer, iconRegistry: MatIconRegistry) {
+  private componentDefinitionMode = false;
+  private dnaButtonEnabled = true;
+
+  constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer, private metadataService: MetadataService) {
   }
 
   onSequenceFeatureGlyphClicked(name: string) {
@@ -34,6 +37,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
+    this.metadataService.componentDefinitionMode.subscribe(newSetting => this.componentDefinitionModeUpdated(newSetting));
     this.registerSvgElements();
   }
 
@@ -79,4 +83,17 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     this.graphService.addInteraction();
   }
 
+  componentDefinitionModeUpdated(newSetting: boolean) {
+    this.componentDefinitionMode = newSetting;
+
+    // If we are in component definition mode, we cannot add new strands.
+    // We can expect that there will always be exactly one component definition
+    // already present in the graph.
+    // if (this.componentDefinitionMode) {
+    //   this.dnaButtonEnabled = true;
+    // }
+    // else {
+    //   this.dnaButtonEnabled = false;
+    // }
+  }
 }

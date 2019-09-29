@@ -11,7 +11,7 @@
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="52px" gutterSize="5px">
         <mat-grid-tile>
-          <button mat-icon-button (click)="addStrand()" style="width:100px; height:100px">
+          <button mat-icon-button [disabled]="componentDefinitionMode" (click)="addStrand()" style="width:100px; height:100px">
             <svg width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>
           </button>
         </mat-grid-tile>
@@ -60,7 +60,7 @@
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of interactionsDict | keyvalue">
-          <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)">
+          <button mat-button [disabled]="componentDefinitionMode" (click)="onSequenceFeatureGlyphClicked(pair.key)">
             <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>
