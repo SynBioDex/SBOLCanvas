@@ -83,22 +83,22 @@ def fixShape(shape):
 	# First we decide the scaling factor and rescale.
 	#
 	data = get_data(shape)
-	print(data)
 
 	# What is the maximum scaling factor we need to fit in the x direction?
 	# The total distance from min_x to max_x needs to be < WIDTH_MAX - MIN_X_PADDING * 2 // *2 because the x padding is on both sides.
 	x_distance = data['max_x'] - data['min_x']
 	x_scale = (WIDTH_MAX - MIN_X_PADDING * 2) / x_distance if x_distance != 0 else INF
-	print("min x scale need = {scale}".format(scale=x_scale))
+	print("max x scale need = {scale}".format(scale=x_scale))
 
 	# What is the maximum scaling factor we need to fit in the y direction?
 	# The total distance from min_y to max_y needs to be < HEIGHT_MAX - MIN_Y_PADDING
 	y_distance = data['max_y'] - data['min_y']
 	y_scale = (HEIGHT_MAX - MIN_Y_PADDING) / y_distance if y_distance != 0 else INF
-	print("min y scale need = {scale}".format(scale=y_scale))
+	print("max y scale need = {scale}".format(scale=y_scale))
 
 	# We take the minimum of these two scales to ensure that the whole thing fits on the SVG 'page'
 	scale = min(x_scale, y_scale)
+	print("scaling factor = {scale}".format(scale=scale))
 	scale_shape(shape, scale)
 
 	#
@@ -106,7 +106,6 @@ def fixShape(shape):
 	# Get the data again because our coords have changed.
 	#
 	data = get_data(shape)
-	print(data)
 
 	# We take the width and center it 
 	glyph_width = data['max_x'] - data['min_x']
@@ -117,7 +116,6 @@ def fixShape(shape):
 
 	# Y direction might be a bit trickier depending on if the glyph is centered horizontally.
 	glyph_height = data['max_y'] - data['min_y']
-	print(glyph_height)
 	desired_dist = HEIGHT_MAX - glyph_height
 
 	if is_centered(shape):

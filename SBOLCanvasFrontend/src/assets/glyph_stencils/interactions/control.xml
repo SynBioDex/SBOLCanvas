@@ -1,0 +1,19 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="control" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <dashpattern pattern="none" />
+        <dashed dashed="1" />
+        <alpha alpha="1" />
+        <path>
+            <move x="4.9999999999999964" y="23.944281524926687" />
+            <line x="31.82591308984271" y="23.944281524926687" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

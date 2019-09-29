@@ -26,6 +26,7 @@ export class GlyphService {
     'assets/glyph_stencils/location-rna.xml',
     'assets/glyph_stencils/location-protein.xml',
     'assets/glyph_stencils/ribosome-entry-site.xml',
+    'assets/glyph_stencils/terminator-specification.xml',
     //'assets/glyph_stencils/downloads.xml'
   ];
 
@@ -35,7 +36,7 @@ export class GlyphService {
   ]
 
   private interactionXMLs: string[] = [
-
+    'assets/glyph_stencils/interactions/control.xml'
   ]
 
   private utilXMLs: string[] = [

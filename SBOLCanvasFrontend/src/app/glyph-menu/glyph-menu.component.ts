@@ -19,6 +19,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
   public utilsDict = {};
   public sequenceFeatureDict = {};
+  public interactionsDict = {};
   public miscDict = {};
 
   constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer, iconRegistry: MatIconRegistry) {
@@ -62,7 +63,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     }
     for (const name in interactionElts) {
       const svg = interactionElts[name];
-      this.miscDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+      this.interactionsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
   }
 

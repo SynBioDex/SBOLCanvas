@@ -1,15 +1,16 @@
 <div class="glyphContainer">
   <div style="margin: auto">
 
+
+    <!-------------------------------------    Utils panel   --------------------------------------->
     <mat-expansion-panel [expanded]="true">
       <mat-expansion-panel-header>
         <mat-panel-title>
           Util
         </mat-panel-title>
       </mat-expansion-panel-header>
-
       <mat-grid-list cols="4" rowHeight="52px" gutterSize="5px">
-        <mat-grid-tile style="width:200px; height:200px">
+        <mat-grid-tile>
           <button mat-icon-button (click)="addStrand()" style="width:100px; height:100px">
             <svg width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>
           </button>
@@ -19,20 +20,17 @@
             <svg width="52px" height="52px" [innerHTML]="utilsDict['textBox']"></svg>
           </button>
         </mat-grid-tile>
-        <mat-grid-tile>
-          <button mat-button (click)="addInteraction()"  width="52px" height="52px">
-            Interaction
-          </button>
-        </mat-grid-tile>
         <mat-grid-tile *ngFor="let pair of miscDict | keyvalue">
           <button mat-button (click)="onMolecularSpeciesGlyphClicked(pair.key)">
             <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>
       </mat-grid-list>
-
     </mat-expansion-panel>
 
+
+
+    <!-------------------------------------    Sequence panel   --------------------------------------->
     <mat-expansion-panel [expanded]="true">
       <mat-expansion-panel-header>
         <mat-panel-title>
@@ -41,9 +39,27 @@
         <mat-panel-description>
         </mat-panel-description>
       </mat-expansion-panel-header>
-
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue">
+          <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)">
+            <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel>
+
+
+    <!-------------------------------------    Interactions panel   --------------------------------------->
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Interactions
+        </mat-panel-title>
+        <mat-panel-description>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
+        <mat-grid-tile *ngFor="let pair of interactionsDict | keyvalue">
           <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)">
             <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
