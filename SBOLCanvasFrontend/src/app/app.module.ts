@@ -7,7 +7,7 @@ import { AppComponent } from './app.component';
 import { ToolbarComponent } from './toolbar/toolbar.component';
 import { GlyphMenuComponent } from './glyph-menu/glyph-menu.component';
 import { CanvasComponent } from './canvas/canvas.component';
-import { ColorPaletteComponent } from './color-palette/color-palette.component';
+import { DesignMenuComponent } from './design-menu/design-menu.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
@@ -25,6 +25,7 @@ import {MetadataService} from './metadata.service';
 import { SaveGraphComponent } from './save-graph/save-graph.component';
 import { LoadGraphComponent } from './load-graph/load-graph.component';
 import { BannerComponent } from './banner/banner.component';
+import { ColorPickerComponent } from './color-picker/color-picker.component';
 
 
 @NgModule({
@@ -33,12 +34,13 @@ import { BannerComponent } from './banner/banner.component';
     ToolbarComponent,
     GlyphMenuComponent,
     CanvasComponent,
-    ColorPaletteComponent,
+    DesignMenuComponent,
     InfoEditorComponent,
     HomeComponent,
     SaveGraphComponent,
     LoadGraphComponent,
     BannerComponent,
+    ColorPickerComponent,
   ],
   imports: [
     BrowserModule,
@@ -55,7 +57,7 @@ import { BannerComponent } from './banner/banner.component';
   ],
   providers: [GraphService, MetadataService],
   bootstrap: [AppComponent],
-  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent ]
+  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, ColorPickerComponent ]
 })
 export class AppModule {
 }
