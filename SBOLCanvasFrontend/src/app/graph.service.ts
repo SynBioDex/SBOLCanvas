@@ -173,6 +173,10 @@ export class GraphService {
     this.metadataService.setSelectedGlyphInfo(null);
   }
 
+  addInteraction() {
+
+  }
+
   zoom() {
     let selectionCells = this.graph.getSelectionCells();
 
@@ -799,7 +803,7 @@ export class GraphService {
   }
 
   initCustomGlyphs() {
-    const stencils = this.glyphService.getStencils();
+    const stencils = this.glyphService.getSequenceFeatures();
 
     for (const name in stencils) {
 

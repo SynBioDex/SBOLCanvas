@@ -4,16 +4,28 @@
     <mat-expansion-panel>
       <mat-expansion-panel-header>
         <mat-panel-title>
-          Glyphs for your face
+          Util
         </mat-panel-title>
-        <mat-panel-description>
-          doo dads
-        </mat-panel-description>
       </mat-expansion-panel-header>
 
       <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
+        <mat-grid-tile>
+          <button mat-button (click)="addStrand()">
+            New Strand
+          </button>
+        </mat-grid-tile>
+        <mat-grid-tile>
+          <button mat-button (click)="addTextBox()">
+            Text
+          </button>
+        </mat-grid-tile>
+        <mat-grid-tile>
+          <button mat-button (click)="addInteraction()">
+            Interaction
+          </button>
+        </mat-grid-tile>
         <mat-grid-tile *ngFor="let pair of miscDict | keyvalue">
-          <button mat-stroked-button (click)="onGlyphClicked(pair.key)">
+          <button mat-button (click)="onGlyphClicked(pair.key)">
             <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>
@@ -24,16 +36,16 @@
     <mat-expansion-panel>
       <mat-expansion-panel-header>
         <mat-panel-title>
-          Glyphs for your face
+          Sequence
         </mat-panel-title>
         <mat-panel-description>
-          doo dads
+          standard DNA parts
         </mat-panel-description>
       </mat-expansion-panel-header>
 
       <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue">
-          <button mat-stroked-button (click)="onGlyphClicked(pair.key)">
+          <button mat-button (click)="onGlyphClicked(pair.key)">
             <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>

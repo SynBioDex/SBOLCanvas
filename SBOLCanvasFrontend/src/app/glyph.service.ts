@@ -69,70 +69,40 @@ export class GlyphService {
     });
   }
 
-  getStencils() {
+  getElements(glyph_list) {
+    const svgs = {};
+
+    for (const name in glyph_list) {
+      const stencil = glyph_list[name][0];
+
+      let elt = document.createElement('svg');
+      let canvas = new mx.mxSvgCanvas2D(elt);
+      let shape = new mx.mxShape(stencil);
+
+      canvas.setStrokeColor('#000000');
+      canvas.setFillColor('none');
+
+      stencil.drawShape(canvas, shape, 0, 0, 52, 52);
+
+      svgs[name] = elt;
+    }
+
+    return svgs;
+  }
+
+  getSequenceFeatures() {
     return this.sequenceFeatures;
   }
 
   getInteractionElements() {
-    const svgs = {};
-
-    for (const name in this.interactions) {
-      const stencil = this.interactions[name][0];
-
-      let elt = document.createElement('svg');
-      let canvas = new mx.mxSvgCanvas2D(elt);
-      let shape = new mx.mxShape(stencil);
-
-      canvas.setStrokeColor('#000000');
-      canvas.setFillColor('none');
-
-      stencil.drawShape(canvas, shape, 0, 0, 52, 52);
-
-      svgs[name] = elt;
-    }
-
-    return svgs;
+    return this.getElements(this.interactions);
   }
 
   getMolecularSpecieElements() {
-    const svgs = {};
-
-    for (const name in this.molecularSpecies) {
-      const stencil = this.molecularSpecies[name][0];
-
-      let elt = document.createElement('svg');
-      let canvas = new mx.mxSvgCanvas2D(elt);
-      let shape = new mx.mxShape(stencil);
-
-      canvas.setStrokeColor('#000000');
-      canvas.setFillColor('none');
-
-      stencil.drawShape(canvas, shape, 0, 0, 52, 52);
-
-      svgs[name] = elt;
-    }
-
-    return svgs;
+    return this.getElements(this.molecularSpecies);
   }
 
   getSequenceFeatureElements() {
-    const svgs = {};
-
-    for (const name in this.sequenceFeatures) {
-      const stencil = this.sequenceFeatures[name][0];
-
-      let elt = document.createElement('svg');
-      let canvas = new mx.mxSvgCanvas2D(elt);
-      let shape = new mx.mxShape(stencil);
-
-      canvas.setStrokeColor('#000000');
-      canvas.setFillColor('none');
-
-      stencil.drawShape(canvas, shape, 0, 0, 52, 52);
-
-      svgs[name] = elt;
-    }
-
-    return svgs;
+    return this.getElements(this.sequenceFeatures);
   }
 }

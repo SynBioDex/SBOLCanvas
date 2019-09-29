@@ -28,7 +28,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     const sfElts = this.glyphService.getSequenceFeatureElements();
-    const miscElts = this.glyphService.getMolecularSpecieElements();
+    const msElts = this.glyphService.getMolecularSpecieElements();
+    const iElts = this.glyphService.getInteractionElements();
 
     for (const name in sfElts) {
       const svg = sfElts[name];
@@ -36,13 +37,30 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
       this.sequenceFeatureDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
 
-    for (const name in miscElts) {
-      const svg = miscElts[name];
+    // For now combine interactions and molecular species into the miscellaneous
+    for (const name in msElts) {
+      const svg = msElts[name];
+      this.miscDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
+    for (const name in iElts) {
+      const svg = iElts[name];
       this.miscDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
   }
 
   ngAfterViewInit() {
+  }
+
+  addStrand() {
+    this.graphService.addNewBackbone();
+  }
+
+  addTextBox() {
+    this.graphService.addTextBox();
+  }
+
+  addInteraction() {
+    this.graphService.addInteraction();
   }
 
 }
