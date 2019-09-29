@@ -217,7 +217,7 @@ export class GraphService {
   zoom() {
     let selectionCells = this.graph.getSelectionCells();
 
-    // If we have a single glyph selected, then we zoom in on it. Otherwise do nothing.
+    // If we have a single sequence feature glyph selected, zoom in on it. Otherwise do nothing.
     if (selectionCells.length == 1) {
       if (selectionCells[0].isSequenceFeatureGlyph()) {
         this.zoomStack.push([this.getModelXML(), selectionCells[0].getId()]);
@@ -240,6 +240,9 @@ export class GraphService {
         console.log("something")
       }
     }
+
+    // Making undos work with zooming would be hard, for now just nuke undo stack
+    this.editor.undoManager.clear();
   }
 
   /**
@@ -269,6 +272,9 @@ export class GraphService {
       selMod.clear();
       selMod.addCell(selectedCell);
     }
+
+    // Making undos work with zooming would be hard, for now just nuke undo stack
+    this.editor.undoManager.clear();
   }
 
   /**

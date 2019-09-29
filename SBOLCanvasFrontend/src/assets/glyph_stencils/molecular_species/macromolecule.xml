@@ -21,7 +21,7 @@
             <arc large-arc-flag="0.0" rx="23.205541561712845" ry="24.912846347607054" sweep-flag="0.0" x="24.79445843828715" x-axis-rotation="5.0" y="6.707304785894209" />
             <close />
         </path>
-        <stroke />
+        <fillstroke />
     </foreground>
 </shape>
 </shapes>
