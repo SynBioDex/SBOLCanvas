@@ -61,6 +61,10 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.graphService.unzoom();
   }
 
+  flipGlyph() {
+    this.graphService.flipSequenceFeatureGlyph();
+  }
+
   openSaveDialog(): void {
     const dialogRef = this.dialog.open(SaveGraphComponent, {
       width: '250px',

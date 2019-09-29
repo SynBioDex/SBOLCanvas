@@ -115,7 +115,7 @@ export class ColorPaletteComponent implements OnInit {
   }
 
   showColor($event) {
-    this.graphService.updateSelectedCellColor($event);
+    this.graphService.setSelectedCellColor($event);
   }
 
   newSelection(color: string) {

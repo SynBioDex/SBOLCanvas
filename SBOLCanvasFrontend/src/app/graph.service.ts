@@ -147,10 +147,10 @@ export class GraphService {
       // Null the info out
       this.nullifyMetadata()
     }
-    else if (cells.length == 1) {
+    else if (cells.length == 1) { // If there is only one cell selected
       let cell = cells[0];
 
-      if (cell.isSequenceFeatureGlyph()) {
+      if (cell.isSequenceFeatureGlyph()) { // If it's a sequence feature.
 
         let color = this.graph.getCellStyle(cell)['strokeColor'];
         this.metadataService.setColor(color);
@@ -181,8 +181,38 @@ export class GraphService {
 
   }
 
+  flipSequenceFeatureGlyph() {
+    let selectionCells = this.graph.getSelectionCells();
+
+    // If we have a single glyph selected, then we flip it along the x-axis. Otherwise do nothing.
+    if (selectionCells.length = 1) {
+      if (selectionCells[0].isSequenceFeatureGlyph()) {
+        let cell = selectionCells[0];
+
+        // Make the cell do a 180 degree turn with the center point as the axis of rotation.
+        this.graph.getModel().beginUpdate();
+
+        let rotation = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_ROTATION];
+        console.debug("current glyph rotation setting = " + rotation);
+
+        if (rotation == undefined) {
+          console.warn("rotation style undefined. Assuming 0, and rotating to 180");
+          this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
+        } else if (rotation == 0) {
+          this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
+          console.debug("rotating to 180")
+        } else if (rotation == 180) {
+          this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 0, [cell]);
+          console.debug("rotating to 0")
+        }
+
+        this.graph.getModel().endUpdate();
+      } else { console.debug("not a sequence feature glyph selected, not doing anything")}
+    } else { console.debug("more than 1 cell selected, not doing anything")}
+  }
+
   /**
-   * 'Zooms out' to view the component definition of the currently selected glyph.
+   * 'Zooms in' to view the component definition of the currently selected glyph.
    * This changes which component definition is displayed on the canvas,
    * not the canvas's scale.
    */
@@ -370,13 +400,13 @@ export class GraphService {
   /**
    * Find the selected cell, and if there is a cell selected, update its color.
    */
-  updateSelectedCellColor(color: string) {
-    const selectedCell = this.graph.getSelectionCells();
+  setSelectedCellColor(color: string) {
+    const selectedCells = this.graph.getSelectionCells();
 
-    if (selectedCell != null) {
+    if (selectedCells != null) {
 
       this.graph.getModel().beginUpdate();
-      this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, color, selectedCell);
+      this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, color, selectedCells);
       this.graph.getModel().endUpdate();
     }
   }
@@ -384,7 +414,7 @@ export class GraphService {
   /**
    * Find the selected cell, and it there is a glyph selected, update its metadata.
    */
-  updateSelectedCellInfo(glyphInfo: GlyphInfo) {
+  setSelectedCellInfo(glyphInfo: GlyphInfo) {
     const selectedCell = this.graph.getSelectionCell();
 
     if (selectedCell != null && selectedCell.isSequenceFeatureGlyph()) {
@@ -758,19 +788,23 @@ export class GraphService {
    * Can only be called before this.graph is initialized
    */
   initStyles() {
+    // Main glyph settings. These are applied to sequence feature glyphs and molecular species glyphs
     this.baseGlyphStyle = {};
     this.baseGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
     this.baseGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     this.baseGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = true;
     this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_ROTATION] = 0;
 
+    // Text box settings.
     const textBoxStyle = {};
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
     textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
     textBoxStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
 
+    // Circuit container settings.
     const circuitContainerStyle = {};
     circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
     circuitContainerStyle[mx.mxConstants.STYLE_STROKECOLOR] = 'none';
@@ -779,6 +813,7 @@ export class GraphService {
     circuitContainerStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.graph.getStylesheet().putCellStyle(circuitContainerStyleName, circuitContainerStyle);
 
+    // Backbone settings.
     const backboneStyle = {};
     backboneStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
     backboneStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#000000';
@@ -786,6 +821,7 @@ export class GraphService {
     backboneStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.graph.getStylesheet().putCellStyle(backboneStyleName, backboneStyle);
 
+    // Edge settings.
     const style = this.graph.getStylesheet().getDefaultEdgeStyle();
     style[mx.mxConstants.STYLE_ROUNDED] = true;
     style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
@@ -816,6 +852,7 @@ export class GraphService {
         }
       }
 
+      // Add the stencil to the registry and set its style.
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
       const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
