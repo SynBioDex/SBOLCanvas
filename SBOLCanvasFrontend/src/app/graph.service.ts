@@ -278,7 +278,23 @@ export class GraphService {
    * Deletes the currently selected cell
    */
   delete() {
-    this.editor.execute('delete');
+    this.graph.getModel().beginUpdate();
+    try {
+      const selectedCells = this.graph.getSelectionCells();
+      let circuitContainers = [];
+      for (let cell of selectedCells) {
+        if (cell.isSequenceFeatureGlyph())
+          circuitContainers.push(cell.getCircuitContainer());
+      }
+
+      this.editor.execute('delete');
+
+      for (let cell of circuitContainers) {
+        cell.refreshCircuitContainer(this.graph);
+      }
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
   }
 
   /**
