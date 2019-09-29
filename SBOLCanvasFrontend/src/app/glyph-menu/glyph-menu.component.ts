@@ -8,6 +8,7 @@ import {Component, OnInit, AfterViewInit} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {GlyphService} from '../glyph.service';
 import {DomSanitizer} from '@angular/platform-browser';
+import {MatIconRegistry} from "@angular/material/icon";
 
 @Component({
   selector: 'app-glyph-menu',
@@ -16,10 +17,11 @@ import {DomSanitizer} from '@angular/platform-browser';
 })
 export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
+  public utilsDict = {};
   public sequenceFeatureDict = {};
   public miscDict = {};
 
-  constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer) {
+  constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer, iconRegistry: MatIconRegistry) {
   }
 
   onSequenceFeatureGlyphClicked(name: string) {
@@ -31,28 +33,37 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
-    const sfElts = this.glyphService.getSequenceFeatureElements();
-    const msElts = this.glyphService.getMolecularSpeciesElements();
-    const iElts = this.glyphService.getInteractionElements();
+    this.registerSvgElements();
+  }
 
-    for (const name in sfElts) {
-      const svg = sfElts[name];
+  ngAfterViewInit() {
+  }
+
+  registerSvgElements() {
+    const sequenceFeatureElts   = this.glyphService.getSequenceFeatureElements();
+    const molecularSpeciesElts  = this.glyphService.getMolecularSpeciesElements();
+    const interactionElts       = this.glyphService.getInteractionElements();
+    const utilElts              = this.glyphService.getUtilElements();
+
+    for (const name in sequenceFeatureElts) {
+      const svg = sequenceFeatureElts[name];
 
       this.sequenceFeatureDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
 
+    for (const name in utilElts) {
+      const svg = utilElts[name];
+      this.utilsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
     // For now combine interactions and molecular species into the miscellaneous
-    for (const name in msElts) {
-      const svg = msElts[name];
+    for (const name in molecularSpeciesElts) {
+      const svg = molecularSpeciesElts[name];
       this.miscDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
-    for (const name in iElts) {
-      const svg = iElts[name];
+    for (const name in interactionElts) {
+      const svg = interactionElts[name];
       this.miscDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
-  }
-
-  ngAfterViewInit() {
   }
 
   addStrand() {

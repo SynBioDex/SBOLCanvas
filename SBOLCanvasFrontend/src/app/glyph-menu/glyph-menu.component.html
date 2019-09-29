@@ -8,19 +8,19 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
 
-      <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
-        <mat-grid-tile>
-          <button mat-button (click)="addStrand()">
-            New Strand
+      <mat-grid-list cols="4" rowHeight="52px" gutterSize="5px">
+        <mat-grid-tile style="width:200px; height:200px">
+          <button mat-icon-button (click)="addStrand()" style="width:100px; height:100px">
+            <svg width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>
           </button>
         </mat-grid-tile>
         <mat-grid-tile>
-          <button mat-button (click)="addTextBox()">
-            Text
+          <button mat-button (click)="addTextBox()"  width="52px" height="52px">
+            <svg width="52px" height="52px" [innerHTML]="utilsDict['textBox']"></svg>
           </button>
         </mat-grid-tile>
         <mat-grid-tile>
-          <button mat-button (click)="addInteraction()">
+          <button mat-button (click)="addInteraction()"  width="52px" height="52px">
             Interaction
           </button>
         </mat-grid-tile>
@@ -39,11 +39,10 @@
           Sequence
         </mat-panel-title>
         <mat-panel-description>
-          standard DNA parts
         </mat-panel-description>
       </mat-expansion-panel-header>
 
-      <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
+      <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue">
           <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)">
             <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>

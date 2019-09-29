@@ -38,14 +38,21 @@ export class GlyphService {
 
   ]
 
+  private utilXMLs: string[] = [
+    'assets/backbone.xml',
+    'assets/textBox.xml',
+  ]
+
   private sequenceFeatures: any = {};
   private molecularSpecies: any = {};
   private interactions: any = {};
+  private utils: any = {};
 
   constructor() {
-    this.loadXMLs(this.sequenceFeatureXMLs, this.sequenceFeatures)
-    this.loadXMLs(this.molecularSpeciesXMLs, this.molecularSpecies)
-    this.loadXMLs(this.interactionXMLs, this.interactions)
+    this.loadXMLs(this.sequenceFeatureXMLs, this.sequenceFeatures);
+    this.loadXMLs(this.molecularSpeciesXMLs, this.molecularSpecies);
+    this.loadXMLs(this.interactionXMLs, this.interactions);
+    this.loadXMLs(this.utilXMLs, this.utils);
   }
 
   loadXMLs(xml_list, glyph_list) {
@@ -96,6 +103,10 @@ export class GlyphService {
 
   getMolecularSpeciesGlyphs() {
     return this.molecularSpecies;
+  }
+
+  getUtilElements() {
+    return this.getElements(this.utils)
   }
 
   getInteractionElements() {

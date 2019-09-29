@@ -18,6 +18,8 @@ STROKE_WIDTH = 2.88
 CENTERED = False
 FILL_ALL = False
 
+INF = 1000
+
 def main():
 	args = parse_args()
 
@@ -33,7 +35,7 @@ def main():
 
 	for shape in root.iter('shape'):
 		name = shape.attrib['name']
-		print(name)
+		print('name: {name}'.format(name=name))
 
 		if FILL_ALL:
 			set_all_strokes_to_fillstroke(shape)
@@ -83,16 +85,16 @@ def fixShape(shape):
 	data = get_data(shape)
 	print(data)
 
-	# What is the scaling factor we need to fit in the x direction?
+	# What is the maximum scaling factor we need to fit in the x direction?
 	# The total distance from min_x to max_x needs to be < WIDTH_MAX - MIN_X_PADDING * 2 // *2 because the x padding is on both sides.
 	x_distance = data['max_x'] - data['min_x']
-	x_scale = (WIDTH_MAX - MIN_X_PADDING * 2) / x_distance
+	x_scale = (WIDTH_MAX - MIN_X_PADDING * 2) / x_distance if x_distance != 0 else INF
 	print("min x scale need = {scale}".format(scale=x_scale))
 
-	# What is the scaling factor we need to fit in the y direction?
+	# What is the maximum scaling factor we need to fit in the y direction?
 	# The total distance from min_y to max_y needs to be < HEIGHT_MAX - MIN_Y_PADDING
 	y_distance = data['max_y'] - data['min_y']
-	y_scale = (HEIGHT_MAX - MIN_Y_PADDING) / y_distance
+	y_scale = (HEIGHT_MAX - MIN_Y_PADDING) / y_distance if y_distance != 0 else INF
 	print("min y scale need = {scale}".format(scale=y_scale))
 
 	# We take the minimum of these two scales to ensure that the whole thing fits on the SVG 'page'
@@ -111,7 +113,7 @@ def fixShape(shape):
 	desired_dist = (WIDTH_MAX - glyph_width) / 2
 	x_adjustment_dist = (data['min_x'] - desired_dist) * -1 if data['min_x'] - desired_dist >= 0 else desired_dist - data['min_x']
 	print("x_adjustment_dist = {x}".format(x=x_adjustment_dist))
-	shift_x_direction(shape, x_adjustment_dist)
+	shift_x_or_y_direction(shape, x_adjustment_dist, 'x')
 
 	# Y direction might be a bit trickier depending on if the glyph is centered horizontally.
 	glyph_height = data['max_y'] - data['min_y']
@@ -125,35 +127,30 @@ def fixShape(shape):
 	y_adjustment_dist = (data['min_y'] - desired_dist) * -1 if data['min_y'] >= 0 else desired_dist - data['min_y']
 		
 	print("y_adjustment_dist = {y}".format(y=y_adjustment_dist))
-	shift_y_direction(shape, y_adjustment_dist)
+	shift_x_or_y_direction(shape, y_adjustment_dist, 'y')
 
 
 ############################## Helper functions ########################################
 
-
-def shift_x_direction(shape, distance):
+def shift_x_or_y_direction(shape, distance, x_or_y):
+	assert(x_or_y == 'x' or x_or_y == 'y'), "x_or_y = {x_or_y}, must be 'x' or 'y'".format(x_or_y=x_or_y)
 	for path in shape.findall('./foreground/path'):
 		for child in path.getchildren():
 			for key, val in child.attrib.items():
 				val = float(val)
-				if 'x' in key.lower():
+				if x_or_y in key.lower():
 					val += distance
 				child.attrib[key] = str(val)
 
 	for ellipse in get_ellipses(shape):
-		set_elipse_attrib(ellipse, 'x', float(get_elipse_attrib(ellipse, 'x')) + distance)
+		set_elipse_attrib(ellipse, x_or_y, float(get_elipse_attrib(ellipse, x_or_y)) + distance)
 
-def shift_y_direction(shape, distance):
-	for path in shape.findall('./foreground/path'):
-		for child in path.getchildren():
-			for key, val in child.attrib.items():
+	for text in shape.findall('./foreground/text'):
+		for key, val in text.attrib.items():
+			if x_or_y in key.lower():
 				val = float(val)
-				if 'y' in key.lower():
-					val += distance
-				child.attrib[key] = str(val)
-
-	for ellipse in get_ellipses(shape):
-		set_elipse_attrib(ellipse, 'y', float(get_elipse_attrib(ellipse, 'y')) + distance)
+				val += distance
+			text.attrib[key] = str(val)
 
 def scale_shape(shape, factor):
 	for path in shape.findall('./foreground/path'):
