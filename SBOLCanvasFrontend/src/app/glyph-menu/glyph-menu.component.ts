@@ -16,7 +16,8 @@ import {DomSanitizer} from '@angular/platform-browser';
 })
 export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
-  public glyphDict = {};
+  public sequenceFeatureDict = {};
+  public miscDict = {};
 
   constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer) {
   }
@@ -26,12 +27,18 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
-    const svgElts = this.glyphService.getSvgElements();
+    const sfElts = this.glyphService.getSequenceFeatureElements();
+    const miscElts = this.glyphService.getMolecularSpecieElements();
 
-    for (const name in svgElts) {
-      const svg = svgElts[name];
+    for (const name in sfElts) {
+      const svg = sfElts[name];
 
-      this.glyphDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+      this.sequenceFeatureDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
+
+    for (const name in miscElts) {
+      const svg = miscElts[name];
+      this.miscDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
   }
 

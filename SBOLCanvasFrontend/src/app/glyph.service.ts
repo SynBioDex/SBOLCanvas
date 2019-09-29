@@ -12,7 +12,8 @@ const mx = require('mxgraph')({
 export class GlyphService {
 
   // TODO load list of xml files from server
-  private xmlUrls: string[] = [
+  private sequenceFeatureXMLs: string[] = [
+    // Strand glyphs
     'assets/glyph_stencils/promoter.xml',
     'assets/glyph_stencils/cds.xml',
     'assets/glyph_stencils/aptamer.xml',
@@ -28,13 +29,31 @@ export class GlyphService {
     //'assets/glyph_stencils/downloads.xml'
   ];
 
-  private stencils: any = {};
+  private molecularSpeciesXMLs: string[] = [
+    // 'molecular species' glyphs aka protein?
+    'assets/glyph_stencils/molecular_species/macromolecule.xml'
+  ]
+
+  private interactionXMLs: string[] = [
+
+  ]
+
+  private sequenceFeatures: any = {};
+  private molecularSpecies: any = {};
+  private interactions: any = {};
 
   constructor() {
-    this.xmlUrls.forEach((filename) => {
+    this.loadXMLs(this.sequenceFeatureXMLs, this.sequenceFeatures)
+    this.loadXMLs(this.molecularSpeciesXMLs, this.molecularSpecies)
+    this.loadXMLs(this.interactionXMLs, this.interactions)
+  }
+
+  loadXMLs(xml_list, glyph_list) {
+    xml_list.forEach((filename) => {
       let req = mx.mxUtils.load(filename);
       let root = req.getDocumentElement();
       let shape = root.firstChild;
+
 
       while (shape != null) {
         if (shape.nodeType == mx.mxConstants.NODETYPE_ELEMENT) {
@@ -43,7 +62,7 @@ export class GlyphService {
 
           const stencil = new mx.mxStencil(shape);
 
-          this.stencils[name] = [stencil, (centered && centered.toLowerCase() == 'true')];
+          glyph_list[name] = [stencil, (centered && centered.toLowerCase() == 'true')];
         }
         shape = shape.nextSibling;
       }
@@ -51,14 +70,56 @@ export class GlyphService {
   }
 
   getStencils() {
-    return this.stencils;
+    return this.sequenceFeatures;
   }
 
-  getSvgElements() {
+  getInteractionElements() {
     const svgs = {};
 
-    for (const name in this.stencils) {
-      const stencil = this.stencils[name][0];
+    for (const name in this.interactions) {
+      const stencil = this.interactions[name][0];
+
+      let elt = document.createElement('svg');
+      let canvas = new mx.mxSvgCanvas2D(elt);
+      let shape = new mx.mxShape(stencil);
+
+      canvas.setStrokeColor('#000000');
+      canvas.setFillColor('none');
+
+      stencil.drawShape(canvas, shape, 0, 0, 52, 52);
+
+      svgs[name] = elt;
+    }
+
+    return svgs;
+  }
+
+  getMolecularSpecieElements() {
+    const svgs = {};
+
+    for (const name in this.molecularSpecies) {
+      const stencil = this.molecularSpecies[name][0];
+
+      let elt = document.createElement('svg');
+      let canvas = new mx.mxSvgCanvas2D(elt);
+      let shape = new mx.mxShape(stencil);
+
+      canvas.setStrokeColor('#000000');
+      canvas.setFillColor('none');
+
+      stencil.drawShape(canvas, shape, 0, 0, 52, 52);
+
+      svgs[name] = elt;
+    }
+
+    return svgs;
+  }
+
+  getSequenceFeatureElements() {
+    const svgs = {};
+
+    for (const name in this.sequenceFeatures) {
+      const stencil = this.sequenceFeatures[name][0];
 
       let elt = document.createElement('svg');
       let canvas = new mx.mxSvgCanvas2D(elt);

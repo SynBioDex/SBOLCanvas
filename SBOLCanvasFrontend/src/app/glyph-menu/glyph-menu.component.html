@@ -1,11 +1,43 @@
 <div class="glyphContainer">
   <div style="margin: auto">
-    <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
-      <mat-grid-tile *ngFor="let pair of glyphDict | keyvalue">
-        <button mat-stroked-button (click)="onGlyphClicked(pair.key)">
-          <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
-        </button>
-      </mat-grid-tile>
-    </mat-grid-list>
+
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Glyphs for your face
+        </mat-panel-title>
+        <mat-panel-description>
+          doo dads
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
+        <mat-grid-tile *ngFor="let pair of miscDict | keyvalue">
+          <button mat-stroked-button (click)="onGlyphClicked(pair.key)">
+            <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+
+    </mat-expansion-panel>
+
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Glyphs for your face
+        </mat-panel-title>
+        <mat-panel-description>
+          doo dads
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <mat-grid-list cols="4" rowHeight="100px" gutterSize="5px">
+        <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue">
+          <button mat-stroked-button (click)="onGlyphClicked(pair.key)">
+            <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel>
   </div>
 </div>
