@@ -237,7 +237,6 @@ export class GraphService {
         // metadata service will then notify the UI components so they can disable certain
         // features.
         this.metadataService.setComponentDefinitionMode(true);
-        console.log("something")
       }
     }
 
@@ -305,9 +304,9 @@ export class GraphService {
       circuitContainer.setConnectable(false);
       backbone.setConnectable(false);
 
-      const selection = this.graph.getSelectionModel();
-      selection.clear();
-      selection.addCell(circuitContainer);
+      // The new circuit should be selected
+      this.graph.clearSelection();
+      this.graph.setSelectionCell(circuitContainer);
     } finally {
       this.graph.getModel().endUpdate();
     }
@@ -396,6 +395,10 @@ export class GraphService {
         glyphCell.setConnectable(false);
 
         circuitContainer.refreshCircuitContainer(this.graph);
+
+        // The new glyph should be selected
+        this.graph.clearSelection();
+        this.graph.setSelectionCell(glyphCell);
       } finally {
         this.graph.getModel().endUpdate();
       }
@@ -411,6 +414,10 @@ export class GraphService {
       const glyphCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0,
         molecularSpeciesGlyphWidth, molecularSpeciesGlyphHeight, molecularSpeciesGlyphBaseStyleName + name);
       glyphCell.setConnectable(false);
+
+      // The new glyph should be selected
+      this.graph.clearSelection();
+      this.graph.setSelectionCell(glyphCell);
     } finally {
       this.graph.getModel().endUpdate();
     }
@@ -452,8 +459,12 @@ export class GraphService {
   addTextBox() {
     this.graph.getModel().beginUpdate();
     try {
-      const glyphCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', 0, 0, defaultTextWidth, defaultTextHeight, textboxStyleName);
-      glyphCell.setConnectable(false);
+      const cell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', 0, 0, defaultTextWidth, defaultTextHeight, textboxStyleName);
+      cell.setConnectable(false);
+
+      // The new cell should be selected
+      this.graph.clearSelection();
+      this.graph.setSelectionCell(cell);
     } finally {
       this.graph.getModel().endUpdate();
     }
@@ -708,72 +719,54 @@ export class GraphService {
     mx.mxGraph.prototype.setConstrainChildren(false);
 
     /**
-     * Choose which cell should be selected on mouse down
-     * Functionality: when clicking part of a circuit, select the circuitContainer
-     *    instead of the individual piece selected (unless the individual piece was
-     *    already selected separately)
-     * TODO generalize for more than 1 level of nested cells
+     * This function is called when the mouse first goes down, and it identifies the cell
+     * that was clicked on (or the cell that we should treat as being clicked on)
      */
     const defaultGetInitialCellForEvent = mx.mxGraphHandler.prototype.getInitialCellForEvent;
     mx.mxGraphHandler.prototype.getInitialCellForEvent = function(evt)
     {
       const clickedCell = defaultGetInitialCellForEvent.apply(this, arguments);
       const selMod = this.graph.getSelectionModel();
-      const currentlySelectedCell = this.graph.getSelectionCell();
 
-      // TODO: special case: If we already have a glyph clicked and are clicking on a different one within the same strand,
-      // TODO: we want to unselect the selected glyph, and select the new one.
-
-      if (selMod.isSelected((clickedCell)) || clickedCell.getParent() == this.graph.getDefaultParent()) {
-
-        return clickedCell;
+      if (!this.graph.isToggleEvent(evt.getEvent()) && !selMod.isSelected((clickedCell)) && clickedCell.isSequenceFeatureGlyph()) {
+        return clickedCell.getCircuitContainer();
+      }
+      else if (clickedCell.isBackbone()) {
+        return clickedCell.getCircuitContainer();
       }
       else {
-        return clickedCell.getParent();
+        return clickedCell;
       }
     };
 
     /**
-     * Chooses whether or not to delay selection change until after mouse up
-     * Functionality: If the user has a circuitContainer selected, then clicks down,
-     *    the circuitContainer must stay selected so they can click-and-drag to move
-     *    the whole circuit. However, if they click and release without dragging,
-     *    the selection should change from the circuitContainer to the specific cell clicked.
-     *    That means the selection change should happen on mouse-up instead of mouse-down
-     *    (a delayed selection).
-     *   This method detects the above situation and enables delayedSelection for the event.
-     *   Note: even if delayedSelection is enabled, if the user clicks-and-drags there will be
-     *    no selection change on mouse-up (ie selectDelayed, below, won't be called).
-     * TODO generalize for more than 1 level of nested cells
-     */
-    const defaultIsDelayedSelection = mx.mxGraphHandler.prototype.isDelayedSelection;
-    mx.mxGraphHandler.prototype.isDelayedSelection = function(cellForEvent)
-    {
-      // Note: cellForEvent is the cell chosen by getInitialCellForEvent (above)
-      // not the actual cell that was clicked
-
-      const defaultResult = defaultIsDelayedSelection.apply(this, arguments);
-      const selMod = this.graph.getSelectionModel();
-
-      if (selMod.isSelected(cellForEvent))
-        return true;
-      else
-        return defaultResult;
-    };
-
-    /**
-     * Implements delayed selection changes if they are enabled by isDelayedSelection (above)
+     * This function implements selection changes on mouse up, as opposed to mouse down.
+     * This is only called if:
+     *  - The mouse event was a single click, not a click-and-drag
+     *  - The mouse event was not a toggle event, ie ctrl is not held
      */
     mx.mxGraphHandler.prototype.selectDelayed = function(evt)
     {
       const clickedCell = evt.getCell();
       if (clickedCell) {
-        if (clickedCell.isBackbone()) {
-          this.graph.selectCellForEvent(clickedCell.getParent());
-        } else {
-          this.graph.selectCellForEvent(clickedCell);
-        }
+        this.graph.selectCellForEvent(clickedCell, evt);
       }
+    };
+
+    /**
+     * This implements selection, after all other selection rules.
+     * IE, the other methods choose which cell to select, and this method makes
+     * the chosen selection happen.
+     * This method should only be used for rules that have absolutely no exceptions,
+     * like backbone cells never being selected.
+     */
+    const defaultSelectCellForEvent = mx.mxGraph.prototype.selectCellForEvent;
+    mx.mxGraph.prototype.selectCellForEvent = function(cell, evt)
+    {
+      if (cell.isBackbone())
+        cell = cell.getParent();
+
+      defaultSelectCellForEvent.apply(this, [cell, evt]);
     };
 
     // Used for tracking glyph movement for moving the position of
@@ -800,6 +793,11 @@ export class GraphService {
         } else {
           movingGlyph = null;
         }
+      }
+
+      // almost always do delayed selection
+      if (!this.graph.isToggleEvent(me.getEvent())) {
+        this.delayedSelection = true;
       }
     }
 
