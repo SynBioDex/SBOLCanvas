@@ -511,7 +511,7 @@ public class Converter {
 			glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
 			if (glyphComponent.getDefinition().getSequences().size() > 0)
 				glyphInfo.setSequence(
-						glyphComponent.getDefinition().getSequences().toArray(new Sequence[0])[0].toString());
+						glyphComponent.getDefinition().getSequences().iterator().next().getElements());
 			glyphInfo.setVersion(glyphComponent.getVersion());
 			if(glyphComponent.getDefinition().getComponents() != null && glyphComponent.getDefinition().getComponents().size() > 0) {
 				TreeSet<MxCell> subCells = new TreeSet<MxCell>(idSorter);
