@@ -97,12 +97,11 @@ public class Converter {
 
 				createComponentDefinition(document, backboneCD, containerCell, backboneCell,
 						glyphSets.get(containerCell.getId()));
-
-				// write to body
-				SBOLWriter.setKeepGoing(true);
-				SBOLWriter.write(document, sbolStream);
-
 			}
+
+			// write to body
+			SBOLWriter.setKeepGoing(true);
+			SBOLWriter.write(document, sbolStream);
 		} catch (SBOLValidationException | SBOLConversionException e) {
 			e.printStackTrace();
 		}
@@ -123,7 +122,8 @@ public class Converter {
 			// convert the objects to the graph xml
 			graphStream.write(objectsToGraph(cells).getBytes());
 
-		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException | TransformerException e) {
+		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException
+				| TransformerException e) {
 			e.printStackTrace();
 		}
 	}
@@ -196,7 +196,7 @@ public class Converter {
 			Component component = compDef.createComponent(glyphCell.getInfo().getDisplayID(), AccessType.PUBLIC,
 					componentCD.getDisplayId());
 
-			// composite or sequence
+			// composite
 			if (glyphCell.getInfo().getModel() != null && !glyphCell.getInfo().getModel().equals("")) {
 				// composite
 				// convert the string to a document
@@ -218,9 +218,16 @@ public class Converter {
 				MxCell subBackbone = backbones.values().iterator().next();
 				Set<MxCell> subGlyphs = glyphSets.get(subContainer.getId());
 
-				createComponentDefinition(document, componentCD, subContainer, subBackbone, subGlyphs);
+				if (glyphSets.size() > 0) {
+					createComponentDefinition(document, componentCD, subContainer, subBackbone, subGlyphs);
+				} else {
+					// the front end dones't clean up empty sub levels
+					glyphCell.getInfo().setModel(null);
+				}
+			}
 
-			} else {
+			// sequence
+			if (glyphCell.getInfo().getModel() == null || glyphCell.getInfo().getModel().equals("")) {
 				// component sequence
 				if (glyphCell.getInfo().getSequence() != null && !glyphCell.getInfo().getSequence().equals("")) {
 					Sequence seq = document.createSequence(componentCD.getDisplayId() + "Sequence",
@@ -402,7 +409,7 @@ public class Converter {
 					glyphInfo.setAttribute("sequence", info.getSequence());
 				if (info.getVersion() != null)
 					glyphInfo.setAttribute("version", info.getVersion());
-				if(info.getModel() != null)
+				if (info.getModel() != null)
 					glyphInfo.setAttribute("model", info.getModel());
 				glyphInfo.setAttribute("as", "data");
 				mxCell.appendChild(glyphInfo);
@@ -420,7 +427,8 @@ public class Converter {
 		return sw.toString();
 	}
 
-	private static void sbolToMxGraphObjects(ComponentDefinition compDef, Set<MxCell> cells) throws ParserConfigurationException, TransformerException {
+	private static void sbolToMxGraphObjects(ComponentDefinition compDef, Set<MxCell> cells)
+			throws ParserConfigurationException, TransformerException {
 		// container data
 		MxCell containerCell = new MxCell();
 		containerCell.setParent(1);
@@ -510,16 +518,16 @@ public class Converter {
 			URI glyphType = glyphComponent.getDefinition().getTypes().toArray(new URI[0])[0];
 			glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
 			if (glyphComponent.getDefinition().getSequences().size() > 0)
-				glyphInfo.setSequence(
-						glyphComponent.getDefinition().getSequences().iterator().next().getElements());
+				glyphInfo.setSequence(glyphComponent.getDefinition().getSequences().iterator().next().getElements());
 			glyphInfo.setVersion(glyphComponent.getVersion());
-			if(glyphComponent.getDefinition().getComponents() != null && glyphComponent.getDefinition().getComponents().size() > 0) {
+			if (glyphComponent.getDefinition().getComponents() != null
+					&& glyphComponent.getDefinition().getComponents().size() > 0) {
 				TreeSet<MxCell> subCells = new TreeSet<MxCell>(idSorter);
 				sbolToMxGraphObjects(glyphComponent.getDefinition(), subCells);
 				glyphInfo.setModel(objectsToGraph(subCells));
 			}
 			glyphCell.setInfo(glyphInfo);
-			
+
 			cells.add(glyphCell);
 
 		}
