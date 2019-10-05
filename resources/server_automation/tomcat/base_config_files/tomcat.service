@@ -12,7 +12,8 @@ Environment="CATALINA_BASE=/opt/tomcat/enabled"
 Environment="CATALINA_HOME=/opt/tomcat/enabled"
 Environment="CATALINA_PID=/opt/tomcat/enabled/temp/tomcat.pid"
 ExecStart=/opt/tomcat/enabled/bin/startup.sh
-#Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
+#Environment="CATALINA_OPTS=-Xms256M -Xmx512M -server -XX:+UseParallelGC -XX:PermSize=64m -XX:MaxPermSize=384m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true"
+Environment="CATALINA_OPTS=-Xms800M -Xmx800M -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true"
 ExecStop=/opt/tomcat/enabled/bin/shutdown.sh
 
 [Install]

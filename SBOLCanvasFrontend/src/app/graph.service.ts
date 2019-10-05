@@ -89,7 +89,8 @@ export class GraphService {
     this.editor.setGraphContainer(this.graphContainer);
 
     this.graph.setConnectable(true);
-    this.graph.allowDanglingEdges = false;
+    this.graph.setAllowDanglingEdges(false);
+    this.graph.setCellsCloneable(false);
 
     // Enables rubberband selection
     // tslint:disable-next-line:no-unused-expression
