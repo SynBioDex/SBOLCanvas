@@ -22,7 +22,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   public interactionsDict = {};
   public miscDict = {};
 
-  private componentDefinitionMode = false;
+  public componentDefinitionMode = false;
   private dnaButtonEnabled = true;
 
   constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer, private metadataService: MetadataService) {

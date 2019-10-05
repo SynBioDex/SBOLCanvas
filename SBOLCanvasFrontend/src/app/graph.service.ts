@@ -55,10 +55,6 @@ export class GraphService {
   // Boolean for keeping track of whether we are showing scars or not in the graph.
   // We must also track the positions of the scars so that we can remove and insert them at will.
   showingScars: boolean;
-  // The numbers held in the array are the number of glyphs between each scar position.
-  // Each index into the array is a scar. The value contained at scarPositions[i] is
-  // the number of non-scar positions between scar[i] and scar[i-1]
-  scarPositions: Array<number>;
 
   baseGlyphStyle: any;
   collapsedGlyphStyle: any;
@@ -66,7 +62,6 @@ export class GraphService {
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
     this.zoomStack = new Array<[string, string]>();
     this.showingScars = true;
-    this.scarPositions = new Array<number>();
 
     // constructor code is divided into helper methods for oranization,
     // but these methods aren't entirely modular; order of some of
@@ -113,25 +108,6 @@ export class GraphService {
 
     this.initStyles();
     this.initCustomShapes();
-
-    let modelGetStyle = this.graph.getModel().getStyle;
-    this.graph.getModel().getStyle = function(cell)
-    {
-      if (cell != null)
-      {
-        var style = modelGetStyle.apply(this, arguments);
-
-        if (this.isCollapsed(cell))
-        {
-          style = style + ';shape=image;image=http://www.jgraph.com/images/mxgraph.gif;' +
-            'noLabel=1;imageBackground=#C3D9FF;imageBorder=#6482B9';
-        }
-
-        return style;
-      }
-
-      return null;
-    };
   }
 
   handleSelectionChange(sender, evt) {
@@ -220,25 +196,35 @@ export class GraphService {
       this.showingScars = false;
     } else { this.showingScars = true; }
 
-    // Update the graph to show or hide any scars present.
-    // if (this.showingScars) {
-    //   for (let i = 0; i < this.scarPositions.length; i++) {
-    //
-    //   }
-    // }
-    console.log(this.showingScars)
-    this.graph.getModel().beginUpdate()
-    let sc = this.graph.getSelectionCells();
-    let cc = sc[0].getCircuitContainer();
-    let children = cc.children;
-    for (let i = 0; i < children.length; i++) {
-      if (children[i].isScar()) {
-        console.log("scar found")
-        children[i].setCollapsed(this.showingScars);
+    // We hide scar glyphs by setting their widths to 0.
+    console.debug("showing scars now equals " + this.showingScars);
+    try {
+      this.graph.getModel().beginUpdate()
+      let selectionCells = this.graph.getSelectionCells();
+      let circuitContainer = selectionCells[0].getCircuitContainer();
+      let children = circuitContainer.children;
+      for (let i = 0; i < children.length; i++) {
+        if (children[i].isScar()) {
+          console.debug("scar found");
+          let child = children[i];
+          const geo = new mx.mxGeometry(0,0,0,0);
+          geo.x = 0;
+          geo.y = 0;
+          geo.height = sequenceFeatureGlyphHeight;
+
+          if (this.showingScars) {
+            geo.width = sequenceFeatureGlyphWidth;
+          }
+          else {
+            geo.width = 0;
+          }
+          this.graph.getModel().setGeometry(child,geo);
+        }
       }
+      circuitContainer.refreshCircuitContainer(this.graph)
+    } finally {
+      this.graph.getModel().endUpdate();
     }
-    cc.refreshCircuitContainer(this.graph)
-    this.graph.getModel().endUpdate();
   }
 
   /**
@@ -451,7 +437,7 @@ export class GraphService {
    */
   addSequenceFeatureGlyph(name) {
     // Don't do anything if it is a scar and were not showing them.
-    if (name.includes(scarStyleName) && !this.showingScars) { return; }
+    if (name.includes(scarStyleName) && !this.showingScars) { this.toggleScars(); }
 
     let circuitContainer = this.getSelectionContainer();
     if (circuitContainer != null) {
@@ -724,15 +710,20 @@ export class GraphService {
       geo.height = 1;
 
       // width:
-      let glyphCount = this.getChildCount() - 1;
-      if (glyphCount == 0) {
-        geo.width = sequenceFeatureGlyphWidth;
-      } else {
-        geo.width = glyphCount * sequenceFeatureGlyphWidth;
+      let width = 0;
+      let cc = backbone.getCircuitContainer();
+      let children = cc.children;
+      for (let i = 0; i < children.length; i++) {
+        if (children[i].isSequenceFeatureGlyph()) {
+          width += children[i].geometry.width;
+        }
       }
+      if (width < sequenceFeatureGlyphWidth) {
+        width = sequenceFeatureGlyphWidth;
+      }
+      geo.width = width;
 
       graph.getModel().setGeometry(backbone,geo);
-
     };
 
     /**
