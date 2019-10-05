@@ -33,7 +33,7 @@ const defaultTextHeight           = 80;
 const circuitContainerStyleName           = 'circuitContainer';
 const backboneStyleName                   = 'backbone';
 const textboxStyleName                    = 'textBox';
-const scarStyleName                       = 'assembly-scar';
+const scarStyleName                       = 'Scar (Assembly Scar)';
 const sequenceFeatureGlyphBaseStyleName   = 'sequenceFeatureGlyph';
 const molecularSpeciesGlyphBaseStyleName  = 'molecularSpeciesGlyph';
 
