@@ -65,6 +65,10 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.graphService.flipSequenceFeatureGlyph();
   }
 
+  toggleScars() {
+    this.graphService.toggleScars();
+  }
+
   openSaveDialog(): void {
     const dialogRef = this.dialog.open(SaveGraphComponent, {
       width: '250px',

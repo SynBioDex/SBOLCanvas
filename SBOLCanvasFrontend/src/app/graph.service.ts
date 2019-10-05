@@ -21,20 +21,21 @@ const mx = require('mxgraph')({
 });
 
 // Constants
-const sequenceFeatureGlyphWidth = 50;
-const sequenceFeatureGlyphHeight = 100;
+const sequenceFeatureGlyphWidth   = 50;
+const sequenceFeatureGlyphHeight  = 100;
 
-const molecularSpeciesGlyphWidth = 50;
+const molecularSpeciesGlyphWidth  = 50;
 const molecularSpeciesGlyphHeight = 50;
 
-const defaultTextWidth = 120;
-const defaultTextHeight = 80;
+const defaultTextWidth            = 120;
+const defaultTextHeight           = 80;
 
-const circuitContainerStyleName = 'circuitContainer';
-const backboneStyleName = 'backbone';
-const textboxStyleName = 'textBox';
-const sequenceFeatureGlyphBaseStyleName = 'sequenceFeatureGlyph';
-const molecularSpeciesGlyphBaseStyleName = 'molecularSpeciesGlyph';
+const circuitContainerStyleName           = 'circuitContainer';
+const backboneStyleName                   = 'backbone';
+const textboxStyleName                    = 'textBox';
+const scarStyleName                       = 'assembly-scar';
+const sequenceFeatureGlyphBaseStyleName   = 'sequenceFeatureGlyph';
+const molecularSpeciesGlyphBaseStyleName  = 'molecularSpeciesGlyph';
 
 @Injectable({
   providedIn: 'root'
@@ -47,14 +48,25 @@ export class GraphService {
   glyphDragPreviewElt: HTMLElement;
   textBoxDragPreviewElt: HTMLElement;
 
-  // First string is the XML representing an mxGraph model. Second string is the ID of the cell
+  // string[0] is the XML representing an mxGraph model. string[1] is the ID of the cell
   // that was zoomed in on when the 'frame' was created.
   zoomStack: Array<[string, string]>;
 
+  // Boolean for keeping track of whether we are showing scars or not in the graph.
+  // We must also track the positions of the scars so that we can remove and insert them at will.
+  showingScars: boolean;
+  // The numbers held in the array are the number of glyphs between each scar position.
+  // Each index into the array is a scar. The value contained at scarPositions[i] is
+  // the number of non-scar positions between scar[i] and scar[i-1]
+  scarPositions: Array<number>;
+
   baseGlyphStyle: any;
+  collapsedGlyphStyle: any;
 
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
-    this.zoomStack = new Array<[string, string]>()
+    this.zoomStack = new Array<[string, string]>();
+    this.showingScars = true;
+    this.scarPositions = new Array<number>();
 
     // constructor code is divided into helper methods for oranization,
     // but these methods aren't entirely modular; order of some of
@@ -102,6 +114,25 @@ export class GraphService {
 
     this.initStyles();
     this.initCustomShapes();
+
+    let modelGetStyle = this.graph.getModel().getStyle;
+    this.graph.getModel().getStyle = function(cell)
+    {
+      if (cell != null)
+      {
+        var style = modelGetStyle.apply(this, arguments);
+
+        if (this.isCollapsed(cell))
+        {
+          style = style + ';shape=image;image=http://www.jgraph.com/images/mxgraph.gif;' +
+            'noLabel=1;imageBackground=#C3D9FF;imageBorder=#6482B9';
+        }
+
+        return style;
+      }
+
+      return null;
+    };
   }
 
   handleSelectionChange(sender, evt) {
@@ -180,6 +211,42 @@ export class GraphService {
 
   }
 
+  /**
+   * This method is called by the UI when the user turns scars on
+   * or off.
+   */
+  toggleScars() {
+    // Toggle showing scars
+    if (this.showingScars) {
+      this.showingScars = false;
+    } else { this.showingScars = true; }
+
+    // Update the graph to show or hide any scars present.
+    // if (this.showingScars) {
+    //   for (let i = 0; i < this.scarPositions.length; i++) {
+    //
+    //   }
+    // }
+    console.log(this.showingScars)
+    this.graph.getModel().beginUpdate()
+    let sc = this.graph.getSelectionCells();
+    let cc = sc[0].getCircuitContainer();
+    let children = cc.children;
+    for (let i = 0; i < children.length; i++) {
+      if (children[i].isScar()) {
+        console.log("scar found")
+        children[i].setCollapsed(this.showingScars);
+      }
+    }
+    cc.refreshCircuitContainer(this.graph)
+    this.graph.getModel().endUpdate();
+  }
+
+  /**
+   * This method is called by the UI when the user asks to flip a
+   * sequence feature glyph.
+   * It rotates the glyph by 180 degrees.
+   */
   flipSequenceFeatureGlyph() {
     let selectionCells = this.graph.getSelectionCells();
 
@@ -384,6 +451,9 @@ export class GraphService {
    * Drops a new glyph onto the selected backbone
    */
   addSequenceFeatureGlyph(name) {
+    // Don't do anything if it is a scar and were not showing them.
+    if (name.includes(scarStyleName) && !this.showingScars) { return; }
+
     let circuitContainer = this.getSelectionContainer();
     if (circuitContainer != null) {
       this.graph.getModel().beginUpdate();
@@ -588,19 +658,23 @@ export class GraphService {
 
     mx.mxCell.prototype.isBackbone = function() {
       return this.style.includes(backboneStyleName);
-    }
+    };
 
     mx.mxCell.prototype.isSequenceFeatureGlyph = function() {
       return this.style.includes(sequenceFeatureGlyphBaseStyleName);
-    }
+    };
 
     mx.mxCell.prototype.isMolecularSpeciesGlyph = function() {
       return this.style.includes(molecularSpeciesGlyphBaseStyleName);
-    }
+    };
 
     mx.mxCell.prototype.isCircuitContainer = function() {
       return this.style.includes(circuitContainerStyleName);
-    }
+    };
+
+    mx.mxCell.prototype.isScar = function() {
+      return this.style.includes(scarStyleName);
+    };
 
     /**
      * Returns the backbone associated with this cell
@@ -622,7 +696,7 @@ export class GraphService {
 
       console.error("getBackbone(): No backbone found in circuit container!");
       return null;
-    }
+    };
 
     /**
      * Positions and sizes the backbone associated with this cell
@@ -660,7 +734,7 @@ export class GraphService {
 
       graph.getModel().setGeometry(backbone,geo);
 
-    }
+    };
 
     /**
      * (Re)positions the glyphs inside the circuit containter and
@@ -683,9 +757,9 @@ export class GraphService {
       layout.isVertexIgnored = function (vertex)
       {
         return vertex.isBackbone()
-      }
+      };
       layout.execute(this);
-    }
+    };
 
     /**
      * Returns the circuit container associated with this cell.
@@ -698,7 +772,7 @@ export class GraphService {
       }
 
       return this;
-    }
+    };
 
     /**
      * Returns the metadata associated with this cell.
@@ -869,6 +943,10 @@ export class GraphService {
     this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     this.baseGlyphStyle[mx.mxConstants.STYLE_ROTATION] = 0;
+
+    // Collapsed glyph settings.
+    this.collapsedGlyphStyle = {};
+    this.collapsedGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
 
     // Text box settings.
     const textBoxStyle = {};

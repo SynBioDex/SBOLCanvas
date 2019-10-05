@@ -58,6 +58,8 @@ def parse_args():
 	parser.add_argument("-sw", "--stroke_width", action="store", type=float, help="sets the stroke width of the stencil")
 	parser.add_argument("--fill", action="store_true", help="sets all strokes to be fillstrokes instead")
 	parser.add_argument("--centered", action="store_true", help="centers the glyph horizontally and sets the attribute 'centered' to true")
+	parser.add_argument("-xp", "--xpadding", action="store", help="sets the minimum padding on the left and right sides")
+	parser.add_argument("-yp", "--ypadding", action="store", help="sets the minimum padding on the top and bottom")
 
 	args = parser.parse_args()
 
@@ -67,6 +69,12 @@ def parse_args():
 	if args.fill == True:
 		global FILL_ALL 
 		FILL_ALL = True
+	if args.xpadding:
+		global MIN_X_PADDING
+		MIN_X_PADDING = float(args.xpadding)
+	if args.ypadding:
+		global MIN_Y_PADDING
+		MIN_Y_PADDING = float(args.ypadding)
 	if args.centered == True:
 		global CENTERED
 		CENTERED = True
