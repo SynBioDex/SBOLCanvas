@@ -250,31 +250,31 @@ export class GraphService {
   flipSequenceFeatureGlyph() {
     let selectionCells = this.graph.getSelectionCells();
 
-    // If we have a single glyph selected, then we flip it along the x-axis. Otherwise do nothing.
-    if (selectionCells.length = 1) {
-      if (selectionCells[0].isSequenceFeatureGlyph()) {
-        let cell = selectionCells[0];
-
+    // flip any selected glyphs
+    for (let cell of selectionCells) {
+      if (cell.isSequenceFeatureGlyph()) {
         // Make the cell do a 180 degree turn with the center point as the axis of rotation.
         this.graph.getModel().beginUpdate();
 
-        let rotation = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_ROTATION];
-        console.debug("current glyph rotation setting = " + rotation);
+        try {
+          let rotation = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_ROTATION];
+          console.debug("current glyph rotation setting = " + rotation);
 
-        if (rotation == undefined) {
-          console.warn("rotation style undefined. Assuming 0, and rotating to 180");
-          this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
-        } else if (rotation == 0) {
-          this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
-          console.debug("rotating to 180")
-        } else if (rotation == 180) {
-          this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 0, [cell]);
-          console.debug("rotating to 0")
+          if (rotation == undefined) {
+            console.warn("rotation style undefined. Assuming 0, and rotating to 180");
+            this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
+          } else if (rotation == 0) {
+            this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
+            console.debug("rotating to 180")
+          } else if (rotation == 180) {
+            this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 0, [cell]);
+            console.debug("rotating to 0")
+          }
+        } finally {
+          this.graph.getModel().endUpdate();
         }
-
-        this.graph.getModel().endUpdate();
-      } else { console.debug("not a sequence feature glyph selected, not doing anything")}
-    } else { console.debug("more than 1 cell selected, not doing anything")}
+      }
+    }
   }
 
   /**
