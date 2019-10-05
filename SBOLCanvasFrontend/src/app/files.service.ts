@@ -3,6 +3,7 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import * as FileSaver from 'file-saver';
+import { GraphService } from './graph.service';
 
 @Injectable({
   providedIn: 'root'
@@ -35,6 +36,21 @@ export class FilesService {
     let params = new HttpParams();
     params = params.append("filename", filename);
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
+  }
+
+  loadLocal(file: File, graphService: GraphService){
+    if(typeof (FileReader) !== 'undefined'){
+      const reader = new FileReader();
+
+      reader.onload = (e:any) => {
+        this.convertToMxGraph(String(reader.result)).subscribe(result => {
+          graphService.setTopLevelModelWithXML(result);
+        });
+      };
+
+      reader.readAsText(file);
+    }
+
   }
 
   saveLocal(filename: string, contents: string){

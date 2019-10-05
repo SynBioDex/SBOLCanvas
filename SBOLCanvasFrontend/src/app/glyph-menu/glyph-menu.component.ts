@@ -8,6 +8,7 @@ import {Component, OnInit, AfterViewInit} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {GlyphService} from '../glyph.service';
 import {DomSanitizer} from '@angular/platform-browser';
+import {MetadataService} from '../metadata.service';
 
 @Component({
   selector: 'app-glyph-menu',
@@ -16,26 +17,83 @@ import {DomSanitizer} from '@angular/platform-browser';
 })
 export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
-  public glyphDict = {};
+  public utilsDict = {};
+  public sequenceFeatureDict = {};
+  public interactionsDict = {};
+  public miscDict = {};
 
-  constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer) {
+  private componentDefinitionMode = false;
+  private dnaButtonEnabled = true;
+
+  constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer, private metadataService: MetadataService) {
   }
 
-  onGlyphClicked(name: string) {
-    this.graphService.dropNewGlyph(name);
+  onSequenceFeatureGlyphClicked(name: string) {
+    this.graphService.addSequenceFeatureGlyph(name);
+  }
+
+  onMolecularSpeciesGlyphClicked(name: string) {
+    this.graphService.addMolecularSpeciesGlyph(name);
   }
 
   ngOnInit() {
-    const svgElts = this.glyphService.getSvgElements();
-
-    for (const name in svgElts) {
-      const svg = svgElts[name];
-
-      this.glyphDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
-    }
+    this.metadataService.componentDefinitionMode.subscribe(newSetting => this.componentDefinitionModeUpdated(newSetting));
+    this.registerSvgElements();
   }
 
   ngAfterViewInit() {
   }
 
+  registerSvgElements() {
+    const sequenceFeatureElts   = this.glyphService.getSequenceFeatureElements();
+    const molecularSpeciesElts  = this.glyphService.getMolecularSpeciesElements();
+    const interactionElts       = this.glyphService.getInteractionElements();
+    const utilElts              = this.glyphService.getUtilElements();
+
+    for (const name in sequenceFeatureElts) {
+      const svg = sequenceFeatureElts[name];
+
+      this.sequenceFeatureDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
+
+    for (const name in utilElts) {
+      const svg = utilElts[name];
+      this.utilsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
+    // For now combine interactions and molecular species into the miscellaneous
+    for (const name in molecularSpeciesElts) {
+      const svg = molecularSpeciesElts[name];
+      this.miscDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
+    for (const name in interactionElts) {
+      const svg = interactionElts[name];
+      this.interactionsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
+  }
+
+  addStrand() {
+    this.graphService.addNewBackbone();
+  }
+
+  addTextBox() {
+    this.graphService.addTextBox();
+  }
+
+  addInteraction() {
+    this.graphService.addInteraction();
+  }
+
+  componentDefinitionModeUpdated(newSetting: boolean) {
+    this.componentDefinitionMode = newSetting;
+
+    // If we are in component definition mode, we cannot add new strands.
+    // We can expect that there will always be exactly one component definition
+    // already present in the graph.
+    // if (this.componentDefinitionMode) {
+    //   this.dnaButtonEnabled = true;
+    // }
+    // else {
+    //   this.dnaButtonEnabled = false;
+    // }
+  }
 }

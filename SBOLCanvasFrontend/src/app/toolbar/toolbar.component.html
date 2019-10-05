@@ -6,13 +6,6 @@
 
 <!-- menu -->
   <mat-toolbar-row class="toolbar-row">
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="addStrand()">New Strand</button>
-
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="addTextBox()">Text</button>
 
     <button mat-stroked-button
             class="toolbar-row-button"
@@ -28,9 +21,9 @@
             class="toolbar-row-button"
             (click)="openSaveDialog()">Save</button>
 
-<!--    <button mat-stroked-button
+    <button mat-stroked-button
             class="toolbar-row-button"
-            (click)="openLoadDialog()">Load</button>-->
+            (click)="openLoadDialog()">Load</button>
 
     <button mat-stroked-button
             class="toolbar-row-button"
@@ -39,6 +32,22 @@
     <button mat-stroked-button
             class="toolbar-row-button"
             (click)="redoChange()">Redo</button>
+
+    <button mat-stroked-button
+            class="toolbar-row-button"
+            (click)="zoom()">Zoom</button>
+
+    <button mat-stroked-button
+            class="toolbar-row-button"
+            (click)="unzoom()">Unzoom</button>
+
+    <button mat-stroked-button
+            class="toolbar-row-button"
+            (click)="flipGlyph()">Flip</button>
+
+    <button mat-stroked-button
+            class="toolbar-row-button"
+            (click)="toggleScars()">Toggle Scars</button>
 
   </mat-toolbar-row>
 </mat-toolbar>

@@ -12,7 +12,8 @@ const mx = require('mxgraph')({
 export class GlyphService {
 
   // TODO load list of xml files from server
-  private xmlUrls: string[] = [
+  private sequenceFeatureXMLs: string[] = [
+    // Strand glyphs
     'assets/glyph_stencils/promoter.xml',
     'assets/glyph_stencils/cds.xml',
     'assets/glyph_stencils/aptamer.xml',
@@ -25,16 +26,43 @@ export class GlyphService {
     'assets/glyph_stencils/location-rna.xml',
     'assets/glyph_stencils/location-protein.xml',
     'assets/glyph_stencils/ribosome-entry-site.xml',
+    'assets/glyph_stencils/terminator-specification.xml',
+    'assets/glyph_stencils/assembly-scar.xml',
     //'assets/glyph_stencils/downloads.xml'
   ];
 
-  private stencils: any = {};
+  private molecularSpeciesXMLs: string[] = [
+    // 'molecular species' glyphs aka protein?
+    'assets/glyph_stencils/molecular_species/macromolecule.xml'
+  ]
+
+  private interactionXMLs: string[] = [
+    'assets/glyph_stencils/interactions/control.xml'
+  ]
+
+  private utilXMLs: string[] = [
+    'assets/backbone.xml',
+    'assets/textBox.xml',
+  ]
+
+  private sequenceFeatures: any = {};
+  private molecularSpecies: any = {};
+  private interactions: any = {};
+  private utils: any = {};
 
   constructor() {
-    this.xmlUrls.forEach((filename) => {
+    this.loadXMLs(this.sequenceFeatureXMLs, this.sequenceFeatures);
+    this.loadXMLs(this.molecularSpeciesXMLs, this.molecularSpecies);
+    this.loadXMLs(this.interactionXMLs, this.interactions);
+    this.loadXMLs(this.utilXMLs, this.utils);
+  }
+
+  loadXMLs(xml_list, glyph_list) {
+    xml_list.forEach((filename) => {
       let req = mx.mxUtils.load(filename);
       let root = req.getDocumentElement();
       let shape = root.firstChild;
+
 
       while (shape != null) {
         if (shape.nodeType == mx.mxConstants.NODETYPE_ELEMENT) {
@@ -43,22 +71,18 @@ export class GlyphService {
 
           const stencil = new mx.mxStencil(shape);
 
-          this.stencils[name] = [stencil, (centered && centered.toLowerCase() == 'true')];
+          glyph_list[name] = [stencil, (centered && centered.toLowerCase() == 'true')];
         }
         shape = shape.nextSibling;
       }
     });
   }
 
-  getStencils() {
-    return this.stencils;
-  }
-
-  getSvgElements() {
+  getElements(glyph_list) {
     const svgs = {};
 
-    for (const name in this.stencils) {
-      const stencil = this.stencils[name][0];
+    for (const name in glyph_list) {
+      const stencil = glyph_list[name][0];
 
       let elt = document.createElement('svg');
       let canvas = new mx.mxSvgCanvas2D(elt);
@@ -73,5 +97,29 @@ export class GlyphService {
     }
 
     return svgs;
+  }
+
+  getSequenceFeatureGlyphs() {
+    return this.sequenceFeatures;
+  }
+
+  getMolecularSpeciesGlyphs() {
+    return this.molecularSpecies;
+  }
+
+  getUtilElements() {
+    return this.getElements(this.utils)
+  }
+
+  getInteractionElements() {
+    return this.getElements(this.interactions);
+  }
+
+  getMolecularSpeciesElements() {
+    return this.getElements(this.molecularSpecies);
+  }
+
+  getSequenceFeatureElements() {
+    return this.getElements(this.sequenceFeatures);
   }
 }

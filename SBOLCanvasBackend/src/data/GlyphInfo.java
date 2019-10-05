@@ -9,6 +9,8 @@ public class GlyphInfo {
 	private String name;
 	private String description;
 	private String version;
+	private String sequence;
+	private String model;
 	
 	public String getPartType() {
 		return partType;
@@ -51,6 +53,18 @@ public class GlyphInfo {
 	}
 	public void setVersion(String version) {
 		this.version = version;
+	}
+	public String getSequence() {
+		return this.sequence;
+	}
+	public void setSequence(String sequence) {
+		this.sequence = sequence;
+	}
+	public String getModel() {
+		return model;
+	}
+	public void setModel(String model) {
+		this.model = model;
 	}
 	
 }
