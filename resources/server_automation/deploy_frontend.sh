@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Ensure we are running as root
+if [[ $(id -u) -ne 0 ]] ; then echo "Please run as root (sudo)" ; exit 1 ; fi
+
+# Set constant variables and get our function definitions
+. deployment_variables.sh
+. deployment_functions.sh
+
+# Build front end
+cur_dir=$(pwd) # Save away our current directory to come back to.
+cd ${FRONTEND_DIRECTORY}
+ng build --prod --base-href=/canvas/
+
+# $? is the return code of the last operation
+[[ $? -eq 0 ]] || die "Build failed"
+
+# Make a tar ball, we are still in the front end directory.
+cd dist
+tar -cf ${FRONTEND_TARBALL_NAME} SBOLCanvasFrontend || die "Failed to tar the balls up"
+
+# Get files over to server.
+scp -P 666 -o StrictHostKeyChecking=no ${FRONTEND_TARBALL_NAME} root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR} || die "Failed to scp tarball to server"
+
+# run this script on the server to unpack the tarball and setup the directories
+cd ${cur_dir}
+ssh -p 666 root@${SERVER_ADDRESS} env TOMCAT_SERVER_DIR=${TOMCAT_SERVER_DIR} TOMCAT_FRONTEND_DIR=${TOMCAT_FRONTEND_DIR} FRONTEND_TARBALL_NAME=${FRONTEND_TARBALL_NAME} /bin/bash -s < ./runs_on_target_machine/setup_frontend.sh root
+
+# scp the remaining config files on over
+scp -P 666 ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_context.html root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/META-INF/context.html
+scp -P 666 ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_rewrite.config root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/WEB-INF/rewrite.config
+
