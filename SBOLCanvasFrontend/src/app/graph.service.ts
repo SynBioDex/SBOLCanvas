@@ -787,46 +787,21 @@ export class GraphService {
     mx.mxGraph.prototype.setConstrainChildren(false);
 
     /**
-     * This function is called when the mouse first goes down, and it identifies the cell
-     * that was clicked on (or the cell that we should treat as being clicked on)
+     * Never act as though the backbone cell was clicked.
+     * If it was, act like the circuitContainer was clicked instead.
      */
     const defaultGetInitialCellForEvent = mx.mxGraphHandler.prototype.getInitialCellForEvent;
-    mx.mxGraphHandler.prototype.getInitialCellForEvent = function(evt)
-    {
-      const clickedCell = defaultGetInitialCellForEvent.apply(this, arguments);
-      const selMod = this.graph.getSelectionModel();
-
-      if (!this.graph.isToggleEvent(evt.getEvent()) && !selMod.isSelected((clickedCell)) && clickedCell.isSequenceFeatureGlyph()) {
-        return clickedCell.getCircuitContainer();
+    mx.mxGraphHandler.prototype.getInitialCellForEvent = function (me) {
+      let cell = defaultGetInitialCellForEvent.apply(this, arguments);
+      if (cell.isBackbone()) {
+        cell = cell.getCircuitContainer();
       }
-      else if (clickedCell.isBackbone()) {
-        return clickedCell.getCircuitContainer();
-      }
-      else {
-        return clickedCell;
-      }
-    };
+      return cell;
+    }
 
     /**
-     * This function implements selection changes on mouse up, as opposed to mouse down.
-     * This is only called if:
-     *  - The mouse event was a single click, not a click-and-drag
-     *  - The mouse event was not a toggle event, ie ctrl is not held
-     */
-    mx.mxGraphHandler.prototype.selectDelayed = function(evt)
-    {
-      const clickedCell = evt.getCell();
-      if (clickedCell) {
-        this.graph.selectCellForEvent(clickedCell, evt);
-      }
-    };
-
-    /**
-     * This implements selection, after all other selection rules.
-     * IE, the other methods choose which cell to select, and this method makes
-     * the chosen selection happen.
-     * This method should only be used for rules that have absolutely no exceptions,
-     * like backbone cells never being selected.
+     * For some reason, the above method doesn't work with alt-clicking.
+     * This method covers that case.
      */
     const defaultSelectCellForEvent = mx.mxGraph.prototype.selectCellForEvent;
     mx.mxGraph.prototype.selectCellForEvent = function(cell, evt)
@@ -836,6 +811,19 @@ export class GraphService {
 
       defaultSelectCellForEvent.apply(this, [cell, evt]);
     };
+
+    /**
+     * Some methods of selecting cells don't involve clicking directly
+     * on the cell at all (for example rubberband selection).
+     * This to guarantees the backbone can never be selected, no matter what.
+     *
+     * (The previous two methods are still necessary, or clicking on the
+     * backbone would select nothing, instead of passing the click
+     * event up to the circuitContainer.)
+     */
+    mx.mxGraph.prototype.isCellSelectable = function(cell) {
+      return !cell.isBackbone();
+    }
 
     // Used for tracking glyph movement for moving the position of
     // a glyph in a circuit.
@@ -861,11 +849,6 @@ export class GraphService {
         } else {
           movingGlyph = null;
         }
-      }
-
-      // almost always do delayed selection
-      if (!this.graph.isToggleEvent(me.getEvent())) {
-        this.delayedSelection = true;
       }
     }
 
