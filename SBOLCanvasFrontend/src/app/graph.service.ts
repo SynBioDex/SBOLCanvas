@@ -68,7 +68,7 @@ export class GraphService {
     this.showingScars = true;
     this.scarPositions = new Array<number>();
 
-    // constructor code is divided into helper methods for oranization,
+    // constructor code is divided into helper methods for organization,
     // but these methods aren't entirely modular; order of some of
     // these calls is important
     this.initDecodeEnv();
@@ -86,6 +86,8 @@ export class GraphService {
     this.graphContainer.style.right = '0';
 
     mx.mxGraphHandler.prototype.guidesEnabled = true;
+
+    mx.mxShape.prototype.svgStrokeTolerance = 20;
 
     // mxEditor is kind of a parent to mxGraph
     // it's used mainly for 'actions', which for now means delete, later will mean undoing
