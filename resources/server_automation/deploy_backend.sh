@@ -11,18 +11,19 @@ compile_dest_dir=${BACKEND_DIR}/WebContent/WEB-INF/classes
 compile_source_dir=${BACKEND_DIR}/src
 tomcat_dependencies=tomcat/apache-tomcat-9.0.26/lib
 other_dependencies=${BACKEND_DIR}/WebContent/WEB-INF/lib
+war_filename=api.war
 cur_dir=$(pwd)
 
 # Compile java files into the SBOLCanvasBackend/WebContent/WEB-INF/classes directory
 [[ -d ${compile_dest_dir} ]] && rm -rf ${compile_dest_dir} # Make sure we have a clean slate
 mkdir ${compile_dest_dir}
 
-javac -target 1.8 -sourcepath ${compile_source_dir} -d ${compile_dest_dir} -cp ".:${other_dependencies}/*:${tomcat_dependencies}/*" ${compile_source_dir}/**/*.java || die "Failed to compile backend"
+javac -source 1.8 -target 1.8 -sourcepath ${compile_source_dir} -d ${compile_dest_dir} -cp ".:${other_dependencies}/*:${tomcat_dependencies}/*" ${compile_source_dir}/**/*.java || die "Failed to compile backend"
 
 # Build .war file and deploy
 cd ${BACKEND_DIR}/WebContent
-jar -cf test.war * || die "Failed to generate .war file for backend"
-scp -P 666 test.war root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR}/webapps || die "Failed to scp backend .war file to server"
+jar -cf ${war_filename} * || die "Failed to generate .war file for backend"
+scp -P 666 ${war_filename} root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR}/webapps || die "Failed to scp backend .war file to server"
 
 
 
