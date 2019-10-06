@@ -110,74 +110,7 @@ export class GraphService {
 
     this.initStyles();
     this.initCustomShapes();
-
-    this.graph.addListener(mx.mxEvent.MOVE_CELLS, function (sender, evt) {
-      // sender is the graph
-
-      let movedCells = evt.getProperty("cells");
-      // important note: if a parent cell is moving, none of its children
-      // can appear here (even if they were also selected)
-
-      // sort cells: processing order is important
-      movedCells = movedCells.sort(function(cellA, cellB) {
-        if (cellA.getRootId() !== cellB.getRootId()) {
-          // cells are not related: choose arbitrary order
-          return cellA.getRootId() < cellB.getRootId() ? -1 : 1;
-        } else {
-          // cells are in the same circuitContainer: this is why we sorted
-          let aIndex = cellA.getCircuitContainer().getIndex(cellA);
-          let bIndex = cellB.getCircuitContainer().getIndex(cellB);
-
-          return aIndex - bIndex;
-        }
-      });
-
-      let streak;
-      for (let i = 0; i < movedCells.length; i+=streak) {
-        streak = 1;
-
-        const baseX = movedCells[i].getGeometry().x;
-        const rootId = movedCells[i].getRootId();
-        let streakWidth = movedCells[i].getGeometry().width;
-
-        while (i + streak < movedCells.length
-                && movedCells[i+streak].isSequenceFeatureGlyph()
-                && rootId === movedCells[i+streak].getRootId()) {
-          let xToContinueStreak = baseX + streakWidth;
-          if (xToContinueStreak === movedCells[i+streak].getGeometry().x) {
-            const oldGeo = movedCells[i+streak].getGeometry();
-            const newGeo = new mx.mxGeometry(oldGeo.x, oldGeo.y, oldGeo.width, oldGeo.height);
-            newGeo.x = baseX;
-            sender.getModel().setGeometry(movedCells[i+streak],newGeo);
-
-            streakWidth += movedCells[i+streak].getGeometry().width;
-            streak++;
-          } else {
-            break;
-          }
-        }
-      }
-
-      let cells = this.getChildVertices(this.getDefaultParent());
-      for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
-        let childrenCopy = circuitContainer.children.slice();
-        childrenCopy.sort(function(cellA, cellB) {
-          return cellA.getGeometry().x - cellB.getGeometry().x;
-        });
-        for (let i = 0; i < childrenCopy.length; i++) {
-          const child = childrenCopy[i];
-          sender.getModel().add(circuitContainer, child, i);
-        }
-
-        circuitContainer.refreshCircuitContainer(this);
-      }
-
-      evt.consume();
-    });
-
-    this.graph.getModel().addListener(mx.mxEvent.CHANGE, function (sender, evt) {
-      console.log(evt.getProperty('edit'));
-    });
+    this.initSequenceFeatureGlyphMovement();
   }
 
   handleSelectionChange(sender, evt) {
@@ -608,7 +541,8 @@ export class GraphService {
   }
 
   /**
-   * Encodes the graph to a string (xml) representation
+   * Encodes the current graph (at its current "zoom layer")
+   * to a string (xml) representation
    */
   getModelXML(): string {
     const encoder = new mx.mxCodec();
@@ -617,7 +551,8 @@ export class GraphService {
   }
 
   /**
-   * Decodes the given string (xml) representation of a graph and uses it to replace the current graph
+   * Decodes the given string (xml) representation of a graph
+   * and uses it to replace the current graph
    */
   setModelWithXML(graphString: string) {
     // Creates the graph inside the given container
@@ -627,13 +562,21 @@ export class GraphService {
     codec.decode(doc.documentElement, this.graph.getModel());
   }
 
+  /**
+   * Replaces the entire graph with the given xml.
+   * This forgets all information of the previous diagram, including
+   * "zoom layers" other than the one currently viewed
+   */
   setTopLevelModelWithXML(graphString: string){
     this.zoomStack = new Array<[string, string]>();
     this.setModelWithXML(graphString);
+
+    this.editor.undoManager.clear();
   }
 
   /**
-   *
+   * Encodes the entire diagram, including "zoom layers" other
+   * than the one currently viewed, to an xml string
    */
   getTopLevelXML(): string {
     const encoder = new mx.mxCodec();
@@ -943,6 +886,10 @@ export class GraphService {
     style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
   }
 
+  /**
+   * Loads glyph stencils and their names from the glyphService, and
+   * saves them to mxGraph's shape registry
+   */
   initCustomShapes() {
     let stencils = this.glyphService.getSequenceFeatureGlyphs();
 
@@ -988,5 +935,89 @@ export class GraphService {
       newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
       this.graph.getStylesheet().putCellStyle(molecularSpeciesGlyphBaseStyleName + name, newGlyphStyle);
     }
+  }
+
+  /**
+   * Sets up logic for handling sequenceFeatureGlyph movement
+   */
+  initSequenceFeatureGlyphMovement() {
+    this.graph.addListener(mx.mxEvent.MOVE_CELLS, function (sender, evt) {
+      // sender is the graph
+
+      let movedCells = evt.getProperty("cells");
+      // important note: if a parent cell is moving, none of its children
+      // can appear here (even if they were also selected)
+
+      // sort cells: processing order is important
+      movedCells = movedCells.sort(function(cellA, cellB) {
+        if (cellA.getRootId() !== cellB.getRootId()) {
+          // cells are not related: choose arbitrary order (but still group by root)
+          return cellA.getRootId() < cellB.getRootId() ? -1 : 1;
+        } else {
+          // cells are in the same circuitContainer:
+          // must be in sequence order
+          let aIndex = cellA.getCircuitContainer().getIndex(cellA);
+          let bIndex = cellB.getCircuitContainer().getIndex(cellB);
+
+          return aIndex - bIndex;
+        }
+      });
+
+      // If two adjacent sequenceFeatureGlyphs were moved, they should be adjacent after the move.
+      // This loop finds all such sets of glyphs (relying on the sorted order) and sets them to
+      // have the same x position so there is no chance of outside glyphs sneaking in between
+      let streak;
+      for (let i = 0; i < movedCells.length; i+=streak) {
+        streak = 1;
+        if (!movedCells[i].isSequenceFeatureGlyph()) {
+          continue;
+        }
+        // found a sequenceFeature glyph. A streak might be starting...
+        const baseX = movedCells[i].getGeometry().x;
+        const rootId = movedCells[i].getRootId();
+        let streakWidth = movedCells[i].getGeometry().width;
+
+        while (i + streak < movedCells.length
+        && movedCells[i+streak].isSequenceFeatureGlyph()
+        && rootId === movedCells[i+streak].getRootId()) {
+          let xToContinueStreak = baseX + streakWidth;
+          if (xToContinueStreak === movedCells[i+streak].getGeometry().x) {
+            // The next cell continues the streak
+            const oldGeo = movedCells[i+streak].getGeometry();
+            const newGeo = new mx.mxGeometry(oldGeo.x, oldGeo.y, oldGeo.width, oldGeo.height);
+            newGeo.x = baseX;
+            sender.getModel().setGeometry(movedCells[i+streak],newGeo);
+
+            streakWidth += movedCells[i+streak].getGeometry().width;
+            streak++;
+          } else {
+            // the next cell breaks the streak
+            break;
+          }
+        }
+      }
+
+      // now all sequence feature glyphs are sorted by x position in the order
+      // they should be when the move finishes.
+      // (equal x position means they should stay in the order they were previously in)
+      // So for each circuitContainer (optimized me: only do this for affected ones)...
+      let cells = this.getChildVertices(this.getDefaultParent());
+      for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
+        // ...sort the children...
+        let childrenCopy = circuitContainer.children.slice();
+        childrenCopy.sort(function(cellA, cellB) {
+          return cellA.getGeometry().x - cellB.getGeometry().x;
+        });
+        // ...and have the model reflect the sort in an undoable way
+        for (let i = 0; i < childrenCopy.length; i++) {
+          const child = childrenCopy[i];
+          sender.getModel().add(circuitContainer, child, i);
+        }
+
+        circuitContainer.refreshCircuitContainer(this);
+      }
+
+      evt.consume();
+    });
   }
 }
