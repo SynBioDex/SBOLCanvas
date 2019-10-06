@@ -427,9 +427,13 @@ export class GraphService {
         const glyphContainer = this.graph.insertVertex(parentCircuitContainer, null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, glyphContainerStyleName);
         const glyphCell = this.graph.insertVertex(glyphContainer, null, '', 0, 0,
           sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
+        const glyphCircuitContainer = this.graph.insertVertex(glyphContainer, null, '', 0, 0, 0, 0, circuitContainerStyleName);
+
         glyphContainer.data = new GlyphInfo();
         glyphContainer.data.partRole = name;
-        glyphCell.data = new GlyphInfo();
+
+        glyphCircuitContainer.setConnectable(false);
+        glyphContainer.setConnectable(false);
         glyphCell.setConnectable(false);
 
         parentCircuitContainer.refreshCircuitContainer(this.graph);
@@ -649,6 +653,10 @@ export class GraphService {
       return this.style.includes(circuitContainerStyleName);
     };
 
+    mx.mxCell.prototype.isGlyphContainer = function() {
+      return this.style.includes(glyphContainerStyleName);
+    }
+
     mx.mxCell.prototype.isScar = function() {
       return this.style.includes(scarStyleName);
     };
@@ -691,7 +699,7 @@ export class GraphService {
      * Positions and sizes the backbone associated with this cell
      */
     mx.mxCell.prototype.refreshBackbone = function(graph) {
-      if (this.isSequenceFeatureGlyph() || this.isBackbone()) {
+      if (this.isSequenceFeatureGlyph() || this.isBackbone() || this.isGlyphContainer()) {
         this.getParent().refreshBackbone(graph);
         return;
       } else if (!this.isCircuitContainer()) {
@@ -716,7 +724,7 @@ export class GraphService {
       let cc = backbone.getCircuitContainer();
       let children = cc.children;
       for (let i = 0; i < children.length; i++) {
-        if (children[i].isSequenceFeatureGlyph()) {
+        if (children[i].isGlyphContainer()) {
           width += children[i].getGeometry().width;
         }
       }
@@ -733,8 +741,8 @@ export class GraphService {
      * also refreshes the backbone.
      */
     mx.mxCell.prototype.refreshCircuitContainer = function(graph) {
-      if (this.isSequenceFeatureGlyph() || this.isBackbone()) {
-        this.getParent().refreshCircuitContainer()
+      if (this.isSequenceFeatureGlyph() || this.isBackbone() || this.isGlyphContainer()) {
+        this.getParent().refreshCircuitContainer(graph);
       } else if (!this.isCircuitContainer()) {
         console.error("refreshCircuitContainer: called on an invalid cell!");
         return;
