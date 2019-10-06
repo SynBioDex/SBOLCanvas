@@ -31,6 +31,7 @@ const defaultTextWidth            = 120;
 const defaultTextHeight           = 80;
 
 const circuitContainerStyleName           = 'circuitContainer';
+const glyphContainerStyleName             = 'glyphContainer';
 const backboneStyleName                   = 'backbone';
 const textboxStyleName                    = 'textBox';
 const scarStyleName                       = 'Scar (Assembly Scar)';
@@ -418,18 +419,20 @@ export class GraphService {
     // Don't do anything if it is a scar and were not showing them.
     if (name.includes(scarStyleName) && !this.showingScars) { this.toggleScars(); }
 
-    let circuitContainer = this.getSelectionContainer();
-    if (circuitContainer != null) {
+    let parentCircuitContainer = this.getSelectionContainer();
+    if (parentCircuitContainer != null) {
       this.graph.getModel().beginUpdate();
       try {
         // Insert new glyph
-        const glyphCell = this.graph.insertVertex(circuitContainer, null, '', 0, 0,
+        const glyphContainer = this.graph.insertVertex(parentCircuitContainer, null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, glyphContainerStyleName);
+        const glyphCell = this.graph.insertVertex(glyphContainer, null, '', 0, 0,
           sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
+        glyphContainer.data = new GlyphInfo();
+        glyphContainer.data.partRole = name;
         glyphCell.data = new GlyphInfo();
-        glyphCell.data.partRole = name;
         glyphCell.setConnectable(false);
 
-        circuitContainer.refreshCircuitContainer(this.graph);
+        parentCircuitContainer.refreshCircuitContainer(this.graph);
 
         // The new glyph should be selected
         this.graph.clearSelection();
@@ -861,6 +864,15 @@ export class GraphService {
     textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
     textBoxStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
+
+    // Circuit container settings.
+    const glyphContainerStyle = {};
+    glyphContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
+    glyphContainerStyle[mx.mxConstants.STYLE_STROKECOLOR] = 'none';
+    glyphContainerStyle[mx.mxConstants.STYLE_FILLCOLOR] = 'none';
+    glyphContainerStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
+    glyphContainerStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+    this.graph.getStylesheet().putCellStyle(glyphContainerStyleName, glyphContainerStyle);
 
     // Circuit container settings.
     const circuitContainerStyle = {};
