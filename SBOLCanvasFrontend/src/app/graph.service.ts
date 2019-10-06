@@ -53,7 +53,6 @@ export class GraphService {
   zoomStack: Array<[string, string]>;
 
   // Boolean for keeping track of whether we are showing scars or not in the graph.
-  // We must also track the positions of the scars so that we can remove and insert them at will.
   showingScars: boolean;
 
   baseGlyphStyle: any;
@@ -111,6 +110,74 @@ export class GraphService {
 
     this.initStyles();
     this.initCustomShapes();
+
+    this.graph.addListener(mx.mxEvent.MOVE_CELLS, function (sender, evt) {
+      // sender is the graph
+
+      let movedCells = evt.getProperty("cells");
+      // important note: if a parent cell is moving, none of its children
+      // can appear here (even if they were also selected)
+
+      // sort cells: processing order is important
+      movedCells = movedCells.sort(function(cellA, cellB) {
+        if (cellA.getRootId() !== cellB.getRootId()) {
+          // cells are not related: choose arbitrary order
+          return cellA.getRootId() < cellB.getRootId() ? -1 : 1;
+        } else {
+          // cells are in the same circuitContainer: this is why we sorted
+          let aIndex = cellA.getCircuitContainer().getIndex(cellA);
+          let bIndex = cellB.getCircuitContainer().getIndex(cellB);
+
+          return aIndex - bIndex;
+        }
+      });
+
+      let streak;
+      for (let i = 0; i < movedCells.length; i+=streak) {
+        streak = 1;
+
+        const baseX = movedCells[i].getGeometry().x;
+        const rootId = movedCells[i].getRootId();
+        let streakWidth = movedCells[i].getGeometry().width;
+
+        while (i + streak < movedCells.length
+                && movedCells[i+streak].isSequenceFeatureGlyph()
+                && rootId === movedCells[i+streak].getRootId()) {
+          let xToContinueStreak = baseX + streakWidth;
+          if (xToContinueStreak === movedCells[i+streak].getGeometry().x) {
+            const oldGeo = movedCells[i+streak].getGeometry();
+            const newGeo = new mx.mxGeometry(oldGeo.x, oldGeo.y, oldGeo.width, oldGeo.height);
+            newGeo.x = baseX;
+            sender.getModel().setGeometry(movedCells[i+streak],newGeo);
+
+            streakWidth += movedCells[i+streak].getGeometry().width;
+            streak++;
+          } else {
+            break;
+          }
+        }
+      }
+
+      let cells = this.getChildVertices(this.getDefaultParent());
+      for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
+        let childrenCopy = circuitContainer.children.slice();
+        childrenCopy.sort(function(cellA, cellB) {
+          return cellA.getGeometry().x - cellB.getGeometry().x;
+        });
+        for (let i = 0; i < childrenCopy.length; i++) {
+          const child = childrenCopy[i];
+          sender.getModel().add(circuitContainer, child, i);
+        }
+
+        circuitContainer.refreshCircuitContainer(this);
+      }
+
+      evt.consume();
+    });
+
+    this.graph.getModel().addListener(mx.mxEvent.CHANGE, function (sender, evt) {
+      console.log(evt.getProperty('edit'));
+    });
   }
 
   handleSelectionChange(sender, evt) {
@@ -233,7 +300,7 @@ export class GraphService {
   /**
    * This method is called by the UI when the user asks to flip a
    * sequence feature glyph.
-   * It rotates the glyph by 180 degrees.
+   * It rotates any selected sequenceFeatureGlyphs by 180 degrees.
    */
   flipSequenceFeatureGlyph() {
     let selectionCells = this.graph.getSelectionCells();
@@ -335,7 +402,6 @@ export class GraphService {
   /**
    * This checks if there is a circuit container in the current graph model.
    * This tells us whether there is a component definition already present.
-   * @param cells
    */
   modelHasAtLeastOneCircuitContainer(): boolean {
     let cells = this.graph.getChildVertices(this.graph.getDefaultParent());
@@ -403,7 +469,6 @@ export class GraphService {
    */
   undo() {
     this.editor.execute('undo');
-    this.simplifySelection();
   }
 
   /**
@@ -411,28 +476,6 @@ export class GraphService {
    */
   redo() {
     this.editor.execute('redo');
-    this.simplifySelection();
-  }
-
-  /**
-   * Simplifies the graph's selection model and makes sure it follows our selection rules
-   * Intended for use after undo or redo
-   */
-  simplifySelection() {
-    const messySelection = this.graph.getSelectionCells();
-    const cleanSelection = [];
-    for (let i = 0; i < messySelection.length; i++) {
-      const cell = messySelection[i];
-      const circuit = cell.getCircuitContainer();
-
-      if (circuit == null || !cleanSelection.includes(circuit)) {
-        cleanSelection.push(circuit);
-      }
-    }
-
-    const selMod = this.graph.getSelectionModel();
-    selMod.clear();
-    selMod.addCells(cleanSelection);
   }
 
   /**
@@ -665,6 +708,18 @@ export class GraphService {
     };
 
     /**
+     * Returns the id of the cell's highest ancestor
+     * (or the cell's own id if it has no parent)
+     */
+    mx.mxCell.prototype.getRootId = function() {
+      if (this.parent.parent.parent) {
+        return this.parent.getRootId();
+      } else {
+        return this.getId();
+      }
+    }
+
+    /**
      * Returns the backbone associated with this cell
      */
     mx.mxCell.prototype.getBackbone = function() {
@@ -702,9 +757,7 @@ export class GraphService {
 
       // put it first in the children array so it is drawn before glyphs
       // (meaning it appears behind them)
-      const oldIdx = this.children.indexOf(backbone);
-      this.children.splice(oldIdx, 1);
-      this.children.splice(0, 0, backbone);
+      graph.getModel().add(this, backbone, 0);
 
       const geo = new mx.mxGeometry(0,0,0,0);
       // Paranoia
@@ -718,7 +771,7 @@ export class GraphService {
       let children = cc.children;
       for (let i = 0; i < children.length; i++) {
         if (children[i].isSequenceFeatureGlyph()) {
-          width += children[i].geometry.width;
+          width += children[i].getGeometry().width;
         }
       }
       if (width < sequenceFeatureGlyphWidth) {
@@ -776,6 +829,20 @@ export class GraphService {
         return this.data;
       }
     }
+
+    /**
+     * This method callsRefreshCircuitContainer on every
+     * circuitContainer in the graph.
+     */
+    mx.mxGraph.prototype.refreshAllCircuitContainers = function() {
+      let cells = this.getChildVertices(this.getDefaultParent());
+
+      for (let cell of cells) {
+        if (cell.isCircuitContainer()) {
+          cell.refreshCircuitContainer(this);
+        }
+      }
+    }
   }
 
   /**
@@ -823,85 +890,6 @@ export class GraphService {
      */
     mx.mxGraph.prototype.isCellSelectable = function(cell) {
       return !cell.isBackbone();
-    }
-
-    // Used for tracking glyph movement for moving the position of
-    // a glyph in a circuit.
-    let movingGlyph;
-    let oldX;
-    let oldY;
-
-    const defaultMouseDown = mx.mxGraphHandler.prototype.mouseDown;
-    mx.mxGraphHandler.prototype.mouseDown = function(sender, me) {
-      defaultMouseDown.apply(this, arguments);
-
-      if (this.isEnabled() && this.graph.isEnabled() &&
-        me.getState() != null && !mx.mxEvent.isMultiTouchEvent(me.getEvent()))
-      {
-
-        let clickedCell = this.getInitialCellForEvent(me);
-        let selMod = this.graph.getSelectionModel();
-
-        if (clickedCell && clickedCell.isSequenceFeatureGlyph() && selMod.isSelected(clickedCell) && selMod.cells.length == 1) {
-          movingGlyph = clickedCell;
-          oldX = clickedCell.geometry.x;
-          oldY = clickedCell.geometry.y;
-        } else {
-          movingGlyph = null;
-        }
-      }
-    }
-
-    const defaultMouseUp = mx.mxGraphHandler.prototype.mouseUp;
-    const service = this;
-    mx.mxGraphHandler.prototype.mouseUp = function(sender, me) {
-      defaultMouseUp.apply(this, arguments);
-
-      if (movingGlyph != null &&
-        (movingGlyph.geometry.x != oldX || movingGlyph.geometry.y != oldY))
-      {
-        // Debugging glyph telemetry.
-        console.debug("Detected");
-        console.debug("old x = " + oldX + ", old y = " + oldY);
-        console.debug("x = " + movingGlyph.geometry.x + ", y = " + movingGlyph.geometry.y);
-
-        // The graph already moved the cell and registered it as an undoable edit.
-        // We need to refine the position and formatting in another undoable edit,
-        // but at the end there should only be one action on the undo stack.
-        // To fix that, undo to get rid of the graph's action (but remember the x
-        // position for later)
-        let newx = movingGlyph.geometry.x;
-        service.editor.execute('undo');
-
-        // What we do here is get the circuit container, figure out what
-        // the index of the moving glyph is, take that glyph out of the list
-        // of glyphs that are in the circuit container, and reinsert the moving
-        // glyph into the list based on its x coordinates.
-        this.graph.getModel().beginUpdate();
-        let circuitContainer = movingGlyph.getCircuitContainer();
-        let movingGlyphChildIndex = circuitContainer.getIndex(movingGlyph);
-
-        let children = circuitContainer.children;
-        children.splice(movingGlyphChildIndex, 1);
-
-        var insertIndex = null;
-        for (let i = 0; i < children.length; i++) {
-          if (children[i].geometry.x > newx) {
-            insertIndex = i;
-            break;
-          }
-        }
-        if (insertIndex == null) {
-          insertIndex = children.length;
-        }
-
-        children.splice(insertIndex, 0, movingGlyph);
-
-        circuitContainer.refreshCircuitContainer(this.graph);
-        this.graph.getModel().endUpdate();
-      }
-
-      movingGlyph = null;
     }
   }
 
