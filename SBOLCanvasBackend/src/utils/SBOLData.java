@@ -64,8 +64,8 @@ public class SBOLData {
 		
 		refinements = new BiMap<String, URI>();
 		parents = new HashMap<URI, URI>();
+		SequenceOntology so = new SequenceOntology();
 		for(URI uri : roles.values()) {
-			SequenceOntology so = new SequenceOntology();
 			Set<URI> descendants = so.getDescendantURIsOf(uri);
 			for(URI dURI : descendants) {
 				refinements.put(so.getName(dURI), dURI);

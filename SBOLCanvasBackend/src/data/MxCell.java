@@ -9,7 +9,8 @@ public class MxCell {
 	private boolean connectable;
 	private int parent;
 	private MxGeometry geometry;
-	private GlyphInfo info;
+	// transient prevents this field from making it to json
+	private transient GlyphInfo info;
 
 	public int getId() {
 		return id;
