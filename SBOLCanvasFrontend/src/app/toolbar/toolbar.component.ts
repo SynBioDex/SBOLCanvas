@@ -34,7 +34,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   save(filename: string) {
-    this.filesService.saveLocal(filename, this.graphService.getTopLevelXML());
+    this.filesService.saveLocal(filename, this.graphService.getGraphXML());
   }
 
   load(file: File) {
