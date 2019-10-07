@@ -679,6 +679,8 @@ export class GraphService {
     mx.mxCell.prototype.getBackbone = function() {
       if (this.isSequenceFeatureGlyph()) {
         return this.getParent().getBackbone();
+      } else if (this.isGlyphContainer()) {
+        return this.getCircuitContainer().getBackbone();
       } else if (this.isBackbone()) {
         return this;
       } else if (!this.isCircuitContainer()) {
@@ -699,10 +701,12 @@ export class GraphService {
      * Positions and sizes the backbone associated with this cell
      */
     mx.mxCell.prototype.refreshBackbone = function(graph) {
-      if (this.isSequenceFeatureGlyph() || this.isBackbone() || this.isGlyphContainer()) {
+      if (this.isSequenceFeatureGlyph() || this.isBackbone()) {
         this.getParent().refreshBackbone(graph);
         return;
-      } else if (!this.isCircuitContainer()) {
+      } else if (this.isGlyphContainer()) {
+        this.getCircuitContainer().refreshBackbone(graph);
+      } if (!this.isCircuitContainer()) {
         console.error("refreshBackbone: called on an invalid cell!");
         return;
       }
@@ -741,8 +745,12 @@ export class GraphService {
      * also refreshes the backbone.
      */
     mx.mxCell.prototype.refreshCircuitContainer = function(graph) {
-      if (this.isSequenceFeatureGlyph() || this.isBackbone() || this.isGlyphContainer()) {
+      if (this.isSequenceFeatureGlyph() || this.isBackbone()) {
         this.getParent().refreshCircuitContainer(graph);
+        return;
+      } else if (this.isGlyphContainer()) {
+        this.getCircuitContainer().refreshCircuitContainer(graph);
+        return;
       } else if (!this.isCircuitContainer()) {
         console.error("refreshCircuitContainer: called on an invalid cell!");
         return;
@@ -766,12 +774,18 @@ export class GraphService {
      */
     mx.mxCell.prototype.getCircuitContainer = function () {
       if (this.isSequenceFeatureGlyph() || this.isBackbone()) {
-        return this.getParent();
-      } else if (!this.isCircuitContainer()) {
-        return null;
+        return this.getParent().getCircuitContainer();
+      } else if (this.isGlyphContainer()) {
+        for (let child of this.children) {
+          if (child.isCircuitContainer()) {
+            return child;
+          }
+        }
+      } else if (this.isCircuitContainer()) {
+        return this;
       }
 
-      return this;
+      return null;
     };
 
     /**
