@@ -1,11 +1,13 @@
 #!/bin/bash
 
-# Ensure we are running as root
-if [[ $(id -u) -ne 0 ]] ; then echo "Please run as root (sudo)" ; exit 1 ; fi
-
 # Set constant variables and get our function definitions
 . deployment_variables.sh
 . deployment_functions.sh
+
+# Ensure we are running as root
+ensure_superuser
+
+echo "----------- Deploying frontend... ------------"
 
 # Build front end
 cur_dir=$(pwd) # Save away our current directory to come back to.
@@ -24,9 +26,11 @@ scp -P 666 -o StrictHostKeyChecking=no ${FRONTEND_TARBALL_NAME} root@${SERVER_AD
 
 # run this script on the server to unpack the tarball and setup the directories
 cd ${cur_dir}
-ssh -p 666 root@${SERVER_ADDRESS} env TOMCAT_SERVER_DIR=${TOMCAT_SERVER_DIR} TOMCAT_FRONTEND_DIR=${TOMCAT_FRONTEND_DIR} FRONTEND_TARBALL_NAME=${FRONTEND_TARBALL_NAME} /bin/bash -s < ./runs_on_target_machine/setup_frontend.sh root
+ssh -p 666 root@${SERVER_ADDRESS} env TOMCAT_SERVER_DIR=${TOMCAT_SERVER_DIR} TOMCAT_FRONTEND_DIR=${TOMCAT_FRONTEND_DIR} FRONTEND_TARBALL_NAME=${FRONTEND_TARBALL_NAME} /bin/bash -s < ./runs_on_target_machine/setup_frontend.sh root\
+ || die "Failed to setup frontend directory on server"
 
 # scp the remaining config files on over
-scp -P 666 ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_context.html root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/META-INF/context.html
-scp -P 666 ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_rewrite.config root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/WEB-INF/rewrite.config
+scp -P 666 ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_context.html root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/META-INF/context.html || die "Failed to copy over frontend context.html file"
+scp -P 666 ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_rewrite.config root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/WEB-INF/rewrite.config || die "Failed to copy over frontend rewrite.config file"
 
+echo "-------- Frontend successfully deployed ---------"
