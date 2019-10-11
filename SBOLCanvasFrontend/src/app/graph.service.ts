@@ -97,7 +97,7 @@ export class GraphService {
 
     // without this, an option appears to collapse glyphs, which hides their ports
     this.graph.isCellFoldable = function(cell) {
-      return false;
+      return false; //cell.isSequenceFeatureGlyph();
     };
 
     // Add event listeners to the graph. NOTE: MUST USE THE '=>' WAY FOR THIS TO WORK.
@@ -203,33 +203,57 @@ export class GraphService {
 
     // We hide scar glyphs by setting their widths to 0.
     console.debug("showing scars now equals " + this.showingScars);
-    try {
-      this.graph.getModel().beginUpdate()
-      let selectionCells = this.graph.getSelectionCells();
-      let circuitContainer = selectionCells[0].getCircuitContainer();
-      let children = circuitContainer.children;
-      for (let i = 0; i < children.length; i++) {
-        if (children[i].isScar()) {
-          console.debug("scar found");
-          let child = children[i];
-          const geo = new mx.mxGeometry(0,0,0,0);
-          geo.x = 0;
-          geo.y = 0;
-          geo.height = sequenceFeatureGlyphHeight;
+    this.setAllScars(this.showingScars);
+  }
 
-          if (this.showingScars) {
-            geo.width = sequenceFeatureGlyphWidth;
-          }
-          else {
-            geo.width = 0;
-          }
-          this.graph.getModel().setGeometry(child,geo);
+  /**
+   * Sets all scars in the current graph
+   * @param isCollapsed
+   */
+  setAllScars(isCollapsed: boolean) {
+    try {
+      this.graph.getModel().beginUpdate();
+      let allGraphCells = this.graph.getDefaultParent().children;
+      for (let i = 0; i < allGraphCells.length; i++) {
+        if (allGraphCells[i].isCircuitContainer()) {
+          this.setScars(allGraphCells[i], this.showingScars);
         }
       }
-      circuitContainer.refreshCircuitContainer(this.graph)
     } finally {
       this.graph.getModel().endUpdate();
     }
+  }
+
+  /**
+   * Recursively changes all scars in a circuit container and
+   * children circuit containers.
+   * @param circuitContainer
+   * @param isCollapsed
+   */
+  setScars(circuitContainer, isCollapsed: boolean) {
+    let children = circuitContainer.children;
+    for (let i = 0; i < children.length; i++) {
+      if (children[i].isScar()) {
+        console.debug("scar found");
+        let child = children[i];
+        const geo = new mx.mxGeometry(0, 0, 0, 0);
+        geo.x = 0;
+        geo.y = 0;
+        geo.height = sequenceFeatureGlyphHeight;
+
+        if (this.showingScars) {
+          geo.width = sequenceFeatureGlyphWidth;
+        } else {
+          geo.width = 0;
+        }
+        this.graph.getModel().setGeometry(child, geo);
+      }
+
+      if (children[i].isSequenceFeatureGlyph()) {
+        this.setScars(children[i].getCircuitContainer(), isCollapsed);
+      }
+    }
+    circuitContainer.refreshCircuitContainer(this.graph)
   }
 
   /**
@@ -297,23 +321,11 @@ export class GraphService {
       this.editor.execute('exitGroup');
       this.editor.execute('exitGroup');
       this.drillDepth--;
+
+      // We call this here when we zoom out to synchronize
+      // the current graph vertices with the showing scars setting
+      this.setAllScars(this.showingScars);
     }
-  }
-
-  /**
-   * This checks if there is a circuit container in the current graph model.
-   * This tells us whether there is a component definition already present.
-   */
-  modelHasAtLeastOneCircuitContainer(): boolean {
-    let cells = this.graph.getChildVertices(this.graph.getDefaultParent());
-
-    for (let i = 0; i < cells.length; i++) {
-      if (cells[i].isCircuitContainer()) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   addNewBackbone() {
@@ -358,7 +370,7 @@ export class GraphService {
       this.editor.execute('delete');
 
       for (let cell of circuitContainers) {
-        cell.refreshSequenceFeatureGlyph(this.graph);
+        cell.refreshSequenceFeature(this.graph);
       }
     } finally {
       this.graph.getModel().endUpdate();
@@ -392,8 +404,7 @@ export class GraphService {
       this.graph.getModel().beginUpdate();
       try {
         // Insert new glyph and its components
-        // (don't worry about their geometries, refreshSequenceFeatureGlyph will do that)
-        const glyphCell = this.graph.insertVertex(parentCircuitContainer, null, '', 0, 0, 0, 0, sequenceFeatureGlyphBaseStyleName + name);
+        const glyphCell = this.graph.insertVertex(parentCircuitContainer, null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
         const glyphCircuitContainer = this.graph.insertVertex(glyphCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
         const glyphBackbone = this.graph.insertVertex(glyphCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
 
@@ -406,7 +417,8 @@ export class GraphService {
         glyphCircuitContainer.setConnectable(false);
         glyphCell.setConnectable(false);
 
-        parentCircuitContainer.refreshSequenceFeatureGlyph(this.graph);
+        // Refreshes the parent
+        parentCircuitContainer.refreshSequenceFeature(this.graph);
 
         // The new glyph should be selected
         this.graph.clearSelection();
@@ -643,7 +655,7 @@ export class GraphService {
       }
 
       return null;
-    }
+    };
 
     /**
      * Positions and sizes the backbone associated with this cell
@@ -676,25 +688,28 @@ export class GraphService {
       this.getBackbone().replaceGeometry('auto', 'auto', width, height, graph);
     };
 
-    mx.mxCell.prototype.refreshSequenceFeatureGlyph = function(graph) {
+    mx.mxCell.prototype.refreshSequenceFeature = function(graph) {
       if (this.isBackbone()) {
-        this.getParent().refreshSequenceFeatureGlyph(graph);
+        this.getParent().refreshSequenceFeature(graph);
         return
-      } else if (this.isCircuitContainer()) {
+      }
+      else if (this.isCircuitContainer()) {
         if (this.getSequenceFeatureGlyph()) {
-          this.getSequenceFeatureGlyph().refreshSequenceFeatureGlyph(graph);
-        } else {
+          this.getSequenceFeatureGlyph().refreshSequenceFeature(graph);
+        }
+        else {
           // top level circuitContainers have no containing sequenceFeatureGlyph; just refresh this instead
           this.refreshCircuitContainer(graph);
         }
         return;
-      } else if (!this.isSequenceFeatureGlyph()) {
-        console.error("refreshSequenceFeatureGlyph: called on an invalid cell!");
+      }
+      else if (!this.isSequenceFeatureGlyph()) {
+        console.error("refreshSequenceFeature: called on an invalid cell!");
         return;
       }
 
       // verify own width and height
-      this.replaceGeometry('auto', 'auto', sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, graph);
+      //this.replaceGeometry('auto', 'auto', sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, graph);
 
       // format circuitContainer (width, height, subcomponents)
       this.refreshCircuitContainer(graph);
@@ -703,7 +718,7 @@ export class GraphService {
       let x = (this.getCircuitContainer().getGeometry().width / -2) + (sequenceFeatureGlyphWidth / 2);
       let y = sequenceFeatureGlyphHeight * 1.5;
       this.getCircuitContainer().replaceGeometry(x, y, 'auto', 'auto', graph);
-    }
+    };
 
     /**
      * (Re)positions the glyphs inside the circuitContainer and
@@ -721,7 +736,7 @@ export class GraphService {
       // Refresh all subglyphs
       for (let child of this.children) {
         if (child.isSequenceFeatureGlyph()) {
-          child.refreshSequenceFeatureGlyph(graph);
+          child.refreshSequenceFeature(graph);
         }
       }
 
@@ -752,7 +767,7 @@ export class GraphService {
     /**
      * Returns the circuit container associated with this cell.
      */
-    mx.mxCell.prototype.getCircuitContainer = function () {
+    mx.mxCell.prototype.getCircuitContainer = function() {
       if (this.isSequenceFeatureGlyph()) {
         for (let child of this.children) {
           if (child.isCircuitContainer()) {
@@ -768,6 +783,14 @@ export class GraphService {
       return null;
     };
 
+    mx.mxCell.prototype.getParentCircuitContainer = function() {
+      if (this.isSequenceFeatureGlyph()) {
+        return this.getParent();
+      } else {
+        return null;
+      }
+    };
+
     /**
      * Returns the metadata associated with this cell.
      * Usually this cell will be a glyph.
@@ -776,7 +799,7 @@ export class GraphService {
       if (this.isSequenceFeatureGlyph()) {
         return this.data;
       }
-    }
+    };
 
     /**
      * Replaces this cell's geometry in an undo friendly way
@@ -803,7 +826,7 @@ export class GraphService {
       }
 
       graph.getModel().setGeometry(this, newGeo);
-    }
+    };
 
     /**
      * This method callsRefreshCircuitContainer on every
