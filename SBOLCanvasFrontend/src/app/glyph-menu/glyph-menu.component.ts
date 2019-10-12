@@ -23,7 +23,6 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   public miscDict = {};
 
   public componentDefinitionMode = false;
-  private dnaButtonEnabled = true;
 
   constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer, private metadataService: MetadataService) {
   }
@@ -85,15 +84,5 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
   componentDefinitionModeUpdated(newSetting: boolean) {
     this.componentDefinitionMode = newSetting;
-
-    // If we are in component definition mode, we cannot add new strands.
-    // We can expect that there will always be exactly one component definition
-    // already present in the graph.
-    // if (this.componentDefinitionMode) {
-    //   this.dnaButtonEnabled = true;
-    // }
-    // else {
-    //   this.dnaButtonEnabled = false;
-    // }
   }
 }

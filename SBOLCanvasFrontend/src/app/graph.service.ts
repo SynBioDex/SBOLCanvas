@@ -298,7 +298,7 @@ export class GraphService {
    */
   zoom() {
     let selection = this.graph.getSelectionCells();
-    if (selection.length !== 1) {
+    if (selection.length != 1) {
       return;
     }
 
@@ -308,6 +308,9 @@ export class GraphService {
 
     this.editor.execute('enterGroup');
     this.drillDepth++;
+
+    // Broadcast to the UI that we are now in component definition mode
+    this.metadataService.setComponentDefinitionMode(true);
   }
 
   /**
@@ -325,6 +328,11 @@ export class GraphService {
       // We call this here when we zoom out to synchronize
       // the current graph vertices with the showing scars setting
       this.setAllScars(this.showingScars);
+    }
+
+    // Broadcast to the UI that we are no longer in component definition mode
+    if (this.drillDepth < 1) {
+      this.metadataService.setComponentDefinitionMode(false);
     }
   }
 
