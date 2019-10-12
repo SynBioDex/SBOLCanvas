@@ -8,6 +8,7 @@ public class MxCell {
 	private boolean vertex;
 	private boolean connectable;
 	private int parent;
+	private boolean collapsed;
 	private MxGeometry geometry;
 	// transient prevents this field from making it to json
 	private transient GlyphInfo info;
@@ -74,6 +75,14 @@ public class MxCell {
 
 	public void setStyle(String style) {
 		this.style = style;
+	}
+	
+	public boolean isCollapsed() {
+		return collapsed;
+	}
+	
+	public void setCollapsed(boolean collapsed) {
+		this.collapsed = collapsed;
 	}
 
 	@Override
