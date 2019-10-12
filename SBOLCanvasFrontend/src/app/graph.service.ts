@@ -147,7 +147,8 @@ export class GraphService {
       // no selection? multiple selections? can't display metadata
       this.nullifyMetadata();
       return;
-    } else {
+    }
+    else {
       let cell = cells[0];
 
       if (cell.isCircuitContainer()) {
@@ -207,7 +208,7 @@ export class GraphService {
   }
 
   /**
-   * Sets all scars in the current graph
+   * Sets all scars in the current view
    * @param isCollapsed
    */
   setAllScars(isCollapsed: boolean) {
@@ -695,7 +696,7 @@ export class GraphService {
       // Shape is a line, not rectangle, so any non-zero height is fine
       let height = 1;
 
-      this.getBackbone().replaceGeometry('auto', 'auto', width, height, graph);
+      this.getBackbone().replaceGeometry('auto', sequenceFeatureGlyphHeight/2, width, height, graph);
     };
 
     mx.mxCell.prototype.refreshSequenceFeature = function(graph) {
@@ -735,7 +736,7 @@ export class GraphService {
         return;
       }
 
-      // Refresh all subglyphs
+      // Refresh all children sequence features
       for (let child of this.children) {
         if (child.isSequenceFeatureGlyph()) {
           child.refreshSequenceFeature(graph);
@@ -744,15 +745,12 @@ export class GraphService {
 
       // refresh backbone (width, height)
       this.refreshBackbone(graph);
-      // place backbone (x, y) relative to the confines of the given circuit container.
-      this.getBackbone().replaceGeometry(
-        0, sequenceFeatureGlyphHeight/2, 'auto', 'auto', graph);
 
       // verify own width, height
       this.replaceGeometry(
         'auto', 'auto', this.getBackbone().getGeometry().width, sequenceFeatureGlyphHeight, graph);
 
-      // put it first in the children array so it is drawn before glyphs
+      // put the backbone first in the children array so it is drawn before glyphs
       // (meaning it appears behind them)
       graph.getModel().add(this, this.getBackbone(), 0);
 
