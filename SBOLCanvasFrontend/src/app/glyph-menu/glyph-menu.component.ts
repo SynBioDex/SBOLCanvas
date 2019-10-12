@@ -23,17 +23,20 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   public miscDict = {};
 
   public componentDefinitionMode = false;
-  private dnaButtonEnabled = true;
 
   constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer: DomSanitizer, private metadataService: MetadataService) {
   }
 
   onSequenceFeatureGlyphClicked(name: string) {
-    this.graphService.addSequenceFeatureGlyph(name);
+    this.graphService.addSequenceFeature(name);
   }
 
   onMolecularSpeciesGlyphClicked(name: string) {
-    this.graphService.addMolecularSpeciesGlyph(name);
+    this.graphService.addMolecularSpecies(name);
+  }
+
+  onInteractionGlyphClicked(name: string) {
+    this.graphService.addInteraction(name);
   }
 
   ngOnInit() {
@@ -79,21 +82,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     this.graphService.addTextBox();
   }
 
-  addInteraction() {
-    this.graphService.addInteraction();
-  }
 
   componentDefinitionModeUpdated(newSetting: boolean) {
     this.componentDefinitionMode = newSetting;
-
-    // If we are in component definition mode, we cannot add new strands.
-    // We can expect that there will always be exactly one component definition
-    // already present in the graph.
-    // if (this.componentDefinitionMode) {
-    //   this.dnaButtonEnabled = true;
-    // }
-    // else {
-    //   this.dnaButtonEnabled = false;
-    // }
   }
 }
