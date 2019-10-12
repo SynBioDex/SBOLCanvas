@@ -404,25 +404,25 @@ export class GraphService {
       this.graph.getModel().beginUpdate();
       try {
         // Insert new glyph and its components
-        const glyphCell = this.graph.insertVertex(parentCircuitContainer, null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
-        const glyphCircuitContainer = this.graph.insertVertex(glyphCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
-        const glyphBackbone = this.graph.insertVertex(glyphCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
+        const sequenceFeatureCell = this.graph.insertVertex(parentCircuitContainer, null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
+        const childCircuitContainer = this.graph.insertVertex(sequenceFeatureCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
+        const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
 
-        glyphCell.data = new GlyphInfo();
-        glyphCell.data.partRole = name;
+        sequenceFeatureCell.data = new GlyphInfo();
+        sequenceFeatureCell.data.partRole = name;
 
-        glyphCell.setCollapsed(true);
+        sequenceFeatureCell.setCollapsed(true);
 
-        glyphBackbone.setConnectable(false);
-        glyphCircuitContainer.setConnectable(false);
-        glyphCell.setConnectable(false);
+        childCircuitContainerBackbone.setConnectable(false);
+        childCircuitContainer.setConnectable(false);
+        sequenceFeatureCell.setConnectable(false);
 
         // Refreshes the parent
         parentCircuitContainer.refreshSequenceFeature(this.graph);
 
         // The new glyph should be selected
         this.graph.clearSelection();
-        this.graph.setSelectionCell(glyphCell);
+        this.graph.setSelectionCell(sequenceFeatureCell);
       } finally {
         this.graph.getModel().endUpdate();
       }
@@ -643,9 +643,11 @@ export class GraphService {
     mx.mxCell.prototype.getSequenceFeatureGlyph = function() {
       if (this.isSequenceFeatureGlyph()) {
         return this;
-      } else if (this.isBackbone()) {
+      }
+      else if (this.isBackbone()) {
         return this.getParent().getSequenceFeatureGlyph();
-      } else if (this.isCircuitContainer()) {
+      }
+      else if (this.isCircuitContainer()) {
         if (this.getParent().isSequenceFeatureGlyph()) {
           return this.getParent();
         } else {
@@ -708,16 +710,8 @@ export class GraphService {
         return;
       }
 
-      // verify own width and height
-      //this.replaceGeometry('auto', 'auto', sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, graph);
-
       // format circuitContainer (width, height, subcomponents)
       this.refreshCircuitContainer(graph);
-
-      // place circuitContainer (x, y)
-      let x = (this.getCircuitContainer().getGeometry().width / -2) + (sequenceFeatureGlyphWidth / 2);
-      let y = sequenceFeatureGlyphHeight * 1.5;
-      this.getCircuitContainer().replaceGeometry(x, y, 'auto', 'auto', graph);
     };
 
     /**
@@ -742,7 +736,7 @@ export class GraphService {
 
       // refresh backbone (width, height)
       this.refreshBackbone(graph);
-      // place backbone (x, y)
+      // place backbone (x, y) relative to the confines of the given circuit container.
       this.getBackbone().replaceGeometry(
         0, sequenceFeatureGlyphHeight/2, 'auto', 'auto', graph);
 
