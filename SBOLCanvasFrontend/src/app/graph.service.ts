@@ -188,8 +188,18 @@ export class GraphService {
     this.metadataService.setSelectedGlyphInfo(null);
   }
 
-  addInteraction() {
+  addInteraction(name: string) {
+    // var e1 = this.graph.insertEdge(this.graph.getDefaultParent(), null, '', null, null, 'dashed=1;'+
+    //   'startArrow=oval;endArrow=block;sourcePerimeterSpacing=4;startFill=0;endFill=0;');
+    var cell = new mx.mxCell('your text', new mx.mxGeometry(0, 0, 50, 50), 'curved=1;endArrow=classic;html=1;');
+    cell.geometry.setTerminalPoint(new mx.mxPoint(50, 150), true);
+    cell.geometry.setTerminalPoint(new mx.mxPoint(150, 50), false);
 
+    cell.geometry.relative = true;
+    cell.edge = true;
+
+    cell = this.graph.addCell(cell);
+    this.graph.fireEvent(new mx.mxEventObject('cellsInserted', 'cells', [cell]));
   }
 
   /**
@@ -403,7 +413,7 @@ export class GraphService {
   /**
    * Drops a new glyph onto the selected backbone
    */
-  addSequenceFeatureGlyph(name) {
+  addSequenceFeature(name) {
     // Don't do anything if it is a scar and were not showing them.
     if (name.includes(scarStyleName) && !this.showingScars) { this.toggleScars(); }
 
@@ -441,7 +451,7 @@ export class GraphService {
   /**
    * Drops a new floating element on the canvas
    */
-  addMolecularSpeciesGlyph(name) {
+  addMolecularSpecies(name) {
     this.graph.getModel().beginUpdate();
     try {
       const glyphCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0,

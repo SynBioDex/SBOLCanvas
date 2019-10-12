@@ -28,11 +28,15 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   onSequenceFeatureGlyphClicked(name: string) {
-    this.graphService.addSequenceFeatureGlyph(name);
+    this.graphService.addSequenceFeature(name);
   }
 
   onMolecularSpeciesGlyphClicked(name: string) {
-    this.graphService.addMolecularSpeciesGlyph(name);
+    this.graphService.addMolecularSpecies(name);
+  }
+
+  onInteractionGlyphClicked(name: string) {
+    this.graphService.addInteraction(name);
   }
 
   ngOnInit() {
@@ -78,9 +82,6 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     this.graphService.addTextBox();
   }
 
-  addInteraction() {
-    this.graphService.addInteraction();
-  }
 
   componentDefinitionModeUpdated(newSetting: boolean) {
     this.componentDefinitionMode = newSetting;
