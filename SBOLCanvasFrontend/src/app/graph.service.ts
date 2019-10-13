@@ -35,9 +35,11 @@ const circuitContainerStyleName           = 'circuitContainer';
 const backboneStyleName                   = 'backbone';
 const textboxStyleName                    = 'textBox';
 const scarStyleName                       = 'Scar (Assembly Scar)';
+const interactionPortStyleName            = 'interactionPort';
 const molecularSpeciesGlyphBaseStyleName  = 'molecularSpeciesGlyph';
 const sequenceFeatureGlyphBaseStyleName   = 'sequenceFeatureGlyph';
 const interactionGlyphBaseStyleName       = 'interactionGlyph';
+
 
 @Injectable({
   providedIn: 'root'
@@ -77,9 +79,8 @@ export class GraphService {
     this.graphContainer.style.left = '0';
     this.graphContainer.style.right = '0';
 
-    mx.mxGraphHandler.prototype.guidesEnabled = true;
-
-    mx.mxShape.prototype.svgStrokeTolerance = 20;
+    //mx.mxGraphHandler.prototype.guidesEnabled = true;
+    //mx.mxConnectionHandler.prototype.outlineConnect = false; // Doesn't see to do anything
 
     // mxEditor is kind of a parent to mxGraph
     // it's used mainly for 'actions', which for now means delete, later will mean undoing
@@ -92,7 +93,8 @@ export class GraphService {
     // This allows us to drag the ends of edges wherever we want when it is set to true.
     // Also, for some reason if this is set to false, we cannot connect edges to
     // stencils (glyphs).
-    this.graph.setAllowDanglingEdges(false);
+    this.graph.setAllowDanglingEdges(true);
+    this.graph.setTolerance(20);
 
 
     // Enables rubberband selection
@@ -113,9 +115,7 @@ export class GraphService {
     this.initStyles();
     this.initCustomShapes();
     this.initSequenceFeatureGlyphMovement();
-    this.initConnectionHandler()
-
-    const defaultGetStyle = this.graph.model.getStyle;
+    this.initConnectionSettings();
   }
 
   handleSelectionChange(sender, evt) {
@@ -421,22 +421,25 @@ export class GraphService {
         const childCircuitContainer = this.graph.insertVertex(sequenceFeatureCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
         const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
 
-        const interactionPort = this.graph.insertVertex(sequenceFeatureCell, null, '', .5, 0, interactionPortWidth, interactionPortWidth, 'fillColor=#ffffff;');
-        //interactionPort.geometry.offset = new mx.mxPoint(-1 * interactionPortWidth / 2, -1 * interactionPortWidth / 2);
-        interactionPort.geometry.relative = true;
-
+        // Add an interaction port to the sequence feature glyph's parent circuit container.
+        // const interactionPort = this.graph.insertVertex(sequenceFeatureCell, null, '', .5, 0, interactionPortWidth, interactionPortWidth, interactionPortStyleName);
+        // interactionPort.geometry.offset = new mx.mxPoint(0, -1 * interactionPortWidth);
+        // interactionPort.geometry.relative = true;
 
         sequenceFeatureCell.data = new GlyphInfo();
         sequenceFeatureCell.data.partRole = name;
 
         sequenceFeatureCell.setCollapsed(true);
+        //childCircuitContainer.setVisible(false);
+        //interactionPort.setVisible(true);
+        //interactionPort.setCollapsed(false);
 
-        childCircuitContainerBackbone.setConnectable(true);
-        childCircuitContainer.setConnectable(true);
+        childCircuitContainerBackbone.setConnectable(false);
+        childCircuitContainer.setConnectable(false);
         sequenceFeatureCell.setConnectable(true);
 
         // Refreshes the parent
-        parentCircuitContainer.refreshSequenceFeature(this.graph);
+        parentCircuitContainer.refreshCircuitContainer(this.graph);
 
         // The new glyph should be selected
         this.graph.clearSelection();
@@ -615,7 +618,7 @@ export class GraphService {
       if (!this.style)
         return false;
       return this.style.includes(styleName);
-    }
+    };
 
     mx.mxCell.prototype.isBackbone = function() {
       return this.isStyle(backboneStyleName);
@@ -631,10 +634,14 @@ export class GraphService {
 
     mx.mxCell.prototype.isSequenceFeatureGlyph = function() {
       return this.isStyle(sequenceFeatureGlyphBaseStyleName);
-    }
+    };
 
     mx.mxCell.prototype.isScar = function() {
       return this.isStyle(scarStyleName);
+    };
+
+    mx.mxCell.prototype.isInteractionPort = function() {
+      return this.isStyle(interactionPortStyleName);
     };
 
     /**
@@ -694,7 +701,7 @@ export class GraphService {
      * Positions and sizes the backbone associated with this cell
      */
     mx.mxCell.prototype.refreshBackbone = function(graph) {
-      if (this.isSequenceFeatureGlyph() || this.isBackbone()) {
+      if (this.isBackbone()) {
         this.getCircuitContainer().refreshBackbone(graph);
         return;
       } else if (!this.isCircuitContainer()) {
@@ -722,27 +729,13 @@ export class GraphService {
     };
 
     mx.mxCell.prototype.refreshSequenceFeature = function(graph) {
-      if (this.isBackbone()) {
-        this.getParent().refreshSequenceFeature(graph);
-        return
-      }
-      else if (this.isCircuitContainer()) {
-        if (this.getSequenceFeatureGlyph()) {
-          this.getSequenceFeatureGlyph().refreshSequenceFeature(graph);
-        }
-        else {
-          // top level circuitContainers have no containing sequenceFeatureGlyph; just refresh this instead
-          this.refreshCircuitContainer(graph);
-        }
-        return;
-      }
-      else if (!this.isSequenceFeatureGlyph()) {
+      if (!this.isSequenceFeatureGlyph()) {
         console.error("refreshSequenceFeature: called on an invalid cell!");
         return;
       }
 
-      // format circuitContainer (width, height, subcomponents)
-      this.refreshCircuitContainer(graph);
+      // format our child circuitContainer (width, height, subcomponents)
+      this.getCircuitContainer().refreshCircuitContainer(graph);
     };
 
     /**
@@ -750,18 +743,19 @@ export class GraphService {
      * also refreshes the backbone.
      */
     mx.mxCell.prototype.refreshCircuitContainer = function(graph) {
-      if (this.isSequenceFeatureGlyph()) {
-        this.getCircuitContainer().refreshCircuitContainer(graph);
-        return;
-      } else if (!this.isCircuitContainer()) {
+      if (!this.isCircuitContainer()) {
         console.error("refreshCircuitContainer: called on an invalid cell!");
         return;
       }
 
-      // Refresh all children sequence features
+      // Refresh all children sequence features and their respective interaction ports
+      let portCount = 0;
       for (let child of this.children) {
         if (child.isSequenceFeatureGlyph()) {
           child.refreshSequenceFeature(graph);
+        }
+        else if (child.isInteractionPort()) {
+
         }
       }
 
@@ -928,6 +922,9 @@ export class GraphService {
     this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     this.baseGlyphStyle[mx.mxConstants.STYLE_ROTATION] = 0;
+    //this.baseGlyphStyle[mx.mxConstants.DEFAULT_HOTSPOT] = 0; // globally...
+    //this.baseGlyphStyle[mx.mxConstants.STYLE_PERIMETER] = 'orthogonalPerimeter'; // puts connection constraints in exact middle of cell...
+    //this.baseGlyphStyle[mx.mxConstants.ACTIVE_REGION] = 1;
 
     const textBoxStyle = {};
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
@@ -959,8 +956,13 @@ export class GraphService {
     // Interaction styles
     const interactionControlSpecification = {};
     interactionControlSpecification[mx.mxConstants.STYLE_ENDARROW] = mx.mxConstants.ARROW_DIAMOND;
-    //interactionControlSpecification[mx.mxConstants.STYLE_EDGE] = mx.mxConstants.EDGESTYLE_ORTHOGONAL;
+    interactionControlSpecification[mx.mxConstants.STYLE_EDGE] = mx.mxConstants.EDGESTYLE_ORTHOGONAL;
     this.graph.getStylesheet().putCellStyle(interactionGlyphBaseStyleName + 'control', interactionControlSpecification);
+
+    // Interaction Port style
+    const interactionPortStyle = {};
+    interactionPortStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
+    this.graph.getStylesheet().putCellStyle(interactionPortStyleName, interactionPortStyle);
   }
 
   /**
@@ -968,32 +970,6 @@ export class GraphService {
    * saves them to mxGraph's shape registry
    */
   initCustomShapes() {
-    // Overridden to define per-shape connection points
-    // mx.mxGraph.prototype.getAllConnectionConstraints = function(terminal, source)
-    // {
-    //   if (terminal != null && terminal.shape != null)
-    //   {
-    //     if (terminal.shape.stencil != null)
-    //     {
-    //       if (terminal.shape.stencil != null)
-    //       {
-    //         return terminal.shape.stencil.constraints;
-    //       }
-    //     }
-    //     else if (terminal.shape.constraints != null)
-    //     {
-    //       return terminal.shape.constraints;
-    //     }
-    //   }
-    //
-    //   return null;
-    // };
-
-
-
-    // Edges have no connection points
-    //mx.mxPolyline.prototype.constraints = null;
-
 
     let stencils = this.glyphService.getSequenceFeatureGlyphs();
 
@@ -1019,21 +995,11 @@ export class GraphService {
         }
       }
 
-      // Defines the default constraints for all shapes
-      // customStencil.constraints = [
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(0.25, 0), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(0.75, 0), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(0, 0.25), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(0, 0.5), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(0, 0.75), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(1, 0.25), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(1, 0.5), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(1, 0.75), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(0.25, 1), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), true),
-      //   new mx.mxConnectionConstraint(new mx.mxPoint(0.75, 1), true)
-      // ];
+      // Defines the connection constraints for all sequence features
+      customStencil.constraints = [
+        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), true),
+        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), true)
+      ];
 
       // Add the stencil to the registry and set its style.
       mx.mxStencilRegistry.addStencil(name, customStencil);
@@ -1049,6 +1015,14 @@ export class GraphService {
     for (const name in stencils) {
       const stencil = stencils[name][0];
       let customStencil = new mx.mxStencil(stencil.desc);
+
+      // Defines the default constraints for all molecular species
+      customStencil.constraints = [
+        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), true),
+        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), true),
+        new mx.mxConnectionConstraint(new mx.mxPoint(0, .5), true),
+        new mx.mxConnectionConstraint(new mx.mxPoint(1, .5), true)
+      ];
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
       const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
@@ -1138,206 +1112,31 @@ export class GraphService {
     });
   }
 
+  initConnectionSettings() {
 
+    // Overrides highlight shape for connection points
+    mx.mxConstraintHandler.prototype.createHighlightShape = function () {
+      var hl = new mx.mxEllipse(null, this.highlightColor, this.highlightColor, 0);
+      hl.opacity = mx.mxConstants.HIGHLIGHT_OPACITY;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  initConnectionHandler() {
-    // Overrides target perimeter point for connection previews
-    mx.mxConnectionHandler.prototype.getTargetPerimeterPoint = function(state, me)
-    {
-      // Determines the y-coordinate of the target perimeter point
-      // by using the currentRowNode assigned in updateRow
-      var y = me.getY();
-
-      if (this.currentRowNode != null)
-      {
-        y = this.getRowY(state, this.currentRowNode);
-      }
-
-      // Checks on which side of the terminal to leave
-      var x = state.x;
-
-      if (this.previous.getCenterX() > state.getCenterX())
-      {
-        x += state.width;
-      }
-
-      return new mx.mxPoint(x, y);
+      return hl;
     };
 
-    // Overrides source perimeter point for connection previews
-    mx.mxConnectionHandler.prototype.getSourcePerimeterPoint = function(state, next, me)
-    {
-      var y = me.getY();
+    // Overriding this method makes it so connection constraints on sequence features
+    // stay visible when trying to create an interaction.
+    let origIsKeepFocusEvent = mx.mxConstraintHandler.prototype.isKeepFocusEvent;
+    mx.mxConstraintHandler.prototype.isKeepFocusEvent = function (me) {
 
-      if (this.sourceRowNode != null)
-      {
-        y = this.getRowY(state, this.sourceRowNode);
-      }
-
-      // Checks on which side of the terminal to leave
-      var x = state.x;
-
-      if (next.x > state.getCenterX())
-      {
-        x += state.width;
-      }
-
-      return new mx.mxPoint(x, y);
-    };
-
-    // Disables connections to invalid rows
-    mx.mxConnectionHandler.prototype.isValidTarget = function(cell)
-    {
-      return this.currentRowNode != null;
-    };
-
-    // Adds a new function to update the currentRow based on the given event
-    // and return the DOM node for that row
-    this.graph.connectionHandler.updateColumn = function(target)
-    {
-      while (target != null && target.nodeName != 'TR')
-      {
-        target = target.parentNode;
-      }
-
-      this.currentRow = null;
-
-      // Checks if we're dealing with a row in the correct table
-      if (target != null && target.parentNode.parentNode.className == 'erd')
-      {
-        // Stores the current row number in a property so that it can
-        // be retrieved to create the preview and final edge
-        var rowNumber = 0;
-        var current = target.parentNode.firstChild;
-
-        while (target != current && current != null)
-        {
-          current = current.nextSibling;
-          rowNumber++;
+      // Ignore circuit containers and backbones so that the focus stays
+      // on the sequence feature, and thus the anchor points stay visible.
+      if (me.state != undefined && me.state.cell != undefined) {
+        if (me.state.cell.isCircuitContainer() || me.state.cell.isBackbone()) {
+          console.debug("mx.mxConstraintHandler.prototype.isKeepFocusEvent: Keeping focus.")
+          return true;
         }
-
-        this.currentRow = rowNumber + 1;
-      }
-      else
-      {
-        target = null;
       }
 
-      return target;
+      return origIsKeepFocusEvent.apply(this, arguments);
     };
-
-    // Adds placement of the connect icon based on the mouse event target (row)
-    // this.graph.connectionHandler.updateIcons = function(state, icons, me)
-    // {
-    //   var target = me.getSource();
-    //   target = this.updateRow(target);
-    //
-    //   if (target != null && this.currentRow != null)
-    //   {
-    //     var div = target.parentNode.parentNode.parentNode;
-    //     var s = state.view.scale;
-    //
-    //     icons[0].node.style.visibility = 'visible';
-    //     icons[0].bounds.x = state.x + target.offsetLeft + Math.min(state.width,
-    //       target.offsetWidth * s) - this.icons[0].bounds.width - 2;
-    //     icons[0].bounds.y = state.y - this.icons[0].bounds.height / 2 + (target.offsetTop +
-    //       target.offsetHeight / 2 - div.scrollTop + div.offsetTop) * s;
-    //     icons[0].redraw();
-    //
-    //     this.currentRowNode = target;
-    //   }
-    //   else
-    //   {
-    //     icons[0].node.style.visibility = 'hidden';
-    //   }
-    // };
-
-    // Updates the targetRow in the preview edge State
-    var oldMouseMove = this.graph.connectionHandler.mouseMove;
-    this.graph.connectionHandler.mouseMove = function(sender, me)
-    {
-      if (this.edgeState != null)
-      {
-        this.currentRowNode = this.updateRow(me.getSource());
-
-        if (this.currentRow != null)
-        {
-          this.edgeState.cell.value.setAttribute('targetRow', this.currentRow);
-        }
-        else
-        {
-          this.edgeState.cell.value.setAttribute('targetRow', '0');
-        }
-
-        // Destroys icon to prevent event redirection via image in IE
-        this.destroyIcons();
-      }
-
-      oldMouseMove.apply(this, arguments);
-    };
-
   }
-
-  // Defines global helper function to get y-coordinate for a given cell state and row
-  getRowY(state, tr)
-  {
-    var s = state.view.scale;
-    var div = tr.parentNode.parentNode.parentNode;
-    var offsetTop = parseInt(div.style.top);
-    var y = state.y + (tr.offsetTop + tr.offsetHeight / 2 - div.scrollTop + offsetTop) * s;
-    y = Math.min(state.y + state.height, Math.max(state.y + offsetTop * s, y));
-
-    return y;
-  };
 }
