@@ -150,42 +150,33 @@ export class GraphService {
    */
   updateAngularMetadata(cells) {
 
+    // Start with null data.
+    this.nullifyMetadata()
+
     if (!cells || cells.length != 1) {
       // no selection? multiple selections? can't display metadata
-      this.nullifyMetadata();
       return;
     }
     else {
       let cell = cells[0];
 
-      if (cell.isCircuitContainer()) {
-        // selecting a whole strand should be the same as selecting the
-        // glyph it defines, so change the reference and continue
-        cell = cell.getSequenceFeatureGlyph();
-
-        // TODO glyphInfo for top-level circuit containers
-        if (!cell) {
-          this.nullifyMetadata();
-          return;
-        }
-      }
-
-      if (cell.isSequenceFeatureGlyph()) {
-
+      if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
         let color = this.graph.getCellStyle(cell)['strokeColor'];
         this.metadataService.setColor(color);
 
-        const glyphInfo = cell.getGlyphMetadata();
+        const glyphInfo = cell.data;
         if(glyphInfo) {
           this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
-        } else {
-          this.metadataService.setSelectedGlyphInfo(null);
         }
-
       }
-      else {
-        // No metatdata associated with this cell
-        this.nullifyMetadata()
+      else if (cell.isInteraction()) {
+        let color = this.graph.getCellStyle(cell)['strokeColor'];
+        this.metadataService.setColor(color);
+
+        let interactionInfo = cell.data
+        if (interactionInfo) {
+          this.metadataService.setSelectedInteractionInfo(interactionInfo);
+        }
       }
     }
   }
@@ -193,6 +184,7 @@ export class GraphService {
   nullifyMetadata() {
     this.metadataService.setColor(null);
     this.metadataService.setSelectedGlyphInfo(null);
+    this.metadataService.setSelectedInteractionInfo(null);
   }
 
 
@@ -421,18 +413,10 @@ export class GraphService {
         const childCircuitContainer = this.graph.insertVertex(sequenceFeatureCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
         const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
 
-        // Add an interaction port to the sequence feature glyph's parent circuit container.
-        // const interactionPort = this.graph.insertVertex(sequenceFeatureCell, null, '', .5, 0, interactionPortWidth, interactionPortWidth, interactionPortStyleName);
-        // interactionPort.geometry.offset = new mx.mxPoint(0, -1 * interactionPortWidth);
-        // interactionPort.geometry.relative = true;
-
         sequenceFeatureCell.data = new GlyphInfo();
         sequenceFeatureCell.data.partRole = name;
 
         sequenceFeatureCell.setCollapsed(true);
-        //childCircuitContainer.setVisible(false);
-        //interactionPort.setVisible(true);
-        //interactionPort.setCollapsed(false);
 
         childCircuitContainerBackbone.setConnectable(false);
         childCircuitContainer.setConnectable(false);
@@ -456,13 +440,15 @@ export class GraphService {
   addMolecularSpecies(name) {
     this.graph.getModel().beginUpdate();
     try {
-      const glyphCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0,
+      const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0,
         molecularSpeciesGlyphWidth, molecularSpeciesGlyphHeight, molecularSpeciesGlyphBaseStyleName + name);
-      glyphCell.setConnectable(true);
+      molecularSpeciesGlyph.setConnectable(true);
+
+      molecularSpeciesGlyph.data = new GlyphInfo();
 
       // The new glyph should be selected
       this.graph.clearSelection();
-      this.graph.setSelectionCell(glyphCell);
+      this.graph.setSelectionCell(molecularSpeciesGlyph);
     } finally {
       this.graph.getModel().endUpdate();
     }
@@ -550,7 +536,7 @@ export class GraphService {
     const selectedCell = this.graph.getSelectionCell();
 
     if (selectedCell != null && selectedCell.isSequenceFeatureGlyph()) {
-      const cellData = selectedCell.getGlyphMetadata();
+      const cellData = selectedCell.data;
       if (cellData != null) {
         cellData.copyDataFrom(glyphInfo);
       }
@@ -643,6 +629,10 @@ export class GraphService {
     mx.mxCell.prototype.isInteractionPort = function() {
       return this.isStyle(interactionPortStyleName);
     };
+
+    mx.mxCell.prototype.isInteraction = function() {
+      return this.isStyle(interactionGlyphBaseStyleName);
+    }
 
     /**
      * Returns the id of the cell's highest ancestor
@@ -804,16 +794,6 @@ export class GraphService {
         return this.getParent();
       } else {
         return null;
-      }
-    };
-
-    /**
-     * Returns the metadata associated with this cell.
-     * Usually this cell will be a glyph.
-     */
-    mx.mxCell.prototype.getGlyphMetadata = function() {
-      if (this.isSequenceFeatureGlyph()) {
-        return this.data;
       }
     };
 
@@ -1137,6 +1117,15 @@ export class GraphService {
       }
 
       return origIsKeepFocusEvent.apply(this, arguments);
+    };
+
+    let mxConnectionHandlerInsertEdge = mx.mxConnectionHandler.prototype.insertEdge;
+    mx.mxConnectionHandler.prototype.insertEdge = function(parent, id, value, source, target, style)
+    {
+      value = 'Test';
+      style = this.graph.getStinteractionGlyphBaseStyleName + 'control';
+
+      return mxConnectionHandlerInsertEdge.apply(this, [parent, id, value, source, target, style]);
     };
   }
 }

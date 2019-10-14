@@ -65,7 +65,7 @@
     <mat-form-field>
       <mat-label>Sequence encoding</mat-label>
       <mat-select id="sequenceEncoding" value="{{glyphInfo.encoding}}" (selectionChange)="dropDownChange($event)">
-        <mat-option *ngFor="let encoding of encoidings" [value]="encoding">
+        <mat-option *ngFor="let encoding of encodings" [value]="encoding">
           {{encoding}}
         </mat-option>
       </mat-select>
@@ -76,5 +76,7 @@
     </mat-form-field>
 
 </div>
+<div *ngIf="interactionInfo != null" class="info-menu-container">
 
 
+</div>

@@ -1,5 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
+import { InteractionInfo } from "../InteractionInfo";
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 import { MatSelectChange } from '@angular/material';
@@ -22,6 +23,7 @@ export class InfoEditorComponent implements OnInit {
   encodings:string[];
 
   glyphInfo: GlyphInfo;
+  interactionInfo: InteractionInfo;
 
   constructor(private graphService: GraphService, private metadataService: MetadataService) { }
 
@@ -109,13 +111,20 @@ export class InfoEditorComponent implements OnInit {
    */
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
-    if(glyphInfo != null){
+    if (glyphInfo != null){
       if(glyphInfo.partRole != null){
         this.getRefinements(glyphInfo.partRole);
       }else{
         this.partRefinements = [];
       }
     }
+  }
+
+  /**
+   * Updates both the interaction info int he form and in the graph.
+   */
+  interactionInfoUpdated(interactionInfo: InteractionInfo) {
+    this.interactionInfo = interactionInfo;
   }
 
 }

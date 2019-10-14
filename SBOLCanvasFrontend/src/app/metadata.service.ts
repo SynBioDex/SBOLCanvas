@@ -4,6 +4,7 @@ import { BehaviorSubject } from 'rxjs';
 import { Observable } from 'rxjs';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
+import {InteractionInfo} from "./InteractionInfo";
 
 @Injectable({
   providedIn: 'root'
@@ -45,6 +46,10 @@ export class MetadataService {
   private glyphInfoSource = new BehaviorSubject(null);
   selectedGlyphInfo = this.glyphInfoSource.asObservable();
 
+  // Interaction Info
+  private interactionInfoSource = new BehaviorSubject(null);
+  selectedInteractionInfo = this.interactionInfoSource.asObservable();
+
   // Color Info
   private colorSource = new BehaviorSubject(null);
   color = this.colorSource.asObservable();
@@ -75,6 +80,10 @@ export class MetadataService {
 
   setSelectedGlyphInfo(newInfo: GlyphInfo) {
     this.glyphInfoSource.next(newInfo);
+  }
+
+  setSelectedInteractionInfo(newInfo: InteractionInfo) {
+    this.interactionInfoSource.next(newInfo);
   }
 
   setColor(newColor: string) {
