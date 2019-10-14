@@ -1119,11 +1119,12 @@ export class GraphService {
       return origIsKeepFocusEvent.apply(this, arguments);
     };
 
+    // TODO: THIS DOESN'T WORK YET
     let mxConnectionHandlerInsertEdge = mx.mxConnectionHandler.prototype.insertEdge;
     mx.mxConnectionHandler.prototype.insertEdge = function(parent, id, value, source, target, style)
     {
       value = 'Test';
-      style = this.graph.getStylesheet().getCellStyle(interactionGlyphBaseStyleName + 'control');
+      style = this.graph.getStylesheet().getCellStyle(interactionGlyphBaseStyleName + 'control', 'endArrow=classic');
 
       return mxConnectionHandlerInsertEdge.apply(this, [parent, id, value, source, target, style]);
     };
