@@ -1,5 +1,6 @@
 package utils;
 
+import java.awt.Point;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -74,6 +75,7 @@ public class Converter {
 	private LinkedList<MxCell> proteins = new LinkedList<MxCell>();
 	private LinkedList<MxCell> textBoxes = new LinkedList<MxCell>();
 	private HashMap<Integer, Set<MxCell>> glyphSets = new HashMap<Integer, Set<MxCell>>();
+	private LinkedList<MxCell> edges = new LinkedList<MxCell>();
 	
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream) {
 		// convert the stream to a document
@@ -116,6 +118,8 @@ public class Converter {
 
 				createComponentDefinition(document, containerCD, containerCell, backboneCell);
 			}
+			
+			//TODO edges to interactions
 
 			// write to body
 			SBOLWriter.setKeepGoing(true);
@@ -267,6 +271,8 @@ public class Converter {
 			cell.setStyle(cellElement.getAttribute("style"));
 			if (cellElement.hasAttribute("vertex"))
 				cell.setVertex(Integer.parseInt(cellElement.getAttribute("vertex")) == 1);
+			if(cellElement.hasAttribute("edge"))
+				cell.setEdge(Integer.parseInt(cellElement.getAttribute("edge")) == 1);
 			if (cellElement.hasAttribute("connectable"))
 				cell.setConnectable(Integer.parseInt(cellElement.getAttribute("connectable")) == 1);
 			if(cellElement.hasAttribute("collapsed"))
@@ -275,6 +281,10 @@ public class Converter {
 				cell.setParent(Integer.parseInt(cellElement.getAttribute("parent")));
 			else
 				cell.setParent(-1);
+			if(cellElement.hasAttribute("source"))
+				cell.setSource(Integer.parseInt(cellElement.getAttribute("source")));
+			if(cellElement.hasAttribute("target"))
+				cell.setTarget(Integer.parseInt(cellElement.getAttribute("target")));
 
 			// geometry info
 			if (cellElement.getElementsByTagName("mxGeometry").getLength() > 0) {
@@ -288,6 +298,25 @@ public class Converter {
 					geometry.setWidth(Double.parseDouble(geoElement.getAttribute("width")));
 				if (geoElement.hasAttribute("height"))
 					geometry.setHeight(Double.parseDouble(geoElement.getAttribute("height")));
+				if(geoElement.getElementsByTagName("Array").getLength() > 0) {
+					LinkedList<Point> points = new LinkedList<Point>();
+					Element arrayElement = (Element) geoElement.getElementsByTagName("Array").item(0);
+					NodeList pointNodes = arrayElement.getElementsByTagName("mxPoint");
+					for(int pointIndex = 0; pointIndex <= pointNodes.getLength(); pointIndex++) {
+						Element pointElement = (Element)pointNodes.item(pointIndex);
+						Point point = new Point();
+						if(pointElement.hasAttribute("x"))
+							point.x = Integer.parseInt(pointElement.getAttribute("x"));
+						else
+							point.x = 0;
+						if(pointElement.hasAttribute("y"))
+							point.y = Integer.parseInt(pointElement.getAttribute("y"));
+						else
+							point.y = 0;
+						points.add(point);
+					}
+					geometry.setPoints(points);
+				}
 				cell.setGeometry(geometry);
 			}
 
@@ -306,7 +335,9 @@ public class Converter {
 				cell.setInfo(info);
 			}
 
-			if (cell.getStyle().contains("circuitContainer")) {
+			if(cell.isEdge()) {
+				edges.add(cell);
+			} else if (cell.getStyle().contains("circuitContainer")) {
 				if(containers.containsKey(cell.getParent())) {
 					containers.get(cell.getParent()).put(cell.getId(), cell);
 				}else {
