@@ -25,8 +25,9 @@ public class SynBioHub extends HttpServlet {
 	
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) {
 		Gson gson = new Gson();
+		String body = null;
+		response.addHeader("Access-Control-Allow-Origin", "*");
 		if(request.getPathInfo().equals("/registries")) {
-			String body = null;
 			List<WebOfRegistriesData> registries = null;
 			try {
 				registries = SynBioHubFrontend.getRegistries();
@@ -34,31 +35,37 @@ public class SynBioHub extends HttpServlet {
 				e.printStackTrace();
 			}
 			body = gson.toJson(registries);
-			
-			try {
-				ServletOutputStream outputStream = response.getOutputStream();
-				InputStream inputStream = new ByteArrayInputStream(body.getBytes());
-				IOUtils.copy(inputStream, outputStream);
-				
-				// the request was good
-				response.setStatus(HttpStatus.SC_OK);
-				response.addHeader("Access-Control-Allow-Origin", "*");
-				response.setContentType("application/json");
-				return;
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 		}
 		
 		String email = request.getParameter("email");
 		String password = request.getParameter("password");
 		String server = request.getParameter("server");
-		if(email == null || password == null || server == null || email.equals("") || password.equals("") || server.equals("")) {
-			response.setStatus(HttpStatus.SC_BAD_REQUEST);
-			return;
-		}
 		if(request.getPathInfo().equals("/listCollections")){
+			if(email == null || password == null || server == null || email.equals("") || password.equals("") || server.equals("")) {
+				response.setStatus(HttpStatus.SC_BAD_REQUEST);
+				return;
+			}
 			SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+			try {
+				sbhf.login(email, password);
+				body = gson.toJson(sbhf.getRootCollectionMetadata());
+				sbhf.logout();
+			} catch (SynBioHubException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		try {
+			ServletOutputStream outputStream = response.getOutputStream();
+			InputStream inputStream = new ByteArrayInputStream(body.getBytes());
+			IOUtils.copy(inputStream, outputStream);
+			
+			// the request was good
+			response.setStatus(HttpStatus.SC_OK);
+			response.setContentType("application/json");
+			return;
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
