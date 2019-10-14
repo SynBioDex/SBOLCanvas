@@ -1123,7 +1123,7 @@ export class GraphService {
     mx.mxConnectionHandler.prototype.insertEdge = function(parent, id, value, source, target, style)
     {
       value = 'Test';
-      style = this.graph.getStinteractionGlyphBaseStyleName + 'control';
+      style = this.graph.getStylesheet().getCellStyle(interactionGlyphBaseStyleName + 'control');
 
       return mxConnectionHandlerInsertEdge.apply(this, [parent, id, value, source, target, style]);
     };
