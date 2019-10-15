@@ -1,6 +1,6 @@
 package data;
 
-public class GlyphInfo {
+public class GlyphInfo extends Info {
 
 	private String partType;
 	private String partRole;

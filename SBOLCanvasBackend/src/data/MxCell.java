@@ -14,7 +14,7 @@ public class MxCell {
 	private boolean collapsed;
 	private MxGeometry geometry;
 	// transient prevents this field from making it to json
-	private transient GlyphInfo info;
+	private transient Info info;
 
 	public int getId() {
 		return id;
@@ -88,11 +88,11 @@ public class MxCell {
 		this.geometry = geometry;
 	}
 
-	public GlyphInfo getInfo() {
+	public Info getInfo() {
 		return info;
 	}
 
-	public void setInfo(GlyphInfo info) {
+	public void setInfo(Info info) {
 		this.info = info;
 	}
 

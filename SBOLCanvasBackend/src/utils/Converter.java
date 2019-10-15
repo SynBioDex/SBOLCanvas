@@ -47,6 +47,7 @@ import org.xml.sax.SAXException;
 import com.google.gson.Gson;
 
 import data.GlyphInfo;
+import data.InteractionInfo;
 import data.MxCell;
 import data.MxGeometry;
 
@@ -70,13 +71,14 @@ public class Converter {
 		}
 	};
 
-	private HashMap<Integer, HashMap<Integer, MxCell>> containers = new HashMap<Integer, HashMap<Integer,MxCell>>();
+	private HashMap<Integer, HashMap<Integer, MxCell>> containers = new HashMap<Integer, HashMap<Integer, MxCell>>();
 	private HashMap<Integer, MxCell> backbones = new HashMap<Integer, MxCell>();
 	private LinkedList<MxCell> proteins = new LinkedList<MxCell>();
 	private LinkedList<MxCell> textBoxes = new LinkedList<MxCell>();
 	private HashMap<Integer, Set<MxCell>> glyphSets = new HashMap<Integer, Set<MxCell>>();
 	private LinkedList<MxCell> edges = new LinkedList<MxCell>();
-	
+	private HashMap<Integer, MxCell> cells = new HashMap<Integer, MxCell>();
+
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream) {
 		// convert the stream to a document
 		Document graph = null;
@@ -100,26 +102,46 @@ public class Converter {
 		try {
 			// top level module definition that contains all strands and proteins
 			ModuleDefinition modDef = document.createModuleDefinition("CanvasModDef");
-			if(textBoxes.size() > 0) {
-			modDef.createAnnotation(new QName(uriPrefix, "textBoxes", annPrefix),
-					gson.toJson(textBoxes.toArray(new MxCell[0])));
+			if (textBoxes.size() > 0) {
+				modDef.createAnnotation(new QName(uriPrefix, "textBoxes", annPrefix),
+						gson.toJson(textBoxes.toArray(new MxCell[0])));
 			}
+
+			// create the proteins
+			/*for(MxCell protein : proteins) {
+				GlyphInfo proteinInfo = (GlyphInfo) protein.getInfo(); // not set currently
+				ComponentDefinition proteinCD = document.createComponentDefinition(protein.getId()+"", ComponentDefinition.PROTEIN);
+				proteinCD.addRole()
+			}*/
 			
 			// create the top level component definitions, aka strands
 			HashMap<Integer, MxCell> topContainers = containers.get(1);
 			for (MxCell containerCell : topContainers.values()) {
 				MxCell backboneCell = backbones.get(containerCell.getId());
 				ComponentDefinition containerCD = document.createComponentDefinition(
-						backboneCell.getInfo().getDisplayID(), ComponentDefinition.DNA_REGION);
+						((GlyphInfo) backboneCell.getInfo()).getDisplayID(), ComponentDefinition.DNA_REGION);
 				containerCD.addRole(SequenceOntology.ENGINEERED_REGION);
 
-				modDef.createFunctionalComponent(containerCD.getDisplayId(), AccessType.PUBLIC, containerCD.getIdentity(),
-						DirectionType.INOUT);
+				modDef.createFunctionalComponent(containerCD.getDisplayId(), AccessType.PUBLIC,
+						containerCD.getIdentity(), DirectionType.INOUT);
 
 				createComponentDefinition(document, containerCD, containerCell, backboneCell);
 			}
-			
-			//TODO edges to interactions
+
+			// TODO edges to interactions
+			/*for (MxCell edge : edges) {
+				if (edge.getSource() == 0 || edge.getTarget() == 0) {
+					continue;
+				}
+				InteractionInfo intInfo = (InteractionInfo) edge.getInfo();
+				GlyphInfo sourceInfo = (GlyphInfo) cells.get(edge.getSource()).getInfo();
+				GlyphInfo targetInfo = (GlyphInfo) cells.get(edge.getTarget()).getInfo();
+				
+				ComponentDefinition sourceCD = document.getComponentDefinition(sourceInfo.getDisplayID(), null);
+				ComponentDefinition targetCD = document.getComponentDefinition(targetInfo.getDisplayID(), null);
+				
+				
+			}*/
 
 			// write to body
 			SBOLWriter.setKeepGoing(true);
@@ -134,22 +156,21 @@ public class Converter {
 			// load the sbol file into the proper objects
 			SBOLDocument document = SBOLReader.read(sbolStream);
 			Set<ComponentDefinition> backboneCDs = document.getRootComponentDefinitions();
-			TreeSet<MxCell> cells = new TreeSet<MxCell>(idSorter);
 			ModuleDefinition modDef = document.getRootModuleDefinitions().iterator().next();
 			MxCell[] textBoxes = gson.fromJson(
 					modDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix)).getStringValue(),
 					MxCell[].class);
 			for (MxCell cell : textBoxes) {
-				cells.add(cell);
+				cells.put(cell.getId(), cell);
 			}
 
 			// top level component definitions
 			for (ComponentDefinition backboneCD : backboneCDs) {
-				sbolToMxGraphObjects(backboneCD, cells);
+				sbolToMxGraphObjects(backboneCD);
 			}
 
 			// convert the objects to the graph xml
-			graphStream.write(objectsToGraph(cells).getBytes());
+			graphStream.write(objectsToGraph().getBytes());
 
 		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException
 				| TransformerException e) {
@@ -197,18 +218,19 @@ public class Converter {
 			for (MxCell glyphCell : glyphs) {
 
 				// component definition
-				ComponentDefinition componentCD = document.createComponentDefinition(glyphCell.getInfo().getDisplayID(),
-						SBOLData.types.getValue(glyphCell.getInfo().getPartType()));
-				if (glyphCell.getInfo().getPartRefine() == null || glyphCell.getInfo().getPartRefine().equals("")) {
-					componentCD.addRole(SBOLData.roles.getValue(glyphCell.getInfo().getPartRole()));
+				GlyphInfo glyphInfo = (GlyphInfo) glyphCell.getInfo();
+				ComponentDefinition componentCD = document.createComponentDefinition(glyphInfo.getDisplayID(),
+						SBOLData.types.getValue(glyphInfo.getPartType()));
+				if (glyphInfo.getPartRefine() == null || glyphInfo.getPartRefine().equals("")) {
+					componentCD.addRole(SBOLData.roles.getValue(glyphInfo.getPartRole()));
 				} else {
-					componentCD.addRole(SBOLData.refinements.getValue(glyphCell.getInfo().getPartRefine()));
+					componentCD.addRole(SBOLData.refinements.getValue(glyphInfo.getPartRefine()));
 				}
-				componentCD.setName(glyphCell.getInfo().getName());
-				componentCD.setDescription(glyphCell.getInfo().getDescription());
+				componentCD.setName(glyphInfo.getName());
+				componentCD.setDescription(glyphInfo.getDescription());
 
 				// component
-				Component component = compDef.createComponent(glyphCell.getInfo().getDisplayID(), AccessType.PUBLIC,
+				Component component = compDef.createComponent(glyphInfo.getDisplayID(), AccessType.PUBLIC,
 						componentCD.getDisplayId());
 
 				// composite
@@ -222,9 +244,9 @@ public class Converter {
 				// sequence
 				if (!containers.containsKey(glyphCell.getId())) {
 					// component sequence
-					if (glyphCell.getInfo().getSequence() != null && !glyphCell.getInfo().getSequence().equals("")) {
+					if (glyphInfo.getSequence() != null && !glyphInfo.getSequence().equals("")) {
 						Sequence seq = document.createSequence(componentCD.getDisplayId() + "Sequence",
-								glyphCell.getInfo().getSequence(), Sequence.IUPAC_DNA);
+								glyphInfo.getSequence(), Sequence.IUPAC_DNA);
 						componentCD.addSequence(seq.getIdentity());
 					}
 				}
@@ -271,19 +293,19 @@ public class Converter {
 			cell.setStyle(cellElement.getAttribute("style"));
 			if (cellElement.hasAttribute("vertex"))
 				cell.setVertex(Integer.parseInt(cellElement.getAttribute("vertex")) == 1);
-			if(cellElement.hasAttribute("edge"))
+			if (cellElement.hasAttribute("edge"))
 				cell.setEdge(Integer.parseInt(cellElement.getAttribute("edge")) == 1);
 			if (cellElement.hasAttribute("connectable"))
 				cell.setConnectable(Integer.parseInt(cellElement.getAttribute("connectable")) == 1);
-			if(cellElement.hasAttribute("collapsed"))
+			if (cellElement.hasAttribute("collapsed"))
 				cell.setCollapsed(Integer.parseInt(cellElement.getAttribute("collapsed")) == 1);
 			if (cellElement.hasAttribute("parent"))
 				cell.setParent(Integer.parseInt(cellElement.getAttribute("parent")));
 			else
 				cell.setParent(-1);
-			if(cellElement.hasAttribute("source"))
+			if (cellElement.hasAttribute("source"))
 				cell.setSource(Integer.parseInt(cellElement.getAttribute("source")));
-			if(cellElement.hasAttribute("target"))
+			if (cellElement.hasAttribute("target"))
 				cell.setTarget(Integer.parseInt(cellElement.getAttribute("target")));
 
 			// geometry info
@@ -298,18 +320,18 @@ public class Converter {
 					geometry.setWidth(Double.parseDouble(geoElement.getAttribute("width")));
 				if (geoElement.hasAttribute("height"))
 					geometry.setHeight(Double.parseDouble(geoElement.getAttribute("height")));
-				if(geoElement.getElementsByTagName("Array").getLength() > 0) {
+				if (geoElement.getElementsByTagName("Array").getLength() > 0) {
 					LinkedList<Point> points = new LinkedList<Point>();
 					Element arrayElement = (Element) geoElement.getElementsByTagName("Array").item(0);
 					NodeList pointNodes = arrayElement.getElementsByTagName("mxPoint");
-					for(int pointIndex = 0; pointIndex <= pointNodes.getLength(); pointIndex++) {
-						Element pointElement = (Element)pointNodes.item(pointIndex);
+					for (int pointIndex = 0; pointIndex <= pointNodes.getLength(); pointIndex++) {
+						Element pointElement = (Element) pointNodes.item(pointIndex);
 						Point point = new Point();
-						if(pointElement.hasAttribute("x"))
+						if (pointElement.hasAttribute("x"))
 							point.x = Integer.parseInt(pointElement.getAttribute("x"));
 						else
 							point.x = 0;
-						if(pointElement.hasAttribute("y"))
+						if (pointElement.hasAttribute("y"))
 							point.y = Integer.parseInt(pointElement.getAttribute("y"));
 						else
 							point.y = 0;
@@ -335,20 +357,21 @@ public class Converter {
 				cell.setInfo(info);
 			}
 
-			if(cell.isEdge()) {
+			if (cell.isEdge()) {
 				edges.add(cell);
 			} else if (cell.getStyle().contains("circuitContainer")) {
-				if(containers.containsKey(cell.getParent())) {
+				if (containers.containsKey(cell.getParent())) {
 					containers.get(cell.getParent()).put(cell.getId(), cell);
-				}else {
+				} else {
 					HashMap<Integer, MxCell> subContainers = new HashMap<Integer, MxCell>();
 					subContainers.put(cell.getId(), cell);
 					containers.put(cell.getParent(), subContainers);
 				}
 			} else if (cell.getStyle().contains("backbone")) {
 				// TODO remove me when the user can set the displayID
-				cell.setInfo(new GlyphInfo());
-				cell.getInfo().setDisplayID("cd" + cell.getId());
+				GlyphInfo glyphInfo = new GlyphInfo();
+				glyphInfo.setDisplayID("cd" + cell.getId());
+				cell.setInfo(glyphInfo);
 				backbones.put(cell.getParent(), cell);
 			} else if (proteins != null && cell.getStyle().contains("molecularSpeciesGlyph")) {
 				proteins.add(cell);
@@ -363,10 +386,11 @@ public class Converter {
 					glyphSets.put(cell.getParent(), set);
 				}
 			}
+			cells.put(cell.getId(), cell);
 		}
 	}
 
-	private String objectsToGraph(Set<MxCell> cells) throws ParserConfigurationException, TransformerException {
+	private String objectsToGraph() throws ParserConfigurationException, TransformerException {
 		DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder documentBuilder = documentFactory.newDocumentBuilder();
 		Document graphDocument = documentBuilder.newDocument();
@@ -387,7 +411,7 @@ public class Converter {
 		second.setAttribute("parent", "0");
 		root.appendChild(second);
 
-		for (MxCell cell : cells) {
+		for (MxCell cell : cells.values()) {
 			// cell
 			Element mxCell = graphDocument.createElement("mxCell");
 			mxCell.setAttribute("id", "" + cell.getId());
@@ -415,7 +439,7 @@ public class Converter {
 
 			// GlyphInfo
 			if (cell.getInfo() != null) {
-				GlyphInfo info = cell.getInfo();
+				GlyphInfo info = (GlyphInfo) cell.getInfo();
 				Element glyphInfo = graphDocument.createElement("GlyphInfo");
 				if (info.getDescription() != null)
 					glyphInfo.setAttribute("description", info.getDescription());
@@ -449,17 +473,17 @@ public class Converter {
 		return sw.toString();
 	}
 
-	private void sbolToMxGraphObjects(ComponentDefinition compDef, Set<MxCell> cells)
+	private void sbolToMxGraphObjects(ComponentDefinition compDef)
 			throws ParserConfigurationException, TransformerException {
 		// container data
 		MxCell containerCell = gson.fromJson(
 				compDef.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix)).getStringValue(), MxCell.class);
-		cells.add(containerCell);
+		cells.put(containerCell.getId(), containerCell);
 
 		// backbone data
 		MxCell backboneCell = gson.fromJson(
 				compDef.getAnnotation(new QName(uriPrefix, "backboneCell", annPrefix)).getStringValue(), MxCell.class);
-		cells.add(backboneCell);
+		cells.put(backboneCell.getId(), backboneCell);
 
 		// glyphs
 		for (Component glyphComponent : compDef.getComponents()) {
@@ -488,11 +512,11 @@ public class Converter {
 			glyphInfo.setVersion(glyphComponent.getVersion());
 			if (glyphComponent.getDefinition()
 					.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix)) != null) {
-				sbolToMxGraphObjects(glyphComponent.getDefinition(), cells);
+				sbolToMxGraphObjects(glyphComponent.getDefinition());
 			}
 			glyphCell.setInfo(glyphInfo);
 
-			cells.add(glyphCell);
+			cells.put(glyphCell.getId(), glyphCell);
 
 		}
 	}
