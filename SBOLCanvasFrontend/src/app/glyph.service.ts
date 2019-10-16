@@ -20,7 +20,6 @@ export class GlyphService {
     'assets/glyph_stencils/dna-stability-element.xml',
     'assets/glyph_stencils/insulator.xml',
     'assets/glyph_stencils/location-dna.xml',
-    'assets/glyph_stencils/cds-arrow.xml',
     'assets/glyph_stencils/engineered-region.xml',
     'assets/glyph_stencils/five-prime-sticky-restriction-site.xml',
     'assets/glyph_stencils/location-rna.xml',

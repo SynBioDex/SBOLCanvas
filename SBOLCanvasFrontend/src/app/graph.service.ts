@@ -13,6 +13,7 @@ import {GlyphInfo} from './glyphInfo';
 import {MetadataService} from './metadata.service';
 import {GlyphService} from './glyph.service';
 import {forEach} from "@angular/router/src/utils/collection";
+import {InteractionInfo} from './interactionInfo';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -35,6 +36,7 @@ const circuitContainerStyleName           = 'circuitContainer';
 const backboneStyleName                   = 'backbone';
 const textboxStyleName                    = 'textBox';
 const scarStyleName                       = 'Scar (Assembly Scar)';
+const defaultInteractionStyleName         = 'control'
 const interactionPortStyleName            = 'interactionPort';
 const molecularSpeciesGlyphBaseStyleName  = 'molecularSpeciesGlyph';
 const sequenceFeatureGlyphBaseStyleName   = 'sequenceFeatureGlyph';
@@ -149,34 +151,37 @@ export class GraphService {
    * Updates the data in the metadata service according to the cells properties
    */
   updateAngularMetadata(cells) {
+    // start with null data, (re)add it as possible
+    this.nullifyMetadata();
 
-    // Start with null data.
-    this.nullifyMetadata()
-
-    if (!cells || cells.length != 1) {
-      // no selection? multiple selections? can't display metadata
+    if (!cells || cells.length === 0) {
+      // no selection? can't display metadata
       return;
     }
-    else {
-      let cell = cells[0];
 
-      if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
-        let color = this.graph.getCellStyle(cell)['strokeColor'];
-        this.metadataService.setColor(color);
+    // color first. get the color of the first selected cell
+    let firstCell = cells[0];
+    if (firstCell.isCircuitContainer()) {
+      firstCell = firstCell.getBackbone();
+    }
+    let color = this.graph.getCellStyle(firstCell)['strokeColor'];
+    this.metadataService.setColor(color);
 
-        const glyphInfo = cell.data;
-        if(glyphInfo) {
-          this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
-        }
+    if (cells.length !== 1) {
+      // multiple selections? can't display glyph info
+      return;
+    }
+
+    if (firstCell.isSequenceFeatureGlyph() || firstCell.isMolecularSpeciesGlyph()) {
+      const glyphInfo = firstCell.data;
+      if (glyphInfo) {
+        this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
       }
-      else if (cell.isInteraction()) {
-        let color = this.graph.getCellStyle(cell)['strokeColor'];
-        this.metadataService.setColor(color);
-
-        let interactionInfo = cell.data
-        if (interactionInfo) {
-          this.metadataService.setSelectedInteractionInfo(interactionInfo);
-        }
+    }
+    else if (firstCell.isInteraction()) {
+      let interactionInfo = firstCell.data
+      if (interactionInfo) {
+        this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy());
       }
     }
   }
@@ -400,7 +405,7 @@ export class GraphService {
    * Drops a new glyph onto the selected backbone
    */
   addSequenceFeature(name) {
-    // Don't do anything if it is a scar and were not showing them.
+    // Make sure scars are/become visible if we're adding one
     if (name.includes(scarStyleName) && !this.showingScars) { this.toggleScars(); }
 
     let parentCircuitContainer = this.getSelectionContainer();
@@ -456,14 +461,22 @@ export class GraphService {
 
   /**
    * Drops a new interaction edge onto the canvas
-   * @param name
+   * @param name The name identifying the type of interaction this should be.
+   * @param source An optional mxCell to be the source of this connection
+   * @param target An optional mxCell to be the target of this connection
    */
-  addInteraction(name: string) {
-    let cell = new mx.mxCell('your text', new mx.mxGeometry(0, 0, 50, 50), interactionGlyphBaseStyleName + 'control');
+  addInteraction(name: string, source?: any, target?: any) {
+    let cell = new mx.mxCell('', new mx.mxGeometry(0, 0, 0, 0), interactionGlyphBaseStyleName + defaultInteractionStyleName);
+
     cell.geometry.setTerminalPoint(new mx.mxPoint(50, 150), true);
     cell.geometry.setTerminalPoint(new mx.mxPoint(150, 50), false);
+
     cell.edge = true;
-    this.graph.addEdge(cell);
+    this.graph.addEdge(cell, null, source, target);
+
+    cell.data = new InteractionInfo();
+
+    return cell;
   }
 
 
@@ -937,6 +950,8 @@ export class GraphService {
     const interactionControlSpecification = {};
     interactionControlSpecification[mx.mxConstants.STYLE_ENDARROW] = mx.mxConstants.ARROW_DIAMOND;
     interactionControlSpecification[mx.mxConstants.STYLE_EDGE] = mx.mxConstants.EDGESTYLE_ORTHOGONAL;
+    interactionControlSpecification[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
+    interactionControlSpecification[mx.mxConstants.STYLE_FILLCOLOR] = '000000';
     this.graph.getStylesheet().putCellStyle(interactionGlyphBaseStyleName + 'control', interactionControlSpecification);
 
     // Interaction Port style
@@ -1119,14 +1134,12 @@ export class GraphService {
       return origIsKeepFocusEvent.apply(this, arguments);
     };
 
-    // TODO: THIS DOESN'T WORK YET
-    let mxConnectionHandlerInsertEdge = mx.mxConnectionHandler.prototype.insertEdge;
-    mx.mxConnectionHandler.prototype.insertEdge = function(parent, id, value, source, target, style)
+    // This makes it so connections created by the connectionHandler use the same method
+    // as when an interaction glyph is clicked in the glyph menu
+    // (Beware, without this, it uses a factoryMethod provided by the mxEditor)
+    this.graph.connectionHandler.factoryMethod = mx.mxUtils.bind(this, function(source, target)
     {
-      value = 'Test';
-      style = this.graph.getStylesheet().getCellStyle(interactionGlyphBaseStyleName + 'control', 'endArrow=classic');
-
-      return mxConnectionHandlerInsertEdge.apply(this, [parent, id, value, source, target, style]);
-    };
+      return this.addInteraction(this.defaultInteractionStyleName, source, target);
+    });
   }
 }

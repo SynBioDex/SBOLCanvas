@@ -4,7 +4,7 @@ import { BehaviorSubject } from 'rxjs';
 import { Observable } from 'rxjs';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
-import {InteractionInfo} from "./InteractionInfo";
+import {InteractionInfo} from "./interactionInfo";
 
 @Injectable({
   providedIn: 'root'

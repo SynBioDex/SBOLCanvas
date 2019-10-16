@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
-import { InteractionInfo } from "../InteractionInfo";
+import { InteractionInfo } from "../interactionInfo";
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 import { MatSelectChange } from '@angular/material';
@@ -29,6 +29,7 @@ export class InfoEditorComponent implements OnInit {
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
+    this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo))
     this.getTypes();
     this.getRoles();
   }
@@ -112,9 +113,9 @@ export class InfoEditorComponent implements OnInit {
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
     if (glyphInfo != null){
-      if(glyphInfo.partRole != null){
+      if (glyphInfo.partRole != null) {
         this.getRefinements(glyphInfo.partRole);
-      }else{
+      } else {
         this.partRefinements = [];
       }
     }
