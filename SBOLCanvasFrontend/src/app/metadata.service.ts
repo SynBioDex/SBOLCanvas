@@ -41,6 +41,8 @@ export class MetadataService {
   private typesURL = environment.backendURL + '/data/types';
   private rolesURL = environment.backendURL + '/data/roles';
   private refinementsURL = environment.backendURL + '/data/refine';
+  private interactionsURL = environment.backendURL + '/data/interactions';
+  private participationsURL = environment.backendURL + '/data/participations';
 
   // Glyph Info
   private glyphInfoSource = new BehaviorSubject(null);
@@ -76,6 +78,16 @@ export class MetadataService {
     let params = new HttpParams();
     params = params.append("parent", parent);
     return this.http.get(this.refinementsURL, {params: params});
+  }
+
+  loadInteractions() : Observable<any> {
+    return this.http.get(this.interactionsURL);
+  }
+
+  loadParticipations(parent:string): Observable<any> {
+    let params = new HttpParams();
+    params = params.append("parent", parent);
+    return this.http.get(this.participationsURL, {params: params});
   }
 
   setSelectedGlyphInfo(newInfo: GlyphInfo) {

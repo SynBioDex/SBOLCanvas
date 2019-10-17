@@ -8,15 +8,23 @@ import java.util.TreeSet;
 
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.SequenceOntology;
+import org.sbolstandard.core2.SystemsBiologyOntology;
 
 public class SBOLData {
 
+	private static SequenceOntology so;
+	private static SystemsBiologyOntology sbo;
+	
 	public static BiMap<String, URI> types;
 	public static BiMap<String, URI> roles;
 	public static BiMap<String, URI> refinements;
 	public static HashMap<URI, URI> parents;
+	public static BiMap<String, URI> interactions;
+	public static BiMap<String, URI> participations;
 	
 	static {
+		so = new SequenceOntology();
+		sbo = new SystemsBiologyOntology();
 		
 		types = new BiMap<String, URI>();
 		types.put("Complex", ComponentDefinition.COMPLEX);
@@ -64,7 +72,6 @@ public class SBOLData {
 		
 		refinements = new BiMap<String, URI>();
 		parents = new HashMap<URI, URI>();
-		SequenceOntology so = new SequenceOntology();
 		for(URI uri : roles.values()) {
 			Set<URI> descendants = so.getDescendantURIsOf(uri);
 			for(URI dURI : descendants) {
@@ -72,6 +79,24 @@ public class SBOLData {
 				parents.put(dURI, uri);
 			}
 		}
+		
+		interactions = new BiMap<String, URI>();
+		interactions.put("Inhibition", SystemsBiologyOntology.INHIBITION);
+		interactions.put("Stimulation", SystemsBiologyOntology.STIMULATION);
+		interactions.put("Biochemical Reaction", SystemsBiologyOntology.BIOCHEMICAL_REACTION);
+		interactions.put("Non-Covalent Binding", SystemsBiologyOntology.NON_COVALENT_BINDING);
+		interactions.put("Degradation", SystemsBiologyOntology.DEGRADATION);
+		interactions.put("Genetic Production", SystemsBiologyOntology.GENETIC_PRODUCTION);
+		interactions.put("Control", SystemsBiologyOntology.CONTROL);
+		
+		participations = new BiMap<String, URI>();
+		for(URI uri : interactions.values()) {
+			Set<URI> descendants = sbo.getDescendantURIsOf(uri);
+			for(URI dURI : descendants) {
+				refinements.put(sbo.getName(dURI), dURI);
+			}
+		}
+		
 	}
 	
 	public static String[] getTypes() {
@@ -88,12 +113,26 @@ public class SBOLData {
 	
 	public static String[] getRefinement(String parentName){
 		TreeSet<String> refinementNames = new TreeSet<String>();
-		SequenceOntology so = new SequenceOntology();
 		Set<URI> descendants = so.getDescendantURIsOf(roles.getValue(parentName));
 		for(URI uri : descendants) {
 			refinementNames.add(so.getName(uri));
 		}
 		return refinementNames.toArray(new String[0]);	
+	}
+	
+	public static String[] getInteractions() {
+		String[] interactionNames = interactions.keys().toArray(new String[0]);
+		Arrays.sort(interactionNames);
+		return interactionNames;
+	}
+	
+	public static String[] getParticipations(String parentName) {
+		TreeSet<String> participationNames = new TreeSet<String>();
+		Set<URI> descendants = sbo.getDescendantURIsOf(interactions.getValue(parentName));
+		for(URI uri : descendants) {
+			participationNames.add(sbo.getName(uri));
+		}
+		return participationNames.toArray(new String[0]);
 	}
 
 }

@@ -37,6 +37,15 @@ public class Data extends HttpServlet {
 					return;
 				}
 				body = gson.toJson(SBOLData.getRefinement(parent));
+			}else if(request.getPathInfo().equals("/interactions")) {
+				body = gson.toJson(SBOLData.getInteractions());
+			}else if(request.getPathInfo().equals("/participations")) {
+				String parent = request.getParameter("parent");
+				if(parent == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				body = gson.toJson(SBOLData.getParticipations(parent));
 			}
 			
 			// write it to the response body

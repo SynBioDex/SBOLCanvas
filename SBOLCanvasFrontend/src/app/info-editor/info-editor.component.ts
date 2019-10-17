@@ -18,6 +18,8 @@ export class InfoEditorComponent implements OnInit {
   partTypes:string[];
   partRoles:string[];
   partRefinements:string[]; //these depend on role
+  interactions:string[];
+  participations:string[]; // these depend on interaction
 
   //TODO get these from the backend
   encodings:string[];
@@ -32,6 +34,7 @@ export class InfoEditorComponent implements OnInit {
     this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo))
     this.getTypes();
     this.getRoles();
+    this.getInteractions();
   }
 
   getTypes(){
@@ -44,6 +47,14 @@ export class InfoEditorComponent implements OnInit {
 
   getRefinements(role:string){
     this.metadataService.loadRefinements(role).subscribe(refinements => this.partRefinements = refinements);
+  }
+
+  getInteractions(){
+    this.metadataService.loadInteractions().subscribe(interactions => this.interactions = interactions);
+  }
+
+  getParticipations(interaction:string){
+    this.metadataService.loadParticipations(interaction).subscribe(participations => this.participations = participations);
   }
 
   dropDownChange(event: MatSelectChange){
