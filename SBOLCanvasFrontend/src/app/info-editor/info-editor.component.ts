@@ -18,8 +18,8 @@ export class InfoEditorComponent implements OnInit {
   partTypes:string[];
   partRoles:string[];
   partRefinements:string[]; //these depend on role
-  interactions:string[];
-  participations:string[]; // these depend on interaction
+  interactionTypes:string[];
+  participationTypes:string[]; // these depend on interaction
 
   //TODO get these from the backend
   encodings:string[];
@@ -50,11 +50,11 @@ export class InfoEditorComponent implements OnInit {
   }
 
   getInteractions(){
-    this.metadataService.loadInteractions().subscribe(interactions => this.interactions = interactions);
+    this.metadataService.loadInteractions().subscribe(interactions => this.interactionTypes = interactions);
   }
 
   getParticipations(interaction:string){
-    this.metadataService.loadParticipations(interaction).subscribe(participations => this.participations = participations);
+    this.metadataService.loadParticipations(interaction).subscribe(participations => this.participationTypes = participations);
   }
 
   dropDownChange(event: MatSelectChange){
@@ -76,13 +76,31 @@ export class InfoEditorComponent implements OnInit {
           this.glyphInfo.partRefine = event.value;
         }
         break;
+      }
+      case 'interactionType':{
+        this.interactionInfo.interactionType = event.value;
+        this.getParticipations(event.value);
+        break;
+      }case 'fromParticipationType':{
+        if(event.value != "none"){
+          this.interactionInfo.fromParticipationType = event.value;
+        }
+        break;
+      }case 'toParticipationType':{
+        if(event.value != "none"){
+          this.interactionInfo.toParticipationType = event.value;
+        }
+        break;
       }default:{
         console.log('Unexpected id encountered in info menu dropdown = ' + id);
         break;
       }
     }
 
-    this.graphService.setSelectedCellInfo(this.glyphInfo);
+    if(this.glyphInfo != null)
+      this.graphService.setSelectedCellInfo(this.glyphInfo);
+    else if(this.interactionInfo != null)
+      this.graphService.setSelectedCellInfo(this.interactionInfo);
   }
 
   inputChange(event: any) {
@@ -137,6 +155,13 @@ export class InfoEditorComponent implements OnInit {
    */
   interactionInfoUpdated(interactionInfo: InteractionInfo) {
     this.interactionInfo = interactionInfo;
+    if(interactionInfo != null){
+      if(interactionInfo.interactionType != null){
+        this.getParticipations(interactionInfo.interactionType);
+      }else{
+        this.participationTypes = [];
+      }
+    }
   }
 
 }

@@ -543,15 +543,25 @@ export class GraphService {
   }
 
   /**
-   * Find the selected cell, and it there is a glyph selected, update its metadata.
+   * Find the selected cell, and if there is a glyph selected, update its metadata.
    */
-  setSelectedCellInfo(glyphInfo: GlyphInfo) {
+  setSelectedCellInfo(glyphInfo: GlyphInfo);
+  setSelectedCellInfo(interactionInfo: InteractionInfo);
+  setSelectedCellInfo(info: any) {
     const selectedCell = this.graph.getSelectionCell();
 
-    if (selectedCell != null && selectedCell.isSequenceFeatureGlyph()) {
+    if (selectedCell != null && ((info instanceof GlyphInfo && selectedCell.isSequenceFeatureGlyph()) || (info instanceof InteractionInfo && selectedCell.isInteraction()))) {
+      if(info instanceof GlyphInfo){
+        let stylename = sequenceFeatureGlyphBaseStyleName+(<GlyphInfo> info).partRole;
+        let stylesheet = this.graph.getStylesheet();
+        // if the style doesn't exist set it to idk
+        // if(stylesheet.getCellStyle(stylename).equals(stylesheet.getDefaultVertexStyle()))
+        //   stylename = sequenceFeatureGlyphBaseStyleName+"IDK (Unspecified)";
+        this.graph.getModel().setStyle(selectedCell, stylename);
+      }
       const cellData = selectedCell.data;
       if (cellData != null) {
-        cellData.copyDataFrom(glyphInfo);
+        cellData.copyDataFrom(info);
       }
     }
   }

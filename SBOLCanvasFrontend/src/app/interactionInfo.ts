@@ -2,9 +2,11 @@ export class InteractionInfo {
   // Remember that when you change this you need to change the encode function in graph service
   static counter: number = 0;
   interactionType: string;
+  fromParticipationType: string;
+  toParticipationType: string;
 
   constructor() {
-    this.interactionType = 'DNA region';
+    this.interactionType = 'Inhibition';
   }
 
   makeCopy() {
