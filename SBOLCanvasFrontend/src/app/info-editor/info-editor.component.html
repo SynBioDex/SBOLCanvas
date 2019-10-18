@@ -105,4 +105,8 @@
       </mat-option>
     </mat-select>
   </mat-form-field>
+
+  <mat-form-field>
+    <input matInput id="displayID" placeholder="Display ID" value="{{ interactionInfo.displayID }}" (input)="inputChange($event)">
+  </mat-form-field>
 </div>

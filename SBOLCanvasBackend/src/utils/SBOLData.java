@@ -13,7 +13,6 @@ import org.sbolstandard.core2.SystemsBiologyOntology;
 public class SBOLData {
 
 	private static SequenceOntology so;
-	private static SystemsBiologyOntology sbo;
 	
 	public static BiMap<String, URI> types;
 	public static BiMap<String, URI> roles;
@@ -25,7 +24,6 @@ public class SBOLData {
 	
 	static {
 		so = new SequenceOntology();
-		sbo = new SystemsBiologyOntology();
 		
 		types = new BiMap<String, URI>();
 		types.put("Complex", ComponentDefinition.COMPLEX);

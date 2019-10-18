@@ -610,12 +610,30 @@ export class GraphService {
         }
       }
       return glyphData;
-    };
+    }
     glyphInfoCodec.encode = function(enc, object){
       return object.encode(enc);
     }
     mx.mxCodecRegistry.register(glyphInfoCodec);
     window['GlyphInfo'] = GlyphInfo;
+    const interactionInfoCodec = new mx.mxObjectCodec(new InteractionInfo());
+    interactionInfoCodec.decode = function(dec, node, into){
+      const interactionData = new InteractionInfo();
+      const meta = node;
+      if(meta != null) {
+        for(let i = 0; i < meta.attributes.length; i++){
+          const attrib = meta.attributes[i];
+          if(attrib.specified == true && attrib.name != 'as'){
+            interactionData[attrib.name] = attrib.value;
+          }
+        }
+      }
+    }
+    interactionInfoCodec.encode = function(enc, object){
+      return object.encode(enc);
+    }
+    mx.mxCodecRegistry.register(interactionInfoCodec);
+    window['InteractionInfo'] = InteractionInfo;
   }
 
   /**

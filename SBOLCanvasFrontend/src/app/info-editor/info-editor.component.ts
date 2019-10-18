@@ -108,7 +108,10 @@ export class InfoEditorComponent implements OnInit {
 
     switch (id) {
       case 'displayID':{
-        this.glyphInfo.displayID = event.target.value;
+        if(this.glyphInfo != null)
+          this.glyphInfo.displayID = event.target.value;
+        else if(this.interactionInfo != null)
+          this.interactionInfo.displayID = event.target.value;
         break;
       }
       case 'name': {
@@ -132,7 +135,10 @@ export class InfoEditorComponent implements OnInit {
       }
     }
 
-    this.graphService.setSelectedCellInfo(this.glyphInfo);
+    if(this.glyphInfo != null)
+      this.graphService.setSelectedCellInfo(this.glyphInfo);
+    else if(this.interactionInfo != null)
+      this.graphService.setSelectedCellInfo(this.interactionInfo);
   }
 
   /**

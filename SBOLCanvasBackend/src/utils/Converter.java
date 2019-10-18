@@ -27,6 +27,8 @@ import org.sbolstandard.core2.AccessType;
 import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.DirectionType;
+import org.sbolstandard.core2.FunctionalComponent;
+import org.sbolstandard.core2.Interaction;
 import org.sbolstandard.core2.ModuleDefinition;
 import org.sbolstandard.core2.OrientationType;
 import org.sbolstandard.core2.RestrictionType;
@@ -38,6 +40,7 @@ import org.sbolstandard.core2.SBOLWriter;
 import org.sbolstandard.core2.Sequence;
 import org.sbolstandard.core2.SequenceAnnotation;
 import org.sbolstandard.core2.SequenceOntology;
+import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -108,40 +111,73 @@ public class Converter {
 			}
 
 			// create the proteins
-			/*for(MxCell protein : proteins) {
-				GlyphInfo proteinInfo = (GlyphInfo) protein.getInfo(); // not set currently
-				ComponentDefinition proteinCD = document.createComponentDefinition(protein.getId()+"", ComponentDefinition.PROTEIN);
-				proteinCD.addRole()
-			}*/
-			
-			// create the top level component definitions, aka strands
-			HashMap<Integer, MxCell> topContainers = containers.get(1);
-			for (MxCell containerCell : topContainers.values()) {
-				MxCell backboneCell = backbones.get(containerCell.getId());
-				ComponentDefinition containerCD = document.createComponentDefinition(
-						((GlyphInfo) backboneCell.getInfo()).getDisplayID(), ComponentDefinition.DNA_REGION);
-				containerCD.addRole(SequenceOntology.ENGINEERED_REGION);
-
-				modDef.createFunctionalComponent(containerCD.getDisplayId(), AccessType.PUBLIC,
-						containerCD.getIdentity(), DirectionType.INOUT);
-
-				createComponentDefinition(document, containerCD, containerCell, backboneCell);
+			for (MxCell protein : proteins) {
+				GlyphInfo proteinInfo = (GlyphInfo) protein.getInfo();
+				ComponentDefinition proteinCD = document.createComponentDefinition(proteinInfo.getDisplayID(),
+						ComponentDefinition.PROTEIN);
+				proteinCD.addRole(SystemsBiologyOntology.INHIBITOR);
+				modDef.createFunctionalComponent(proteinCD.getDisplayId(), AccessType.PUBLIC, proteinCD.getIdentity(),
+						DirectionType.INOUT);
 			}
 
-			// TODO edges to interactions
-			/*for (MxCell edge : edges) {
-				if (edge.getSource() == 0 || edge.getTarget() == 0) {
-					continue;
+			// create the top level component definitions, aka strands
+			HashMap<Integer, MxCell> topContainers = containers.get(1);
+			if (topContainers != null)
+				for (MxCell containerCell : topContainers.values()) {
+					MxCell backboneCell = backbones.get(containerCell.getId());
+					ComponentDefinition containerCD = document.createComponentDefinition(
+							((GlyphInfo) backboneCell.getInfo()).getDisplayID(), ComponentDefinition.DNA_REGION);
+					containerCD.addRole(SequenceOntology.ENGINEERED_REGION);
+
+					modDef.createFunctionalComponent(containerCD.getDisplayId(), AccessType.PUBLIC,
+							containerCD.getIdentity(), DirectionType.INOUT);
+
+					createComponentDefinition(document, containerCD, containerCell, backboneCell);
 				}
+
+			// edges to interactions
+			for (MxCell edge : edges) {
+				// interaction
 				InteractionInfo intInfo = (InteractionInfo) edge.getInfo();
-				GlyphInfo sourceInfo = (GlyphInfo) cells.get(edge.getSource()).getInfo();
-				GlyphInfo targetInfo = (GlyphInfo) cells.get(edge.getTarget()).getInfo();
-				
-				ComponentDefinition sourceCD = document.getComponentDefinition(sourceInfo.getDisplayID(), null);
-				ComponentDefinition targetCD = document.getComponentDefinition(targetInfo.getDisplayID(), null);
-				
-				
-			}*/
+				Interaction interaction = modDef.createInteraction(intInfo.getDisplayID()+"Interaction",
+						SBOLData.interactions.getValue(intInfo.getInteractionType()));
+				interaction.createAnnotation(new QName(uriPrefix, "edge", annPrefix), gson.toJson(edge));
+
+				// participants
+				GlyphInfo sourceInfo = null;
+				GlyphInfo targetInfo = null;
+				if (edge.getSource() > 0)
+					sourceInfo = (GlyphInfo) cells.get(edge.getSource()).getInfo();
+				if (edge.getTarget() > 0)
+					targetInfo = (GlyphInfo) cells.get(edge.getTarget()).getInfo();
+
+				// source participant
+				if (sourceInfo != null) {
+					FunctionalComponent sourceFC = modDef.getFunctionalComponent(sourceInfo.getDisplayID());
+					if (sourceFC == null) {
+						ComponentDefinition sourceCD = document.getComponentDefinition(sourceInfo.getDisplayID(), null);
+						sourceFC = modDef.createFunctionalComponent(sourceInfo.getDisplayID(), AccessType.PUBLIC,
+								sourceCD.getIdentity(), DirectionType.INOUT);
+					}
+					if(intInfo.getFromParticipationType() != null && !intInfo.getFromParticipationType().equals(""))
+						interaction.createParticipation(sourceInfo.getDisplayID(), sourceFC.getIdentity(),
+							SBOLData.participations.getValue(intInfo.getFromParticipationType()));
+				}
+
+				// target participant
+				if (targetInfo != null) {
+					FunctionalComponent targetFC = modDef.getFunctionalComponent(targetInfo.getDisplayID());
+					if (targetFC == null) {
+						ComponentDefinition targetCD = document.getComponentDefinition(targetInfo.getDisplayID(), null);
+						targetFC = modDef.createFunctionalComponent(targetInfo.getDisplayID(), AccessType.PUBLIC,
+								targetCD.getIdentity(), DirectionType.INOUT);
+					}
+					if(intInfo.getToParticipationType() != null && !intInfo.getToParticipationType().equals(""))
+						interaction.createParticipation(targetInfo.getDisplayID(), targetFC.getIdentity(),
+							SBOLData.participations.getValue(intInfo.getToParticipationType()));
+				}
+
+			}
 
 			// write to body
 			SBOLWriter.setKeepGoing(true);
@@ -320,7 +356,7 @@ public class Converter {
 					geometry.setWidth(Double.parseDouble(geoElement.getAttribute("width")));
 				if (geoElement.hasAttribute("height"))
 					geometry.setHeight(Double.parseDouble(geoElement.getAttribute("height")));
-				if (geoElement.getElementsByTagName("Array").getLength() > 0) {
+				if (geoElement.getElementsByTagName("mxPoint").getLength() > 0) {
 					LinkedList<Point> points = new LinkedList<Point>();
 					Element arrayElement = (Element) geoElement.getElementsByTagName("Array").item(0);
 					NodeList pointNodes = arrayElement.getElementsByTagName("mxPoint");
@@ -354,6 +390,17 @@ public class Converter {
 				info.setDescription(infoElement.getAttribute("description"));
 				info.setVersion(infoElement.getAttribute("version"));
 				info.setSequence(infoElement.getAttribute("sequence"));
+				cell.setInfo(info);
+			}
+
+			// interaction info
+			if (cellElement.getElementsByTagName("InteractionInfo").getLength() > 0) {
+				Element infoElement = (Element) cellElement.getElementsByTagName("InteractionInfo").item(0);
+				InteractionInfo info = new InteractionInfo();
+				info.setDisplayID(infoElement.getAttribute("displayID"));
+				info.setInteractionType(infoElement.getAttribute("interactionType"));
+				info.setFromParticipationType(infoElement.getAttribute("fromParticipationType"));
+				info.setToParticipationType(infoElement.getAttribute("toParticipationType"));
 				cell.setInfo(info);
 			}
 
