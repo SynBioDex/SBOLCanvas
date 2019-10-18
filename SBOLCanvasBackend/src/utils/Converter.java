@@ -53,6 +53,7 @@ import data.GlyphInfo;
 import data.InteractionInfo;
 import data.MxCell;
 import data.MxGeometry;
+import data.MxPoint;
 
 public class Converter {
 
@@ -81,7 +82,7 @@ public class Converter {
 	private HashMap<Integer, Set<MxCell>> glyphSets = new HashMap<Integer, Set<MxCell>>();
 	private LinkedList<MxCell> edges = new LinkedList<MxCell>();
 	private HashMap<Integer, MxCell> cells = new HashMap<Integer, MxCell>();
-
+	
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream) {
 		// convert the stream to a document
 		Document graph = null;
@@ -356,24 +357,41 @@ public class Converter {
 					geometry.setWidth(Double.parseDouble(geoElement.getAttribute("width")));
 				if (geoElement.hasAttribute("height"))
 					geometry.setHeight(Double.parseDouble(geoElement.getAttribute("height")));
-				if (geoElement.getElementsByTagName("mxPoint").getLength() > 0) {
-					LinkedList<Point> points = new LinkedList<Point>();
+				if (geoElement.getElementsByTagName("Array").getLength() > 0) {
+					LinkedList<MxPoint> points = new LinkedList<MxPoint>();
 					Element arrayElement = (Element) geoElement.getElementsByTagName("Array").item(0);
 					NodeList pointNodes = arrayElement.getElementsByTagName("mxPoint");
-					for (int pointIndex = 0; pointIndex <= pointNodes.getLength(); pointIndex++) {
+					for (int pointIndex = 0; pointIndex < pointNodes.getLength(); pointIndex++) {
 						Element pointElement = (Element) pointNodes.item(pointIndex);
-						Point point = new Point();
+						MxPoint point = new MxPoint();
 						if (pointElement.hasAttribute("x"))
-							point.x = Integer.parseInt(pointElement.getAttribute("x"));
+							point.setX(Double.parseDouble(pointElement.getAttribute("x")));
 						else
-							point.x = 0;
+							point.setX(0);
 						if (pointElement.hasAttribute("y"))
-							point.y = Integer.parseInt(pointElement.getAttribute("y"));
+							point.setY(Integer.parseInt(pointElement.getAttribute("y")));
 						else
-							point.y = 0;
+							point.setY(0);
 						points.add(point);
 					}
 					geometry.setPoints(points);
+				}
+				if(geoElement.getElementsByTagName("mxPoint").getLength() > 0) {
+					NodeList pointNodes = geoElement.getElementsByTagName("mxPoint");
+					for(int pointIndex = 0; pointIndex < pointNodes.getLength(); pointIndex++) {
+						Element pointElement = (Element) pointNodes.item(pointIndex);
+						MxPoint point = new MxPoint();
+						point.setX(Double.parseDouble(pointElement.getAttribute("x")));
+						point.setY(Double.parseDouble(pointElement.getAttribute("y")));
+						if(pointElement.getAttribute("as").equals("sourcePoint")) {
+							geometry.setSourcePoint(point);
+						}
+						if(pointElement.getAttribute("as").equals("targetPoint")) {
+							geometry.setTargetPoint(point);
+						}
+						
+					}
+					
 				}
 				cell.setGeometry(geometry);
 			}
