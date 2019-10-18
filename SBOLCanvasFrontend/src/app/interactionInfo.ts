@@ -7,7 +7,7 @@ export class InteractionInfo {
   toParticipationType: string;
 
   constructor() {
-    this.displayID = 'id'+(InteractionInfo.counter++);
+    this.displayID = 'Interaction'+(InteractionInfo.counter++);
     this.interactionType = 'Inhibition';
   }
 

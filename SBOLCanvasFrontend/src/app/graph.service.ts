@@ -628,6 +628,7 @@ export class GraphService {
           }
         }
       }
+      return interactionData;
     }
     interactionInfoCodec.encode = function(enc, object){
       return object.encode(enc);
