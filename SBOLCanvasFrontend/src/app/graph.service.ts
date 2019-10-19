@@ -37,7 +37,6 @@ const backboneStyleName                   = 'backbone';
 const textboxStyleName                    = 'textBox';
 const scarStyleName                       = 'Scar (Assembly Scar)';
 const defaultInteractionStyleName         = 'control'
-const interactionPortStyleName            = 'interactionPort';
 const molecularSpeciesGlyphBaseStyleName  = 'molecularSpeciesGlyph';
 const sequenceFeatureGlyphBaseStyleName   = 'sequenceFeatureGlyph';
 const interactionGlyphBaseStyleName       = 'interactionGlyph';
@@ -81,37 +80,32 @@ export class GraphService {
     this.graphContainer.style.left = '0';
     this.graphContainer.style.right = '0';
 
-    //mx.mxGraphHandler.prototype.guidesEnabled = true;
-    //mx.mxConnectionHandler.prototype.outlineConnect = false; // Doesn't see to do anything
-
     // mxEditor is kind of a parent to mxGraph
     // it's used mainly for 'actions', which for now means delete, later will mean undoing
     this.editor = new mx.mxEditor();
     this.graph = this.editor.graph;
     this.editor.setGraphContainer(this.graphContainer);
 
-    this.graph.setConnectable(true);
     this.graph.setCellsCloneable(false);
-    // This allows us to drag the ends of edges wherever we want when it is set to true.
-    // Also, for some reason if this is set to false, we cannot connect edges to
-    // stencils (glyphs).
+    this.graph.setConnectable(true);
+    this.graph.setDisconnectOnMove(false);
+
+    // Can't create edges without the glyph menu
+    this.graph.connectionHandler.enabled = false;
+
     this.graph.setAllowDanglingEdges(true);
-    this.graph.setTolerance(20);
 
-
-    // Enables rubberband selection
-    // tslint:disable-next-line:no-unused-expression
+    // Enables click-and-drag selection
     new mx.mxRubberband(this.graph);
 
-    // Sets the graph container and configures the editor
-
-    // without this, an option appears to collapse glyphs, which hides their ports
+    // This controls whether glyphs can be expanded without replacing the canvas
     this.graph.isCellFoldable = function(cell) {
-      return false; //cell.isSequenceFeatureGlyph();
+      return false;
+      // to enable, use 'return cell.isSequenceFeatureGlyph();'
     };
 
     // Add event listeners to the graph. NOTE: MUST USE THE '=>' WAY FOR THIS TO WORK.
-    // Doing it this way enables the function to keep accessing 'this' from inside.
+    // Otherwise the callback's 'this' won't be the graphService
     this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, (sender, event) => this.handleSelectionChange(sender, event));
 
     this.initStyles();
@@ -121,9 +115,7 @@ export class GraphService {
   }
 
   handleSelectionChange(sender, evt) {
-
-    // Cells that are being removed from the selection.
-    // No idea why it is backwards...
+    // 'added' and 'removed' properties are reversed in mxGraph
     var cellsRemoved = evt.getProperty('added');
     var cellsAdded = evt.getProperty('removed');
 
@@ -140,7 +132,7 @@ export class GraphService {
     console.debug("cells added: ");
     if (cellsAdded) {
       for (var i = 0; i < cellsAdded.length; i++) {
-        console.log(cellsAdded[i]);
+        console.debug(cellsAdded[i]);
       }
     }
 
@@ -668,10 +660,6 @@ export class GraphService {
       return this.isStyle(scarStyleName);
     };
 
-    mx.mxCell.prototype.isInteractionPort = function() {
-      return this.isStyle(interactionPortStyleName);
-    };
-
     mx.mxCell.prototype.isInteraction = function() {
       return this.isStyle(interactionGlyphBaseStyleName);
     }
@@ -780,14 +768,10 @@ export class GraphService {
         return;
       }
 
-      // Refresh all children sequence features and their respective interaction ports
-      let portCount = 0;
+      // Refresh all children sequence features
       for (let child of this.children) {
         if (child.isSequenceFeatureGlyph()) {
           child.refreshSequenceFeature(graph);
-        }
-        else if (child.isInteractionPort()) {
-
         }
       }
 
@@ -944,9 +928,8 @@ export class GraphService {
     this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     this.baseGlyphStyle[mx.mxConstants.STYLE_ROTATION] = 0;
-    //this.baseGlyphStyle[mx.mxConstants.DEFAULT_HOTSPOT] = 0; // globally...
-    //this.baseGlyphStyle[mx.mxConstants.STYLE_PERIMETER] = 'orthogonalPerimeter'; // puts connection constraints in exact middle of cell...
-    //this.baseGlyphStyle[mx.mxConstants.ACTIVE_REGION] = 1;
+    this.baseGlyphStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
+    //this.baseGlyphStyle[mx.mxConstants.DEFAULT_HOTSPOT] = 0;
 
     const textBoxStyle = {};
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
@@ -970,23 +953,14 @@ export class GraphService {
     backboneStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.graph.getStylesheet().putCellStyle(backboneStyleName, backboneStyle);
 
-    // Edge settings.
-    const style = this.graph.getStylesheet().getDefaultEdgeStyle();
-    style[mx.mxConstants.STYLE_ROUNDED] = true;
-    style[mx.mxConstants.STYLE_EDGE] = mx.mxEdgeStyle.ElbowConnector;
-
     // Interaction styles
     const interactionControlSpecification = {};
     interactionControlSpecification[mx.mxConstants.STYLE_ENDARROW] = mx.mxConstants.ARROW_DIAMOND;
     interactionControlSpecification[mx.mxConstants.STYLE_EDGE] = mx.mxConstants.EDGESTYLE_ORTHOGONAL;
     interactionControlSpecification[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     interactionControlSpecification[mx.mxConstants.STYLE_FILLCOLOR] = '000000';
+    interactionControlSpecification[mx.mxConstants.STYLE_EDITABLE] = false;
     this.graph.getStylesheet().putCellStyle(interactionGlyphBaseStyleName + 'control', interactionControlSpecification);
-
-    // Interaction Port style
-    const interactionPortStyle = {};
-    interactionPortStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
-    this.graph.getStylesheet().putCellStyle(interactionPortStyleName, interactionPortStyle);
   }
 
   /**
@@ -1021,8 +995,8 @@ export class GraphService {
 
       // Defines the connection constraints for all sequence features
       customStencil.constraints = [
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), true),
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), true)
+        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), false),
+        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), false)
       ];
 
       // Add the stencil to the registry and set its style.
@@ -1042,10 +1016,10 @@ export class GraphService {
 
       // Defines the default constraints for all molecular species
       customStencil.constraints = [
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), true),
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), true),
-        new mx.mxConnectionConstraint(new mx.mxPoint(0, .5), true),
-        new mx.mxConnectionConstraint(new mx.mxPoint(1, .5), true)
+        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), false),
+        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), false),
+        new mx.mxConnectionConstraint(new mx.mxPoint(0, .5), false),
+        new mx.mxConnectionConstraint(new mx.mxPoint(1, .5), false)
       ];
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
