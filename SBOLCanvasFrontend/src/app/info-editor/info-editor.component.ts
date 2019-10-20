@@ -68,7 +68,10 @@ export class InfoEditorComponent implements OnInit {
       case 'partRole':{
         this.glyphInfo.partRole = event.value;
         this.glyphInfo.partRefine = "";
-        this.getRefinements(event.value);
+        if(event.value !== "")
+          this.getRefinements(event.value);
+        else
+          this.partRefinements=[];
         break;
       }
       case 'partRefinement':{

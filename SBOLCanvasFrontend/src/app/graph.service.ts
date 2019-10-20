@@ -988,12 +988,17 @@ export class GraphService {
 
     // Interaction styles
     const interactionControlSpecification = {};
+    interactionControlSpecification[mx.mxConstants.STYLE_STROKEWIDTH] = 3;
+    interactionControlSpecification[mx.mxConstants.STYLE_ENDFILL] = 0;
     interactionControlSpecification[mx.mxConstants.STYLE_ENDARROW] = mx.mxConstants.ARROW_DIAMOND;
+    interactionControlSpecification[mx.mxConstants.STYLE_ENDSIZE] = 20;
     interactionControlSpecification[mx.mxConstants.STYLE_EDGE] = mx.mxConstants.EDGESTYLE_ORTHOGONAL;
     interactionControlSpecification[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
     interactionControlSpecification[mx.mxConstants.STYLE_FILLCOLOR] = '000000';
     interactionControlSpecification[mx.mxConstants.STYLE_EDITABLE] = false;
     this.graph.getStylesheet().putCellStyle(interactionGlyphBaseStyleName + 'control', interactionControlSpecification);
+
+    
   }
 
   /**

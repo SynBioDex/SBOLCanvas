@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import {MatDialogRef} from '@angular/material';
-import { FilesService } from '../files.service';
+import { Component, Inject, OnInit } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
+import { UploadDialogData } from '../toolbar/toolbar.component';
 
 @Component({
   selector: 'app-upload-graph',
@@ -9,17 +9,19 @@ import { FilesService } from '../files.service';
 })
 export class UploadGraphComponent implements OnInit {
 
-  filesService: FilesService;
-  user:string;
-  server:string;
+  collections: string[];
 
-  constructor(public dialogRef: MatDialogRef<UploadGraphComponent>) { }
+  constructor(@Inject(MAT_DIALOG_DATA) public data: UploadDialogData, public dialogRef: MatDialogRef<UploadGraphComponent>) { }
 
-ngOnInit() {
-}
+  ngOnInit() {
+  }
 
-onCancelClick() {
-  this.dialogRef.close();
-}
+  finishCheck(){
+    return this.data.collection != null && this.data.filename != null;
+  }
+
+  onCancelClick() {
+    this.dialogRef.close();
+  }
 
 }

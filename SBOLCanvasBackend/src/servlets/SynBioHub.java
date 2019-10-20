@@ -73,7 +73,7 @@ public class SynBioHub extends HttpServlet {
 				e.printStackTrace();
 			}
 			user = sbhf.getUser();
-			body = gson.toJson(user);
+			body = user;
 			
 		}else if(request.getPathInfo().equals("/listMyCollections")){
 			
@@ -86,7 +86,11 @@ public class SynBioHub extends HttpServlet {
 				sbhf.setUser(user);
 				List<IdentifiedMetadata> collections = sbhf.getRootCollectionMetadata();
 				collections.removeIf(collection -> (collection.getUri().contains("/public/")));
-				body = gson.toJson(collections);
+				LinkedList<String> collectionURLs = new LinkedList<String>();
+				for(IdentifiedMetadata collection: collections) {
+					collectionURLs.add(collection.getUri());
+				}
+				body = gson.toJson(collectionURLs);
 			} catch (SynBioHubException e) {
 				e.printStackTrace();
 			}
@@ -110,7 +114,7 @@ public class SynBioHub extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) {
 		
 		String server = request.getParameter("server");
-		String user = request.getParameter("user");
+		String user = request.getHeader("Authorization");
 		String uri = request.getParameter("uri");
 		String name = request.getParameter("name");
 		
