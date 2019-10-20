@@ -27,7 +27,7 @@ export class GlyphService {
     'assets/glyph_stencils/ribosome-entry-site.xml',
     'assets/glyph_stencils/terminator-specification.xml',
     'assets/glyph_stencils/assembly-scar.xml',
-    //'assets/glyph_stencils/downloads.xml'
+    'assets/glyph_stencils/no-glyph-assigned.xml',
   ];
 
   private molecularSpeciesXMLs: string[] = [

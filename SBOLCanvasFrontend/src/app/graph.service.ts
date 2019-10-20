@@ -14,6 +14,7 @@ import {MetadataService} from './metadata.service';
 import {GlyphService} from './glyph.service';
 import {forEach} from "@angular/router/src/utils/collection";
 import {InteractionInfo} from './interactionInfo';
+import {style} from '@angular/animations';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -36,6 +37,7 @@ const circuitContainerStyleName           = 'circuitContainer';
 const backboneStyleName                   = 'backbone';
 const textboxStyleName                    = 'textBox';
 const scarStyleName                       = 'Scar (Assembly Scar)';
+const noGlyphAssignedName                 = 'NGA (No Glyph Assigned)';
 const defaultInteractionStyleName         = 'control'
 const molecularSpeciesGlyphBaseStyleName  = 'molecularSpeciesGlyph';
 const sequenceFeatureGlyphBaseStyleName   = 'sequenceFeatureGlyph';
@@ -515,9 +517,9 @@ export class GraphService {
   }
 
   /**
-   * Find the selected cell, and if there is a cell selected, update its color.
+   * Update the color of any selected cells
    */
-  setSelectedCellColor(color: string) {
+  setSelectedCellsColor(color: string) {
     const selectedCells = this.graph.getSelectionCells();
 
     // changing style of circuitContainers changes the backbone instead
@@ -542,19 +544,46 @@ export class GraphService {
   setSelectedCellInfo(interactionInfo: InteractionInfo);
   setSelectedCellInfo(info: any) {
     const selectedCell = this.graph.getSelectionCell();
+    if (!selectedCell) {
+      return;
+    }
 
-    if (selectedCell != null && ((info instanceof GlyphInfo && selectedCell.isSequenceFeatureGlyph()) || (info instanceof InteractionInfo && selectedCell.isInteraction()))) {
-      if(info instanceof GlyphInfo){
-        let stylename = sequenceFeatureGlyphBaseStyleName+(<GlyphInfo> info).partRole;
-        let stylesheet = this.graph.getStylesheet();
-        // if the style doesn't exist set it to idk
-        // if(stylesheet.getCellStyle(stylename).equals(stylesheet.getDefaultVertexStyle()))
-        //   stylename = sequenceFeatureGlyphBaseStyleName+"IDK (Unspecified)";
-        this.graph.getModel().setStyle(selectedCell, stylename);
-      }
+    // verify that the selected cell matches the type of info object
+    if (info instanceof GlyphInfo && (selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer()) ||
+        (info instanceof InteractionInfo && selectedCell.isInteraction())) {
+
+      // since it does, update its info
       const cellData = selectedCell.data;
-      if (cellData != null) {
+      if (cellData) {
         cellData.copyDataFrom(info);
+      }
+
+      // make sure the glyph style matches the partRole
+      if(info instanceof GlyphInfo){
+        let newStyleName = sequenceFeatureGlyphBaseStyleName + (<GlyphInfo> info).partRole;
+
+        // if there's no style for the partRole, use noGlyphAssigned
+        let cellStyle = this.graph.getStylesheet().getCellStyle(newStyleName);
+        // if there is no registered style for the newStyleName, getCellStyle returns an empty object.
+        // all of our registered styles have several fields, use fillcolor as an example to check
+        if (!cellStyle.fillColor)
+          newStyleName = sequenceFeatureGlyphBaseStyleName + noGlyphAssignedName;
+
+        // Modify the style string
+        let styleString = selectedCell.style.slice();
+        if (!styleString.includes(';')) {
+          // nothing special needed, the original style only had the glyphStyleName
+          styleString = newStyleName;
+        } else {
+          // the string is something like "strokecolor=#000000;glyphStyleName;fillcolor=#ffffff;etc;etc;"
+          // we only want to replace the 'glyphStyleName' bit
+          let startIdx = styleString.indexOf(sequenceFeatureGlyphBaseStyleName);
+          let endIdx = styleString.indexOf(';', startIdx);
+          let stringToReplace = styleString.slice(startIdx, endIdx-startIdx);
+          styleString = styleString.replace(stringToReplace, newStyleName);
+        }
+
+        this.graph.getModel().setStyle(selectedCell, styleString);
       }
     }
   }
