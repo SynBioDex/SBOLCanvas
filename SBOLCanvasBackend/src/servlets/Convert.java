@@ -19,9 +19,14 @@ public class Convert extends HttpServlet {
 		
 		if(request.getPathInfo().equals("/toSBOL")) {
 			try {
+				String name = request.getParameter("name");
+				if(name == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
 				response.addHeader("Access-Control-Allow-Origin", "*");
 				Converter converter = new Converter();
-				converter.toSBOL(request.getInputStream(), response.getOutputStream());
+				converter.toSBOL(request.getInputStream(), response.getOutputStream(), name);
 			} catch (IOException e) {
 				e.printStackTrace();
 				response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
