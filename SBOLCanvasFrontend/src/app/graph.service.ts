@@ -401,6 +401,22 @@ export class GraphService {
   }
 
   /**
+   * Returns true if there is at least 1 circuit container on the current
+   * view
+   */
+  atLeastOneCircuitContainerInGraph() {
+    let allGraphCells = this.graph.getDefaultParent().children;
+    if (allGraphCells != null) {
+      for (let i = 0; i < allGraphCells.length; i++) {
+        if (allGraphCells[i].isCircuitContainer()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
    * Drops a new glyph onto the selected backbone
    */
   addSequenceFeature(name) {
@@ -435,6 +451,11 @@ export class GraphService {
       } finally {
         this.graph.getModel().endUpdate();
       }
+    }
+    // Else if there is no backbone on the canvas, be curtious and put one down for the user.
+    else if (!this.atLeastOneCircuitContainerInGraph()) {
+      this.addNewBackbone();
+      this.addSequenceFeature(name);
     }
   }
 
