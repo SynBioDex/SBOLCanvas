@@ -19,6 +19,10 @@ export interface LoginDialogData {
   password: string;
   server: string;
 }
+export interface UploadDialogData {
+  collection: string;
+  filename: string;
+}
 
 @Component({
   selector: 'app-toolbar',
@@ -79,9 +83,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.graphService.toggleScars();
   }
 
-  openLoginDialog(): Observable<string>{
+  openLoginDialog(): Observable<string> {
     const loginDialogRef = this.dialog.open(LoginComponent, {
-      data: {user: null, server: null}
+      data: { user: null, server: null }
     });
     this.filesService.getRegistries().subscribe(result => {
       loginDialogRef.componentInstance.servers = result;
@@ -89,9 +93,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
     // this is total garbage, but the way observables work I have no choice
     // the outer observable doesn't notify any of it's subscribers, until the user token is set
-    return new Observable((observer) =>{
+    return new Observable((observer) => {
       loginDialogRef.afterClosed().subscribe(result => {
-        if(result == null){
+        if (result == null) {
           observer.complete();
           return;
         }
@@ -113,17 +117,23 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
         }
       });
     } else {
-      const uploadDialogRef = this.dialog.open(UploadGraphComponent);
-      uploadDialogRef.componentInstance.filesService = this.filesService;
-      uploadDialogRef.componentInstance.user = this.user;
-      uploadDialogRef.componentInstance.server = this.server;
-      uploadDialogRef.afterClosed().subscribe(result => { });
+      const uploadDialogRef = this.dialog.open(UploadGraphComponent, {
+        data: { collection: null, filename: null }
+      });
+      this.filesService.listCollections(this.user, this.server).subscribe(result => {
+        uploadDialogRef.componentInstance.collections = result;
+      });
+
+      uploadDialogRef.afterClosed().subscribe(result => {
+        if (result != null) {
+          this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.server, result.collection, this.user, result.filename).subscribe();
+        }
+      });
     }
   }
 
   openSaveDialog(): void {
     const dialogRef = this.dialog.open(SaveGraphComponent, {
-      width: '500px',
       data: { filename: this.filename }
     });
 
