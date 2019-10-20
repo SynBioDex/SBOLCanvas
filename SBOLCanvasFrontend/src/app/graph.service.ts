@@ -36,11 +36,13 @@ const circuitContainerStyleName           = 'circuitContainer';
 const backboneStyleName                   = 'backbone';
 const textboxStyleName                    = 'textBox';
 const scarStyleName                       = 'Scar (Assembly Scar)';
-const defaultInteractionStyleName         = 'control'
 const molecularSpeciesGlyphBaseStyleName  = 'molecularSpeciesGlyph';
 const sequenceFeatureGlyphBaseStyleName   = 'sequenceFeatureGlyph';
 const interactionGlyphBaseStyleName       = 'interactionGlyph';
+const interactionMarkerStyleName          = 'interactionMarkerGlyph';
 
+const interaction_control_name            = 'control';
+const interaction_inhibitionSpecification_name = 'inhibition-specification';
 
 @Injectable({
   providedIn: 'root'
@@ -61,6 +63,7 @@ export class GraphService {
 
   baseMolecularSpeciesGlyphStyle: any;
   baseSequenceFeatureGlyphStyle: any;
+  baseInteractionGlyphStyle: any;
   collapsedGlyphStyle: any;
 
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
@@ -459,7 +462,7 @@ export class GraphService {
    * @param target An optional mxCell to be the target of this connection
    */
   addInteraction(name: string, source?: any, target?: any) {
-    let cell = new mx.mxCell('', new mx.mxGeometry(0, 0, 0, 0), interactionGlyphBaseStyleName + defaultInteractionStyleName);
+    let cell = new mx.mxCell('', new mx.mxGeometry(0, 0, 0, 0), interactionGlyphBaseStyleName + name);
 
     cell.geometry.setTerminalPoint(new mx.mxPoint(50, 150), true);
     cell.geometry.setTerminalPoint(new mx.mxPoint(150, 50), false);
@@ -958,18 +961,34 @@ export class GraphService {
     this.graph.getStylesheet().putCellStyle(backboneStyleName, backboneStyle);
 
     // Interaction styles
-    const interactionControlSpecification = {};
-    interactionControlSpecification[mx.mxConstants.STYLE_STROKEWIDTH] = 3;
+    this.baseInteractionGlyphStyle = {};
+    this.baseInteractionGlyphStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
+    this.baseInteractionGlyphStyle[mx.mxConstants.STYLE_ENDSIZE] = 10;
+    this.baseInteractionGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
+    this.baseInteractionGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '000000';
+    this.baseInteractionGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+
+    // Control specification interaction edge
+    const interactionControlSpecification = mx.mxUtils.clone(this.baseInteractionGlyphStyle); // Inherit from the interaction defaults.
     interactionControlSpecification[mx.mxConstants.STYLE_ENDFILL] = 0;
     interactionControlSpecification[mx.mxConstants.STYLE_ENDARROW] = mx.mxConstants.ARROW_DIAMOND;
-    interactionControlSpecification[mx.mxConstants.STYLE_ENDSIZE] = 20;
     interactionControlSpecification[mx.mxConstants.STYLE_EDGE] = mx.mxConstants.EDGESTYLE_ORTHOGONAL;
-    interactionControlSpecification[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
-    interactionControlSpecification[mx.mxConstants.STYLE_FILLCOLOR] = '000000';
-    interactionControlSpecification[mx.mxConstants.STYLE_EDITABLE] = false;
-    this.graph.getStylesheet().putCellStyle(interactionGlyphBaseStyleName + 'control', interactionControlSpecification);
+    this.graph.getStylesheet().putCellStyle(interactionGlyphBaseStyleName + interaction_control_name, interactionControlSpecification);
 
-    
+    // Inhibition specification interaction edge
+    const interactionInhibitionSpecification = mx.mxUtils.clone(this.baseInteractionGlyphStyle); // Inherit from the interaction defaults.
+    interactionInhibitionSpecification[mx.mxConstants.STYLE_ENDFILL] = 0;
+    interactionInhibitionSpecification[mx.mxConstants.STYLE_ENDARROW] = interaction_inhibitionSpecification_name;
+    interactionInhibitionSpecification[mx.mxConstants.STYLE_EDGE] = mx.mxConstants.EDGESTYLE_ORTHOGONAL;
+    this.graph.getStylesheet().putCellStyle(interactionGlyphBaseStyleName + interaction_inhibitionSpecification_name, interactionInhibitionSpecification);
+  }
+
+  shallowCopy(arr) {
+    let newArray = {}
+    for (let i in arr) {
+      newArray[i] = arr[i]
+    }
+    return newArray;
   }
 
   /**
@@ -984,7 +1003,7 @@ export class GraphService {
       // Create a new copy of the stencil for the graph.
       const stencil = stencils[name][0];
       const centered = stencils[name][1];
-      let customStencil = new mx.mxStencil(stencil.desc);
+      let customStencil = new mx.mxStencil(stencil.desc); // Makes a deep copy
 
       // Change the copied stencil for mxgraph
       let origDrawShape = mx.mxStencil.prototype.drawShape;
@@ -1021,7 +1040,7 @@ export class GraphService {
     stencils = this.glyphService.getMolecularSpeciesGlyphs();
     for (const name in stencils) {
       const stencil = stencils[name][0];
-      let customStencil = new mx.mxStencil(stencil.desc);
+      let customStencil = new mx.mxStencil(stencil.desc); // Makes of deep copy of the stencil.
 
       // Defines the default constraints for all molecular species
       customStencil.constraints = [
@@ -1036,6 +1055,25 @@ export class GraphService {
       newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
       this.graph.getStylesheet().putCellStyle(molecularSpeciesGlyphBaseStyleName + name, newGlyphStyle);
     }
+
+    // *** Define custom markers for edge endpoints ***
+
+    // This draws the end of the terminator interaction edge
+    let terminatorMarkerDrawFunction = function(canvas, shape, type, pe, unitX, unitY, size, source, sw, filled) {
+
+      //return customStencil.drawShape(canvas, customStencil, pe.x, pe.y, size, size);
+      return function()
+      {
+        canvas.begin();
+        let x_begin = pe.x - size/2;
+        canvas.moveTo(x_begin, pe.y);
+        canvas.lineTo(x_begin + size, pe.y);
+        canvas.stroke();
+      };
+    };
+
+    mx.mxMarker.addMarker(interaction_inhibitionSpecification_name, terminatorMarkerDrawFunction);
+
   }
 
   /**
