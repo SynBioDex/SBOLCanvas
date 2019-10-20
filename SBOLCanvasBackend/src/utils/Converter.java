@@ -84,7 +84,7 @@ public class Converter {
 	private LinkedList<MxCell> edges = new LinkedList<MxCell>();
 	private HashMap<Integer, MxCell> cells = new HashMap<Integer, MxCell>();
 
-	public void toSBOL(InputStream graphStream, OutputStream sbolStream) {
+	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename) {
 		// convert the stream to a document
 		Document graph = null;
 		try {
@@ -106,7 +106,8 @@ public class Converter {
 
 		try {
 			// top level module definition that contains all strands and proteins
-			ModuleDefinition modDef = document.createModuleDefinition("CanvasModDef");
+			// filename because that's what synbiohub uses to distinguish
+			ModuleDefinition modDef = document.createModuleDefinition(filename);
 			if (textBoxes.size() > 0) {
 				modDef.createAnnotation(new QName(uriPrefix, "textBoxes", annPrefix),
 						gson.toJson(textBoxes.toArray(new MxCell[0])));

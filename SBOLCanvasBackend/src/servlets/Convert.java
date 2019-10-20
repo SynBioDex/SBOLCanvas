@@ -19,9 +19,13 @@ public class Convert extends HttpServlet {
 		
 		if(request.getPathInfo().equals("/toSBOL")) {
 			try {
-				response.addHeader("Access-Control-Allow-Origin", "*");
+				String name = request.getParameter("name");
+				if(name == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
 				Converter converter = new Converter();
-				converter.toSBOL(request.getInputStream(), response.getOutputStream());
+				converter.toSBOL(request.getInputStream(), response.getOutputStream(), name);
 			} catch (IOException e) {
 				e.printStackTrace();
 				response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -29,8 +33,6 @@ public class Convert extends HttpServlet {
 			}
 		}else if(request.getPathInfo().equals("/toMxGraph")) {
 			try {
-				
-				response.addHeader("Access-Control-Allow-Origin", "*");
 				Converter converter = new Converter();
 				converter.toGraph(request.getInputStream(), response.getOutputStream());
 			} catch (IOException e) {
