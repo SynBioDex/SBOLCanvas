@@ -59,7 +59,8 @@ export class GraphService {
   // counter for keeping track of how many times the user drilled into a glyph
   drillDepth: number = 0;
 
-  baseGlyphStyle: any;
+  baseMolecularSpeciesGlyphStyle: any;
+  baseSequenceFeatureGlyphStyle: any;
   collapsedGlyphStyle: any;
 
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
@@ -920,16 +921,19 @@ export class GraphService {
    */
   initStyles() {
     // Main glyph settings. These are applied to sequence feature glyphs and molecular species glyphs
-    this.baseGlyphStyle = {};
-    this.baseGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
-    this.baseGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
-    this.baseGlyphStyle[mx.mxConstants.STYLE_BACK] = '#ffffff';
-    this.baseGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = true;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_ROTATION] = 0;
-    this.baseGlyphStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
+    this.baseMolecularSpeciesGlyphStyle = {};
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = true;
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_ROTATION] = 0;
     //this.baseGlyphStyle[mx.mxConstants.DEFAULT_HOTSPOT] = 0;
+
+    // Sequence features need almost the same styling as molecularSpecies
+    this.baseSequenceFeatureGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
+    this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
+
 
     const textBoxStyle = {};
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
@@ -1002,7 +1006,7 @@ export class GraphService {
       // Add the stencil to the registry and set its style.
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
-      const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
+      const newGlyphStyle = mx.mxUtils.clone(this.baseSequenceFeatureGlyphStyle);
       newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
       this.graph.getStylesheet().putCellStyle(sequenceFeatureGlyphBaseStyleName + name, newGlyphStyle);
     }
@@ -1023,7 +1027,7 @@ export class GraphService {
       ];
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
-      const newGlyphStyle = mx.mxUtils.clone(this.baseGlyphStyle);
+      const newGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
       newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
       this.graph.getStylesheet().putCellStyle(molecularSpeciesGlyphBaseStyleName + name, newGlyphStyle);
     }
