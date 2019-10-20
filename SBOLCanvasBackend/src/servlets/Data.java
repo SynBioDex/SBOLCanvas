@@ -55,7 +55,6 @@ public class Data extends HttpServlet {
 			
 			// the request was good
 			response.setStatus(HttpStatus.SC_OK);
-			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
 			return;
 		}

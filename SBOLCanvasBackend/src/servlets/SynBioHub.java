@@ -32,13 +32,19 @@ public class SynBioHub extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) {
 		Gson gson = new Gson();
 		String body = null;
-		response.addHeader("Access-Control-Allow-Origin", "*");
-		
 		// parameters for the different methods
-		String email = request.getParameter("email");
-		String password = request.getParameter("password");
+		String authorization = request.getHeader("Authorization");
+		String email = null;
+		String password = null;
+		String user = null;
+		if(authorization != null && authorization.split(":").length > 1) {
+			String[] tokens = authorization.split(":");
+			email = tokens[0];
+			password = tokens[1];
+		}else {
+			user = authorization;
+		}
 		String server = request.getParameter("server");
-		String user = request.getParameter("user");
 		
 		if(request.getPathInfo().equals("/registries")) {
 			
@@ -102,7 +108,6 @@ public class SynBioHub extends HttpServlet {
 	}
 	
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-		response.addHeader("Access-Control-Allow-Origin", "*");
 		
 		String server = request.getParameter("server");
 		String user = request.getParameter("user");
