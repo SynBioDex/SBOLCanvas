@@ -43,8 +43,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    // TODO this is code for making the 'new strand' a dragsource
-    // this.graphService.addNewBackbone(this.backbone.nativeElement);
   }
 
   save(filename: string) {
@@ -53,34 +51,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
   load(file: File) {
     this.filesService.loadLocal(file, this.graphService);
-  }
-
-  delete() {
-    this.graphService.delete();
-  }
-
-  undoChange() {
-    this.graphService.undo();
-  }
-
-  redoChange() {
-    this.graphService.redo();
-  }
-
-  zoom() {
-    this.graphService.zoom();
-  }
-
-  unzoom() {
-    this.graphService.unzoom();
-  }
-
-  flipGlyph() {
-    this.graphService.flipSequenceFeatureGlyph();
-  }
-
-  toggleScars() {
-    this.graphService.toggleScars();
   }
 
   openLoginDialog(): Observable<string> {

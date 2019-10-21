@@ -293,11 +293,9 @@ export class GraphService {
   }
 
   /**
-   * 'Zooms in' to view the component definition of the currently selected glyph.
-   * This changes which component/module definition is displayed on the canvas,
-   * not the canvas's scale.
+   * "Drills in" to replace the canvas with the selected glyph's component definition
    */
-  zoom() {
+  enterGlyph() {
     let selection = this.graph.getSelectionCells();
     if (selection.length != 1) {
       return;
@@ -307,28 +305,32 @@ export class GraphService {
       return;
     }
 
-    this.editor.execute('enterGroup');
+    this.graph.enterGroup();
     this.drillDepth++;
+
+    this.fitCamera();
 
     // Broadcast to the UI that we are now in component definition mode
     this.metadataService.setComponentDefinitionMode(true);
   }
 
   /**
-   * 'Zooms out' to view a higher level of the sbol document.
-   * This changes which component/module definition is displayed on the canvas,
-   * not the canvas's scale.
+   * Moves up the drilling hierarchy, restoring the canvas to how it was before "Drilling in"
+   * (If "enterGlyph" has not been called, ie the canvas is already
+   * at the top of the drilling hierarchy, does nothing)
    */
-  unzoom() {
+  exitGlyph() {
     if (this.drillDepth > 0) {
       // Exit twice: the first only gets you to the circuitContainer
-      this.editor.execute('exitGroup');
-      this.editor.execute('exitGroup');
+      this.graph.exitGroup();
+      this.graph.exitGroup();
       this.drillDepth--;
 
       // We call this here when we zoom out to synchronize
       // the current graph vertices with the showing scars setting
       this.setAllScars(this.showingScars);
+
+      this.fitCamera();
     }
 
     // Broadcast to the UI that we are no longer in component definition mode
@@ -343,6 +345,7 @@ export class GraphService {
       const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, circuitContainerStyleName);
       const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, sequenceFeatureGlyphHeight/2, sequenceFeatureGlyphWidth, 1, backboneStyleName);
 
+      this.centerCellToView(circuitContainer);
       backbone.refreshBackbone(this.graph);
 
       circuitContainer.setConnectable(false);
@@ -387,17 +390,42 @@ export class GraphService {
   }
 
   /**
-   * Undoes the most recent changes encapsulated by a begin/end update
+   * Undoes the most recent changes
    */
   undo() {
+    // (un/re)doing is managed by the editor; it only works
+    // if all changes are encapsulated by graphModel.(begin/end)Update
     this.editor.execute('undo');
   }
 
   /**
-   * Redoes the most recent changes encapsulated by a begin/end update
+   * Redoes the most recent changes
    */
   redo() {
     this.editor.execute('redo');
+  }
+
+  zoomIn() {
+    // (un/re)doing is managed by the editor; it only works
+    // if all changes are encapsulated by graphModel.(begin/end)Update
+    this.graph.zoomIn();
+  }
+
+  zoomOut() {
+    this.graph.zoomOut();
+  }
+
+  fitCamera() {
+    // graph.fit() does most of the work. however by default it will zoom in far too much.
+    // Instead, it makes sense to stay at the user's zoom level unless it is too small to
+    // contain everything.
+    let currentScale = this.graph.getView().getScale();
+    this.graph.maxFitScale = currentScale;
+    this.graph.fit();
+
+    // if the user had it widely zoomed out, however, stupidly graph.fit()
+    // doesn't center the view on cells. It puts them in the top left.
+    this.graph.center();
   }
 
   /**
@@ -452,10 +480,16 @@ export class GraphService {
         this.graph.getModel().endUpdate();
       }
     }
-    // Else if there is no backbone on the canvas, be curtious and put one down for the user.
+    // If a glyph couldn't made because there was no backbone on the canvas,
+    // be courteous and put one down for the user.
     else if (!this.atLeastOneCircuitContainerInGraph()) {
-      this.addNewBackbone();
-      this.addSequenceFeature(name);
+      this.graph.getModel().beginUpdate();
+      try {
+        this.addNewBackbone();
+        this.addSequenceFeature(name);
+      } finally {
+        this.graph.getModel().endUpdate();
+      }
     }
   }
 
@@ -467,6 +501,7 @@ export class GraphService {
     try {
       const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0,
         molecularSpeciesGlyphWidth, molecularSpeciesGlyphHeight, molecularSpeciesGlyphBaseStyleName + name);
+      this.centerCellToView(molecularSpeciesGlyph);
       molecularSpeciesGlyph.setConnectable(true);
 
       molecularSpeciesGlyph.data = new GlyphInfo();
@@ -486,19 +521,43 @@ export class GraphService {
    * @param target An optional mxCell to be the target of this connection
    */
   addInteraction(name: string, source?: any, target?: any) {
-    let cell = new mx.mxCell('', new mx.mxGeometry(0, 0, 0, 0), interactionGlyphBaseStyleName + name);
+    let cell;
 
-    cell.geometry.setTerminalPoint(new mx.mxPoint(50, 150), true);
-    cell.geometry.setTerminalPoint(new mx.mxPoint(150, 50), false);
+    // wrap everything in begin/end update because I noticed it was
+    // taking two undo clicks to undo interaction creation.  
+    this.graph.getModel().beginUpdate();
+    try {
+      cell = new mx.mxCell('', new mx.mxGeometry(0, 0, 0, 0), interactionGlyphBaseStyleName + name);
 
-    cell.edge = true;
-    this.graph.addEdge(cell, null, source, target);
+      cell.geometry.setTerminalPoint(new mx.mxPoint(-50, 50), true);
+      cell.geometry.setTerminalPoint(new mx.mxPoint(50, -50), false);
+      this.centerCellToView(cell);
 
-    cell.data = new InteractionInfo();
+      cell.edge = true;
+      this.graph.addEdge(cell, null, source, target);
+
+      cell.data = new InteractionInfo();
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
 
     return cell;
   }
 
+  centerCellToView(cell: mxCell) {
+    const s = this.graph.getView().getScale();
+    const t = this.graph.getView().getTranslate();
+    const c = this.graph.container;
+    const w = cell.getGeometry().width;
+    const h = cell.getGeometry().height;
+    const newX = (c.scrollLeft + c.clientWidth / 2) / s - w / 2 - t.x;
+    const newY = (c.scrollTop + c.clientHeight / 2) / s - h / 2 - t.y;
+
+    const oldX = cell.getGeometry().x;
+    const oldY = cell.getGeometry().y;
+
+    this.graph.translateCell(cell, newX-oldX, newY-oldY);
+  }
 
   /**
    * Based on the selected cell(s) chooses a location to drop a new glyph.
@@ -531,6 +590,7 @@ export class GraphService {
     this.graph.getModel().beginUpdate();
     try {
       const cell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', 0, 0, defaultTextWidth, defaultTextHeight, textboxStyleName);
+      this.centerCellToView(cell);
       cell.setConnectable(false);
 
       // The new cell should be selected
@@ -884,6 +944,8 @@ export class GraphService {
      *
      * For any other value, pass the string 'auto' to use the
      * previous geometry's value.
+     *
+     * It is not necessary to wrap this in (begin/end)Update() calls.
      */
     mx.mxCell.prototype.replaceGeometry = function(x, y, width, height, graph) {
       const oldGeo = this.getGeometry();
