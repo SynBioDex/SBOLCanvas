@@ -60,7 +60,7 @@
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of interactionsDict | keyvalue">
-          <button mat-button [disabled]="componentDefinitionMode" (click)="onInteractionGlyphClicked(pair.key)">
+          <button mat-button (click)="onInteractionGlyphClicked(pair.key)">
             <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>
