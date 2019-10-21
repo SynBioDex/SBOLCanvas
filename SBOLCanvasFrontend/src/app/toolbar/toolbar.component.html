@@ -7,7 +7,7 @@
 <!-- menu -->
   <mat-toolbar-row class="toolbar-row">
     <!--    File menu-->
-    <button mat-button [matMenuTriggerFor]="fileMenu">File</button>
+    <button mat-stroked-button [matMenuTriggerFor]="fileMenu">File</button>
     <mat-menu #fileMenu="matMenu">
       <button mat-menu-item
               class="toolbar-row-button"
@@ -23,7 +23,7 @@
     </mat-menu>
 
     <!--    View menu-->
-    <button mat-button [matMenuTriggerFor]="viewMenu">View</button>
+    <button mat-stroked-button [matMenuTriggerFor]="viewMenu">View</button>
     <mat-menu #viewMenu="matMenu">
       <button mat-menu-item
               class="toolbar-row-button"
@@ -34,29 +34,26 @@
               (click)="unzoom()">Unzoom</button>
     </mat-menu>
 
-<!--    Util menu -->
-    <button mat-button [matMenuTriggerFor]="toolMenu">Tools</button>
-    <mat-menu #toolMenu="matMenu">
-      <button mat-menu-item
+
+      <button mat-stroked-button
               class="toolbar-row-button"
               (click)="delete()">Delete</button>
 
-      <button mat-menu-item
+      <button mat-stroked-button
               class="toolbar-row-button"
               (click)="undoChange()">Undo</button>
 
-      <button mat-menu-item
+      <button mat-stroked-button
               class="toolbar-row-button"
               (click)="redoChange()">Redo</button>
 
-      <button mat-menu-item
+      <button mat-stroked-button
               class="toolbar-row-button"
               (click)="flipGlyph()">Flip</button>
 
-      <button mat-menu-item
+      <button mat-stroked-button
               class="toolbar-row-button"
               (click)="toggleScars()">Toggle Scars</button>
-    </mat-menu>
 
   </mat-toolbar-row>
 </mat-toolbar>
