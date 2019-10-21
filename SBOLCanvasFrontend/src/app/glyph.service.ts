@@ -99,7 +99,7 @@ export class GlyphService {
       canvas.setStrokeColor('#000000');
       canvas.setFillColor('none');
 
-      stencil.drawShape(canvas, shape, 0, 0, 52, 52);
+      stencil.drawShape(canvas, shape, 1, 1, 50, 50);
 
       svgs[name] = elt;
     }
