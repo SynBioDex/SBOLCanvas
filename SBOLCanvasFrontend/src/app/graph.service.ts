@@ -524,7 +524,7 @@ export class GraphService {
     let cell;
 
     // wrap everything in begin/end update because I noticed it was
-    // taking two undo clicks to undo interaction creation.  
+    // taking two undo clicks to undo interaction creation.
     this.graph.getModel().beginUpdate();
     try {
       cell = new mx.mxCell('', new mx.mxGeometry(0, 0, 0, 0), interactionGlyphBaseStyleName + name);

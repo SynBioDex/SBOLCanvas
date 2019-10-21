@@ -13,6 +13,7 @@ cd ${cur_dir}
 
 
 SERVER_ADDRESS=sbolcanvas.org
+SERVER_SSH_PORT=666
 
 TOMCAT_SERVER_DIR=/opt/tomcat/enabled
 

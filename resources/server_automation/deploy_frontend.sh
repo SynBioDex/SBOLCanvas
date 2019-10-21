@@ -22,15 +22,15 @@ cd dist
 tar -cf ${FRONTEND_TARBALL_NAME} SBOLCanvasFrontend || die "Failed to tar the balls up"
 
 # Get files over to server.
-scp -P 666 -o StrictHostKeyChecking=no ${FRONTEND_TARBALL_NAME} root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR} || die "Failed to scp tarball to server"
+scp -P ${SERVER_SSH_PORT} -o StrictHostKeyChecking=no ${FRONTEND_TARBALL_NAME} root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR} || die "Failed to scp tarball to server"
 
 # run this script on the server to unpack the tarball and setup the directories
 cd ${cur_dir}
-ssh -p 666 root@${SERVER_ADDRESS} env TOMCAT_SERVER_DIR=${TOMCAT_SERVER_DIR} TOMCAT_FRONTEND_DIR=${TOMCAT_FRONTEND_DIR} FRONTEND_TARBALL_NAME=${FRONTEND_TARBALL_NAME} /bin/bash -s < ./runs_on_target_machine/setup_frontend.sh root\
+ssh -p ${SERVER_SSH_PORT} root@${SERVER_ADDRESS} env TOMCAT_SERVER_DIR=${TOMCAT_SERVER_DIR} TOMCAT_FRONTEND_DIR=${TOMCAT_FRONTEND_DIR} FRONTEND_TARBALL_NAME=${FRONTEND_TARBALL_NAME} /bin/bash -s < ./runs_on_target_machine/setup_frontend.sh root\
  || die "Failed to setup frontend directory on server"
 
 # scp the remaining config files on over
-scp -P 666 ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_context.html root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/META-INF/context.html || die "Failed to copy over frontend context.html file"
-scp -P 666 ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_rewrite.config root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/WEB-INF/rewrite.config || die "Failed to copy over frontend rewrite.config file"
+scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_context.html root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/META-INF/context.html || die "Failed to copy over frontend context.html file"
+scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_rewrite.config root@${SERVER_ADDRESS}:${TOMCAT_FRONTEND_DIR}/WEB-INF/rewrite.config || die "Failed to copy over frontend rewrite.config file"
 
 echo "-------- Frontend successfully deployed ---------"
