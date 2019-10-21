@@ -6,52 +6,57 @@
 
 <!-- menu -->
   <mat-toolbar-row class="toolbar-row">
+    <!--    File menu-->
+    <button mat-button [matMenuTriggerFor]="fileMenu">File</button>
+    <mat-menu #fileMenu="matMenu">
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="openUploadDialog()">Upload</button>
 
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="delete()">Delete</button>
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="openSaveDialog()">Save</button>
 
-<!--    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>-->
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="openLoadDialog()">Load</button>
+    </mat-menu>
 
-<!--    <span class="toolbar-spacer"></span>-->
+    <!--    View menu-->
+    <button mat-button [matMenuTriggerFor]="viewMenu">View</button>
+    <mat-menu #viewMenu="matMenu">
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="zoom()">Zoom</button>
 
-<!--    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>-->
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="unzoom()">Unzoom</button>
+    </mat-menu>
 
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="openUploadDialog()">Upload</button>
+<!--    Util menu -->
+    <button mat-button [matMenuTriggerFor]="viewMenu">Tools</button>
+    <mat-menu #viewMenu="matMenu">
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="delete()">Delete</button>
 
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="openSaveDialog()">Save</button>
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="undoChange()">Undo</button>
 
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="openLoadDialog()">Load</button>
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="redoChange()">Redo</button>
 
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="undoChange()">Undo</button>
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="flipGlyph()">Flip</button>
 
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="redoChange()">Redo</button>
-
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="zoom()">Zoom</button>
-
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="unzoom()">Unzoom</button>
-
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="flipGlyph()">Flip</button>
-
-    <button mat-stroked-button
-            class="toolbar-row-button"
-            (click)="toggleScars()">Toggle Scars</button>
+      <button mat-menu-item
+              class="toolbar-row-button"
+              (click)="toggleScars()">Toggle Scars</button>
+    </mat-menu>
 
   </mat-toolbar-row>
 </mat-toolbar>
