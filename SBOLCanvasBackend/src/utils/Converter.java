@@ -286,14 +286,11 @@ public class Converter {
 					createComponentDefinition(document, componentCD, subContainer, subBackbone);
 				}
 
-				// sequence
-				if (!containers.containsKey(glyphCell.getId())) {
-					// component sequence
-					if (glyphInfo.getSequence() != null && !glyphInfo.getSequence().equals("")) {
-						Sequence seq = document.createSequence(componentCD.getDisplayId() + "Sequence",
-								glyphInfo.getSequence(), Sequence.IUPAC_DNA);
-						componentCD.addSequence(seq.getIdentity());
-					}
+				// component sequence
+				if (glyphInfo.getSequence() != null && !glyphInfo.getSequence().equals("")) {
+					Sequence seq = document.createSequence(componentCD.getDisplayId() + "Sequence",
+							glyphInfo.getSequence(), Sequence.IUPAC_DNA);
+					componentCD.addSequence(seq.getIdentity());
 				}
 
 				// cell annotation
@@ -490,17 +487,17 @@ public class Converter {
 			mxCell.setAttribute("id", "" + cell.getId());
 			mxCell.setAttribute("value", cell.getValue());
 			mxCell.setAttribute("style", cell.getStyle());
-			if(cell.isVertex())
+			if (cell.isVertex())
 				mxCell.setAttribute("vertex", "1");
-			if(cell.isEdge())
+			if (cell.isEdge())
 				mxCell.setAttribute("edge", "1");
 			mxCell.setAttribute("connectable", cell.isConnectable() ? "1" : "0");
 			mxCell.setAttribute("parent", "" + cell.getParent());
-			if(cell.getSource() > 0)
-				mxCell.setAttribute("source", ""+cell.getSource());
-			if(cell.getTarget() > 0)
-				mxCell.setAttribute("target", ""+cell.getTarget());
-			if(cell.isCollapsed())
+			if (cell.getSource() > 0)
+				mxCell.setAttribute("source", "" + cell.getSource());
+			if (cell.getTarget() > 0)
+				mxCell.setAttribute("target", "" + cell.getTarget());
+			if (cell.isCollapsed())
 				mxCell.setAttribute("collapsed", "1");
 			root.appendChild(mxCell);
 
@@ -515,29 +512,29 @@ public class Converter {
 				mxGeometry.setAttribute("width", "" + geometry.getWidth());
 			if (geometry.getHeight() != 0)
 				mxGeometry.setAttribute("height", "" + geometry.getHeight());
-			if(geometry.getSourcePoint() != null) {
+			if (geometry.getSourcePoint() != null) {
 				MxPoint sourcePoint = geometry.getSourcePoint();
 				Element mxPoint = graphDocument.createElement("mxPoint");
-				mxPoint.setAttribute("x", ""+sourcePoint.getX());
-				mxPoint.setAttribute("y", ""+sourcePoint.getY());
+				mxPoint.setAttribute("x", "" + sourcePoint.getX());
+				mxPoint.setAttribute("y", "" + sourcePoint.getY());
 				mxPoint.setAttribute("as", "sourcePoint");
 				mxGeometry.appendChild(mxPoint);
 			}
-			if(geometry.getTargetPoint() != null) {
+			if (geometry.getTargetPoint() != null) {
 				MxPoint targetPoint = geometry.getTargetPoint();
 				Element mxPoint = graphDocument.createElement("mxPoint");
-				mxPoint.setAttribute("x", ""+targetPoint.getX());
-				mxPoint.setAttribute("y", ""+targetPoint.getY());
+				mxPoint.setAttribute("x", "" + targetPoint.getX());
+				mxPoint.setAttribute("y", "" + targetPoint.getY());
 				mxPoint.setAttribute("as", "targetPoint");
 				mxGeometry.appendChild(mxPoint);
 			}
-			if(geometry.getPoints() != null) {
+			if (geometry.getPoints() != null) {
 				Element array = graphDocument.createElement("Array");
 				array.setAttribute("as", "points");
-				for(MxPoint point : geometry.getPoints()) {
+				for (MxPoint point : geometry.getPoints()) {
 					Element mxPoint = graphDocument.createElement("mxPoint");
-					mxPoint.setAttribute("x", ""+point.getX());
-					mxPoint.setAttribute("y", ""+point.getY());
+					mxPoint.setAttribute("x", "" + point.getX());
+					mxPoint.setAttribute("y", "" + point.getY());
 					array.appendChild(mxPoint);
 				}
 				mxGeometry.appendChild(array);
@@ -568,16 +565,16 @@ public class Converter {
 						glyphInfo.setAttribute("version", info.getVersion());
 					glyphInfo.setAttribute("as", "data");
 					mxCell.appendChild(glyphInfo);
-				}else if(cell.getInfo() instanceof InteractionInfo) {
+				} else if (cell.getInfo() instanceof InteractionInfo) {
 					InteractionInfo info = (InteractionInfo) cell.getInfo();
 					Element intInfo = graphDocument.createElement("InteractionInfo");
-					if(info.getDisplayID() != null)
+					if (info.getDisplayID() != null)
 						intInfo.setAttribute("displayID", info.getDisplayID());
-					if(info.getInteractionType() != null)
+					if (info.getInteractionType() != null)
 						intInfo.setAttribute("interactionType", info.getInteractionType());
-					if(info.getFromParticipationType() != null)
+					if (info.getFromParticipationType() != null)
 						intInfo.setAttribute("fromParticipationType", info.getFromParticipationType());
-					if(info.getToParticipationType() != null)
+					if (info.getToParticipationType() != null)
 						intInfo.setAttribute("toParticipationType", info.getToParticipationType());
 					intInfo.setAttribute("as", "data");
 					mxCell.appendChild(intInfo);
