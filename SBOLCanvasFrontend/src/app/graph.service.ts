@@ -693,6 +693,18 @@ export class GraphService {
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
 
+    // TODO fix these terrible hax
+    // mxCell's connectable property isn't getting saved in the xml that's sent to the backend
+    this.graph.getModel().beginUpdate();
+    try {
+      let cells = Object.values<any>(this.graph.getModel().cells);
+      for (let cell of cells) {
+        cell.setConnectable(cell.isInteraction() || cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph());
+      }
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
+
     this.editor.undoManager.clear();
   }
 
@@ -723,6 +735,7 @@ export class GraphService {
     }
     mx.mxCodecRegistry.register(glyphInfoCodec);
     window['GlyphInfo'] = GlyphInfo;
+
     const interactionInfoCodec = new mx.mxObjectCodec(new InteractionInfo());
     interactionInfoCodec.decode = function(dec, node, into){
       const interactionData = new InteractionInfo();
