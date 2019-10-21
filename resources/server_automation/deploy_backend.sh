@@ -26,6 +26,6 @@ javac -source 1.8 -target 1.8 -sourcepath ${compile_source_dir} -d ${compile_des
 # Build .war file and deploy
 cd ${BACKEND_DIR}/WebContent
 jar -cf ${war_filename} * || die "Failed to generate .war file for backend"
-scp -P 666 ${war_filename} root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR}/webapps || die "Failed to scp backend .war file to server"
+scp -P ${SERVER_SSH_PORT} ${war_filename} root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR}/webapps || die "Failed to scp backend .war file to server"
 
 echo "--------- Backend successfully deployed ---------"
