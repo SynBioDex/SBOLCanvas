@@ -37,7 +37,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   user: string;
   server: string;
 
-  constructor(private graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) { }
+  constructor(public graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) { }
 
   ngOnInit() {
   }

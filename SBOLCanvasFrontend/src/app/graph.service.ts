@@ -382,7 +382,7 @@ export class GraphService {
       this.editor.execute('delete');
 
       for (let cell of circuitContainers) {
-        cell.refreshSequenceFeature(this.graph);
+        cell.refreshCircuitContainer(this.graph);
       }
     } finally {
       this.graph.getModel().endUpdate();
@@ -706,6 +706,8 @@ export class GraphService {
     }
 
     this.editor.undoManager.clear();
+
+    this.fitCamera();
   }
 
   /**
