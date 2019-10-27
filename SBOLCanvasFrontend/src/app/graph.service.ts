@@ -716,6 +716,9 @@ export class GraphService {
     window['mxGraphModel'] = mx.mxGraphModel;
     window['mxGeometry'] = mx.mxGeometry;
     window['mxPoint'] = mx.mxPoint;
+
+    //mxGraph uses function.name which uglifyJS breaks on production
+    Object.defineProperty(GlyphInfo, "name", {configurable: true, value: "GlyphInfo"});
     const glyphInfoCodec = new mx.mxObjectCodec(new GlyphInfo());
     glyphInfoCodec.decode = function(dec, node, into) {
       const glyphData = new GlyphInfo();
@@ -736,6 +739,7 @@ export class GraphService {
     mx.mxCodecRegistry.register(glyphInfoCodec);
     window['GlyphInfo'] = GlyphInfo;
 
+    Object.defineProperty(InteractionInfo, "name", {configurable: true, value: "InteractionInfo"});
     const interactionInfoCodec = new mx.mxObjectCodec(new InteractionInfo());
     interactionInfoCodec.decode = function(dec, node, into){
       const interactionData = new InteractionInfo();
