@@ -13,6 +13,9 @@ WIDTH_MAX 	= 48
 MIN_X_PADDING = 5
 MIN_Y_PADDING = 3
 
+MANUAL_Y_ADJUST = 0
+MANUAL_X_ADJUST = 0
+
 STROKE_WIDTH = 2.88
 
 CENTERED = False
@@ -60,6 +63,8 @@ def parse_args():
 	parser.add_argument("--centered", action="store_true", help="centers the glyph horizontally and sets the attribute 'centered' to true")
 	parser.add_argument("-xp", "--xpadding", action="store", help="sets the minimum padding on the left and right sides")
 	parser.add_argument("-yp", "--ypadding", action="store", help="sets the minimum padding on the top and bottom")
+	parser.add_argument("-my", "--manual_y_adjustment", action="store", help="allows you to manually adjust the final y positioon of the svg. Positive value is upward direction.")
+	parser.add_argument("-mx", "--manual_x_adjustment", action="store", help="allows you to manually adjust the final x positioon of the svg. Positive value moves it to the right.")
 
 	args = parser.parse_args()
 
@@ -75,6 +80,9 @@ def parse_args():
 	if args.ypadding:
 		global MIN_Y_PADDING
 		MIN_Y_PADDING = float(args.ypadding)
+	if args.manual_y_adjustment:
+		global MANUAL_Y_ADJUST
+		MANUAL_Y_ADJUST = float(args.manual_y_adjustment)
 	if args.centered == True:
 		global CENTERED
 		CENTERED = True
@@ -124,6 +132,7 @@ def fixShape(shape):
 
 	# Y direction might be a bit trickier depending on if the glyph is centered horizontally.
 	glyph_height = data['max_y'] - data['min_y']
+	print("glyph height = {glyph_height}".format(glyph_height=glyph_height))
 	desired_dist = HEIGHT_MAX - glyph_height
 
 	if is_centered(shape):
@@ -134,6 +143,12 @@ def fixShape(shape):
 		
 	print("y_adjustment_dist = {y}".format(y=y_adjustment_dist))
 	shift_x_or_y_direction(shape, y_adjustment_dist, 'y')
+
+	# Here we allow the user to manually adjust the shape at the end.
+	if MANUAL_Y_ADJUST != 0:
+		shift_x_or_y_direction(shape, MANUAL_Y_ADJUST * -1, 'y') # We tell the user positive y is in the upward direction, so we need to flip the sign of the adjustment.
+	if MANUAL_X_ADJUST != 0:
+		shift_x_or_y_direction(shape, MANUAL_X_ADJUST, 'x')
 
 
 ############################## Helper functions ########################################
