@@ -28,6 +28,21 @@ export class GlyphService {
     'assets/glyph_stencils/terminator-specification.xml',
     'assets/glyph_stencils/assembly-scar.xml',
     'assets/glyph_stencils/no-glyph-assigned.xml',
+    'assets/glyph_stencils/ncrna.xml',
+    'assets/glyph_stencils/nuclease-site.xml',
+    //'assets/glyph_stencils/protease-site.xml',
+    //'assets/glyph_stencils/protein-stability-element.xml',
+    //'assets/glyph_stencils/ribonuclease-site.xml',
+    'assets/glyph_stencils/rna-stability-element.xml',
+    'assets/glyph_stencils/operator.xml',
+    'assets/glyph_stencils/origin-of-replication.xml',
+    'assets/glyph_stencils/origin-of-transfer.xml',
+    'assets/glyph_stencils/primer-binding-site.xml',
+    'assets/glyph_stencils/signature.xml',
+    'assets/glyph_stencils/specific-recombination-site.xml',
+    'assets/glyph_stencils/three-prime-overhang.xml',
+
+    // 'assets/glyph_stencils/downloads.xml',
   ];
 
   private molecularSpeciesXMLs: string[] = [
