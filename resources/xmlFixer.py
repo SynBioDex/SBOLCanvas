@@ -89,6 +89,10 @@ def parse_args():
 
 	return args
 
+# def adjust_squigglies(shape, x, y):
+# ''' Fixes the squigglies :) '''
+
+
 def fixShape(shape):
 
 	''' Scales the shape and ajusts its placement on the SVG 'page' '''
@@ -193,11 +197,12 @@ def scale_shape(shape, factor):
 # Document settings helpers
 #
 def set_stroke_width(shape, width):
-	setting = shape.find('./foreground/strokewidth')
-	for key, val in setting.attrib.items():
-		if 'width' in key:
-			val = width
-		setting.attrib[key] = str(val)
+	settings = shape.findall('./foreground/strokewidth')
+	for setting in settings:
+		for key, val in setting.attrib.items():
+			if 'width' in key:
+				val = width
+			setting.attrib[key] = str(val)
 
 def set_all_strokes_to_fillstroke(shape):
 	fore = shape.find('./foreground')
