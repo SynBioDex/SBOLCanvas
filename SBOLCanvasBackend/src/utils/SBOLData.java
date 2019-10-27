@@ -19,8 +19,6 @@ public class SBOLData {
 	public static BiMap<String, URI> refinements;
 	public static HashMap<URI, URI> parents;
 	public static BiMap<String, URI> interactions;
-	public static BiMap<String, URI> participations;
-	private static HashMap<String, Set<String>> partByInt;
 	
 	static {
 		so = new SequenceOntology();
@@ -88,54 +86,6 @@ public class SBOLData {
 		interactions.put("Genetic Production", SystemsBiologyOntology.GENETIC_PRODUCTION);
 		interactions.put("Control", SystemsBiologyOntology.CONTROL);
 		
-		participations = new BiMap<String, URI>();
-		participations.put("Inhibitor", SystemsBiologyOntology.INHIBITOR);
-		participations.put("Inhibited", SystemsBiologyOntology.INHIBITED);
-		participations.put("Stimulator", SystemsBiologyOntology.STIMULATOR);
-		participations.put("Stimulated", SystemsBiologyOntology.STIMULATED);
-		participations.put("Reactant", SystemsBiologyOntology.REACTANT);
-		participations.put("Product", SystemsBiologyOntology.PRODUCT);
-		participations.put("Promoter", SystemsBiologyOntology.PROMOTER);
-		participations.put("Modifier", SystemsBiologyOntology.MODIFIER);
-		participations.put("Modified", SystemsBiologyOntology.MODIFIED);
-		participations.put("Template", SystemsBiologyOntology.TEMPLATE);
-		
-		//TODO this is dumb, find a better way after beta
-		partByInt = new HashMap<String, Set<String>>();
-		TreeSet<String> set = new TreeSet<String>();
-		set.add("Inhibitor");
-		set.add("Inhibited");
-		set.add("Promoter");
-		partByInt.put("Inhibition", set);
-		set = new TreeSet<String>();
-		set.add("Stimulator");
-		set.add("Stimulated");
-		set.add("Promoter");
-		partByInt.put("Stimulation", set);
-		set = new TreeSet<String>();
-		set.add("Reactant");
-		set.add("Product");
-		set.add("Modifier");
-		set.add("Modified");
-		partByInt.put("Biochemical Reaction", set);
-		set = new TreeSet<String>();
-		set.add("Reactant");
-		set.add("Product");
-		partByInt.put("Non-Covalent Binding", set);
-		set = new TreeSet<String>();
-		set.add("Reactant");
-		partByInt.put("Degradation", set);
-		set = new TreeSet<String>();
-		set.add("Product");
-		set.add("Promoter");
-		set.add("Template");
-		partByInt.put("Genetic Production", set);
-		set = new TreeSet<String>();
-		set.add("Modifier");
-		set.add("Modified");
-		partByInt.put("Control", set);
-		
-		
 	}
 	
 	public static String[] getTypes() {
@@ -163,13 +113,6 @@ public class SBOLData {
 		String[] interactionNames = interactions.keys().toArray(new String[0]);
 		Arrays.sort(interactionNames);
 		return interactionNames;
-	}
-	
-	public static String[] getParticipations(String parentName) {
-		Set<String> result = partByInt.get(parentName);
-		if(result != null)
-			return result.toArray(new String[0]);
-		return null;
 	}
 
 }
