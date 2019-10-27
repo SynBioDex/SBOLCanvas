@@ -7,7 +7,7 @@ public class MxCell {
 	private String style;
 	private boolean vertex;
 	private boolean edge;
-	private boolean connectable;
+	private boolean connectable = true;
 	private int parent;
 	private int source;
 	private int target;

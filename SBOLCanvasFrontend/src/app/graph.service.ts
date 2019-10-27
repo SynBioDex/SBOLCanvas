@@ -695,15 +695,15 @@ export class GraphService {
 
     // TODO fix these terrible hax
     // mxCell's connectable property isn't getting saved in the xml that's sent to the backend
-    this.graph.getModel().beginUpdate();
-    try {
-      let cells = Object.values<any>(this.graph.getModel().cells);
-      for (let cell of cells) {
-        cell.setConnectable(cell.isInteraction() || cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph());
-      }
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    // this.graph.getModel().beginUpdate();
+    // try {
+    //   let cells = Object.values<any>(this.graph.getModel().cells);
+    //   for (let cell of cells) {
+    //     cell.setConnectable(cell.isInteraction() || cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph());
+    //   }
+    // } finally {
+    //   this.graph.getModel().endUpdate();
+    // }
 
     this.editor.undoManager.clear();
 
