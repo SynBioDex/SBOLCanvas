@@ -1126,9 +1126,9 @@ export class GraphService {
     baseInteractionGlyphStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
     baseInteractionGlyphStyle[mx.mxConstants.STYLE_ENDSIZE] = 10;
     baseInteractionGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
-    baseInteractionGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '000000';
+    baseInteractionGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#000000';
     baseInteractionGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
-    //baseInteractionGlyphStyle[mx.mxConstants.STYLE_EDGE] = mx.mxConstants.EDGESTYLE_ORTHOGONAL;
+    baseInteractionGlyphStyle[mx.mxConstants.STYLE_EDGE] = mx.mxConstants.EDGESTYLE_ORTHOGONAL;
     baseInteractionGlyphStyle[mx.mxConstants.STYLE_ENDFILL] = 0;
 
     const interactionControlStyle = mx.mxUtils.clone(baseInteractionGlyphStyle); // Inherit from the interaction defaults.
@@ -1137,7 +1137,7 @@ export class GraphService {
 
     const interactionInhibitionStyle = mx.mxUtils.clone(baseInteractionGlyphStyle);
     interactionInhibitionStyle[mx.mxConstants.STYLE_ENDARROW] = interactionInhibitionName;
-    interactionInhibitionStyle[mx.mxConstants.STYLE_ENDSIZE] = 20;
+    interactionInhibitionStyle[mx.mxConstants.STYLE_ENDSIZE] = 15;
     this.graph.getStylesheet().putCellStyle(interactionGlyphBaseStyleName + interactionInhibitionName, interactionInhibitionStyle);
 
     const interactionStimulationStyle = mx.mxUtils.clone(baseInteractionGlyphStyle);
@@ -1151,7 +1151,7 @@ export class GraphService {
 
     const interactionDegradationStyle = mx.mxUtils.clone(baseInteractionGlyphStyle);
     interactionDegradationStyle[mx.mxConstants.STYLE_ENDARROW] = interactionDegradationName;
-    interactionDegradationStyle[mx.mxConstants.STYLE_ENDSIZE] = 100;
+    interactionDegradationStyle[mx.mxConstants.STYLE_ENDSIZE] = 20;
     this.graph.getStylesheet().putCellStyle(interactionGlyphBaseStyleName + interactionDegradationName, interactionDegradationStyle);
   }
 
@@ -1236,8 +1236,8 @@ export class GraphService {
       return function()
       {
         canvas.begin();
-        canvas.moveTo(endPoint.x + (unitY * size / 2), endPoint.y - (unitX * size / 2));
-        canvas.lineTo(endPoint.x - (unitY * size / 2), endPoint.y + (unitX * size / 2));
+        canvas.moveTo(endPoint.x + (unitY * (size+sw) / 2), endPoint.y - (unitX * (size+sw) / 2));
+        canvas.lineTo(endPoint.x - (unitY * (size+sw) / 2), endPoint.y + (unitX * (size+sw) / 2));
         canvas.stroke();
       };
     };
@@ -1247,16 +1247,25 @@ export class GraphService {
      * Returns a function that draws a Process glyph
      */
     let degradationMarkerDrawFunction = function(canvas, shape, type, endPoint, unitX, unitY, size, source, sw, filled) {
-      const triangleTipX = endPoint.x - (unitX * size / 2);
-      const triangleTipY = endPoint.y - (unitY * size / 2);
+      const triangleTipX = endPoint.x - (unitX * (size + sw) / 2);
+      const triangleTipY = endPoint.y - (unitY * (size + sw) / 2);
 
       const circleCenterX = endPoint.x - (unitX * size / 4);
       const circleCenterY = endPoint.y - (unitY * size / 4);
 
       const root2over2 = Math.sin(Math.PI / 4);
 
+      // Changing the parameter controls how far the connection's stem is drawn
+      endPoint.x = triangleTipX;
+      endPoint.y = triangleTipY;
+
       return function()
       {
+
+        // CIRCLE
+        canvas.ellipse(circleCenterX - size/4, circleCenterY - size/4, size / 2, size / 2);
+        canvas.stroke();
+
         // TRIANGLE
         canvas.begin();
         canvas.moveTo(triangleTipX, triangleTipY);
@@ -1270,16 +1279,11 @@ export class GraphService {
         canvas.moveTo(circleCenterX + root2over2 * size / 4, circleCenterY - root2over2 * size / 4);
         canvas.lineTo(circleCenterX - root2over2 * size / 4, circleCenterY + root2over2 * size / 4);
         canvas.stroke();
-        // This code makes the line rotate, but I think it makes more sense to always slash the same way
+        // This code makes the line rotate, but it makes more sense to always slash the same way
         // canvas.moveTo(circleCenterX + (unitY * root2over2 * size / 4) + (unitX * root2over2 * size / 4),
         //   circleCenterY - (unitX * root2over2 * size / 4) + (unitY * root2over2 * size / 4));
         // canvas.lineTo(circleCenterX - (unitX * root2over2 * size / 4) - (unitY * root2over2 * size / 4),
         //   circleCenterY + (unitX * root2over2 * size / 4) - (unitY * root2over2 * size / 4));
-
-        // CIRCLE
-        canvas.begin();
-        canvas.ellipse(circleCenterX - size/4, circleCenterY - size/4, size / 2, size / 2);
-        canvas.stroke();
       };
     };
     mx.mxMarker.addMarker(interactionDegradationName, degradationMarkerDrawFunction);
