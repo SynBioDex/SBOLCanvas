@@ -19,7 +19,6 @@ export class InfoEditorComponent implements OnInit {
   partRoles:string[];
   partRefinements:string[]; //these depend on role
   interactionTypes:string[];
-  participationTypes:string[]; // these depend on interaction
 
   //TODO get these from the backend
   encodings:string[];
@@ -53,10 +52,6 @@ export class InfoEditorComponent implements OnInit {
     this.metadataService.loadInteractions().subscribe(interactions => this.interactionTypes = interactions);
   }
 
-  getParticipations(interaction:string){
-    this.metadataService.loadParticipations(interaction).subscribe(participations => this.participationTypes = participations);
-  }
-
   dropDownChange(event: MatSelectChange){
     const id = event.source.id;
 
@@ -82,19 +77,7 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'interactionType':{
         this.interactionInfo.interactionType = event.value;
-        console.debug("interaction selected = " + event.value);
         this.graphService.mutateInteractionGlyph(event.value); // Change the style of the interaction glyph based on the selection.
-        this.getParticipations(event.value);
-        break;
-      }case 'fromParticipationType':{
-        if(event.value != "none"){
-          this.interactionInfo.fromParticipationType = event.value;
-        }
-        break;
-      }case 'toParticipationType':{
-        if(event.value != "none"){
-          this.interactionInfo.toParticipationType = event.value;
-        }
         break;
       }default:{
         console.log('Unexpected id encountered in info menu dropdown = ' + id);
@@ -166,13 +149,6 @@ export class InfoEditorComponent implements OnInit {
    */
   interactionInfoUpdated(interactionInfo: InteractionInfo) {
     this.interactionInfo = interactionInfo;
-    if(interactionInfo != null){
-      if(interactionInfo.interactionType != null){
-        this.getParticipations(interactionInfo.interactionType);
-      }else{
-        this.participationTypes = [];
-      }
-    }
   }
 
 }

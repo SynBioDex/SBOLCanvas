@@ -36,6 +36,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   onInteractionGlyphClicked(name: string) {
+    name = name.charAt(0).toUpperCase() + name.slice(1); // Capitalize first letter because bah humbug.
     this.graphService.addInteraction(name);
   }
 

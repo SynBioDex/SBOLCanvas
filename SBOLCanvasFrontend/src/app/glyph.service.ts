@@ -47,21 +47,15 @@ export class GlyphService {
 
   private molecularSpeciesXMLs: string[] = [
     // 'molecular species' glyphs aka protein?
-    'assets/glyph_stencils/molecular_species/macromolecule.xml'
+    'assets/glyph_stencils/molecular_species/macromolecule.xml',
   ]
 
   private interactionXMLs: string[] = [
     'assets/glyph_stencils/interactions/control.xml',
     'assets/glyph_stencils/interactions/inhibition.xml',
-    'assets/glyph_stencils/interactions/degradation.xml',
+    'assets/glyph_stencils/interactions/stimulation.xml',
     'assets/glyph_stencils/interactions/process.xml',
-    //'assets/glyph_stencils/downloads.xml',
-  ]
-
-  private interactionMarkerXMLs: string[] = [
-    'assets/glyph_stencils/interactions/control.xml',
-    'assets/glyph_stencils/interactions/inhibition.xml',
-    'assets/glyph_stencils/cds.xml',
+    'assets/glyph_stencils/interactions/degradation.xml',
   ]
 
   private utilXMLs: string[] = [
@@ -71,7 +65,6 @@ export class GlyphService {
 
   private sequenceFeatures: any = {};
   private molecularSpecies: any = {};
-  private interactionMarkers: any = {};
   private interactions: any = {};
   private utils: any = {};
 
@@ -79,7 +72,6 @@ export class GlyphService {
     this.loadXMLs(this.sequenceFeatureXMLs, this.sequenceFeatures);
     this.loadXMLs(this.molecularSpeciesXMLs, this.molecularSpecies);
     this.loadXMLs(this.interactionXMLs, this.interactions);
-    this.loadXMLs(this.interactionMarkerXMLs, this.interactionMarkers);
     this.loadXMLs(this.utilXMLs, this.utils);
   }
 
@@ -131,10 +123,6 @@ export class GlyphService {
 
   getMolecularSpeciesGlyphs() {
     return this.molecularSpecies;
-  }
-
-  getInteractionMarkerGlyphs() {
-    return this.interactionMarkers;
   }
 
   getUtilElements() {
