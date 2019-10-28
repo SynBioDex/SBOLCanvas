@@ -31,7 +31,6 @@ import org.sbolstandard.core2.FunctionalComponent;
 import org.sbolstandard.core2.Interaction;
 import org.sbolstandard.core2.ModuleDefinition;
 import org.sbolstandard.core2.OrientationType;
-import org.sbolstandard.core2.Participation;
 import org.sbolstandard.core2.RestrictionType;
 import org.sbolstandard.core2.SBOLConversionException;
 import org.sbolstandard.core2.SBOLDocument;
@@ -163,9 +162,8 @@ public class Converter {
 						sourceFC = modDef.createFunctionalComponent(sourceInfo.getDisplayID(), AccessType.PUBLIC,
 								sourceCD.getIdentity(), DirectionType.INOUT);
 					}
-					if (intInfo.getFromParticipationType() != null && !intInfo.getFromParticipationType().equals(""))
-						interaction.createParticipation(sourceInfo.getDisplayID(), sourceFC.getIdentity(),
-								SBOLData.participations.getValue(intInfo.getFromParticipationType()));
+					interaction.createParticipation(sourceInfo.getDisplayID(), sourceFC.getIdentity(),
+							getParticipantType(true, interaction.getTypes().iterator().next()));
 				}
 
 				// target participant
@@ -176,9 +174,8 @@ public class Converter {
 						targetFC = modDef.createFunctionalComponent(targetInfo.getDisplayID(), AccessType.PUBLIC,
 								targetCD.getIdentity(), DirectionType.INOUT);
 					}
-					if (intInfo.getToParticipationType() != null && !intInfo.getToParticipationType().equals(""))
-						interaction.createParticipation(targetInfo.getDisplayID(), targetFC.getIdentity(),
-								SBOLData.participations.getValue(intInfo.getToParticipationType()));
+					interaction.createParticipation(targetInfo.getDisplayID(), targetFC.getIdentity(),
+								getParticipantType(false, interaction.getTypes().iterator().next()));
 				}
 
 			}
@@ -572,10 +569,6 @@ public class Converter {
 						intInfo.setAttribute("displayID", info.getDisplayID());
 					if (info.getInteractionType() != null)
 						intInfo.setAttribute("interactionType", info.getInteractionType());
-					if (info.getFromParticipationType() != null)
-						intInfo.setAttribute("fromParticipationType", info.getFromParticipationType());
-					if (info.getToParticipationType() != null)
-						intInfo.setAttribute("toParticipationType", info.getToParticipationType());
 					intInfo.setAttribute("as", "data");
 					mxCell.appendChild(intInfo);
 				}
@@ -602,16 +595,6 @@ public class Converter {
 			InteractionInfo info = new InteractionInfo();
 			info.setDisplayID(interaction.getDisplayId());
 			info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
-			Set<Participation> participations = interaction.getParticipations();
-			for (Participation part : participations) {
-				if (edge.getSource() > 0 && part.getDisplayId()
-						.equals(((GlyphInfo) cells.get(edge.getSource()).getInfo()).getDisplayID())) {
-					info.setFromParticipationType(SBOLData.participations.getKey(part.getRoles().iterator().next()));
-				} else if (edge.getTarget() > 0 && part.getDisplayId()
-						.equals(((GlyphInfo) cells.get(edge.getTarget()).getInfo()).getDisplayID())) {
-					info.setToParticipationType(SBOLData.participations.getKey(part.getRoles().iterator().next()));
-				}
-			}
 			edge.setInfo(info);
 			cells.put(edge.getId(), edge);
 		}
@@ -673,5 +656,25 @@ public class Converter {
 
 		}
 	}
+	
+	private URI getParticipantType(boolean source, URI interactionType) {
+		if(interactionType.equals(SystemsBiologyOntology.BIOCHEMICAL_REACTION)) {
+			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;
+		}else if(interactionType.equals(SystemsBiologyOntology.CONTROL)) {
+			return source ? SystemsBiologyOntology.MODIFIER : SystemsBiologyOntology.MODIFIED;
+		}else if(interactionType.equals(SystemsBiologyOntology.DEGRADATION)) {
+			return SystemsBiologyOntology.REACTANT;
+		}else if(interactionType.equals(SystemsBiologyOntology.GENETIC_PRODUCTION)) {
+			return source ? SystemsBiologyOntology.TEMPLATE : SystemsBiologyOntology.PRODUCT;
+		}else if(interactionType.equals(SystemsBiologyOntology.INHIBITION)) {
+			return source ? SystemsBiologyOntology.INHIBITOR : SystemsBiologyOntology.INHIBITED;
+		}else if(interactionType.equals(SystemsBiologyOntology.NON_COVALENT_BINDING)) {
+			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;
+		}else if(interactionType.equals(SystemsBiologyOntology.STIMULATION)) {
+			return source ? SystemsBiologyOntology.STIMULATOR : SystemsBiologyOntology.STIMULATED;
+		}
+		return null;
+	}
+	
 
 }
