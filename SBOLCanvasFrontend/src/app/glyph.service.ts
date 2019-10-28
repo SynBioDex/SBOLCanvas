@@ -52,7 +52,10 @@ export class GlyphService {
 
   private interactionXMLs: string[] = [
     'assets/glyph_stencils/interactions/control.xml',
-    'assets/glyph_stencils/interactions/inhibition.xml'
+    'assets/glyph_stencils/interactions/inhibition.xml',
+    'assets/glyph_stencils/interactions/degradation.xml',
+    'assets/glyph_stencils/interactions/process.xml',
+    //'assets/glyph_stencils/downloads.xml',
   ]
 
   private interactionMarkerXMLs: string[] = [

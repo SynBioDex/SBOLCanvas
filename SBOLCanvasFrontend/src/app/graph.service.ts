@@ -525,7 +525,6 @@ export class GraphService {
 
     // wrap everything in begin/end update because I noticed it was
     // taking two undo clicks to undo interaction creation.
-    this.graph.getModel().beginUpdate();
     try {
       cell = new mx.mxCell('', new mx.mxGeometry(0, 0, 0, 0), interactionGlyphBaseStyleName + name);
 
@@ -542,6 +541,25 @@ export class GraphService {
     }
 
     return cell;
+  }
+
+  /**
+   * Changes the selected interaction's style based on the
+   * one selected in the info menu
+   * @param name
+   */
+  mutateInteractionGlyph(name: string) {
+    const selectionCells = this.graph.getSelectionCells();
+
+    if (selectionCells.length == 1 && selectionCells[0].isInteraction()) {
+      this.graph.getModel().beginUpdate();
+      try {
+        console.debug("changing interaction style to: " + interactionGlyphBaseStyleName + name);
+        this.graph.setCellStyles(interactionGlyphBaseStyleName + name, [selectionCells[0]]);
+      } finally {
+        this.graph.getModel().endUpdate();
+      }
+    }
   }
 
   centerCellToView(cell: mxCell) {

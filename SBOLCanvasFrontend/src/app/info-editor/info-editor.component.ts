@@ -82,6 +82,8 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'interactionType':{
         this.interactionInfo.interactionType = event.value;
+        console.debug("interaction selected = " + event.value);
+        this.graphService.mutateInteractionGlyph(event.value); // Change the style of the interaction glyph based on the selection.
         this.getParticipations(event.value);
         break;
       }case 'fromParticipationType':{
