@@ -62,6 +62,7 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'partRole':{
         this.glyphInfo.partRole = event.value;
+        this.graphService.mutateSequenceFeatureGlyph(event.value);
         this.glyphInfo.partRefine = "";
         if(event.value !== "")
           this.getRefinements(event.value);
