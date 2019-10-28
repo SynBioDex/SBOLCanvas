@@ -6,10 +6,10 @@
         <linejoin join="round" />
         <linecap cap="round" />
         <path>
-            <move x="5.0" y="7.533333333333335" />
-            <line x="5.0" y="24.0" />
-            <line x="43.0" y="24.0" />
-            <line x="43.0" y="40.46666666666667" />
+            <move x="8.0" y="10.133333333333335" />
+            <line x="8.0" y="24.0" />
+            <line x="40.0" y="24.0" />
+            <line x="40.0" y="37.86666666666667" />
         </path>
         <stroke />
     </foreground>

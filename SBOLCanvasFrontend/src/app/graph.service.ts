@@ -212,8 +212,8 @@ export class GraphService {
    * @param isCollapsed
    */
   setAllScars(isCollapsed: boolean) {
+    this.graph.getModel().beginUpdate();
     try {
-      this.graph.getModel().beginUpdate();
       let allGraphCells = this.graph.getDefaultParent().children;
       for (let i = 0; i < allGraphCells.length; i++) {
         if (allGraphCells[i].isCircuitContainer()) {
@@ -523,8 +523,7 @@ export class GraphService {
   addInteraction(name: string, source?: any, target?: any) {
     let cell;
 
-    // wrap everything in begin/end update because I noticed it was
-    // taking two undo clicks to undo interaction creation.
+    this.graph.getModel().beginUpdate();
     try {
       cell = new mx.mxCell('', new mx.mxGeometry(0, 0, 0, 0), interactionGlyphBaseStyleName + name);
 
@@ -558,15 +557,16 @@ export class GraphService {
 
     if (selectionCells.length == 1 && selectionCells[0].isInteraction()) {
       let cell = selectionCells[0];
+
       this.graph.getModel().beginUpdate();
       try {
-      console.debug("changing interaction style to: " + interactionGlyphBaseStyleName + name);
+        console.debug("changing interaction style to: " + interactionGlyphBaseStyleName + name);
 
-      if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
-        name = "Process";
-      }
+        if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
+          name = "Process";
+        }
 
-      this.graph.getModel().setStyle(cell, interactionGlyphBaseStyleName + name);
+        this.graph.getModel().setStyle(cell, interactionGlyphBaseStyleName + name);
       } finally {
         this.graph.getModel().endUpdate();
       }
@@ -646,8 +646,11 @@ export class GraphService {
 
     if (selectedCells != null) {
       this.graph.getModel().beginUpdate();
-      this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, color, selectedCells);
-      this.graph.getModel().endUpdate();
+      try {
+        this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, color, selectedCells);
+      } finally {
+        this.graph.getModel().endUpdate();
+      }
     }
   }
 
@@ -721,18 +724,6 @@ export class GraphService {
     const doc = mx.mxUtils.parseXml(graphString);
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
-
-    // TODO fix these terrible hax
-    // mxCell's connectable property isn't getting saved in the xml that's sent to the backend
-    // this.graph.getModel().beginUpdate();
-    // try {
-    //   let cells = Object.values<any>(this.graph.getModel().cells);
-    //   for (let cell of cells) {
-    //     cell.setConnectable(cell.isInteraction() || cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph());
-    //   }
-    // } finally {
-    //   this.graph.getModel().endUpdate();
-    // }
 
     this.editor.undoManager.clear();
 
@@ -1092,6 +1083,7 @@ export class GraphService {
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_ROTATION] = 0;
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
     //this.baseGlyphStyle[mx.mxConstants.DEFAULT_HOTSPOT] = 0;
 
     // Sequence features need almost the same styling as molecularSpecies

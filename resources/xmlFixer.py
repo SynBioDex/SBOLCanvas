@@ -46,9 +46,7 @@ def main():
 		set_stroke_width(shape, STROKE_WIDTH)
 
 		remove_stroke_color_setting(shape)
-
-		if not is_centered(shape):
-			set_centered_attribute(shape, CENTERED)
+		set_centered_attribute(shape, CENTERED)
 			
 		fixShape(shape)
 

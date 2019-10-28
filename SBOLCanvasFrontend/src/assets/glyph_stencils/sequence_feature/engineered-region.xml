@@ -1,0 +1,18 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="Gen (Engineered Region)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="8.0" y="32.0" />
+            <line x="8.0" y="48.0" />
+            <line x="40.0" y="48.0" />
+            <line x="40.0" y="32.0" />
+            <close />
+        </path>
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>

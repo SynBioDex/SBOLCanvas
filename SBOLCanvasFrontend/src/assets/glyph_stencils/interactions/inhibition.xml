@@ -1,5 +1,5 @@
 <shapes>
-<shape aspect="variable" centered="True" h="48" name="inhibition" strokewidth="inherit" w="48">
+<shape aspect="variable" centered="True" h="48" name="Inhibition" strokewidth="inherit" w="48">
     <connections />
     <foreground>
         <strokewidth width="2.0" />

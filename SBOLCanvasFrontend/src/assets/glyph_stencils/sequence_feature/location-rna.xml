@@ -1,0 +1,26 @@
+<shapes>
+  <shape aspect="variable" centered="False" h="48" name="Jun (Junction)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+      <strokewidth width="2.88" />
+      <linejoin join="round" />
+      <linecap cap="round" />
+      <ellipse h="16.000000000000004" w="16.000000000000004" x="16.0" y="11.210285714285703" />
+      <fillstroke />
+      <strokewidth width="2.88" />
+      <miterlimit limit="4" />
+      <dashpattern pattern="none" />
+      <dashed dashed="1" />
+      <path>
+        <move x="21.465592436974795" y="37.93142857142857" />
+        <curve x1="26.41416386554622" x2="16.699878151260506" x3="21.465592436974795" y1="32.44571428571428" y2="32.55999999999999" y3="27.80571428571428" />
+      </path>
+      <fillstroke />
+      <path>
+        <move x="21.53416386554622" y="48.0" />
+        <curve x1="26.471306722689086" x2="16.768449579831938" x3="21.53416386554622" y1="42.51428571428571" y2="42.63999999999999" y3="37.87428571428571" />
+      </path>
+      <fillstroke />
+    </foreground>
+  </shape>
+</shapes>
