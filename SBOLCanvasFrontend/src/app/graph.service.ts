@@ -761,6 +761,35 @@ export class GraphService {
   }
 
   /**
+   * Decodes the given string (xml) representation of a cell
+   * and uses it ot replace the currently selected cell
+   * @param cellString
+   */
+  setSelectedToXML(cellString: string) {
+    const selectionCells = this.graph.getSelectionCells();
+
+    if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
+      let selectedCell = selectionCells[0];
+      console.log(selectedCell.style);
+
+      // Loads the new cell data into the selected cell
+      const doc = mx.mxUtils.parseXml(cellString);
+      let elt = doc.documentElement.firstChild;
+      let cells=[];
+      const codec = new mx.mxCodec(doc);
+      let newcell = codec.decode(elt);
+      codec.decode(elt, selectedCell);
+      console.log(selectedCell.style);
+      console.log(newcell.style);
+      // while(elt != null){
+      //   cells.push(codec.decode(elt));
+      //   elt = elt.nextSibling;
+      // }
+    }
+
+  }
+
+  /**
    * Sets up environment variables to make decoding new graph models from xml into memory
    */
   initDecodeEnv() {
@@ -768,6 +797,7 @@ export class GraphService {
     window['mxGraphModel'] = mx.mxGraphModel;
     window['mxGeometry'] = mx.mxGeometry;
     window['mxPoint'] = mx.mxPoint;
+    window['mxCell'] = mx.mxCell;
 
     //mxGraph uses function.name which uglifyJS breaks on production
     Object.defineProperty(GlyphInfo, "name", { configurable: true, value: "GlyphInfo" });

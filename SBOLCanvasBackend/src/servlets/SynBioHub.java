@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TreeSet;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
@@ -91,6 +92,23 @@ public class SynBioHub extends HttpServlet {
 					collectionURLs.add(collection.getUri());
 				}
 				body = gson.toJson(collectionURLs);
+			} catch (SynBioHubException e) {
+				e.printStackTrace();
+			}
+			
+		}else if(request.getPathInfo().equals("/getParts")){
+			String name = request.getParameter("name");
+			String collection = request.getParameter("collection");
+			
+			// null check
+			
+			SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+			sbhf.setUser(user);
+			// name, roles, types, collections, offset, limit
+			TreeSet<URI> collections = new TreeSet<URI>();
+			collections.add(URI.create(collection));
+			try {
+				body = gson.toJson(sbhf.getMatchingComponentDefinitionMetadata(null, null, null, collections, null, null));
 			} catch (SynBioHubException e) {
 				e.printStackTrace();
 			}

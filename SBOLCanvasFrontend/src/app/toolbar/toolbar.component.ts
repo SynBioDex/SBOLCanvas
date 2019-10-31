@@ -124,4 +124,8 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
       }
     });
   }
+
+  testReplace(): void {
+    this.graphService.setSelectedToXML("<root><mxCell id=\"3\" value=\"\" style=\"sequenceFeatureGlyphPro (Promoter)\" vertex=\"1\" parent=\"2\" collapsed=\"1\"><mxGeometry width=\"50\" height=\"100\" as=\"geometry\"/><GlyphInfo partType=\"DNA region\" partRole=\"Pro (Promoter)\" displayID=\"id1\" as=\"data\"/></mxCell><mxCell id=\"5\" value=\"\" style=\"circuitContainer\" vertex=\"1\" connectable=\"0\" parent=\"4\"><mxGeometry width=\"50\" height=\"100\" as=\"geometry\"/></mxCell><mxCell id=\"6\" value=\"\" style=\"backbone\" vertex=\"1\" connectable=\"0\" parent=\"5\"><mxGeometry y=\"50\" width=\"50\" height=\"1\" as=\"geometry\"/></mxCell></root>");
+  }
 }
