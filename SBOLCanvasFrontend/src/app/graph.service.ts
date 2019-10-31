@@ -777,10 +777,10 @@ export class GraphService {
       let elt = doc.documentElement.firstChild;
       let cells=[];
       const codec = new mx.mxCodec(doc);
-      let newcell = codec.decode(elt);
+
       codec.decode(elt, selectedCell);
+      console.log(selectedCell.parent);
       console.log(selectedCell.style);
-      console.log(newcell.style);
       // while(elt != null){
       //   cells.push(codec.decode(elt));
       //   elt = elt.nextSibling;
