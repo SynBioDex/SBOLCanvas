@@ -770,33 +770,38 @@ export class GraphService {
     
     if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
       let selectedCell = selectionCells[0];
-      console.log(selectedCell.style);
 
-      // Loads the new cell data into the selected cell
+      // setup the decoding info
       const doc = mx.mxUtils.parseXml(cellString);
       let elt = doc.documentElement.firstChild;
-      let cells=[];
       const codec = new mx.mxCodec(doc);
 
-      console.log(selectedCell.parent);
-      console.log(selectedCell.style);
-
-      const parent = selectedCell.getParent();
+      // store the root parent
+      const origParent = selectedCell.getParent();
 
       this.graph.getModel().beginUpdate();
       try {
-        let oldCell = parent;
         while(elt != null){
+          // create a new cell to decode into
           let newCell = new mx.mxCell();
-          console.log("New Cell ID is "+ newCell.id);
           codec.decode(elt, newCell);
-          newCell.id = null;
-          this.graph.addCell(newCell, oldCell);
-          oldCell = newCell;
+
+          // update the id's because mxgraph doesn't guarantee unique id's
+          // on the other hand, mxgraph executes black magic to keep the parent/child structure intact even though we change the id's
+          newCell.id = ""+this.graph.getModel().nextId;
+          this.graph.getModel().nextId++;
+
+          // the root cell we are adding shouldn't have a parent, we need to set one
+          if(newCell.parent == null){
+            newCell.parent = origParent;
+          }
+          this.graph.addCell(newCell, newCell.parent);
+
           elt = elt.nextSibling;
         }
+        // remove the cell we just replaced
         this.graph.removeCells(null, false);
-        parent.refreshCircuitContainer(this.graph);
+        origParent.refreshCircuitContainer(this.graph);
       } finally {
         this.graph.getModel().endUpdate();
       }
