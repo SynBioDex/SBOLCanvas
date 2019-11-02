@@ -395,6 +395,7 @@ export class GraphService {
   undo() {
     // (un/re)doing is managed by the editor; it only works
     // if all changes are encapsulated by graphModel.(begin/end)Update
+    // if all changes are encapsulated by graphModel.(begin/end)Update
     this.editor.execute('undo');
   }
 
@@ -786,7 +787,6 @@ export class GraphService {
         codec.decode(elt, newCell);
 
         // the root cell needs a new parent
-        newCell.parent = origParent;
         newCell.id = "" + this.graph.getModel().nextId;
         this.graph.getModel().nextId++;
 
@@ -1046,7 +1046,8 @@ export class GraphService {
 
       // put the backbone first in the children array so it is drawn before glyphs
       // (meaning it appears behind them)
-      graph.getModel().add(this, this.getBackbone(), 0);
+      if (!this.children[0].isBackbone())
+        graph.getModel().add(this, this.getBackbone(), 0);
 
       // Layout all the glyphs in a horizontal line, while ignoring the backbone cell.
       const layout = new mx.mxStackLayout(graph, true);
@@ -1108,6 +1109,12 @@ export class GraphService {
       }
       if (height !== 'auto') {
         newGeo.height = height;
+      }
+
+      // to save entries on undo stack, don't call setGeometry unless necessary
+      if (oldGeo.x === newGeo.x && oldGeo.y === newGeo.y
+        && oldGeo.width === newGeo.width && oldGeo.height === newGeo.height) {
+        return;
       }
 
       graph.getModel().setGeometry(this, newGeo);
