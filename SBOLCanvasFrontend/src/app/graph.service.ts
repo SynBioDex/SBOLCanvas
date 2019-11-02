@@ -767,7 +767,7 @@ export class GraphService {
    */
   setSelectedToXML(cellString: string) {
     const selectionCells = this.graph.getSelectionCells();
-
+    
     if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
       let selectedCell = selectionCells[0];
       console.log(selectedCell.style);
@@ -778,13 +778,28 @@ export class GraphService {
       let cells=[];
       const codec = new mx.mxCodec(doc);
 
-      codec.decode(elt, selectedCell);
       console.log(selectedCell.parent);
       console.log(selectedCell.style);
-      // while(elt != null){
-      //   cells.push(codec.decode(elt));
-      //   elt = elt.nextSibling;
-      // }
+
+      const parent = selectedCell.getParent();
+
+      this.graph.getModel().beginUpdate();
+      try {
+        let oldCell = parent;
+        while(elt != null){
+          let newCell = new mx.mxCell();
+          console.log("New Cell ID is "+ newCell.id);
+          codec.decode(elt, newCell);
+          newCell.id = null;
+          this.graph.addCell(newCell, oldCell);
+          oldCell = newCell;
+          elt = elt.nextSibling;
+        }
+        this.graph.removeCells(null, false);
+        parent.refreshCircuitContainer(this.graph);
+      } finally {
+        this.graph.getModel().endUpdate();
+      }
     }
 
   }
