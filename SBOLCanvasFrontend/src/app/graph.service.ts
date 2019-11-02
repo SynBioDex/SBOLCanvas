@@ -767,7 +767,7 @@ export class GraphService {
    */
   setSelectedToXML(cellString: string) {
     const selectionCells = this.graph.getSelectionCells();
-    
+
     if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
       let selectedCell = selectionCells[0];
 
@@ -781,24 +781,52 @@ export class GraphService {
 
       this.graph.getModel().beginUpdate();
       try {
-        while(elt != null){
+        // the first cell has some specific things that need to be done
+        let newCell = new mx.mxCell();
+        codec.decode(elt, newCell);
+
+        // the root cell needs a new parent
+        newCell.parent = origParent;
+        newCell.id = "" + this.graph.getModel().nextId;
+        this.graph.getModel().nextId++;
+
+        // the root cell needs to be put back in the correct spot
+        this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+
+        // move any edges from selectedCell to newCell
+        // we have to remove it from the old cell, which causes problems with for and foreach
+        if (selectedCell.edges != null) {
+          let edgeCache = [];
+          selectedCell.edges.forEach(edge => {
+            edgeCache.push(edge);
+          });
+
+          edgeCache.forEach(edge => {
+            if (edge.source == selectedCell) {
+              this.graph.getModel().setTerminal(edge, newCell, true);
+            }
+            if (edge.target == selectedCell) {
+              this.graph.getModel().setTerminal(edge, newCell, false);
+            }
+          });
+        }
+
+        elt = elt.nextSibling;
+
+        while (elt != null) {
           // create a new cell to decode into
           let newCell = new mx.mxCell();
           codec.decode(elt, newCell);
 
-          // update the id's because mxgraph doesn't guarantee unique id's
+          // update the id's because mxgraph doesn't replace them to maintain unique id's
           // on the other hand, mxgraph executes black magic to keep the parent/child structure intact even though we change the id's
-          newCell.id = ""+this.graph.getModel().nextId;
+          newCell.id = "" + this.graph.getModel().nextId;
           this.graph.getModel().nextId++;
-
-          // the root cell we are adding shouldn't have a parent, we need to set one
-          if(newCell.parent == null){
-            newCell.parent = origParent;
-          }
           this.graph.addCell(newCell, newCell.parent);
 
           elt = elt.nextSibling;
         }
+
         // remove the cell we just replaced
         this.graph.removeCells(null, false);
         origParent.refreshCircuitContainer(this.graph);
