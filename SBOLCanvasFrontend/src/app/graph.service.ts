@@ -770,6 +770,7 @@ export class GraphService {
     const selectionCells = this.graph.getSelectionCells();
 
     if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
+      // We're making a new cell to replace the selected one
       let selectedCell = selectionCells[0];
 
       // setup the decoding info
@@ -777,24 +778,22 @@ export class GraphService {
       let elt = doc.documentElement.firstChild;
       const codec = new mx.mxCodec(doc);
 
-      // store the root parent
+      // store old cell's parent
       const origParent = selectedCell.getParent();
 
       this.graph.getModel().beginUpdate();
       try {
-        // the first cell has some specific things that need to be done
+        // get the new cell
         let newCell = new mx.mxCell();
         codec.decode(elt, newCell);
 
-        // the root cell needs a new parent
-        newCell.id = "" + this.graph.getModel().nextId;
-        this.graph.getModel().nextId++;
+        // new id (mxGraph id doesn't matter in SBOL, but must be unique per graph)
+        newCell.id = this.graph.getModel().createId(newCell);
 
-        // the root cell needs to be put back in the correct spot
+        // add new cell to the graph
         this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
 
         // move any edges from selectedCell to newCell
-        // we have to remove it from the old cell, which causes problems with for and foreach
         if (selectedCell.edges != null) {
           let edgeCache = [];
           selectedCell.edges.forEach(edge => {
@@ -811,25 +810,26 @@ export class GraphService {
           });
         }
 
+        // Now create all children of the new cell
         elt = elt.nextSibling;
-
         while (elt != null) {
           // create a new cell to decode into
           let newCell = new mx.mxCell();
           codec.decode(elt, newCell);
 
-          // update the id's because mxgraph doesn't replace them to maintain unique id's
-          // on the other hand, mxgraph executes black magic to keep the parent/child structure intact even though we change the id's
-          newCell.id = "" + this.graph.getModel().nextId;
-          this.graph.getModel().nextId++;
+          // replace id to ensure uniqueness in this graph
+          // The decoder keeps track of the orignal ids, the ones from the xml,
+          // so parent-child relationships within the new cells still work
+          newCell.id = this.graph.getModel().createId(newCell);
+
           this.graph.addCell(newCell, newCell.parent);
 
           elt = elt.nextSibling;
         }
 
-        // remove the cell we just replaced
         this.graph.removeCells(null, false);
         origParent.refreshCircuitContainer(this.graph);
+        this.graph.setSelectionCell(newCell);
       } finally {
         this.graph.getModel().endUpdate();
       }
