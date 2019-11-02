@@ -37,7 +37,6 @@ public class Load extends HttpServlet {
 			return;
 		}
 		
-		response.addHeader("Access-Control-Allow-Origin", "*");
 		response.setStatus(HttpStatus.SC_OK);
 	}
 	

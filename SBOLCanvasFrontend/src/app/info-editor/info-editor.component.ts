@@ -1,5 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
+import { InteractionInfo } from "../interactionInfo";
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 import { MatSelectChange } from '@angular/material';
@@ -17,18 +18,22 @@ export class InfoEditorComponent implements OnInit {
   partTypes:string[];
   partRoles:string[];
   partRefinements:string[]; //these depend on role
+  interactionTypes:string[];
 
   //TODO get these from the backend
   encodings:string[];
 
   glyphInfo: GlyphInfo;
+  interactionInfo: InteractionInfo;
 
   constructor(private graphService: GraphService, private metadataService: MetadataService) { }
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
+    this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo))
     this.getTypes();
     this.getRoles();
+    this.getInteractions();
   }
 
   getTypes(){
@@ -43,6 +48,10 @@ export class InfoEditorComponent implements OnInit {
     this.metadataService.loadRefinements(role).subscribe(refinements => this.partRefinements = refinements);
   }
 
+  getInteractions(){
+    this.metadataService.loadInteractions().subscribe(interactions => this.interactionTypes = interactions);
+  }
+
   dropDownChange(event: MatSelectChange){
     const id = event.source.id;
 
@@ -53,8 +62,12 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'partRole':{
         this.glyphInfo.partRole = event.value;
+        this.graphService.mutateSequenceFeatureGlyph(event.value);
         this.glyphInfo.partRefine = "";
-        this.getRefinements(event.value);
+        if(event.value !== "")
+          this.getRefinements(event.value);
+        else
+          this.partRefinements=[];
         break;
       }
       case 'partRefinement':{
@@ -62,13 +75,21 @@ export class InfoEditorComponent implements OnInit {
           this.glyphInfo.partRefine = event.value;
         }
         break;
+      }
+      case 'interactionType':{
+        this.interactionInfo.interactionType = event.value;
+        this.graphService.mutateInteractionGlyph(event.value); // Change the style of the interaction glyph based on the selection.
+        break;
       }default:{
         console.log('Unexpected id encountered in info menu dropdown = ' + id);
         break;
       }
     }
 
-    this.graphService.setSelectedCellInfo(this.glyphInfo);
+    if(this.glyphInfo != null)
+      this.graphService.setSelectedCellInfo(this.glyphInfo);
+    else if(this.interactionInfo != null)
+      this.graphService.setSelectedCellInfo(this.interactionInfo);
   }
 
   inputChange(event: any) {
@@ -76,7 +97,10 @@ export class InfoEditorComponent implements OnInit {
 
     switch (id) {
       case 'displayID':{
-        this.glyphInfo.displayID = event.target.value;
+        if(this.glyphInfo != null)
+          this.glyphInfo.displayID = event.target.value;
+        else if(this.interactionInfo != null)
+          this.interactionInfo.displayID = event.target.value;
         break;
       }
       case 'name': {
@@ -100,7 +124,10 @@ export class InfoEditorComponent implements OnInit {
       }
     }
 
-    this.graphService.setSelectedCellInfo(this.glyphInfo);
+    if(this.glyphInfo != null)
+      this.graphService.setSelectedCellInfo(this.glyphInfo);
+    else if(this.interactionInfo != null)
+      this.graphService.setSelectedCellInfo(this.interactionInfo);
   }
 
   /**
@@ -109,13 +136,20 @@ export class InfoEditorComponent implements OnInit {
    */
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
-    if(glyphInfo != null){
-      if(glyphInfo.partRole != null){
+    if (glyphInfo != null){
+      if (glyphInfo.partRole != null) {
         this.getRefinements(glyphInfo.partRole);
-      }else{
+      } else {
         this.partRefinements = [];
       }
     }
+  }
+
+  /**
+   * Updates both the interaction info int he form and in the graph.
+   */
+  interactionInfoUpdated(interactionInfo: InteractionInfo) {
+    this.interactionInfo = interactionInfo;
   }
 
 }

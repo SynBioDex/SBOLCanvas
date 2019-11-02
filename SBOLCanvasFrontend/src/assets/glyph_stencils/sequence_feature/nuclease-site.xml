@@ -1,0 +1,25 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="RERS (Restriction Enzyme Recognition Site)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="24.0" y="48.0" />
+            <line x="24.0" y="19.874999999999986" />
+        </path>
+        <stroke />
+        <path>
+            <move x="15.0" y="9.749999999999986" />
+            <line x="33.0" y="27.74999999999999" />
+        </path>
+        <stroke />
+        <path>
+            <move x="33.0" y="9.749999999999986" />
+            <line x="15.0" y="27.74999999999999" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

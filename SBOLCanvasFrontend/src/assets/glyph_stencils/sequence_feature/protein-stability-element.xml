@@ -1,0 +1,32 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="PSE (Protein Stability Element)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <dashpattern pattern="none" />
+        <dashed dashed="1" />
+        <alpha alpha="1" />
+        <path>
+            <move x="11.662884333821376" y="3.0" />
+            <line x="33.99816983894583" y="3.0" />
+            <line x="33.99816983894583" y="22.617496339677892" />
+            <line x="22.76464128843338" y="30.886163982430453" />
+            <line x="11.662884333821376" y="22.255124450951683" />
+            <close />
+        </path>
+        <stroke />
+        <strokewidth width="2.99999952" />
+        <linecap cap="round" />
+        <path>
+            <move x="21.348096632503662" y="19.19143484626647" />
+            <curve x1="35.94180087847731" x2="36.337115666178626" x3="21.08455344070278" y1="16.028916544655928" y2="30.326134699853586" y3="27.904831625183014" />
+            <curve x1="36.139458272327964" x2="35.5794289897511" x3="20.95278184480234" y1="23.75402635431918" y2="39.31954612005857" y3="36.502928257686676" />
+            <curve x1="35.875915080527086" x2="35.74414348462665" x3="20.821010248901903" y1="32.418008784773065" y2="48.0" y3="45.413982430453885" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

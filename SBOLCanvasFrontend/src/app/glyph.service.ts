@@ -14,30 +14,46 @@ export class GlyphService {
   // TODO load list of xml files from server
   private sequenceFeatureXMLs: string[] = [
     // Strand glyphs
-    'assets/glyph_stencils/promoter.xml',
-    'assets/glyph_stencils/cds.xml',
-    'assets/glyph_stencils/aptamer.xml',
-    'assets/glyph_stencils/dna-stability-element.xml',
-    'assets/glyph_stencils/insulator.xml',
-    'assets/glyph_stencils/location-dna.xml',
-    'assets/glyph_stencils/cds-arrow.xml',
-    'assets/glyph_stencils/engineered-region.xml',
-    'assets/glyph_stencils/five-prime-sticky-restriction-site.xml',
-    'assets/glyph_stencils/location-rna.xml',
-    'assets/glyph_stencils/location-protein.xml',
-    'assets/glyph_stencils/ribosome-entry-site.xml',
-    'assets/glyph_stencils/terminator-specification.xml',
-    'assets/glyph_stencils/assembly-scar.xml',
-    //'assets/glyph_stencils/downloads.xml'
+    'assets/glyph_stencils/sequence_feature/promoter.xml',
+    'assets/glyph_stencils/sequence_feature/cds.xml',
+    'assets/glyph_stencils/sequence_feature/aptamer.xml',
+    //'assets/glyph_stencils/sequence_feature/dna-stability-element.xml',
+    'assets/glyph_stencils/sequence_feature/insulator.xml',
+    'assets/glyph_stencils/sequence_feature/location-dna.xml',
+    'assets/glyph_stencils/sequence_feature/engineered-region.xml',
+    'assets/glyph_stencils/sequence_feature/five-prime-sticky-restriction-site.xml',
+    'assets/glyph_stencils/sequence_feature/location-rna.xml',
+    'assets/glyph_stencils/sequence_feature/location-protein.xml',
+    'assets/glyph_stencils/sequence_feature/ribosome-entry-site.xml',
+    'assets/glyph_stencils/sequence_feature/terminator-specification.xml',
+    'assets/glyph_stencils/sequence_feature/assembly-scar.xml',
+    'assets/glyph_stencils/sequence_feature/no-glyph-assigned.xml',
+    'assets/glyph_stencils/sequence_feature/ncrna.xml',
+    'assets/glyph_stencils/sequence_feature/nuclease-site.xml',
+    //'assets/glyph_stencils/sequence_feature/protease-site.xml',
+    //'assets/glyph_stencils/sequence_feature/protein-stability-element.xml',
+    //'assets/glyph_stencils/sequence_feature/ribonuclease-site.xml',
+    'assets/glyph_stencils/sequence_feature/rna-stability-element.xml',
+    'assets/glyph_stencils/sequence_feature/operator.xml',
+    'assets/glyph_stencils/sequence_feature/origin-of-replication.xml',
+    'assets/glyph_stencils/sequence_feature/origin-of-transfer.xml',
+    'assets/glyph_stencils/sequence_feature/primer-binding-site.xml',
+    'assets/glyph_stencils/sequence_feature/signature.xml',
+    'assets/glyph_stencils/sequence_feature/specific-recombination-site.xml',
+    'assets/glyph_stencils/sequence_feature/three-prime-overhang.xml',
   ];
 
   private molecularSpeciesXMLs: string[] = [
     // 'molecular species' glyphs aka protein?
-    'assets/glyph_stencils/molecular_species/macromolecule.xml'
+    'assets/glyph_stencils/molecular_species/macromolecule.xml',
   ]
 
   private interactionXMLs: string[] = [
-    'assets/glyph_stencils/interactions/control.xml'
+    'assets/glyph_stencils/interactions/control.xml',
+    'assets/glyph_stencils/interactions/inhibition.xml',
+    'assets/glyph_stencils/interactions/stimulation.xml',
+    'assets/glyph_stencils/interactions/process.xml',
+    'assets/glyph_stencils/interactions/degradation.xml',
   ]
 
   private utilXMLs: string[] = [
@@ -91,7 +107,7 @@ export class GlyphService {
       canvas.setStrokeColor('#000000');
       canvas.setFillColor('none');
 
-      stencil.drawShape(canvas, shape, 0, 0, 52, 52);
+      stencil.drawShape(canvas, shape, 1, 1, 50, 50);
 
       svgs[name] = elt;
     }

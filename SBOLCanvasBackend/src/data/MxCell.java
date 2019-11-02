@@ -6,10 +6,15 @@ public class MxCell {
 	private String value;
 	private String style;
 	private boolean vertex;
-	private boolean connectable;
+	private boolean edge;
+	private boolean connectable = true;
 	private int parent;
+	private int source;
+	private int target;
+	private boolean collapsed;
 	private MxGeometry geometry;
-	private GlyphInfo info;
+	// transient prevents this field from making it to json
+	private transient Info info;
 
 	public int getId() {
 		return id;
@@ -34,6 +39,14 @@ public class MxCell {
 	public void setVertex(boolean vertex) {
 		this.vertex = vertex;
 	}
+	
+	public boolean isEdge() {
+		return edge;
+	}
+	
+	public void setEdge(boolean edge) {
+		this.edge = edge;
+	}
 
 	public boolean isConnectable() {
 		return connectable;
@@ -51,6 +64,22 @@ public class MxCell {
 		this.parent = parent;
 	}
 
+	public int getSource() {
+		return source;
+	}
+	
+	public void setSource(int source) {
+		this.source = source;
+	}
+	
+	public int getTarget() {
+		return target;
+	}
+	
+	public void setTarget(int target) {
+		this.target = target;
+	}
+	
 	public MxGeometry getGeometry() {
 		return geometry;
 	}
@@ -59,11 +88,11 @@ public class MxCell {
 		this.geometry = geometry;
 	}
 
-	public GlyphInfo getInfo() {
+	public Info getInfo() {
 		return info;
 	}
 
-	public void setInfo(GlyphInfo info) {
+	public void setInfo(Info info) {
 		this.info = info;
 	}
 
@@ -73,6 +102,14 @@ public class MxCell {
 
 	public void setStyle(String style) {
 		this.style = style;
+	}
+	
+	public boolean isCollapsed() {
+		return collapsed;
+	}
+	
+	public void setCollapsed(boolean collapsed) {
+		this.collapsed = collapsed;
 	}
 
 	@Override

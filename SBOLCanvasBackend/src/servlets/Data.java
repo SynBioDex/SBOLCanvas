@@ -37,6 +37,8 @@ public class Data extends HttpServlet {
 					return;
 				}
 				body = gson.toJson(SBOLData.getRefinement(parent));
+			}else if(request.getPathInfo().equals("/interactions")) {
+				body = gson.toJson(SBOLData.getInteractions());
 			}
 			
 			// write it to the response body
@@ -46,7 +48,6 @@ public class Data extends HttpServlet {
 			
 			// the request was good
 			response.setStatus(HttpStatus.SC_OK);
-			response.addHeader("Access-Control-Allow-Origin", "*");
 			response.setContentType("application/json");
 			return;
 		}
