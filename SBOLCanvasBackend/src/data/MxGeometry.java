@@ -2,6 +2,9 @@ package data;
 
 import java.util.List;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 public class MxGeometry {
 
 	private double x;
@@ -76,6 +79,39 @@ public class MxGeometry {
 
 	public void setTargetPoint(MxPoint targetPoint) {
 		this.targetPoint = targetPoint;
+	}
+	
+	public Element encode(Document doc) {
+		Element mxGeometry = doc.createElement("mxGeometry");
+		if (x != 0)
+			mxGeometry.setAttribute("x", "" + x);
+		if (y != 0)
+			mxGeometry.setAttribute("y", "" + y);
+		if (width != 0)
+			mxGeometry.setAttribute("width", "" + width);
+		if (height != 0)
+			mxGeometry.setAttribute("height", "" + height);
+		if (sourcePoint != null) {
+			Element mxPoint = sourcePoint.encode(doc);
+			mxPoint.setAttribute("as", "sourcePoint");
+			mxGeometry.appendChild(mxPoint);
+		}
+		if (targetPoint != null) {
+			Element mxPoint = targetPoint.encode(doc);
+			mxPoint.setAttribute("as", "targetPoint");
+			mxGeometry.appendChild(mxPoint);
+		}
+		if (points != null) {
+			Element array = doc.createElement("Array");
+			array.setAttribute("as", "points");
+			for (MxPoint point : points) {
+				Element mxPoint = point.encode(doc);
+				array.appendChild(mxPoint);
+			}
+			mxGeometry.appendChild(array);
+		}
+		mxGeometry.setAttribute("as", "geometry");
+		return mxGeometry;
 	}
 
 }

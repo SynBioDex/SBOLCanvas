@@ -1,5 +1,8 @@
 package data;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 public class GlyphInfo extends Info {
 
 	private String partType;
@@ -82,5 +85,30 @@ public class GlyphInfo extends Info {
 
 	public void setSequence(String sequence) {
 		this.sequence = sequence;
+	}
+	
+	@Override
+	public Element encode(Document doc) {
+		Element glyphInfo = doc.createElement("GlyphInfo");
+		if (description != null)
+			glyphInfo.setAttribute("description", description);
+		if (displayID != null)
+			glyphInfo.setAttribute("displayID", displayID);
+		if (name != null)
+			glyphInfo.setAttribute("name", name);
+		if (partRefine != null)
+			glyphInfo.setAttribute("partRefine", partRefine);
+		if (partRole != null)
+			glyphInfo.setAttribute("partRole", partRole);
+		if (partType != null)
+			glyphInfo.setAttribute("partType", partType);
+		if (sequence != null)
+			glyphInfo.setAttribute("sequence", sequence);
+		if (version != null)
+			glyphInfo.setAttribute("version", version);
+		if (uriPrefix != null)
+			glyphInfo.setAttribute("uriPrefix", uriPrefix);
+		glyphInfo.setAttribute("as", "data");
+		return glyphInfo;
 	}
 }

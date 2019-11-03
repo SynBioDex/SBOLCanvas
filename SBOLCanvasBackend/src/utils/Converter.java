@@ -189,33 +189,58 @@ public class Converter {
 	}
 
 	public void toGraph(InputStream sbolStream, OutputStream graphStream) {
+		// load the sbol file into the proper objects
 		try {
-			// load the sbol file into the proper objects
 			SBOLDocument document = SBOLReader.read(sbolStream);
-			Set<ComponentDefinition> backboneCDs = document.getRootComponentDefinitions();
-			ModuleDefinition modDef = document.getRootModuleDefinitions().iterator().next();
-			Annotation textAnn = modDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
-			MxCell[] textBoxes = null;
-			if (textAnn != null) {
-				textBoxes = gson.fromJson(textAnn.getStringValue(), MxCell[].class);
-				for (MxCell cell : textBoxes) {
-					cells.put(cell.getId(), cell);
+			toGraph(document, graphStream);
+		} catch (SBOLValidationException | IOException | SBOLConversionException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void toGraph(SBOLDocument document, OutputStream graphStream) {
+		try {
+			ModuleDefinition modDef = null;
+			if (document.getRootModuleDefinitions().size() > 0) {
+				modDef = document.getRootModuleDefinitions().iterator().next();
+				Annotation textAnn = modDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
+				MxCell[] textBoxes = null;
+				if (textAnn != null) {
+					textBoxes = gson.fromJson(textAnn.getStringValue(), MxCell[].class);
+					for (MxCell cell : textBoxes) {
+						cells.put(cell.getId(), cell);
+					}
 				}
 			}
 
 			// top level component definitions
-			for (ComponentDefinition backboneCD : backboneCDs) {
-				compDefToMxGraphObjects(backboneCD);
+			Set<ComponentDefinition> topCDs = document.getRootComponentDefinitions();
+			for (ComponentDefinition topCD : topCDs) {
+				if(modDef == null) {
+					// If we're importing a sub part, the main cell was attached to the component which we no longer have
+					MxCell cell = new MxCell();
+					cell.setInfo(genGlyphInfo(topCD));
+					// we need to set the top cell's id to the parent of it's child
+					MxCell containerCell = gson.fromJson(
+							topCD.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix)).getStringValue(), MxCell.class);
+					cell.setId(containerCell.getParent());
+					cells.put(cell.getId(), cell);
+				}
+				compDefToMxGraphObjects(topCD);
 			}
 
-			// edges
-			modDefToMxGraphObjects(document.getModuleDefinitions().iterator().next());
+			if (modDef != null) {
+				// edges
+				modDefToMxGraphObjects(document.getModuleDefinitions().iterator().next());
+			}
 
 			// convert the objects to the graph xml
-			graphStream.write(objectsToGraph().getBytes());
+			if(modDef != null)
+				graphStream.write(objectsToGraph().getBytes());
+			else
+				graphStream.write(objectsToSubGraph().getBytes());
 
-		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException
-				| TransformerException e) {
+		} catch (IOException | ParserConfigurationException | TransformerException e) {
 			e.printStackTrace();
 		}
 	}
@@ -461,6 +486,41 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Takes the mxGraph objects and converts them to an xml that can be used to override a cell in mxGraph.
+	 * @return
+	 * @throws ParserConfigurationException 
+	 * @throws TransformerException 
+	 */
+	private String objectsToSubGraph() throws ParserConfigurationException, TransformerException {
+		DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder documentBuilder = documentFactory.newDocumentBuilder();
+		Document graphDocument = documentBuilder.newDocument();
+		
+		Element root = graphDocument.createElement("root");
+		graphDocument.appendChild(root);
+		
+		for (MxCell cell : cells.values()) {
+			root.appendChild(cell.encode(graphDocument));
+		}
+		
+		TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		Transformer transformer = transformerFactory.newTransformer();
+		DOMSource domSource = new DOMSource(graphDocument);
+		StringWriter sw = new StringWriter();
+		StreamResult result = new StreamResult(sw);
+		transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+		transformer.transform(domSource, result);
+
+		return sw.toString();
+	}
+	
+	/**
+	 * Takes the mxGraph objects and converts them to an xml that can be used to override the model in mxGraph.
+	 * @return
+	 * @throws ParserConfigurationException
+	 * @throws TransformerException
+	 */
 	private String objectsToGraph() throws ParserConfigurationException, TransformerException {
 		DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder documentBuilder = documentFactory.newDocumentBuilder();
@@ -483,102 +543,7 @@ public class Converter {
 		root.appendChild(second);
 
 		for (MxCell cell : cells.values()) {
-			// cell
-			Element mxCell = graphDocument.createElement("mxCell");
-			mxCell.setAttribute("id", "" + cell.getId());
-			mxCell.setAttribute("value", cell.getValue());
-			mxCell.setAttribute("style", cell.getStyle());
-			if (cell.isVertex())
-				mxCell.setAttribute("vertex", "1");
-			if (cell.isEdge())
-				mxCell.setAttribute("edge", "1");
-			mxCell.setAttribute("connectable", cell.isConnectable() ? "1" : "0");
-			mxCell.setAttribute("parent", "" + cell.getParent());
-			if (cell.getSource() > 0)
-				mxCell.setAttribute("source", "" + cell.getSource());
-			if (cell.getTarget() > 0)
-				mxCell.setAttribute("target", "" + cell.getTarget());
-			if (cell.isCollapsed())
-				mxCell.setAttribute("collapsed", "1");
-			root.appendChild(mxCell);
-
-			// geometry
-			MxGeometry geometry = cell.getGeometry();
-			Element mxGeometry = graphDocument.createElement("mxGeometry");
-			if (geometry.getX() != 0)
-				mxGeometry.setAttribute("x", "" + geometry.getX());
-			if (geometry.getY() != 0)
-				mxGeometry.setAttribute("y", "" + geometry.getY());
-			if (geometry.getWidth() != 0)
-				mxGeometry.setAttribute("width", "" + geometry.getWidth());
-			if (geometry.getHeight() != 0)
-				mxGeometry.setAttribute("height", "" + geometry.getHeight());
-			if (geometry.getSourcePoint() != null) {
-				MxPoint sourcePoint = geometry.getSourcePoint();
-				Element mxPoint = graphDocument.createElement("mxPoint");
-				mxPoint.setAttribute("x", "" + sourcePoint.getX());
-				mxPoint.setAttribute("y", "" + sourcePoint.getY());
-				mxPoint.setAttribute("as", "sourcePoint");
-				mxGeometry.appendChild(mxPoint);
-			}
-			if (geometry.getTargetPoint() != null) {
-				MxPoint targetPoint = geometry.getTargetPoint();
-				Element mxPoint = graphDocument.createElement("mxPoint");
-				mxPoint.setAttribute("x", "" + targetPoint.getX());
-				mxPoint.setAttribute("y", "" + targetPoint.getY());
-				mxPoint.setAttribute("as", "targetPoint");
-				mxGeometry.appendChild(mxPoint);
-			}
-			if (geometry.getPoints() != null) {
-				Element array = graphDocument.createElement("Array");
-				array.setAttribute("as", "points");
-				for (MxPoint point : geometry.getPoints()) {
-					Element mxPoint = graphDocument.createElement("mxPoint");
-					mxPoint.setAttribute("x", "" + point.getX());
-					mxPoint.setAttribute("y", "" + point.getY());
-					array.appendChild(mxPoint);
-				}
-				mxGeometry.appendChild(array);
-			}
-			mxGeometry.setAttribute("as", "geometry");
-			mxCell.appendChild(mxGeometry);
-
-			// GlyphInfo
-			if (cell.getInfo() != null) {
-				if (cell.getInfo() instanceof GlyphInfo) {
-					GlyphInfo info = (GlyphInfo) cell.getInfo();
-					Element glyphInfo = graphDocument.createElement("GlyphInfo");
-					if (info.getDescription() != null)
-						glyphInfo.setAttribute("description", info.getDescription());
-					if (info.getDisplayID() != null)
-						glyphInfo.setAttribute("displayID", info.getDisplayID());
-					if (info.getName() != null)
-						glyphInfo.setAttribute("name", info.getName());
-					if (info.getPartRefine() != null)
-						glyphInfo.setAttribute("partRefine", info.getPartRefine());
-					if (info.getPartRole() != null)
-						glyphInfo.setAttribute("partRole", info.getPartRole());
-					if (info.getPartType() != null)
-						glyphInfo.setAttribute("partType", info.getPartType());
-					if (info.getSequence() != null)
-						glyphInfo.setAttribute("sequence", info.getSequence());
-					if (info.getVersion() != null)
-						glyphInfo.setAttribute("version", info.getVersion());
-					if(info.getUriPrefix() != null)
-						glyphInfo.setAttribute("uriPrefix", info.getUriPrefix());
-					glyphInfo.setAttribute("as", "data");
-					mxCell.appendChild(glyphInfo);
-				} else if (cell.getInfo() instanceof InteractionInfo) {
-					InteractionInfo info = (InteractionInfo) cell.getInfo();
-					Element intInfo = graphDocument.createElement("InteractionInfo");
-					if (info.getDisplayID() != null)
-						intInfo.setAttribute("displayID", info.getDisplayID());
-					if (info.getInteractionType() != null)
-						intInfo.setAttribute("interactionType", info.getInteractionType());
-					intInfo.setAttribute("as", "data");
-					mxCell.appendChild(intInfo);
-				}
-			}
+			root.appendChild(cell.encode(graphDocument));
 		}
 
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -636,40 +601,47 @@ public class Converter {
 					MxCell.class);
 
 			// glyph info
-			GlyphInfo glyphInfo = new GlyphInfo();
-			glyphInfo.setDescription(glyphComponent.getDescription());
-			glyphInfo.setDisplayID(glyphComponent.getDisplayId());
-			glyphInfo.setName(glyphComponent.getName());
-			URI glyphRole = glyphComponent.getDefinition().getRoles().toArray(new URI[0])[0];
-			if (SBOLData.roles.containsValue(glyphRole)) {
-				glyphInfo.setPartRole(SBOLData.roles.getKey(glyphRole));
-			} else {
-				glyphInfo.setPartRole(SBOLData.roles.getKey(SBOLData.parents.get(glyphRole)));
-				glyphInfo.setPartRefine(SBOLData.refinements.getKey(glyphRole));
-			}
-			URI glyphType = glyphComponent.getDefinition().getTypes().toArray(new URI[0])[0];
-			glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
-			if (glyphComponent.getDefinition().getSequences().size() > 0)
-				glyphInfo.setSequence(glyphComponent.getDefinition().getSequences().iterator().next().getElements());
-			glyphInfo.setVersion(glyphComponent.getDefinition().getVersion());
-			if (glyphComponent.getDefinition()
+			ComponentDefinition glyphCD = glyphComponent.getDefinition();
+			GlyphInfo glyphInfo = genGlyphInfo(glyphCD);
+			glyphCell.setInfo(glyphInfo);
+
+			if (glyphCD
 					.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix)) != null) {
 				compDefToMxGraphObjects(glyphComponent.getDefinition());
 			}
-			String identity = glyphComponent.getDefinition().getIdentity().toString();
-			int lastIndex = 0;
-			if(glyphInfo.getVersion() != null)
-				lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID()+"/"+glyphInfo.getVersion());
-			else
-				lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
-			glyphInfo.setUriPrefix(identity.substring(0,lastIndex-1));
-			glyphCell.setInfo(glyphInfo);
 
 			cells.put(glyphCell.getId(), glyphCell);
 
 		}
 	}
 
+	private GlyphInfo genGlyphInfo(ComponentDefinition glyphCD) {
+		GlyphInfo glyphInfo = new GlyphInfo();
+		glyphInfo.setDescription(glyphCD.getDescription());
+		glyphInfo.setDisplayID(glyphCD.getDisplayId());
+		glyphInfo.setName(glyphCD.getName());
+		URI glyphRole = glyphCD.getRoles().toArray(new URI[0])[0];
+		if (SBOLData.roles.containsValue(glyphRole)) {
+			glyphInfo.setPartRole(SBOLData.roles.getKey(glyphRole));
+		} else {
+			glyphInfo.setPartRole(SBOLData.roles.getKey(SBOLData.parents.get(glyphRole)));
+			glyphInfo.setPartRefine(SBOLData.refinements.getKey(glyphRole));
+		}
+		URI glyphType = glyphCD.getTypes().toArray(new URI[0])[0];
+		glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
+		if (glyphCD.getSequences().size() > 0)
+			glyphInfo.setSequence(glyphCD.getSequences().iterator().next().getElements());
+		glyphInfo.setVersion(glyphCD.getVersion());
+		String identity = glyphCD.getIdentity().toString();
+		int lastIndex = 0;
+		if (glyphInfo.getVersion() != null)
+			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID() + "/" + glyphInfo.getVersion());
+		else
+			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
+		glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
+		return glyphInfo;
+	}
+	
 	private URI getParticipantType(boolean source, URI interactionType) {
 		if (interactionType.equals(SystemsBiologyOntology.BIOCHEMICAL_REACTION)) {
 			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;
