@@ -49,6 +49,8 @@
       <textarea matInput id="version" placeholder="Version" value="{{ glyphInfo.version }}" (input)="inputChange($event)"></textarea>
   </mat-form-field>
 
+  <mat-label>URI: {{generateURI()}}</mat-label>
+
 <!--    <mat-form-field>-->
 <!--      <mat-label>Sequence encoding</mat-label>-->
 <!--      <mat-select id="sequenceEncoding" value="{{glyphInfo.encoding}}" (selectionChange)="dropDownChange($event)">-->
