@@ -395,7 +395,6 @@ export class GraphService {
   undo() {
     // (un/re)doing is managed by the editor; it only works
     // if all changes are encapsulated by graphModel.(begin/end)Update
-    // if all changes are encapsulated by graphModel.(begin/end)Update
     this.editor.execute('undo');
   }
 
@@ -750,8 +749,9 @@ export class GraphService {
    * and uses it to replace the current graph
    */
   setGraphToXML(graphString: string) {
-    // Creates the graph inside the given container
+    this.graph.home();
     this.graph.getModel().clear();
+
     const doc = mx.mxUtils.parseXml(graphString);
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
@@ -889,6 +889,20 @@ export class GraphService {
     }
     mx.mxCodecRegistry.register(interactionInfoCodec);
     window['InteractionInfo'] = InteractionInfo;
+
+    // For circuitContainers, the order of the children matters.
+    // We want it to match the order of the children's geometries
+    const defaultDecodeCell = mx.mxCodec.prototype.decodeCell;
+    mx.mxCodec.prototype.decodeCell = function(node, restoreStructures) {
+      const cell = defaultDecodeCell.apply(this, arguments);
+
+      if (cell && cell.isSequenceFeatureGlyph()) {
+        cell.parent.children.sort(function(cellA, cellB) {
+          return cellA.getGeometry().x - cellB.getGeometry().x;
+        });
+      }
+      return cell;
+    }
   }
 
   /**
