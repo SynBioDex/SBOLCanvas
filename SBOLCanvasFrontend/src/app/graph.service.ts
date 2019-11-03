@@ -121,6 +121,23 @@ export class GraphService {
     this.initConnectionSettings();
   }
 
+  /**
+   * Attempts some auto formatting on the graph.
+   * Only affects the current "drill level," ie children cells are not affected.
+   *
+   * This generally does a bad job. Only use this for outside files with no
+   * position information at all.
+   */
+  autoFormat() {
+    var first = new mx.mxStackLayout(this.graph, false, 20);
+    var second = new mx.mxFastOrganicLayout(this.graph);
+
+    var layout = new mx.mxCompositeLayout(this.graph, [first, second], first);
+    layout.execute(this.graph.getDefaultParent());
+
+    this.fitCamera();
+  }
+
   handleSelectionChange(sender, evt) {
     // 'added' and 'removed' properties are reversed in mxGraph
     var cellsRemoved = evt.getProperty('added');
@@ -1230,6 +1247,7 @@ export class GraphService {
     circuitContainerStyle[mx.mxConstants.STYLE_FILLCOLOR] = 'none';
     circuitContainerStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     circuitContainerStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+    circuitContainerStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
     this.graph.getStylesheet().putCellStyle(circuitContainerStyleName, circuitContainerStyle);
 
     const backboneStyle = {};
