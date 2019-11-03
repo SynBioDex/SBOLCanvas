@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=forking
-User=tomcat
-Group=tomcat
+User=root
+Group=root
 Environment="JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.222.b10-1.el7_7.arm/"
 Environment="JAVA_OPTS=-Djava.security.egd=file:///dev/urandom"
 Environment="CATALINA_BASE=/opt/tomcat/enabled"
