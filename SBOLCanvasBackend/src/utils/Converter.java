@@ -175,7 +175,7 @@ public class Converter {
 								targetCD.getIdentity(), DirectionType.INOUT);
 					}
 					interaction.createParticipation(targetInfo.getDisplayID(), targetFC.getIdentity(),
-								getParticipantType(false, interaction.getTypes().iterator().next()));
+							getParticipantType(false, interaction.getTypes().iterator().next()));
 				}
 
 			}
@@ -261,7 +261,10 @@ public class Converter {
 
 				// component definition
 				GlyphInfo glyphInfo = (GlyphInfo) glyphCell.getInfo();
-				ComponentDefinition componentCD = document.createComponentDefinition(glyphInfo.getDisplayID(),
+				if (glyphInfo.getUriPrefix() == null || glyphInfo.getUriPrefix().equals(""))
+					glyphInfo.setUriPrefix(uriPrefix);
+				ComponentDefinition componentCD = document.createComponentDefinition(glyphInfo.getUriPrefix(),
+						glyphInfo.getDisplayID(), glyphInfo.getVersion(),
 						SBOLData.types.getValue(glyphInfo.getPartType()));
 				if (glyphInfo.getPartRefine() == null || glyphInfo.getPartRefine().equals("")) {
 					componentCD.addRole(SBOLData.roles.getValue(glyphInfo.getPartRole()));
@@ -273,7 +276,7 @@ public class Converter {
 
 				// component
 				Component component = compDef.createComponent(glyphInfo.getDisplayID(), AccessType.PUBLIC,
-						componentCD.getDisplayId());
+						componentCD.getDisplayId(), glyphInfo.getVersion());
 
 				// composite
 				if (containers.containsKey(glyphCell.getId())) {
@@ -410,6 +413,7 @@ public class Converter {
 				info.setDescription(infoElement.getAttribute("description"));
 				info.setVersion(infoElement.getAttribute("version"));
 				info.setSequence(infoElement.getAttribute("sequence"));
+				info.setUriPrefix(infoElement.getAttribute("uriPrefix"));
 				cell.setInfo(info);
 			}
 
@@ -560,6 +564,8 @@ public class Converter {
 						glyphInfo.setAttribute("sequence", info.getSequence());
 					if (info.getVersion() != null)
 						glyphInfo.setAttribute("version", info.getVersion());
+					if(info.getUriPrefix() != null)
+						glyphInfo.setAttribute("uriPrefix", info.getUriPrefix());
 					glyphInfo.setAttribute("as", "data");
 					mxCell.appendChild(glyphInfo);
 				} else if (cell.getInfo() instanceof InteractionInfo) {
@@ -645,36 +651,42 @@ public class Converter {
 			glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
 			if (glyphComponent.getDefinition().getSequences().size() > 0)
 				glyphInfo.setSequence(glyphComponent.getDefinition().getSequences().iterator().next().getElements());
-			glyphInfo.setVersion(glyphComponent.getVersion());
+			glyphInfo.setVersion(glyphComponent.getDefinition().getVersion());
 			if (glyphComponent.getDefinition()
 					.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix)) != null) {
 				compDefToMxGraphObjects(glyphComponent.getDefinition());
 			}
+			String identity = glyphComponent.getDefinition().getIdentity().toString();
+			int lastIndex = 0;
+			if(glyphInfo.getVersion() != null)
+				lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID()+"/"+glyphInfo.getVersion());
+			else
+				lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
+			glyphInfo.setUriPrefix(identity.substring(0,lastIndex-1));
 			glyphCell.setInfo(glyphInfo);
 
 			cells.put(glyphCell.getId(), glyphCell);
 
 		}
 	}
-	
+
 	private URI getParticipantType(boolean source, URI interactionType) {
-		if(interactionType.equals(SystemsBiologyOntology.BIOCHEMICAL_REACTION)) {
+		if (interactionType.equals(SystemsBiologyOntology.BIOCHEMICAL_REACTION)) {
 			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;
-		}else if(interactionType.equals(SystemsBiologyOntology.CONTROL)) {
+		} else if (interactionType.equals(SystemsBiologyOntology.CONTROL)) {
 			return source ? SystemsBiologyOntology.MODIFIER : SystemsBiologyOntology.MODIFIED;
-		}else if(interactionType.equals(SystemsBiologyOntology.DEGRADATION)) {
+		} else if (interactionType.equals(SystemsBiologyOntology.DEGRADATION)) {
 			return SystemsBiologyOntology.REACTANT;
-		}else if(interactionType.equals(SystemsBiologyOntology.GENETIC_PRODUCTION)) {
+		} else if (interactionType.equals(SystemsBiologyOntology.GENETIC_PRODUCTION)) {
 			return source ? SystemsBiologyOntology.TEMPLATE : SystemsBiologyOntology.PRODUCT;
-		}else if(interactionType.equals(SystemsBiologyOntology.INHIBITION)) {
+		} else if (interactionType.equals(SystemsBiologyOntology.INHIBITION)) {
 			return source ? SystemsBiologyOntology.INHIBITOR : SystemsBiologyOntology.INHIBITED;
-		}else if(interactionType.equals(SystemsBiologyOntology.NON_COVALENT_BINDING)) {
+		} else if (interactionType.equals(SystemsBiologyOntology.NON_COVALENT_BINDING)) {
 			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;
-		}else if(interactionType.equals(SystemsBiologyOntology.STIMULATION)) {
+		} else if (interactionType.equals(SystemsBiologyOntology.STIMULATION)) {
 			return source ? SystemsBiologyOntology.STIMULATOR : SystemsBiologyOntology.STIMULATED;
 		}
 		return null;
 	}
-	
 
 }

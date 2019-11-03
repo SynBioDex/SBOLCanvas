@@ -10,6 +10,15 @@ public class GlyphInfo extends Info {
 	private String description;
 	private String version;
 	private String sequence;
+	private String uriPrefix;
+
+	public String getUriPrefix() {
+		return uriPrefix;
+	}
+
+	public void setUriPrefix(String uriPrefix) {
+		this.uriPrefix = uriPrefix;
+	}
 
 	public String getPartType() {
 		return partType;
