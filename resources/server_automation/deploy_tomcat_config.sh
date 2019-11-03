@@ -15,6 +15,8 @@ scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/base_config_files/manager-con
 || die "Failed to scp tomcat manager config to server"
 scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/base_config_files/host-manager-context.xml root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR}/webapps/host-manager/META-INF/context.xml \
 || die "Failed to scp tomcat host-manager config to server"
+scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/ROOT_config/index.jsp root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR}/webapps/ROOT/index.jsp \
+|| die "Failed to scp ROOT config to server"
 
 scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/base_config_files/tomcat.service root@${SERVER_ADDRESS}:/etc/systemd/system/ \
 || die "Failed to scp systemd unit file for tomcat to server"
