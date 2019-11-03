@@ -456,8 +456,19 @@ export class GraphService {
     if (parentCircuitContainer != null) {
       this.graph.getModel().beginUpdate();
       try {
+        // If a glyph is selected rather than the circuit container, then we will insert the glyph
+        // after the selected glyph.
+        let x_pos = parentCircuitContainer.getGeometry().width;
+        const selectionCells = this.graph.getSelectionCells();
+        if (selectionCells) {
+          if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
+            x_pos = selectionCells[0].getGeometry().x + 1
+            console.debug("single cell is selected. Inserting new glyph x_pos = " + x_pos);
+          }
+        }
+
         // Insert new glyph and its components
-        const sequenceFeatureCell = this.graph.insertVertex(parentCircuitContainer, null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
+        const sequenceFeatureCell = this.graph.insertVertex(parentCircuitContainer, null, '', x_pos, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
         const childCircuitContainer = this.graph.insertVertex(sequenceFeatureCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
         const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
 
@@ -471,7 +482,8 @@ export class GraphService {
         sequenceFeatureCell.setConnectable(true);
 
         // Refreshes the parent
-        parentCircuitContainer.refreshCircuitContainer(this.graph);
+        //parentCircuitContainer.refreshCircuitContainer(this.graph);
+        this.horizontalSortBasedOnPosition(this.graph);
 
         // The new glyph should be selected
         this.graph.clearSelection();
@@ -554,7 +566,7 @@ export class GraphService {
   mutateSequenceFeatureGlyph(name: string) {
     const selectionCells = this.graph.getSelectionCells();
 
-    console.log(name);
+    console.debug("glyph name = " + name);
 
     if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
       let selectedCell = selectionCells[0];
@@ -998,14 +1010,6 @@ export class GraphService {
       return null;
     };
 
-    mx.mxCell.prototype.getParentCircuitContainer = function () {
-      if (this.isSequenceFeatureGlyph()) {
-        return this.getParent();
-      } else {
-        return null;
-      }
-    };
-
     /**
      * Replaces this cell's geometry in an undo friendly way
      * 'graph' must be a reference to the graph
@@ -1312,7 +1316,7 @@ export class GraphService {
    * Sets up logic for handling sequenceFeatureGlyph movement
    */
   initSequenceFeatureGlyphMovement() {
-    this.graph.addListener(mx.mxEvent.MOVE_CELLS, function (sender, evt) {
+    this.graph.addListener(mx.mxEvent.MOVE_CELLS,  mx.mxUtils.bind(this, function (sender, evt) {
       // sender is the graph
 
       let movedCells = evt.getProperty("cells");
@@ -1369,24 +1373,28 @@ export class GraphService {
       // they should be when the move finishes.
       // (equal x position means they should stay in the order they were previously in)
       // So for each circuitContainer (optimized me: only do this for affected ones)...
-      let cells = this.getChildVertices(this.getDefaultParent());
-      for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
-        // ...sort the children...
-        let childrenCopy = circuitContainer.children.slice();
-        childrenCopy.sort(function (cellA, cellB) {
-          return cellA.getGeometry().x - cellB.getGeometry().x;
-        });
-        // ...and have the model reflect the sort in an undoable way
-        for (let i = 0; i < childrenCopy.length; i++) {
-          const child = childrenCopy[i];
-          sender.getModel().add(circuitContainer, child, i);
-        }
-
-        circuitContainer.refreshCircuitContainer(this);
-      }
+      this.horizontalSortBasedOnPosition(sender);
 
       evt.consume();
-    });
+    }));
+  }
+
+  horizontalSortBasedOnPosition(graph) {
+    let cells = graph.getChildVertices(graph.getDefaultParent());
+    for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
+      // ...sort the children...
+      let childrenCopy = circuitContainer.children.slice();
+      childrenCopy.sort(function (cellA, cellB) {
+        return cellA.getGeometry().x - cellB.getGeometry().x;
+      });
+      // ...and have the model reflect the sort in an undoable way
+      for (let i = 0; i < childrenCopy.length; i++) {
+        const child = childrenCopy[i];
+        graph.getModel().add(circuitContainer, child, i);
+      }
+
+      circuitContainer.refreshCircuitContainer(graph);
+    }
   }
 
   initConnectionSettings() {
