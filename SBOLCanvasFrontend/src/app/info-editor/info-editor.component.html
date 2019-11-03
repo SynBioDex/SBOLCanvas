@@ -1,9 +1,5 @@
 <div *ngIf="glyphInfo" class="info-menu-container">
   <mat-form-field>
-    <input matInput id="displayID" placeholder="Display ID" value="{{ glyphInfo.name }}">
-  </mat-form-field>-->
-
-  <mat-form-field>
     <mat-label>Part type</mat-label>
     <mat-select id="partType" value="{{glyphInfo.partType}}" (selectionChange)="dropDownChange($event)">
       <mat-option value="">All_types</mat-option>

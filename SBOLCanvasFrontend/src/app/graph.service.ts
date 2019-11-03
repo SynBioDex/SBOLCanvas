@@ -118,7 +118,23 @@ export class GraphService {
     this.initStyles();
     this.initCustomShapes();
     this.initSequenceFeatureGlyphMovement();
-    this.initConnectionSettings();
+  }
+
+  /**
+   * Attempts some auto formatting on the graph.
+   * Only affects the current "drill level," ie children cells are not affected.
+   *
+   * This generally does a bad job. Only use this for outside files with no
+   * position information at all.
+   */
+  autoFormat() {
+    var first = new mx.mxStackLayout(this.graph, false, 20);
+    var second = new mx.mxFastOrganicLayout(this.graph);
+
+    var layout = new mx.mxCompositeLayout(this.graph, [first, second], first);
+    layout.execute(this.graph.getDefaultParent());
+
+    this.fitCamera();
   }
 
   handleSelectionChange(sender, evt) {
@@ -1230,6 +1246,7 @@ export class GraphService {
     circuitContainerStyle[mx.mxConstants.STYLE_FILLCOLOR] = 'none';
     circuitContainerStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     circuitContainerStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+    circuitContainerStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
     this.graph.getStylesheet().putCellStyle(circuitContainerStyleName, circuitContainerStyle);
 
     const backboneStyle = {};
@@ -1304,12 +1321,6 @@ export class GraphService {
         }
       }
 
-      // Defines the connection constraints for all sequence features
-      customStencil.constraints = [
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), false),
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), false)
-      ];
-
       // Add the stencil to the registry and set its style.
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
@@ -1324,14 +1335,6 @@ export class GraphService {
     for (const name in stencils) {
       const stencil = stencils[name][0];
       let customStencil = new mx.mxStencil(stencil.desc); // Makes of deep copy of the stencil.
-
-      // Defines the default constraints for all molecular species
-      customStencil.constraints = [
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), false),
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), false),
-        new mx.mxConnectionConstraint(new mx.mxPoint(0, .5), false),
-        new mx.mxConnectionConstraint(new mx.mxPoint(1, .5), false)
-      ];
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
       const newGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
@@ -1485,41 +1488,6 @@ export class GraphService {
       }
 
       evt.consume();
-    });
-  }
-
-  initConnectionSettings() {
-
-    // Overrides highlight shape for connection points
-    mx.mxConstraintHandler.prototype.createHighlightShape = function () {
-      var hl = new mx.mxEllipse(null, this.highlightColor, this.highlightColor, 0);
-      hl.opacity = mx.mxConstants.HIGHLIGHT_OPACITY;
-
-      return hl;
-    };
-
-    // Overriding this method makes it so connection constraints on sequence features
-    // stay visible when trying to create an interaction.
-    let origIsKeepFocusEvent = mx.mxConstraintHandler.prototype.isKeepFocusEvent;
-    mx.mxConstraintHandler.prototype.isKeepFocusEvent = function (me) {
-
-      // Ignore circuit containers and backbones so that the focus stays
-      // on the sequence feature, and thus the anchor points stay visible.
-      if (me.state != undefined && me.state.cell != undefined) {
-        if (me.state.cell.isCircuitContainer() || me.state.cell.isBackbone()) {
-          console.debug("mx.mxConstraintHandler.prototype.isKeepFocusEvent: Keeping focus.")
-          return true;
-        }
-      }
-
-      return origIsKeepFocusEvent.apply(this, arguments);
-    };
-
-    // This makes it so connections created by the connectionHandler use the same method
-    // as when an interaction glyph is clicked in the glyph menu
-    // (Beware, without this, it uses a factoryMethod provided by the mxEditor)
-    this.graph.connectionHandler.factoryMethod = mx.mxUtils.bind(this, function (source, target) {
-      return this.addInteraction(this.defaultInteractionStyleName, source, target);
     });
   }
 }
