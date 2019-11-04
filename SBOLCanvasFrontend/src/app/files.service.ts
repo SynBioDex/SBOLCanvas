@@ -71,7 +71,7 @@ export class FilesService {
     return this.http.get(this.getRegistriesURL);
   }
 
-  listCollections(user: string, server: string): Observable<any> {
+  listMyCollections(user: string, server: string): Observable<any> {
     let headers = new HttpHeaders();
     headers = headers.set("Authorization", user);
     let params = new HttpParams();

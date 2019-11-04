@@ -13,11 +13,14 @@ export class LoginComponent implements OnInit {
   email: string;
   password: string;
 
+  working: boolean;
+
   // forwardRef because of circular dependency
   constructor(@Inject(forwardRef(() => LoginService)) private loginService: LoginService, public dialogRef: MatDialogRef<LoginComponent>,
     @Inject(MAT_DIALOG_DATA) public data: LoginDialogData) { }
 
   ngOnInit() {
+    this.working = false;
   }
 
   finishCheck():boolean{
@@ -25,14 +28,17 @@ export class LoginComponent implements OnInit {
   }
 
   onLoginClick(){
+    this.working = true;
     this.loginService.login(this.email, this.password, this.data.server).subscribe(result => {
       this.loginService.users[this.data.server] = result;
-      this.dialogRef.close();
+      this.working = false;
+      this.dialogRef.close(true);
     });
   }
 
   onCancelClick(){
-    this.dialogRef.close();
+    // false signifies that they failed to login
+    this.dialogRef.close(false);
   }
 
 }

@@ -18,12 +18,23 @@ export class UploadGraphComponent implements OnInit {
 
   filesService: FilesService;
 
+  working: boolean;
+
   constructor(private loginService: LoginService, public dialogRef: MatDialogRef<UploadGraphComponent>) { }
 
   ngOnInit() {
+    this.working = true;
     this.filesService.getRegistries().subscribe(result => {
       this.registries = result;
+      this.working = false;
     });
+  }
+
+  setRegistry(registry:string){
+    this.registry = registry;
+    this.collection = "";
+    this.collections = [];
+    this.updateCollections();
   }
 
   loginDisabled(){
@@ -43,7 +54,23 @@ export class UploadGraphComponent implements OnInit {
   }
 
   onLoginClick(){
-    this.loginService.openLoginDialog(this.registry);
+    this.loginService.openLoginDialog(this.registry).subscribe(result => {
+      if(result){
+        this.updateCollections();
+      }
+    });
+  }
+
+  updateCollections(){
+    if(this.loginService.users[this.registry] != null){
+      this.working = true;
+      this.filesService.listMyCollections(this.loginService.users[this.registry], this.registry).subscribe(collections => {
+        this.collections = collections;
+        this.working = false;
+      });
+    }else{
+      this.collections = [];
+    }
   }
 
 }

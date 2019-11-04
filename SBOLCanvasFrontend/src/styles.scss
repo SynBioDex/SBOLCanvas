@@ -25,3 +25,8 @@ mat-sidenav-container {
 body {
   margin: 0px;
 }
+
+.mat-tooltip {
+  word-break: break-all !important;
+  white-space: normal !important;
+}

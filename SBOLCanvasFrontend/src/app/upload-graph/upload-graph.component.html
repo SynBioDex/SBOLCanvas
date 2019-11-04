@@ -1,11 +1,11 @@
 <mat-card>
   <h1 mat-dialog-title>Upload</h1>
-  <div class = "mat-form-field-container">
+  <div class="mat-form-field-container">
 
     <mat-form-field>
       <mat-label>Server</mat-label>
-      <mat-select id="registry" (selectionChange)="registry=$event.value">
-        <mat-option class="mat-option-text" *ngFor="let registry of registries" [value]="registry">
+      <mat-select id="registry" [disabled]="registries == null || registries.length < 1" (selectionChange)="setRegistry($event.value)">
+        <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
           {{registry}}
         </mat-option>
       </mat-select>
@@ -13,8 +13,9 @@
 
     <mat-form-field>
       <mat-label>Collection</mat-label>
-      <mat-select id="collection" [disabled]="collections === undefined" (selectionChange)="collection=$event.value">
-        <mat-option class="mat-option-text" *ngFor="let collection of collections" [value]="collection">
+      <mat-select id="collection" [disabled]="collections == null || collections.length < 1" value="{{collection}}" (selectionChange)="collection=$event.value">
+        <mat-option *ngFor="let collection of collections" [value]="collection"
+          [matTooltip]="collection.substr(collection.indexOf('/user/')+6)" matTooltipClass="mat-tooltip">
           {{collection.substr(collection.indexOf('/user/')+6)}}
         </mat-option>
       </mat-select>
@@ -25,9 +26,15 @@
     </mat-form-field>
 
   </div>
+
+  <div *ngIf="working">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+
   <div mat-dialog-actions>
     <button mat-button [disabled]="loginDisabled()" (click)="onLoginClick()">Login</button>
     <button mat-button (click)="onCancelClick()">Cancel</button>
     <button mat-button [disabled]="!finishCheck()" (click)="onUploadClick()">Upload</button>
   </div>
+
 </mat-card>
