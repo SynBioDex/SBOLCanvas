@@ -1119,20 +1119,6 @@ export class GraphService {
 
       graph.getModel().setGeometry(this, newGeo);
     };
-
-    /**
-     * This method callsRefreshCircuitContainer on every
-     * circuitContainer in the graph.
-     */
-    mx.mxGraph.prototype.refreshAllCircuitContainers = function () {
-      let cells = this.getChildVertices(this.getDefaultParent());
-
-      for (let cell of cells) {
-        if (cell.isCircuitContainer()) {
-          cell.refreshCircuitContainer(this);
-        }
-      }
-    }
   }
 
   /**
