@@ -448,64 +448,171 @@ export class GraphService {
   }
 
   /**
-   * Drops a new glyph onto the selected backbone
+   * Turns the given element into a dragsource for creating
+   * sequenceFeatureGlyphs of the type specified by 'stylename.'
+   */
+  makeSequenceFeatureDragsource(element, stylename) {
+    const xOffset = -1 * element.getBoundingClientRect().width / 2;
+    const yOffset = -1 * element.getBoundingClientRect().height / 2;
+
+    const insertGlyph = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+      this.addSequenceFeatureAt(stylename, x+xOffset, y+yOffset);
+    });
+
+    const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, null, xOffset, yOffset);
+    ds.isGridEnabled = function() {
+      return this.graph.graphHandler.guidesEnabled;
+    };
+
+  }
+
+  /**
+   * Adds a sequenceFeatureGlyph.
+   * The new glyph's location is based off the user's selection.
    */
   addSequenceFeature(name) {
-    // Make sure scars are/become visible if we're adding one
-    if (name.includes(scarStyleName) && !this.showingScars) { this.toggleScars(); }
-
-    let parentCircuitContainer = this.getSelectionContainer();
-
-    if (parentCircuitContainer != null) {
-      this.graph.getModel().beginUpdate();
-      try {
-        // If a glyph is selected rather than the circuit container, then we will insert the glyph
-        // after the selected glyph.
-        let x_pos = parentCircuitContainer.getGeometry().width;
-        const selectionCells = this.graph.getSelectionCells();
-        if (selectionCells) {
-          if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
-            x_pos = selectionCells[0].getGeometry().x + 1
-            console.debug("single cell is selected. Inserting new glyph x_pos = " + x_pos);
-          }
-        }
-
-        // Insert new glyph and its components
-        const sequenceFeatureCell = this.graph.insertVertex(parentCircuitContainer, null, '', x_pos, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
-        const childCircuitContainer = this.graph.insertVertex(sequenceFeatureCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
-        const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
-
-        sequenceFeatureCell.data = new GlyphInfo();
-        sequenceFeatureCell.data.partRole = name;
-
-        sequenceFeatureCell.setCollapsed(true);
-
-        childCircuitContainerBackbone.setConnectable(false);
-        childCircuitContainer.setConnectable(false);
-        sequenceFeatureCell.setConnectable(true);
-
-        // Refreshes the parent
-        //parentCircuitContainer.refreshCircuitContainer(this.graph);
-        this.horizontalSortBasedOnPosition(this.graph);
-
-        // The new glyph should be selected
-        this.graph.clearSelection();
-        this.graph.setSelectionCell(sequenceFeatureCell);
-      } finally {
-        this.graph.getModel().endUpdate();
-      }
-    }
-    // If a glyph couldn't made because there was no backbone on the canvas,
-    // be courteous and put one down for the user.
-    else if (!this.atLeastOneCircuitContainerInGraph()) {
-      this.graph.getModel().beginUpdate();
-      try {
+    this.graph.getModel().beginUpdate();
+    try {
+      if (!this.atLeastOneCircuitContainerInGraph()) {
+        // if there is no strand, quietly make one
+        // stupid user
         this.addNewBackbone();
-        this.addSequenceFeature(name);
-      } finally {
-        this.graph.getModel().endUpdate();
+        // this changes the selection, so the rest of this method works fine
+      }
+
+      // let the graph choose an arbitrary cell from the selection,
+      // we'll pretend it's the only one selected
+      const selection = this.graph.getSelectionCell();
+
+      // if selection is nonexistent, or is not part of a strand, there is no suitable place.
+      if (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer())) {
+        return;
+      }
+
+      const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent();
+
+      // use y coord of the strand
+      let y = circuitContainer.getGeometry().y;
+
+      // x depends on the exact selection
+      let x;
+      if (selection.isCircuitContainer()) {
+        x = selection.getGeometry().x + selection.getGeometry().width;
+      } else {
+        x = circuitContainer.getGeometry().x + selection.getGeometry().x + 1;
+      }
+
+      // Add it
+      this.addSequenceFeatureAt(name, x, y, circuitContainer);
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
+  }
+
+  /**
+   * Adds a sequenceFeatureGlyph.
+   *
+   * circuitContainer (optional) specifies the strand to add to.
+   * If not specified, it is inferred by x,y.
+   *
+   * x,y are also used to determine where on the strand the new
+   * glyph is added (first, second, etc)
+   */
+  addSequenceFeatureAt(name, x, y, circuitContainer?) {
+    this.graph.getModel().beginUpdate();
+    try {
+      // Make sure scars are/become visible if we're adding one
+      if (name.includes(scarStyleName) && !this.showingScars) {
+        this.toggleScars();
+      }
+
+      if (!this.atLeastOneCircuitContainerInGraph()) {
+        // if there is no strand, quietly make one
+        // stupid user
+        this.addNewBackbone();
+      }
+
+      if (!circuitContainer) {
+        circuitContainer = this.getClosestCircuitContainerToPoint(x, y);
+      }
+
+      // transform coords to be relative to parent
+      x = x - circuitContainer.getGeometry().x;
+      y = y - circuitContainer.getGeometry().y;
+
+      // Insert new glyph and its components
+      const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, '', x, y, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
+      const childCircuitContainer = this.graph.insertVertex(sequenceFeatureCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
+      const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
+
+      sequenceFeatureCell.data = new GlyphInfo();
+      sequenceFeatureCell.data.partRole = name;
+
+      sequenceFeatureCell.setCollapsed(true);
+
+      childCircuitContainerBackbone.setConnectable(false);
+      childCircuitContainer.setConnectable(false);
+      sequenceFeatureCell.setConnectable(true);
+
+      // Sorts the new SequenceFeature into the correct position in parent's array
+      this.horizontalSortBasedOnPosition(circuitContainer);
+
+      // The new glyph should be selected
+      this.graph.clearSelection();
+      this.graph.setSelectionCell(sequenceFeatureCell);
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
+  }
+
+  /**
+   * Returns the circuitContainer that is closest to the given point.
+   *
+   * Considers only the canvas's current "drill level," ie, circuitContainers
+   * inside of SequenceFeatureGlyphs aren't considered.
+   */
+  getClosestCircuitContainerToPoint(x, y) {
+    if (!this.graph.getDefaultParent().children)
+      return null;
+
+    let candidates = this.graph.getDefaultParent().children.filter(cell => cell.isCircuitContainer());
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    let bestC;
+    let bestDistance;
+
+    for (let c of candidates) {
+      const g = c.getGeometry();
+
+      let xDist;
+      if (x < g.x) {
+        xDist = g.x - x;
+      } else if (x > g.x + g.width) {
+        xDist = x - (g.x + g.width);
+      } else {
+        xDist = 0;
+      }
+
+      let yDist;
+      if (y < g.y) {
+        yDist = g.y - y;
+      } else if (y > g.y + g.height) {
+        yDist = y - (g.y + g.height);
+      } else {
+        yDist = 0;
+      }
+
+      const dist = Math.sqrt(xDist*xDist + yDist*yDist);
+      if (!bestC || dist < bestDistance) {
+        bestC = c;
+        bestDistance = dist;
       }
     }
+
+    return bestC;
   }
 
   /**
@@ -659,30 +766,6 @@ export class GraphService {
     const oldY = cell.getGeometry().y;
 
     this.graph.translateCell(cell, newX - oldX, newY - oldY);
-  }
-
-  /**
-   * Based on the selected cell(s) chooses a location to drop a new glyph.
-   *
-   * If there is no suitable location (for example, nothing is selected),
-   * returns null.
-   */
-  getSelectionContainer(): any {
-    // TODO smart location choice using getSelectionCells
-    // but for now just let the graph choose an arbitrary one from the selection
-    const selection = this.graph.getSelectionCell();
-
-    if (selection == null) {
-      return null;
-    }
-
-    if (selection.isSequenceFeatureGlyph()) {
-      // if a sequenceFeatureGlyph is selected, new glyph should go along side,
-      // not inside
-      return selection.getParent();
-    } else {
-      return selection.getCircuitContainer();
-    }
   }
 
   /**
@@ -1041,20 +1124,6 @@ export class GraphService {
 
       graph.getModel().setGeometry(this, newGeo);
     };
-
-    /**
-     * This method callsRefreshCircuitContainer on every
-     * circuitContainer in the graph.
-     */
-    mx.mxGraph.prototype.refreshAllCircuitContainers = function () {
-      let cells = this.getChildVertices(this.getDefaultParent());
-
-      for (let cell of cells) {
-        if (cell.isCircuitContainer()) {
-          cell.refreshCircuitContainer(this);
-        }
-      }
-    }
   }
 
   /**
@@ -1375,29 +1444,28 @@ export class GraphService {
       // now all sequence feature glyphs are sorted by x position in the order
       // they should be when the move finishes.
       // (equal x position means they should stay in the order they were previously in)
-      // So for each circuitContainer (optimized me: only do this for affected ones)...
-      this.horizontalSortBasedOnPosition(sender);
+      let cells = sender.getChildVertices(sender.getDefaultParent());
+      for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
+        this.horizontalSortBasedOnPosition(circuitContainer);
+      }
 
       evt.consume();
     }));
   }
 
-  horizontalSortBasedOnPosition(graph) {
-    let cells = graph.getChildVertices(graph.getDefaultParent());
-    for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
-      // ...sort the children...
-      let childrenCopy = circuitContainer.children.slice();
-      childrenCopy.sort(function (cellA, cellB) {
-        return cellA.getGeometry().x - cellB.getGeometry().x;
-      });
-      // ...and have the model reflect the sort in an undoable way
-      for (let i = 0; i < childrenCopy.length; i++) {
-        const child = childrenCopy[i];
-        graph.getModel().add(circuitContainer, child, i);
-      }
-
-      circuitContainer.refreshCircuitContainer(graph);
+  horizontalSortBasedOnPosition(circuitContainer) {
+    // sort the children
+    let childrenCopy = circuitContainer.children.slice();
+    childrenCopy.sort(function (cellA, cellB) {
+      return cellA.getGeometry().x - cellB.getGeometry().x;
+    });
+    // and have the model reflect the sort in an undoable way
+    for (let i = 0; i < childrenCopy.length; i++) {
+      const child = childrenCopy[i];
+      this.graph.getModel().add(circuitContainer, child, i);
     }
+
+    circuitContainer.refreshCircuitContainer(this.graph);
   }
 
   initConnectionSettings() {

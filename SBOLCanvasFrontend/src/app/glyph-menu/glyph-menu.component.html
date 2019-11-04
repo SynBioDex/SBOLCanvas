@@ -42,7 +42,7 @@
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue">
           <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)">
-            <svg width="52px" height="52px" [innerHTML]="pair.value"></svg>
+            <svg #sequenceFeatureElement [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>
       </mat-grid-list>
