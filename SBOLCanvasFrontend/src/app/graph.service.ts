@@ -56,18 +56,18 @@ export class GraphService {
   graph: mxGraph;
   editor: mxEditor;
   graphContainer: HTMLElement;
-  glyphDragPreviewElt: HTMLElement;
-  textBoxDragPreviewElt: HTMLElement;
 
   // Boolean for keeping track of whether we are showing scars or not in the graph.
   showingScars: boolean = true;
 
-  // counter for keeping track of how many times the user drilled into a glyph
+  // Counter for keeping track of how many times the user drilled into a glyph.
   drillDepth: number = 0;
 
   baseMolecularSpeciesGlyphStyle: any;
   baseSequenceFeatureGlyphStyle: any;
-  collapsedGlyphStyle: any;
+
+  // This object handles the hotkeys for the graph.
+  keyHandler: any;
 
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
     // constructor code is divided into helper methods for organization,
@@ -370,9 +370,12 @@ export class GraphService {
    * Deletes the currently selected cell
    */
   delete() {
+    const selectedCells = this.graph.getSelectionCells();
+    if (selectedCells == null) {
+      return;
+    }
     this.graph.getModel().beginUpdate();
     try {
-      const selectedCells = this.graph.getSelectionCells();
       let circuitContainers = [];
       for (let cell of selectedCells) {
         if (cell.isSequenceFeatureGlyph())

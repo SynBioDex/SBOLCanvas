@@ -36,6 +36,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   filename: string;
   user: string;
   server: string;
+  popupOpen: boolean;
 
   constructor(public graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) { }
 
@@ -57,6 +58,8 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     const loginDialogRef = this.dialog.open(LoginComponent, {
       data: { user: null, server: null }
     });
+
+    this.popupOpen = true;
     this.filesService.getRegistries().subscribe(result => {
       loginDialogRef.componentInstance.servers = result;
     });
@@ -65,6 +68,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     // the outer observable doesn't notify any of it's subscribers, until the user token is set
     return new Observable((observer) => {
       loginDialogRef.afterClosed().subscribe(result => {
+        this.popupOpen = false;
         if (result == null) {
           observer.complete();
           return;
@@ -86,15 +90,18 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
           this.openUploadDialog();
         }
       });
-    } else {
+    }
+    else {
       const uploadDialogRef = this.dialog.open(UploadGraphComponent, {
         data: { collection: null, filename: null }
       });
+      this.popupOpen = true;
       this.filesService.listCollections(this.user, this.server).subscribe(result => {
         uploadDialogRef.componentInstance.collections = result;
       });
 
       uploadDialogRef.afterClosed().subscribe(result => {
+        this.popupOpen = false;
         if (result != null) {
           this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.server, result.collection, this.user, result.filename).subscribe();
         }
@@ -107,7 +114,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
       data: { filename: this.filename }
     });
 
+    this.popupOpen = true;
     dialogRef.afterClosed().subscribe(result => {
+      this.popupOpen = false;
       if (result != null) {
         this.save(result);
       }
@@ -118,7 +127,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     const dialogRef = this.dialog.open(LoadGraphComponent, {
       data: { file: null }
     });
+    this.popupOpen = true;
     dialogRef.afterClosed().subscribe(result => {
+      this.popupOpen = false;
       if (result != null) {
         this.load(result);
       }
