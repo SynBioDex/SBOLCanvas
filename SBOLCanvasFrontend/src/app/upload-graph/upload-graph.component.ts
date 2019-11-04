@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { MatDialogRef } from '@angular/material';
 import { FilesService } from '../files.service';
+import { LoginService } from '../login.service';
 
 @Component({
   selector: 'app-upload-graph',
@@ -15,10 +16,9 @@ export class UploadGraphComponent implements OnInit {
   collection: string;
   moduleName: string;
 
-  users: {};
   filesService: FilesService;
 
-  constructor(public dialogRef: MatDialogRef<UploadGraphComponent>) { }
+  constructor(private loginService: LoginService, public dialogRef: MatDialogRef<UploadGraphComponent>) { }
 
   ngOnInit() {
     this.filesService.getRegistries().subscribe(result => {
@@ -27,7 +27,7 @@ export class UploadGraphComponent implements OnInit {
   }
 
   loginDisabled(){
-    return this.users[this.registry] != null;
+    return this.loginService.users[this.registry] != null || this.registry == null;
   }
 
   finishCheck(){
@@ -40,6 +40,10 @@ export class UploadGraphComponent implements OnInit {
 
   onUploadClick(){
 
+  }
+
+  onLoginClick(){
+    this.loginService.openLoginDialog(this.registry);
   }
 
 }

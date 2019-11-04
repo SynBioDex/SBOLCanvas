@@ -4,7 +4,7 @@
 
     <mat-form-field>
       <mat-label>Server</mat-label>
-      <mat-select id="registry" (selectionChange)="data.collection=$event.value">
+      <mat-select id="registry" (selectionChange)="registry=$event.value">
         <mat-option class="mat-option-text" *ngFor="let registry of registries" [value]="registry">
           {{registry}}
         </mat-option>
@@ -26,7 +26,7 @@
 
   </div>
   <div mat-dialog-actions>
-    <button mat-button [disabled]="loginDisabled()" (click)="login()">Login</button>
+    <button mat-button [disabled]="loginDisabled()" (click)="onLoginClick()">Login</button>
     <button mat-button (click)="onCancelClick()">Cancel</button>
     <button mat-button [disabled]="!finishCheck()" (click)="onUploadClick()">Upload</button>
   </div>

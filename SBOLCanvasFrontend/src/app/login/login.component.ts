@@ -1,6 +1,7 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, forwardRef } from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material';
-import { LoginDialogData } from '../toolbar/toolbar.component';
+import { LoginDialogData, LoginService } from '../login.service';
+
 
 @Component({
   selector: 'app-login',
@@ -9,16 +10,25 @@ import { LoginDialogData } from '../toolbar/toolbar.component';
 })
 export class LoginComponent implements OnInit {
 
-  servers:string[];
+  email: string;
+  password: string;
 
-  constructor(public dialogRef: MatDialogRef<LoginComponent>,
+  // forwardRef because of circular dependency
+  constructor(@Inject(forwardRef(() => LoginService)) private loginService: LoginService, public dialogRef: MatDialogRef<LoginComponent>,
     @Inject(MAT_DIALOG_DATA) public data: LoginDialogData) { }
 
   ngOnInit() {
   }
 
   finishCheck():boolean{
-    return this.data.email != null && this.data.password != null && this.data.server != null;
+    return this.email != null && this.email.length > 0 && this.password != null && this.password.length > 0;
+  }
+
+  onLoginClick(){
+    this.loginService.login(this.email, this.password, this.data.server).subscribe(result => {
+      this.loginService.users[this.data.server] = result;
+      this.dialogRef.close();
+    });
   }
 
   onCancelClick(){

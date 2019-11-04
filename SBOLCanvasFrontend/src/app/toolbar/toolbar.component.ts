@@ -5,19 +5,12 @@ import { MatDialog } from '@angular/material';
 import { SaveGraphComponent } from '../save-graph/save-graph.component';
 import { LoadGraphComponent } from '../load-graph/load-graph.component';
 import { UploadGraphComponent } from '../upload-graph/upload-graph.component';
-import { LoginComponent } from '../login/login.component';
-import { Observable } from 'rxjs';
 
 export interface SaveDialogData {
   filename: string;
 }
 export interface LoadDialogData {
   file: File;
-}
-export interface LoginDialogData {
-  email: string;
-  password: string;
-  server: string;
 }
 
 @Component({
@@ -46,32 +39,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
   load(file: File) {
     this.filesService.loadLocal(file, this.graphService);
-  }
-
-  openLoginDialog(): Observable<string> {
-    const loginDialogRef = this.dialog.open(LoginComponent, {
-      data: { user: null, server: null }
-    });
-    this.filesService.getRegistries().subscribe(result => {
-      loginDialogRef.componentInstance.servers = result;
-    });
-
-    // this is total garbage, but the way observables work I have no choice
-    // the outer observable doesn't notify any of it's subscribers, until the user token is set
-    return new Observable((observer) => {
-      loginDialogRef.afterClosed().subscribe(result => {
-        if (result == null) {
-          observer.complete();
-          return;
-        }
-        let server = result.server;
-        this.filesService.login(result.email, result.password, result.server).subscribe(result => {
-          this.users[server] = result;
-          observer.next(result);
-          observer.complete();
-        });
-      });
-    });
   }
 
   openUploadDialog(): void {
