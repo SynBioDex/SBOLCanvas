@@ -3,8 +3,17 @@
   <div class = "mat-form-field-container">
 
     <mat-form-field>
+      <mat-label>Server</mat-label>
+      <mat-select id="registry" (selectionChange)="data.collection=$event.value">
+        <mat-option class="mat-option-text" *ngFor="let registry of registries" [value]="registry">
+          {{registry}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
       <mat-label>Collection</mat-label>
-      <mat-select id="collection" [disabled]="collections === undefined" (selectionChange)="data.collection=$event.value">
+      <mat-select id="collection" [disabled]="collections === undefined" (selectionChange)="collection=$event.value">
         <mat-option class="mat-option-text" *ngFor="let collection of collections" [value]="collection">
           {{collection.substr(collection.indexOf('/user/')+6)}}
         </mat-option>
@@ -12,12 +21,13 @@
     </mat-form-field>
 
     <mat-form-field>
-      <input matInput placeholder="Filename" [(ngModel)]="data.filename">
+      <input matInput placeholder="Module Name" [(ngModel)]="moduleName">
     </mat-form-field>
 
   </div>
   <div mat-dialog-actions>
+    <button mat-button [disabled]="loginDisabled()" (click)="login()">Login</button>
     <button mat-button (click)="onCancelClick()">Cancel</button>
-    <button mat-button [disabled]="!finishCheck()" [mat-dialog-close]="data">Upload</button>
+    <button mat-button [disabled]="!finishCheck()" (click)="onUploadClick()">Upload</button>
   </div>
 </mat-card>

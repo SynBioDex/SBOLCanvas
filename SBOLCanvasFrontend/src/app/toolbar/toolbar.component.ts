@@ -19,10 +19,6 @@ export interface LoginDialogData {
   password: string;
   server: string;
 }
-export interface UploadDialogData {
-  collection: string;
-  filename: string;
-}
 
 @Component({
   selector: 'app-toolbar',
@@ -34,8 +30,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   @ViewChild('backbone') backbone: ElementRef;
 
   filename: string;
-  user: string;
-  server: string;
+  users: {};
 
   constructor(public graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) { }
 
@@ -69,10 +64,10 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
           observer.complete();
           return;
         }
-        this.server = result.server;
+        let server = result.server;
         this.filesService.login(result.email, result.password, result.server).subscribe(result => {
-          this.user = result;
-          observer.next(this.user);
+          this.users[server] = result;
+          observer.next(result);
           observer.complete();
         });
       });
@@ -80,26 +75,10 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   openUploadDialog(): void {
-    if (!this.user) {
-      this.openLoginDialog().subscribe(result => {
-        if (result != null) {
-          this.openUploadDialog();
-        }
-      });
-    } else {
       const uploadDialogRef = this.dialog.open(UploadGraphComponent, {
-        data: { collection: null, filename: null }
+        data: { server: null, collection: null, filename: null }
       });
-      this.filesService.listCollections(this.user, this.server).subscribe(result => {
-        uploadDialogRef.componentInstance.collections = result;
-      });
-
-      uploadDialogRef.afterClosed().subscribe(result => {
-        if (result != null) {
-          this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.server, result.collection, this.user, result.filename).subscribe();
-        }
-      });
-    }
+      uploadDialogRef.componentInstance.filesService = this.filesService;
   }
 
   openSaveDialog(): void {
