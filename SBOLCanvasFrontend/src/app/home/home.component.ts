@@ -26,7 +26,7 @@ export class HomeComponent implements OnInit {
 
   ngOnInit() {
   }
-  @HostListener('window:keypress', ['$event'])
+  @HostListener('window:keyup', ['$event'])
   keyEvent(event: KeyboardEvent) {
     console.debug(event);
     this.handleEvent(event, event.code);
@@ -52,6 +52,8 @@ export class HomeComponent implements OnInit {
     // If we are not an input field, then we are safe to assume the user is trying to do
     // stuff to the graph.
     if ((target == null || target.tagName != "INPUT") && !this.toolbar.popupOpen) {
+      // prevent default actions on keypresses using preventDefault()
+
       if (code === KEY_CODE.DELETE || code === KEY_CODE.BACKSPACE) {
         this.graphService.delete();
       }
