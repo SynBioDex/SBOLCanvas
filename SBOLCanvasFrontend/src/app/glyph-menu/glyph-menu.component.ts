@@ -4,7 +4,7 @@
  * A tile-view list of glyphs the user can use to add components to the graph.
  */
 
-import {Component, OnInit, AfterViewInit} from '@angular/core';
+import {Component, OnInit, AfterViewInit, ViewChildren, QueryList, ElementRef} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {GlyphService} from '../glyph.service';
 import {DomSanitizer} from '@angular/platform-browser';
@@ -16,6 +16,8 @@ import {MetadataService} from '../metadata.service';
   styleUrls: ['./glyph-menu.component.css']
 })
 export class GlyphMenuComponent implements OnInit, AfterViewInit {
+
+  @ViewChildren('sequenceFeatureElement') sequenceFeatureElements: QueryList<ElementRef>;
 
   public utilsDict = {};
   public sequenceFeatureDict = {};
@@ -46,6 +48,9 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
+    for (const element of this.sequenceFeatureElements.toArray()) {
+      this.graphService.makeSequenceFeatureDragsource(element.nativeElement, element.nativeElement.getAttribute('glyphStyle'));
+    }
   }
 
   registerSvgElements() {
@@ -82,7 +87,6 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   addTextBox() {
     this.graphService.addTextBox();
   }
-
 
   componentDefinitionModeUpdated(newSetting: boolean) {
     this.componentDefinitionMode = newSetting;
