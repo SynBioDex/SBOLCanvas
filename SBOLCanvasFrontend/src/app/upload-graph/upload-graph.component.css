@@ -1,6 +1,19 @@
 .mat-form-field-container {
-    display: flex;
-    flex-direction: column;
-    padding-left: 5px;
-    padding-right: 5px;
-  }
+  display: flex;
+  flex-direction: column;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.mat-cell, .mat-header-cell {
+  padding: 8px 8px 8px 0;
+  overflow: hidden;
+  width: auto;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mat-table{
+  width: 100%;
+  table-layout: fixed;
+}

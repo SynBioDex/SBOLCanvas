@@ -42,10 +42,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   openUploadDialog(): void {
-      const uploadDialogRef = this.dialog.open(UploadGraphComponent, {
-        data: { server: null, collection: null, filename: null }
-      });
-      uploadDialogRef.componentInstance.filesService = this.filesService;
+      const uploadDialogRef = this.dialog.open(UploadGraphComponent, {});
   }
 
   openSaveDialog(): void {

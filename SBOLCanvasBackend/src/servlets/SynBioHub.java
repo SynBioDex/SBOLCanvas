@@ -18,8 +18,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
-import org.sbolstandard.core2.SBOLConversionException;
-import org.sbolstandard.core2.SBOLWriter;
 import org.synbiohub.frontend.IdentifiedMetadata;
 import org.synbiohub.frontend.SynBioHubException;
 import org.synbiohub.frontend.SynBioHubFrontend;
@@ -92,11 +90,7 @@ public class SynBioHub extends HttpServlet {
 				sbhf.setUser(user);
 				List<IdentifiedMetadata> collections = sbhf.getRootCollectionMetadata();
 				collections.removeIf(collection -> (collection.getUri().contains("/public/")));
-				LinkedList<String> collectionURLs = new LinkedList<String>();
-				for (IdentifiedMetadata collection : collections) {
-					collectionURLs.add(collection.getUri());
-				}
-				body = gson.toJson(collectionURLs);
+				body = gson.toJson(collections);
 			} catch (SynBioHubException e) {
 				e.printStackTrace();
 			}

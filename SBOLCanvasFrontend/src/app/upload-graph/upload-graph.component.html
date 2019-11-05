@@ -4,7 +4,8 @@
 
     <mat-form-field>
       <mat-label>Server</mat-label>
-      <mat-select id="registry" [disabled]="registries == null || registries.length < 1" (selectionChange)="setRegistry($event.value)">
+      <mat-select id="registry" [disabled]="registries == null || registries.length < 1"
+        (selectionChange)="setRegistry($event.value)">
         <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
           {{registry}}
         </mat-option>
@@ -12,18 +13,40 @@
     </mat-form-field>
 
     <mat-form-field>
-      <mat-label>Collection</mat-label>
-      <mat-select id="collection" [disabled]="collections == null || collections.length < 1" value="{{collection}}" (selectionChange)="collection=$event.value">
-        <mat-option *ngFor="let collection of collections" [value]="collection"
-          [matTooltip]="collection.substr(collection.indexOf('/user/')+6)" matTooltipClass="mat-tooltip">
-          {{collection.substr(collection.indexOf('/user/')+6)}}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field>
       <input matInput placeholder="Module Name" [(ngModel)]="moduleName">
     </mat-form-field>
+
+
+    <mat-form-field>
+      <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter"/>
+    </mat-form-field>
+
+    <table mat-table [dataSource]="collections" matSort>
+
+      <ng-container matColumnDef="displayId">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Display Id</th>
+        <td mat-cell *matCellDef="let element">{{element.displayId}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+        <td mat-cell *matCellDef="let element">{{element.name}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="version">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Version</th>
+        <td mat-cell *matCellDef="let element">{{element.version}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th mat-header-cell *matHeaderCellDef>Description</th>
+        <td mat-cell *matCellDef="let element">{{element.description}}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="collection = row.uri"
+        [style.background]="row.uri == collection ? 'lightblue' : ''"></tr>
+    </table>
 
   </div>
 

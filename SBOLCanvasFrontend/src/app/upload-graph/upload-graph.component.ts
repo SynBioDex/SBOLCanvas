@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { MatDialogRef } from '@angular/material';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatDialogRef, MatTableDataSource, MatSort } from '@angular/material';
 import { FilesService } from '../files.service';
 import { LoginService } from '../login.service';
+import { GraphService } from '../graph.service';
 
 @Component({
   selector: 'app-upload-graph',
@@ -12,15 +13,16 @@ export class UploadGraphComponent implements OnInit {
 
   registries: string[];
   registry: string;
-  collections: string[];
+  collections = new MatTableDataSource([]);
   collection: string;
   moduleName: string;
 
-  filesService: FilesService;
+  displayedColumns: string[] = ['displayId', 'name', 'version', 'description'];
+  @ViewChild(MatSort) sort: MatSort;
 
   working: boolean;
 
-  constructor(private loginService: LoginService, public dialogRef: MatDialogRef<UploadGraphComponent>) { }
+  constructor(private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<UploadGraphComponent>) { }
 
   ngOnInit() {
     this.working = true;
@@ -28,13 +30,18 @@ export class UploadGraphComponent implements OnInit {
       this.registries = result;
       this.working = false;
     });
+    this.collections.sort = this.sort;
   }
 
   setRegistry(registry:string){
     this.registry = registry;
     this.collection = "";
-    this.collections = [];
+    this.collections.data = [];
     this.updateCollections();
+  }
+
+  applyFilter(filterValue: string){
+    this.collections.filter = filterValue.trim().toLowerCase();
   }
 
   loginDisabled(){
@@ -42,7 +49,7 @@ export class UploadGraphComponent implements OnInit {
   }
 
   finishCheck(){
-    return this.collection != null && this.moduleName != null;
+    return this.collection != null && this.collection.length > 0 && this.moduleName != null && this.moduleName.length > 0;
   }
 
   onCancelClick() {
@@ -50,7 +57,11 @@ export class UploadGraphComponent implements OnInit {
   }
 
   onUploadClick(){
-
+    this.working = true;
+    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.registry, this.collection, this.loginService.users[this.registry], this.moduleName).subscribe(result => {
+      this.working = false;
+      this.dialogRef.close();
+    });
   }
 
   onLoginClick(){
@@ -65,11 +76,11 @@ export class UploadGraphComponent implements OnInit {
     if(this.loginService.users[this.registry] != null){
       this.working = true;
       this.filesService.listMyCollections(this.loginService.users[this.registry], this.registry).subscribe(collections => {
-        this.collections = collections;
+        this.collections.data = collections;
         this.working = false;
       });
     }else{
-      this.collections = [];
+      this.collections.data = [];
     }
   }
 
