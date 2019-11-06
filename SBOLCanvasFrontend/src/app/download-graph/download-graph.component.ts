@@ -56,6 +56,7 @@ export class DownloadGraphComponent implements OnInit {
       this.working = registryQuery || typesQuery || rolesQuery;
     });
     this.updateParts();
+    this.parts.sort = this.sort;
   }
 
   loginDisabled(): boolean{
@@ -64,6 +65,10 @@ export class DownloadGraphComponent implements OnInit {
 
   finishCheck(): boolean{
     return true;
+  }
+
+  applyFilter(filterValue: string){
+    this.parts.filter = filterValue.trim().toLowerCase();
   }
 
   setRegistry(registry: string){
