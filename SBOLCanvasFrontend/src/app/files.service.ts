@@ -18,6 +18,7 @@ export class FilesService {
   private getRegistriesURL = environment.backendURL + '/SynBioHub/registries';
   private listMyCollectionsURL = environment.backendURL + '/SynBioHub/listMyCollections';
   private addToCollectionURL = environment.backendURL + '/SynBioHub/addToCollection';
+  private listPartsURL = environment.backendURL + '/SynBioHub/listRegistryParts';
 
   constructor(
     private http: HttpClient
@@ -78,6 +79,22 @@ export class FilesService {
     params = params.append("server", server);
     return this.http.get(this.listMyCollectionsURL, { headers: headers, params: params });
   }
+
+  listParts(user: string, server: string, collection: string, type:string, role: string, mode:string): Observable<any>{
+    let headers = new HttpHeaders();
+    if(user != null && user.length > 0)
+      headers = headers.set("Authorization", user);
+    let params = new HttpParams();
+    params = params.append("server", server);
+    if(collection != null && collection.length > 0)
+      params = params.append("collection", collection);
+    if(type != null && type.length > 0)
+      params = params.append("type", type);
+    if(role != null && role.length > 0)
+      params = params.append("role", role);
+    params = params.append("mode", mode);
+    return this.http.get(this.listPartsURL, {headers: headers, params: params});
+  };
 
   convertToSBOL(mxGraphXML: string, filename: string): Observable<string> {
     let params = new HttpParams();

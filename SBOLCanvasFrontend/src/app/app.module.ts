@@ -28,6 +28,7 @@ import { BannerComponent } from './banner/banner.component';
 import { ColorPickerComponent } from './color-picker/color-picker.component';
 import { UploadGraphComponent } from './upload-graph/upload-graph.component';
 import { LoginComponent } from './login/login.component';
+import { DownloadGraphComponent } from './download-graph/download-graph.component';
 
 
 @NgModule({
@@ -44,7 +45,9 @@ import { LoginComponent } from './login/login.component';
     BannerComponent,
     ColorPickerComponent,
     UploadGraphComponent,
+    DownloadGraphComponent,
     LoginComponent,
+    DownloadGraphComponent,
   ],
   imports: [
     BrowserModule,
@@ -61,7 +64,7 @@ import { LoginComponent } from './login/login.component';
   ],
   providers: [GraphService, MetadataService],
   bootstrap: [AppComponent],
-  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, LoginComponent, ColorPickerComponent ]
+  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, LoginComponent, ColorPickerComponent ]
 })
 export class AppModule {
 }

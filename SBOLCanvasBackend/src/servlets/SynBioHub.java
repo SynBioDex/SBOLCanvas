@@ -96,7 +96,6 @@ public class SynBioHub extends HttpServlet {
 			}
 
 		} else if (request.getPathInfo().equals("/listRegistryParts")) {
-			String name = request.getParameter("name");
 			String collection = request.getParameter("collection");
 			String type = request.getParameter("type");
 			String role = request.getParameter("role");
@@ -138,7 +137,7 @@ public class SynBioHub extends HttpServlet {
 						}
 					}
 				}else if(mode.equals("parts")) {
-					results.addAll(sbhf.getMatchingComponentDefinitionMetadata(name, roles, types, collections, null, null));
+					results.addAll(sbhf.getMatchingComponentDefinitionMetadata(null, roles, types, collections, null, null));
 				}
 				
 				body = gson.toJson(results.toArray(new IdentifiedMetadata[0]));

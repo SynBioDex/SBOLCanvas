@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material';
 import { SaveGraphComponent } from '../save-graph/save-graph.component';
 import { LoadGraphComponent } from '../load-graph/load-graph.component';
 import { UploadGraphComponent } from '../upload-graph/upload-graph.component';
+import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 
 export interface SaveDialogData {
   filename: string;
@@ -42,7 +43,11 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   openUploadDialog(): void {
-      const uploadDialogRef = this.dialog.open(UploadGraphComponent, {});
+    this.dialog.open(UploadGraphComponent, {});
+  }
+
+  openDownloadDialog(): void{
+    this.dialog.open(DownloadGraphComponent, {});
   }
 
   openSaveDialog(): void {
