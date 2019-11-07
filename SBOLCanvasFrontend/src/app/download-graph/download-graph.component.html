@@ -24,10 +24,11 @@
 
     <mat-form-field>
       <mat-label>Collection</mat-label>
-      <mat-select id="collection" [disabled]="history == null || history.length < 1"
-      (selectionChange)="updateCollections($event.value)">
-        <mat-option *ngFor="let collection of history" [value]="collection">
-          {{collection}}
+      <mat-select id="collection" value="{{collection}}"
+      (selectionChange)="changeCollection($event.value)">
+        <mat-option value="">Root Collections</mat-option>
+        <mat-option *ngFor="let collection of history" [value]="collection.uri">
+          {{collection.name}}
         </mat-option>
       </mat-select>
     </mat-form-field>
@@ -86,8 +87,8 @@
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="part = row.uri"
-        [style.background]="row.uri == part ? 'lightblue' : ''"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)"
+        [style.background]="highlightRow(row) ? 'lightblue' : ''" (dblclick)="onRowDoubleClick(row)"></tr>
     </table>
 
   </div>
@@ -99,7 +100,7 @@
   <div mat-dialog-actions>
     <button mat-button [disabled]="loginDisabled()" (click)="onLoginClick()">Login</button>
     <button mat-button (click)="onCancelClick()">Cancel</button>
-    <button mat-button [disabled]="!finishCheck()" (click)="onDownloadClick()">Download</button>
+    <button mat-button [disabled]="!finishCheck()" (click)="downloadPart()">Download</button>
   </div>
 
 </mat-card>

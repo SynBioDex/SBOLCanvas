@@ -57,6 +57,8 @@ export class DownloadGraphComponent implements OnInit {
     });
     this.updateParts();
     this.parts.sort = this.sort;
+    this.history = [];
+    this.collection = "";
   }
 
   loginDisabled(): boolean{
@@ -64,7 +66,7 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   finishCheck(): boolean{
-    return true;
+    return this.part != null;
   }
 
   applyFilter(filterValue: string){
@@ -102,6 +104,60 @@ export class DownloadGraphComponent implements OnInit {
     });
   }
 
+  highlightRow(row: any){
+    if(this.part)
+      return row.uri === this.part;
+    if(this.collection)
+      return row.uri === this.collection;
+    return false;
+  }
+
+  onRowClick(row: any){
+    if(row.type === "collection"){
+      this.part = null;
+      this.collection = row.uri;
+    }
+    if(row.type === "part"){
+      this.part = row.uri;
+    }
+  }
+
+  onRowDoubleClick(row: any){
+    if(row.type === "collection"){
+      this.history.push(row);
+      this.collection = row.uri;
+      this.updateParts();
+    }else if(row.type === "part"){
+      this.downloadPart();
+    }
+  }
+
+  downloadPart(){
+    this.working = true;
+    this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.part).subscribe(xml =>{
+      console.log(xml);
+      this.working = false;
+      this.dialogRef.close();
+    });
+  }
+
+  changeCollection(collection: string){
+    this.part = null;
+    let found = false;
+    for(let i = 0; i < this.history.length; i++){
+      if(this.history[i].uri === collection){
+        this.history.length = i+1;
+        found = true;
+        break;
+      }
+    }
+    if(!found)
+      this.history.length = 0;
+    this.collection = collection;
+
+    this.updateParts();
+  }
+
   updateParts(){
     if(this.registry != null){
       this.working = true;
@@ -117,16 +173,17 @@ export class DownloadGraphComponent implements OnInit {
         });
         this.parts.data = partCache;
         collectionQuery = false;
-        this.working = false;//partQuery;
+        this.working = partQuery;
       });
-      // this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, this.partRole, "parts").subscribe(parts => {
-      //   parts.forEach(element => {
-      //     element.type = "part";
-      //     this.parts.data.push(element);
-      //   });
-      //   partQuery = false;
-      //   this.working = collectionQuery;
-      // });
+      this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, this.partRole, "parts").subscribe(parts => {
+        parts.forEach(element => {
+          element.type = "part";
+          partCache.push(element);
+        });
+        this.parts.data = partCache;
+        partQuery = false;
+        this.working = collectionQuery;
+      });
     }else{
       this.parts.data = [];
     }

@@ -136,7 +136,7 @@ public class SynBioHub extends HttpServlet {
 							results.addAll(sbhf.getSubCollectionMetadata(collectionURI));
 						}
 					}
-				}else if(mode.equals("parts")) {
+				}else if(mode.equals("parts") && collections != null) {
 					results.addAll(sbhf.getMatchingComponentDefinitionMetadata(null, roles, types, collections, null, null));
 				}
 				
