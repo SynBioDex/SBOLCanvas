@@ -15,7 +15,7 @@
     <mat-form-field>
       <mat-label>Part type</mat-label>
       <mat-select id="partType" [disabled]="partTypes == null || partTypes.length < 1"
-      (selectionChange)="partType = $event.value">
+      (selectionChange)="setPartType($event.value)">
         <mat-option *ngFor="let partType of partTypes" [value]="partType">
           {{partType}}
         </mat-option>
@@ -46,7 +46,7 @@
     <mat-form-field>
       <mat-label>Role refinement</mat-label>
       <mat-select id="roleRefinement" [disabled]="roleRefinements == null || roleRefinements.length < 1"
-      (selectionChange)="partRefine = $event.value">
+      (selectionChange)="setPartRefinement($event.value)">
         <mat-option *ngFor="let refinement of roleRefinements" [value]="refinement">
           {{refinement}}
         </mat-option>

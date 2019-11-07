@@ -78,10 +78,21 @@ export class DownloadGraphComponent implements OnInit {
     this.updateParts();
   }
 
+  setPartType(partType: string){
+    this.partType = partType;
+    this.updateParts();
+  }
+
   setPartRole(partRole: string){
     this.partRole = partRole;
     this.partRefine = null;
     this.updateRefinements();
+    this.updateParts();
+  }
+
+  setPartRefinement(partRefine: string){
+    this.partRefine = partRefine;
+    this.updateParts();
   }
 
   onLoginClick(){
@@ -166,7 +177,7 @@ export class DownloadGraphComponent implements OnInit {
       let roleOrRefine = this.partRefine != null && this.partRefine.length > 0 ? this.partRefine : this.partRole;
       this.parts.data = [];
       let partCache = [];
-      this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, roleOrRefine, this.partRole, "collections").subscribe(collections => {
+      this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "collections").subscribe(collections => {
         collections.forEach(element => {
           element.type = "collection";
           partCache.push(element);
@@ -175,7 +186,7 @@ export class DownloadGraphComponent implements OnInit {
         collectionQuery = false;
         this.working = partQuery;
       });
-      this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, this.partRole, "parts").subscribe(parts => {
+      this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "parts").subscribe(parts => {
         parts.forEach(element => {
           element.type = "part";
           partCache.push(element);

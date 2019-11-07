@@ -115,7 +115,10 @@ public class SynBioHub extends HttpServlet {
 			TreeSet<URI> collections = null;
 			if (role != null) {
 				roles = new TreeSet<URI>();
-				roles.add(SBOLData.roles.getValue(role));
+				if(SBOLData.roles.ContainsKey(role))
+					roles.add(SBOLData.roles.getValue(role));
+				else
+					roles.add(SBOLData.refinements.getValue(role));
 			}
 			if (type != null) {
 				types = new TreeSet<URI>();
@@ -156,13 +159,6 @@ public class SynBioHub extends HttpServlet {
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
 				Converter converter = new Converter();
-//				SBOLWriter.setKeepGoing(true);
-//				try {
-//					SBOLWriter.write(sbhf.getSBOL(URI.create(uri), true), response.getOutputStream());
-//				} catch (SBOLConversionException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
 				converter.toGraph(sbhf.getSBOL(URI.create(uri), true), response.getOutputStream());
 			} catch (SynBioHubException | IOException e) {
 				e.printStackTrace();
