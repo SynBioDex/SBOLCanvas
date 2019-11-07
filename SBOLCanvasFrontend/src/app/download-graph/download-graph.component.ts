@@ -146,7 +146,7 @@ export class DownloadGraphComponent implements OnInit {
   downloadPart(){
     this.working = true;
     this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.part).subscribe(xml =>{
-      console.log(xml);
+      this.graphService.setSelectedToXML(xml);
       this.working = false;
       this.dialogRef.close();
     });

@@ -220,6 +220,9 @@ public class Converter {
 					// If we're importing a sub part, the main cell was attached to the component which we no longer have
 					MxCell cell = new MxCell();
 					cell.setInfo(genGlyphInfo(topCD));
+					cell.setGeometry(new MxGeometry());
+					cell.setCollapsed(true);
+					cell.setVertex(true);
 					// we need to set the top cell's id to the parent of it's child
 					MxCell containerCell = gson.fromJson(
 							topCD.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix)).getStringValue(), MxCell.class);
@@ -638,7 +641,8 @@ public class Converter {
 			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID() + "/" + glyphInfo.getVersion());
 		else
 			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
-		glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
+		glyphInfo.setUriPrefix(uriPrefix);
+		//glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
 		return glyphInfo;
 	}
 	

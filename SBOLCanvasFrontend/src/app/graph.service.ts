@@ -570,8 +570,6 @@ export class GraphService {
   mutateSequenceFeatureGlyph(name: string) {
     const selectionCells = this.graph.getSelectionCells();
 
-    console.log(name);
-
     if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
       let selectedCell = selectionCells[0];
 
@@ -806,8 +804,13 @@ export class GraphService {
         // new id (mxGraph id doesn't matter in SBOL, but must be unique per graph)
         newCell.id = this.graph.getModel().createId(newCell);
 
+        // generated cells don't have a proper geometry
+        newCell.setStyle(selectedCell.getStyle());
+        this.graph.getModel().setGeometry(newCell, selectedCell.geometry);
+
         // add new cell to the graph
         this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+        console.log(newCell);
 
         // move any edges from selectedCell to newCell
         if (selectedCell.edges != null) {
@@ -846,6 +849,7 @@ export class GraphService {
         this.graph.removeCells(null, false);
         origParent.refreshCircuitContainer(this.graph);
         this.graph.setSelectionCell(newCell);
+        this.mutateSequenceFeatureGlyph(newCell.data.partRole);
       } finally {
         this.graph.getModel().endUpdate();
       }
