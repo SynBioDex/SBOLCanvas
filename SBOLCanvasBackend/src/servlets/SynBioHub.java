@@ -10,20 +10,26 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
 
+import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
+import org.sbolstandard.core2.SBOLConversionException;
+import org.sbolstandard.core2.SBOLValidationException;
 import org.synbiohub.frontend.IdentifiedMetadata;
 import org.synbiohub.frontend.SearchCriteria;
 import org.synbiohub.frontend.SearchQuery;
 import org.synbiohub.frontend.SynBioHubException;
 import org.synbiohub.frontend.SynBioHubFrontend;
 import org.synbiohub.frontend.WebOfRegistriesData;
+import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
 
@@ -34,7 +40,8 @@ import utils.SBOLData;
 @WebServlet(urlPatterns = { "/SynBioHub/*" })
 public class SynBioHub extends HttpServlet {
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 		Gson gson = new Gson();
 		String body = null;
 		// parameters for the different methods
@@ -57,7 +64,7 @@ public class SynBioHub extends HttpServlet {
 			try {
 				registries = SynBioHubFrontend.getRegistries();
 			} catch (SynBioHubException e) {
-				e.printStackTrace();
+				throw new ServletException(e);
 			}
 			LinkedList<String> registryURLs = new LinkedList<String>();
 			for (WebOfRegistriesData registry : registries) {
@@ -76,7 +83,11 @@ public class SynBioHub extends HttpServlet {
 			try {
 				sbhf.login(email, password);
 			} catch (SynBioHubException e) {
-				e.printStackTrace();
+				if (e.getMessage().equals("org.synbiohub.frontend.PermissionException")) {
+					response.setStatus(HttpStatus.SC_UNAUTHORIZED);
+					return;
+				}
+				throw new ServletException(e);
 			}
 			user = sbhf.getUser();
 			body = user;
@@ -94,7 +105,7 @@ public class SynBioHub extends HttpServlet {
 				collections.removeIf(collection -> (collection.getUri().contains("/public/")));
 				body = gson.toJson(collections);
 			} catch (SynBioHubException e) {
-				e.printStackTrace();
+				throw new ServletException(e);
 			}
 
 		} else if (request.getPathInfo().equals("/listRegistryParts")) {
@@ -103,11 +114,11 @@ public class SynBioHub extends HttpServlet {
 			String role = request.getParameter("role");
 			String mode = request.getParameter("mode");
 
-			if(mode == null) {
+			if (mode == null) {
 				response.setStatus(HttpStatus.SC_BAD_REQUEST);
 				return;
 			}
-			
+
 			SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 			if (user != null)
 				sbhf.setUser(user);
@@ -117,7 +128,7 @@ public class SynBioHub extends HttpServlet {
 			TreeSet<URI> collections = null;
 			if (role != null) {
 				roles = new TreeSet<URI>();
-				if(SBOLData.roles.ContainsKey(role))
+				if (SBOLData.roles.ContainsKey(role))
 					roles.add(SBOLData.roles.getValue(role));
 				else
 					roles.add(SBOLData.refinements.getValue(role));
@@ -133,97 +144,95 @@ public class SynBioHub extends HttpServlet {
 
 			try {
 				ArrayList<IdentifiedMetadata> results = new ArrayList<IdentifiedMetadata>();
-				if(mode.equals("collections")) {
-					if(collections == null) {
+				if (mode.equals("collections")) {
+					if (collections == null) {
 						results.addAll(sbhf.getRootCollectionMetadata());
-					}else {
-						for(URI collectionURI : collections) {
+					} else {
+						for (URI collectionURI : collections) {
 							results.addAll(sbhf.getSubCollectionMetadata(collectionURI));
 						}
 					}
-				}else if(mode.equals("components") && collections != null) {
-					results.addAll(sbhf.getMatchingComponentDefinitionMetadata(null, roles, types, collections, null, null));
-				}else if(mode.equals("modules") && collections != null) {
+				} else if (mode.equals("components") && collections != null) {
+					results.addAll(
+							sbhf.getMatchingComponentDefinitionMetadata(null, roles, types, collections, null, null));
+				} else if (mode.equals("modules") && collections != null) {
 					// SynbioHubFrontend doesn't have anything easy for modules
 					SearchQuery query = new SearchQuery();
-					
+
 					SearchCriteria objectCriteria = new SearchCriteria();
 					objectCriteria.setKey("objectType");
 					objectCriteria.setValue("ModuleDefinition");
 					query.addCriteria(objectCriteria);
-					
-					if(roles != null) {
-						for(URI uri : roles) {
+
+					if (roles != null) {
+						for (URI uri : roles) {
 							SearchCriteria roleCriteria = new SearchCriteria();
 							roleCriteria.setKey("role");
 							roleCriteria.setValue(uri.toString());
 							query.getCriteria().add(roleCriteria);
 						}
 					}
-					
-					if(types != null) {
-						for(URI uri : types) {
+
+					if (types != null) {
+						for (URI uri : types) {
 							SearchCriteria typeCriteria = new SearchCriteria();
 							typeCriteria.setKey("type");
 							typeCriteria.setValue(uri.toString());
 							query.getCriteria().add(typeCriteria);
 						}
 					}
-					
-					if(collections != null) {
-						for(URI uri: collections) {
+
+					if (collections != null) {
+						for (URI uri : collections) {
 							SearchCriteria collectionCriteria = new SearchCriteria();
 							collectionCriteria.setKey("collection");
 							collectionCriteria.setValue(uri.toString());
 							query.getCriteria().add(collectionCriteria);
 						}
 					}
-					
+
 					results.addAll(sbhf.search(query));
 				}
-				
+
 				body = gson.toJson(results.toArray(new IdentifiedMetadata[0]));
 			} catch (SynBioHubException e) {
-				e.printStackTrace();
+				throw new ServletException(e);
 			}
 
-		} else if(request.getPathInfo().equals("/getRegistryPart")){
+		} else if (request.getPathInfo().equals("/getRegistryPart")) {
 			String uri = request.getParameter("uri");
-			if(uri == null) {
+			if (uri == null) {
 				response.setStatus(HttpStatus.SC_BAD_REQUEST);
 				return;
 			}
-			
+
 			try {
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
 				Converter converter = new Converter();
 				converter.toGraph(sbhf.getSBOL(URI.create(uri), true), response.getOutputStream());
-			} catch (SynBioHubException | IOException e) {
-				e.printStackTrace();
+			} catch (SynBioHubException | ParserConfigurationException | TransformerException e) {
+				throw new ServletException(e);
 			}
 			response.setStatus(HttpStatus.SC_OK);
 			return;
-		}else {
+		} else {
 			response.setStatus(HttpStatus.SC_BAD_REQUEST);
 			return;
 		}
 
-		try {
-			ServletOutputStream outputStream = response.getOutputStream();
-			InputStream inputStream = new ByteArrayInputStream(body.getBytes());
-			IOUtils.copy(inputStream, outputStream);
+		ServletOutputStream outputStream = response.getOutputStream();
+		InputStream inputStream = new ByteArrayInputStream(body.getBytes());
+		IOUtils.copy(inputStream, outputStream);
 
-			// the request was good
-			response.setStatus(HttpStatus.SC_OK);
-			response.setContentType("application/json");
-			return;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		// the request was good
+		response.setStatus(HttpStatus.SC_OK);
+		response.setContentType("application/json");
+		return;
 	}
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) {
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
 		String server = request.getParameter("server");
 		String user = request.getHeader("Authorization");
@@ -243,8 +252,9 @@ public class SynBioHub extends HttpServlet {
 			try {
 				converter.toSBOL(request.getInputStream(), out, name);
 				sbhf.addToCollection(URI.create(uri), true, new ByteArrayInputStream(out.toByteArray()));
-			} catch (IOException | SynBioHubException e) {
-				e.printStackTrace();
+			} catch (SynBioHubException | SAXException | ParserConfigurationException | SBOLValidationException
+					| SBOLConversionException e) {
+				throw new ServletException(e);
 			}
 			response.setStatus(HttpStatus.SC_CREATED);
 

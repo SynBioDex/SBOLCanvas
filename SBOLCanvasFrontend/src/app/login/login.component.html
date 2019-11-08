@@ -2,6 +2,8 @@
     <h1 mat-dialog-title>Login</h1>
     <div class = "mat-form-field-container">
 
+      <mat-label *ngIf="badLogin" class="warn-label">Invalid login</mat-label>
+
       <mat-label>Registry: {{data.server}}</mat-label>
 
       <mat-form-field>

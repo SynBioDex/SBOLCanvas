@@ -14,6 +14,7 @@ export class LoginComponent implements OnInit {
   password: string;
 
   working: boolean;
+  badLogin: boolean;
 
   // forwardRef because of circular dependency
   constructor(@Inject(forwardRef(() => LoginService)) private loginService: LoginService, public dialogRef: MatDialogRef<LoginComponent>,
@@ -29,10 +30,18 @@ export class LoginComponent implements OnInit {
 
   onLoginClick(){
     this.working = true;
+    this.badLogin = false;
     this.loginService.login(this.email, this.password, this.data.server).subscribe(result => {
       this.loginService.users[this.data.server] = result;
       this.working = false;
       this.dialogRef.close(true);
+    },
+    err => {
+      if(err.status === 401){
+        this.working = false;
+        this.badLogin = true;
+      }
+      console.log(err);
     });
   }
 

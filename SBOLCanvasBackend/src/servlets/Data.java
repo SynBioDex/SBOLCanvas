@@ -19,37 +19,38 @@ import com.google.gson.Gson;
 import utils.SBOLData;
 
 @SuppressWarnings("serial")
-@WebServlet(urlPatterns = {"/data/*"})
+@WebServlet(urlPatterns = { "/data/*" })
 public class Data extends HttpServlet {
-	
-		protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-			// setup the json
-			Gson gson = new Gson();
-			String body = null;
-			if(request.getPathInfo().equals("/types")) {
-				body = gson.toJson(SBOLData.getTypes());
-			}else if(request.getPathInfo().equals("/roles")) {
-				body = gson.toJson(SBOLData.getRoles());
-			}else if(request.getPathInfo().equals("/refine")) {
-				String parent = request.getParameter("parent");
-				if(parent == null) {
-					response.setStatus(HttpStatus.SC_BAD_REQUEST);
-					return;
-				}
-				body = gson.toJson(SBOLData.getRefinement(parent));
-			}else if(request.getPathInfo().equals("/interactions")) {
-				body = gson.toJson(SBOLData.getInteractions());
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		// setup the json
+		Gson gson = new Gson();
+		String body = null;
+		if (request.getPathInfo().equals("/types")) {
+			body = gson.toJson(SBOLData.getTypes());
+		} else if (request.getPathInfo().equals("/roles")) {
+			body = gson.toJson(SBOLData.getRoles());
+		} else if (request.getPathInfo().equals("/refine")) {
+			String parent = request.getParameter("parent");
+			if (parent == null) {
+				response.setStatus(HttpStatus.SC_BAD_REQUEST);
+				return;
 			}
-			
-			// write it to the response body
-			ServletOutputStream outputStream = response.getOutputStream();
-			InputStream inputStream = new ByteArrayInputStream(body.getBytes());
-			IOUtils.copy(inputStream, outputStream);
-			
-			// the request was good
-			response.setStatus(HttpStatus.SC_OK);
-			response.setContentType("application/json");
-			return;
+			body = gson.toJson(SBOLData.getRefinement(parent));
+		} else if (request.getPathInfo().equals("/interactions")) {
+			body = gson.toJson(SBOLData.getInteractions());
 		}
-	
+
+		// write it to the response body
+		ServletOutputStream outputStream = response.getOutputStream();
+		InputStream inputStream = new ByteArrayInputStream(body.getBytes());
+		IOUtils.copy(inputStream, outputStream);
+
+		// the request was good
+		response.setStatus(HttpStatus.SC_OK);
+		response.setContentType("application/json");
+		return;
+	}
+
 }
