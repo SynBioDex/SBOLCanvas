@@ -19,6 +19,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.synbiohub.frontend.IdentifiedMetadata;
+import org.synbiohub.frontend.SearchCriteria;
+import org.synbiohub.frontend.SearchQuery;
 import org.synbiohub.frontend.SynBioHubException;
 import org.synbiohub.frontend.SynBioHubFrontend;
 import org.synbiohub.frontend.WebOfRegistriesData;
@@ -139,8 +141,45 @@ public class SynBioHub extends HttpServlet {
 							results.addAll(sbhf.getSubCollectionMetadata(collectionURI));
 						}
 					}
-				}else if(mode.equals("parts") && collections != null) {
+				}else if(mode.equals("components") && collections != null) {
 					results.addAll(sbhf.getMatchingComponentDefinitionMetadata(null, roles, types, collections, null, null));
+				}else if(mode.equals("modules") && collections != null) {
+					// SynbioHubFrontend doesn't have anything easy for modules
+					SearchQuery query = new SearchQuery();
+					
+					SearchCriteria objectCriteria = new SearchCriteria();
+					objectCriteria.setKey("objectType");
+					objectCriteria.setValue("ModuleDefinition");
+					query.addCriteria(objectCriteria);
+					
+					if(roles != null) {
+						for(URI uri : roles) {
+							SearchCriteria roleCriteria = new SearchCriteria();
+							roleCriteria.setKey("role");
+							roleCriteria.setValue(uri.toString());
+							query.getCriteria().add(roleCriteria);
+						}
+					}
+					
+					if(types != null) {
+						for(URI uri : types) {
+							SearchCriteria typeCriteria = new SearchCriteria();
+							typeCriteria.setKey("type");
+							typeCriteria.setValue(uri.toString());
+							query.getCriteria().add(typeCriteria);
+						}
+					}
+					
+					if(collections != null) {
+						for(URI uri: collections) {
+							SearchCriteria collectionCriteria = new SearchCriteria();
+							collectionCriteria.setKey("collection");
+							collectionCriteria.setValue(uri.toString());
+							query.getCriteria().add(collectionCriteria);
+						}
+					}
+					
+					results.addAll(sbhf.search(query));
 				}
 				
 				body = gson.toJson(results.toArray(new IdentifiedMetadata[0]));
