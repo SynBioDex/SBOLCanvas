@@ -41,7 +41,6 @@ export class LoginComponent implements OnInit {
         this.working = false;
         this.badLogin = true;
       }
-      console.log(err);
     });
   }
 

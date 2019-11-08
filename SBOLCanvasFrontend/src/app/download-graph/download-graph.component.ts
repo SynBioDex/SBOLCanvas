@@ -137,7 +137,7 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   onRowClick(row: any){
-    if(row.type === DownloadGraphComponent.componentType){
+    if(row.type === DownloadGraphComponent.collectionType){
       this.partRow = null;
       this.collection = row.uri;
     }
@@ -147,7 +147,7 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   onRowDoubleClick(row: any){
-    if(row.type === DownloadGraphComponent.componentType){
+    if(row.type === DownloadGraphComponent.collectionType){
       this.history.push(row);
       this.collection = row.uri;
       this.updateParts();
@@ -205,7 +205,7 @@ export class DownloadGraphComponent implements OnInit {
       ).subscribe(parts => {
         let partCache = [];
         parts[0].forEach(part => {
-          part.type = DownloadGraphComponent.componentType;
+          part.type = DownloadGraphComponent.collectionType;
           partCache.push(part);
         });
         parts[1].forEach(part => {
