@@ -819,8 +819,24 @@ export class GraphService {
     const s = this.graph.getView().getScale();
     const t = this.graph.getView().getTranslate();
     const c = this.graph.container;
-    const newX = (c.scrollLeft + c.clientWidth / 2) / s - t.x;
-    const newY = (c.scrollTop + c.clientHeight / 2) / s - t.y;
+    let newX = (c.scrollLeft + c.clientWidth / 2) / s - t.x;
+    let newY = (c.scrollTop + c.clientHeight / 2) / s - t.y;
+
+    const model = this.graph.getModel();
+    const topLevelCells = model.getChildren(this.graph.getDefaultParent());
+    while (true) {
+      // find cell(s) that match the chosen spot...
+      const centeredCells = model.filterCells(topLevelCells, function (cell) {
+        return cell.getGeometry().x === newX && cell.getGeometry().y === newY;
+      });
+      // break if there are none
+      if (!centeredCells || centeredCells.length === 0)
+        break;
+
+      // otherwise bump down the chosen spot and repeat
+      newX += 20;
+      newY += 20;
+    }
 
     return new mx.mxPoint(newX, newY);
   }
