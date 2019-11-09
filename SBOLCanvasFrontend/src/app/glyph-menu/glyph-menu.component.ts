@@ -17,12 +17,21 @@ import {MetadataService} from '../metadata.service';
 })
 export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
-  @ViewChildren('sequenceFeatureElement') sequenceFeatureElements: QueryList<ElementRef>;
+  // object used as an enum to identify glyph types
+  elementTypes = {
+    BACKBONE: "0",
+    TEXT_BOX: "1",
+    SEQUENCE_FEATURE: "2",
+    MOLECULAR_SPECIES: "3",
+    INTERACTION: "4",
+  }
+
+  @ViewChildren('canvasElement') canvasElements: QueryList<ElementRef>;
 
   public utilsDict = {};
   public sequenceFeatureDict = {};
   public interactionsDict = {};
-  public miscDict = {};
+  public molecularSpeciesDict = {};
 
   public componentDefinitionMode = false;
 
@@ -48,8 +57,25 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    for (const element of this.sequenceFeatureElements.toArray()) {
-      this.graphService.makeSequenceFeatureDragsource(element.nativeElement, element.nativeElement.getAttribute('glyphStyle'));
+    for (const element of this.canvasElements.toArray()) {
+      const elt = element.nativeElement;
+      switch (elt.getAttribute('elementType')) {
+        case this.elementTypes.BACKBONE:
+          this.graphService.makeBackboneDragsource(elt);
+          break;
+        case this.elementTypes.TEXT_BOX:
+          this.graphService.makeTextboxDragsource(elt);
+          break;
+        case this.elementTypes.SEQUENCE_FEATURE:
+          this.graphService.makeSequenceFeatureDragsource(elt, elt.getAttribute('glyphStyle'));
+          break;
+        case this.elementTypes.MOLECULAR_SPECIES:
+          this.graphService.makeMolecularSpeciesDragsource(elt, elt.getAttribute('glyphStyle'));
+          break;
+        case this.elementTypes.INTERACTION:
+          this.graphService.makeInteractionDragsource(elt, elt.getAttribute('glyphStyle'));
+          break;
+      }
     }
   }
 
@@ -69,10 +95,9 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
       const svg = utilElts[name];
       this.utilsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
-    // For now combine interactions and molecular species into the miscellaneous
     for (const name in molecularSpeciesElts) {
       const svg = molecularSpeciesElts[name];
-      this.miscDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+      this.molecularSpeciesDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
     for (const name in interactionElts) {
       const svg = interactionElts[name];
@@ -81,7 +106,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   addStrand() {
-    this.graphService.addNewBackbone();
+    this.graphService.addBackbone();
   }
 
   addTextBox() {

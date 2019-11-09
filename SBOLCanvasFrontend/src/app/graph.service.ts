@@ -33,6 +33,8 @@ const molecularSpeciesGlyphHeight = 50;
 const defaultTextWidth = 120;
 const defaultTextHeight = 80;
 
+const defaultInteractionSize = 60;
+
 const circuitContainerStyleName = 'circuitContainer';
 const backboneStyleName = 'backbone';
 const textboxStyleName = 'textBox';
@@ -339,13 +341,44 @@ export class GraphService {
     }
   }
 
-  addNewBackbone() {
+  /**
+   * Turns the given element into a dragsource for creating empty DNA strands
+   */
+  makeBackboneDragsource(element) {
+    const insertGlyph = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+      this.addBackboneAt(x - sequenceFeatureGlyphWidth / 2, y - sequenceFeatureGlyphHeight / 2);
+    });
+
+    this.makeGeneralDragsource(element, insertGlyph);
+  }
+
+  makeGeneralDragsource(element, insertFunc) {
+    const xOffset = -1 * element.getBoundingClientRect().width / 2;
+    const yOffset = -1 * element.getBoundingClientRect().height / 2;
+
+    const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertFunc, null, xOffset, yOffset);
+    ds.isGridEnabled = function() {
+      return this.graph.graphHandler.guidesEnabled;
+    };
+  }
+
+  /**
+   * Creates an empty DNA strand at the center of the current view
+   */
+  addBackbone() {
+    const pt = this.getDefaultNewCellCoords();
+    this.addBackboneAt(pt.x, pt.y);
+  }
+
+  /**
+   * Creates an empty DNA strand at the given coordinates
+   */
+  addBackboneAt(x, y) {
     this.graph.getModel().beginUpdate();
     try {
-      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, circuitContainerStyleName);
+      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', x, y, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, circuitContainerStyleName);
       const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, sequenceFeatureGlyphHeight / 2, sequenceFeatureGlyphWidth, 1, backboneStyleName);
 
-      this.centerCellToView(circuitContainer);
       backbone.refreshBackbone(this.graph);
 
       circuitContainer.setConnectable(false);
@@ -452,18 +485,10 @@ export class GraphService {
    * sequenceFeatureGlyphs of the type specified by 'stylename.'
    */
   makeSequenceFeatureDragsource(element, stylename) {
-    const xOffset = -1 * element.getBoundingClientRect().width / 2;
-    const yOffset = -1 * element.getBoundingClientRect().height / 2;
-
     const insertGlyph = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
-      this.addSequenceFeatureAt(stylename, x+xOffset, y+yOffset);
+      this.addSequenceFeatureAt(stylename, x - sequenceFeatureGlyphWidth / 2, y - sequenceFeatureGlyphHeight / 2);
     });
-
-    const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertGlyph, null, xOffset, yOffset);
-    ds.isGridEnabled = function() {
-      return this.graph.graphHandler.guidesEnabled;
-    };
-
+    this.makeGeneralDragsource(element, insertGlyph);
   }
 
   /**
@@ -476,7 +501,7 @@ export class GraphService {
       if (!this.atLeastOneCircuitContainerInGraph()) {
         // if there is no strand, quietly make one
         // stupid user
-        this.addNewBackbone();
+        this.addBackbone();
         // this changes the selection, so the rest of this method works fine
       }
 
@@ -529,7 +554,7 @@ export class GraphService {
       if (!this.atLeastOneCircuitContainerInGraph()) {
         // if there is no strand, quietly make one
         // stupid user
-        this.addNewBackbone();
+        this.addBackboneAt(x, y);
       }
 
       if (!circuitContainer) {
@@ -616,14 +641,31 @@ export class GraphService {
   }
 
   /**
-   * Drops a new floating element on the canvas
+   * Turns the given element into a dragsource for creating molecular species glyphs
+   */
+  makeMolecularSpeciesDragsource(element, stylename) {
+    const insertGlyph = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+      this.addMolecularSpeciesAt(stylename, x - molecularSpeciesGlyphWidth / 2, y - molecularSpeciesGlyphHeight / 2);
+    });
+    this.makeGeneralDragsource(element, insertGlyph);
+  }
+
+  /**
+   * Creates a molecular species glyph of the given type at the center of the current view
    */
   addMolecularSpecies(name) {
+    const pt = this.getDefaultNewCellCoords();
+    this.addMolecularSpeciesAt(name, pt.x, pt.y);
+  }
+
+  /**
+   * Creates a molecular species glyph of the given type at the given location
+   */
+  addMolecularSpeciesAt(name, x, y) {
     this.graph.getModel().beginUpdate();
     try {
-      const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', 0, 0,
+      const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', x, y,
         molecularSpeciesGlyphWidth, molecularSpeciesGlyphHeight, molecularSpeciesGlyphBaseStyleName + name);
-      this.centerCellToView(molecularSpeciesGlyph);
       molecularSpeciesGlyph.setConnectable(true);
 
       molecularSpeciesGlyph.data = new GlyphInfo();
@@ -637,24 +679,41 @@ export class GraphService {
   }
 
   /**
-   * Drops a new interaction edge onto the canvas
-   * @param name The name identifying the type of interaction this should be.
-   * @param source An optional mxCell to be the source of this connection
-   * @param target An optional mxCell to be the target of this connection
+   * Turns the given HTML element into a dragsource for creating interaction glyphs
    */
-  addInteraction(name: string, source?: any, target?: any) {
+  makeInteractionDragsource(element, stylename) {
+    const insertGlyph = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+      this.addInteractionAt(stylename, x - defaultInteractionSize / 2, y - defaultInteractionSize / 2);
+    });
+    this.makeGeneralDragsource(element, insertGlyph);
+  }
+
+  /**
+   * Creates an interaction edge of the given type at the center of the current view
+   */
+  addInteraction(name) {
+    const pt = this.getDefaultNewCellCoords();
+    this.addInteractionAt(name, pt.x, pt.y);
+  }
+
+  /**
+   * Creates an interaction edge of the given type at the given coordiantes
+   * @param name The name identifying the type of interaction this should be.
+   * @param x The x coordinate that the interaction should appear at
+   * @param y The y coordinate that the interaction should appear at
+   */
+  addInteractionAt(name: string, x, y) {
     let cell;
 
     this.graph.getModel().beginUpdate();
     try {
-      cell = new mx.mxCell('', new mx.mxGeometry(0, 0, 0, 0), interactionGlyphBaseStyleName + name);
+      cell = new mx.mxCell('', new mx.mxGeometry(x, y, 0, 0), interactionGlyphBaseStyleName + name);
 
-      cell.geometry.setTerminalPoint(new mx.mxPoint(-50, 50), true);
-      cell.geometry.setTerminalPoint(new mx.mxPoint(50, -50), false);
-      this.centerCellToView(cell);
+      cell.geometry.setTerminalPoint(new mx.mxPoint(x, y + defaultInteractionSize), true);
+      cell.geometry.setTerminalPoint(new mx.mxPoint(x + defaultInteractionSize, y), false);
 
       cell.edge = true;
-      this.graph.addEdge(cell, null, source, target);
+      this.graph.addEdge(cell, null, null, null);
 
       // Default name for a process interaction
       if (name == "Process") {
@@ -753,29 +812,44 @@ export class GraphService {
     }
   }
 
-  centerCellToView(cell: mxCell) {
+  /**
+   * Returns an mxPoint specifying coordinates suitable for a new cell
+   */
+  getDefaultNewCellCoords() {
     const s = this.graph.getView().getScale();
     const t = this.graph.getView().getTranslate();
     const c = this.graph.container;
-    const w = cell.getGeometry().width;
-    const h = cell.getGeometry().height;
-    const newX = (c.scrollLeft + c.clientWidth / 2) / s - w / 2 - t.x;
-    const newY = (c.scrollTop + c.clientHeight / 2) / s - h / 2 - t.y;
+    const newX = (c.scrollLeft + c.clientWidth / 2) / s - t.x;
+    const newY = (c.scrollTop + c.clientHeight / 2) / s - t.y;
 
-    const oldX = cell.getGeometry().x;
-    const oldY = cell.getGeometry().y;
-
-    this.graph.translateCell(cell, newX - oldX, newY - oldY);
+    return new mx.mxPoint(newX, newY);
   }
 
   /**
-   * Puts a textbox in the graph's origin
+   * Turns the given HTML element into a dragsource for creating textboxes
+   */
+  makeTextboxDragsource(element) {
+    const insert = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+      this.addTextBoxAt(x - defaultTextWidth / 2, y - defaultTextHeight / 2);
+    });
+    this.makeGeneralDragsource(element, insert);
+  }
+
+  /**
+   * Creates a textbox at the center of the current view
    */
   addTextBox() {
+    const pt = this.getDefaultNewCellCoords();
+    this.addTextBoxAt(pt.x, pt.y);
+  }
+
+  /**
+   * Creates a textbox at the given location
+   */
+  addTextBoxAt(x, y) {
     this.graph.getModel().beginUpdate();
     try {
-      const cell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', 0, 0, defaultTextWidth, defaultTextHeight, textboxStyleName);
-      this.centerCellToView(cell);
+      const cell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', x, y, defaultTextWidth, defaultTextHeight, textboxStyleName);
       cell.setConnectable(false);
 
       // The new cell should be selected
@@ -1494,12 +1568,5 @@ export class GraphService {
 
       return origIsKeepFocusEvent.apply(this, arguments);
     };
-
-    // This makes it so connections created by the connectionHandler use the same method
-    // as when an interaction glyph is clicked in the glyph menu
-    // (Beware, without this, it uses a factoryMethod provided by the mxEditor)
-    this.graph.connectionHandler.factoryMethod = mx.mxUtils.bind(this, function (source, target) {
-      return this.addInteraction(this.defaultInteractionStyleName, source, target);
-    });
   }
 }
