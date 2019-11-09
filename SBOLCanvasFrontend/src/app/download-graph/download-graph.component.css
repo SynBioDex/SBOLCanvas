@@ -1,8 +1,15 @@
 .mat-form-field-container {
-    display: flex;
-    flex-direction: column;
-    padding-left: 5px;
-    padding-right: 5px;
+  display: flex;
+  flex-direction: column;
+  padding-left: 5px;
+  padding-right: 5px;
+  height: 60vh;
+  overflow-y: scroll;
+}
+
+.mat-form-field {
+  font-size: 90%;
+  height: 3.5em;
 }
 
 .mat-cell, .mat-header-cell {
@@ -13,12 +20,8 @@
   white-space: nowrap;
 }
 
-.table-div{
-  height: 200px;
-  overflow: auto;
-}
-
 .mat-table{
   width: 100%;
   table-layout: fixed;
 }
+

@@ -1,7 +1,7 @@
 <mat-card>
+
   <h1 mat-dialog-title>Download</h1>
   <div class="mat-form-field-container">
-
     <mat-form-field>
       <mat-label>Server</mat-label>
       <mat-select id="registry" [disabled]="registries == null || registries.length < 1"
@@ -57,8 +57,7 @@
       <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter"/>
     </mat-form-field>
 
-  </div>
-  <div class="table-div">
+
     <table mat-table [dataSource]="parts" matSort>
 
       <ng-container matColumnDef="type">
@@ -90,7 +89,6 @@
       <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)"
         [style.background]="highlightRow(row) ? 'lightblue' : ''" (dblclick)="onRowDoubleClick(row)"></tr>
     </table>
-
   </div>
 
   <div *ngIf="working">
@@ -102,5 +100,4 @@
     <button mat-button (click)="onCancelClick()">Cancel</button>
     <button mat-button [disabled]="!finishCheck()" (click)="onDownloadClick()">Download</button>
   </div>
-
 </mat-card>
