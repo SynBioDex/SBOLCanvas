@@ -88,6 +88,7 @@ export class GraphService {
     this.graphContainer.style.bottom = '0';
     this.graphContainer.style.left = '0';
     this.graphContainer.style.right = '0';
+    this.graphContainer.style.overflow = 'hidden';
 
     // mxEditor is kind of a parent to mxGraph
     // it's used mainly for 'actions', which for now means delete, later will mean undoing
