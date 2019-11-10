@@ -1,5 +1,8 @@
 package data;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 public class MxCell {
 
 	private int id;
@@ -112,10 +115,35 @@ public class MxCell {
 		this.collapsed = collapsed;
 	}
 
-	@Override
-	public String toString() {
-		return "{id:" + id + ",value:" + value + ",style:" + style + ",vertex:" + vertex + ",connectable:" + connectable
-				+ ",parent:" + parent + ",geometry:" + geometry + ",info:" + info + "}";
+	public Element encode(Document doc) {
+		// cell
+		Element mxCell = doc.createElement("mxCell");
+		mxCell.setAttribute("id", "" + id);
+		mxCell.setAttribute("value", value);
+		mxCell.setAttribute("style", style);
+		if (vertex)
+			mxCell.setAttribute("vertex", "1");
+		if (edge)
+			mxCell.setAttribute("edge", "1");
+		mxCell.setAttribute("connectable", connectable ? "1" : "0");
+		mxCell.setAttribute("parent", "" + parent);
+		if (source > 0)
+			mxCell.setAttribute("source", "" + source);
+		if (target > 0)
+			mxCell.setAttribute("target", "" + target);
+		if (collapsed)
+			mxCell.setAttribute("collapsed", "1");
+		
+		//geometry
+		if(geometry != null)
+			mxCell.appendChild(geometry.encode(doc));
+		
+		// GlyphInfo
+		if (info != null) {
+			mxCell.appendChild(info.encode(doc));
+		}
+		
+		return mxCell;
 	}
 
 }

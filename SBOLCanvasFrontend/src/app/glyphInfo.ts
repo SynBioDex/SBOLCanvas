@@ -1,6 +1,7 @@
 export class GlyphInfo {
   // Remember that when you change this you need to change the encode function in graph service
   static counter: number = 0;
+  static baseURI: string = "https://sbolcanvas.org";
   partType: string;
   partRole: string;
   partRefine: string;
@@ -9,10 +10,10 @@ export class GlyphInfo {
   description: string;
   version: string;
   sequence: string;
-  model: string;
+  uriPrefix: string = GlyphInfo.baseURI;
 
   constructor() {
-    this.displayID = 'id'+(GlyphInfo.counter++);
+    this.displayID = 'id' + (GlyphInfo.counter++);
     this.partType = 'DNA region';
   }
 
@@ -26,7 +27,7 @@ export class GlyphInfo {
     copy.description = this.description;
     copy.version = this.version;
     copy.sequence = this.sequence;
-    copy.model = this.model;
+    copy.uriPrefix = this.uriPrefix;
     return copy;
   }
 
@@ -39,29 +40,29 @@ export class GlyphInfo {
     this.description = other.description;
     this.version = other.version;
     this.sequence = other.sequence;
-    this.model = other.model;
+    this.uriPrefix = other.uriPrefix;
   }
 
   encode(enc: any) {
     let node = enc.document.createElement('GlyphInfo');
-    if(this.partType)
+    if (this.partType)
       node.setAttribute("partType", this.partType);
-    if(this.partRole)
+    if (this.partRole)
       node.setAttribute("partRole", this.partRole);
-    if(this.partRefine)
+    if (this.partRefine)
       node.setAttribute("partRefine", this.partRefine);
-    if(this.displayID)
+    if (this.displayID)
       node.setAttribute("displayID", this.displayID);
-    if(this.name)
+    if (this.name && this.name.length > 0)
       node.setAttribute("name", this.name);
-    if(this.description)
+    if (this.description && this.description.length > 0)
       node.setAttribute("description", this.description);
-    if(this.version)
+    if (this.version && this.version.length > 0)
       node.setAttribute("version", this.version);
-    if(this.sequence)
+    if (this.sequence && this.sequence.length > 0)
       node.setAttribute("sequence", this.sequence);
-    if(this.model)
-      node.setAttribute("model", this.model);
+    if (this.uriPrefix)
+      node.setAttribute("uriPrefix", this.uriPrefix);
 
     return node;
   }

@@ -14,6 +14,8 @@ import { MatSelectChange } from '@angular/material';
 
 export class InfoEditorComponent implements OnInit {
 
+  baseURI = "https://sbolcanvas.org/";
+
   // placeholders that get generated from http calls
   partTypes:string[];
   partRoles:string[];
@@ -50,6 +52,13 @@ export class InfoEditorComponent implements OnInit {
 
   getInteractions(){
     this.metadataService.loadInteractions().subscribe(interactions => this.interactionTypes = interactions);
+  }
+
+  generateURI(): string{
+    let uri: string = this.glyphInfo.uriPrefix + "/" + this.glyphInfo.displayID;
+    if(this.glyphInfo.version && this.glyphInfo.version.length > 0)
+      uri += "/" + this.glyphInfo.version;
+    return uri;
   }
 
   dropDownChange(event: MatSelectChange){
@@ -97,9 +106,9 @@ export class InfoEditorComponent implements OnInit {
 
     switch (id) {
       case 'displayID':{
-        if(this.glyphInfo != null)
+        if(this.glyphInfo != null){
           this.glyphInfo.displayID = event.target.value;
-        else if(this.interactionInfo != null)
+        }else if(this.interactionInfo != null)
           this.interactionInfo.displayID = event.target.value;
         break;
       }

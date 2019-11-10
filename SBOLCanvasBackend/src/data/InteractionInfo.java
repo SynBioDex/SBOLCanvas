@@ -1,5 +1,8 @@
 package data;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 public class InteractionInfo extends Info {
 
 	private String displayID;
@@ -39,5 +42,16 @@ public class InteractionInfo extends Info {
 	}
 
 	private String toParticipationType;
+
+	@Override
+	public Element encode(Document doc) {
+		Element intInfo = doc.createElement("InteractionInfo");
+		if (displayID != null)
+			intInfo.setAttribute("displayID", displayID);
+		if (interactionType != null)
+			intInfo.setAttribute("interactionType", interactionType);
+		intInfo.setAttribute("as", "data");
+		return intInfo;
+	}
 
 }

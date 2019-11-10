@@ -16,9 +16,10 @@ export class FilesService {
   private toSBOLURL = environment.backendURL + '/convert/toSBOL';
   private toMxGraphURL = environment.backendURL + '/convert/toMxGraph';
   private getRegistriesURL = environment.backendURL + '/SynBioHub/registries';
-  private loginURL = environment.backendURL + '/SynBioHub/login';
   private listMyCollectionsURL = environment.backendURL + '/SynBioHub/listMyCollections';
   private addToCollectionURL = environment.backendURL + '/SynBioHub/addToCollection';
+  private listPartsURL = environment.backendURL + '/SynBioHub/listRegistryParts';
+  private getPartsURL = environment.backendURL + '/SynBioHub/getRegistryPart';
 
   constructor(
     private http: HttpClient
@@ -72,21 +73,38 @@ export class FilesService {
     return this.http.get(this.getRegistriesURL);
   }
 
-  login(email: string, password: string, server: string): Observable<string> {
-    // email and password in headers, because I've been told that they don't end up in log files like the url does
-    let headers = new HttpHeaders();
-    headers = headers.set("Authorization", email + ":" + password);
-    let params = new HttpParams();
-    params = params.append("server", server);
-    return this.http.get(this.loginURL, { responseType: 'text', headers: headers, params: params });
-  }
-
-  listCollections(user: string, server: string): Observable<any> {
+  listMyCollections(user: string, server: string): Observable<any> {
     let headers = new HttpHeaders();
     headers = headers.set("Authorization", user);
     let params = new HttpParams();
     params = params.append("server", server);
     return this.http.get(this.listMyCollectionsURL, { headers: headers, params: params });
+  }
+
+  listParts(user: string, server: string, collection: string, type:string, role: string, mode:string): Observable<any>{
+    let headers = new HttpHeaders();
+    if(user != null && user.length > 0)
+      headers = headers.set("Authorization", user);
+    let params = new HttpParams();
+    params = params.append("server", server);
+    if(collection != null && collection.length > 0)
+      params = params.append("collection", collection);
+    if(type != null && type.length > 0)
+      params = params.append("type", type);
+    if(role != null && role.length > 0)
+      params = params.append("role", role);
+    params = params.append("mode", mode);
+    return this.http.get(this.listPartsURL, {headers: headers, params: params});
+  };
+
+  getPart(user: string, server: string, uri: string): Observable<string>{
+    let headers = new HttpHeaders();
+    if(user != null && user.length > 0)
+      headers = headers.set("Authorization", user);
+    let params = new HttpParams();
+    params = params.append("server", server);
+    params = params.append("uri", uri);
+    return this.http.get(this.getPartsURL, { responseType: 'text', headers: headers, params: params});
   }
 
   convertToSBOL(mxGraphXML: string, filename: string): Observable<string> {

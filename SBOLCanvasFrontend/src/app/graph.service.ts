@@ -121,7 +121,23 @@ export class GraphService {
     this.initStyles();
     this.initCustomShapes();
     this.initSequenceFeatureGlyphMovement();
-    this.initConnectionSettings();
+  }
+
+  /**
+   * Attempts some auto formatting on the graph.
+   * Only affects the current "drill level," ie children cells are not affected.
+   *
+   * This generally does a bad job. Only use this for outside files with no
+   * position information at all.
+   */
+  autoFormat() {
+    var first = new mx.mxStackLayout(this.graph, false, 20);
+    var second = new mx.mxFastOrganicLayout(this.graph);
+
+    var layout = new mx.mxCompositeLayout(this.graph, [first, second], first);
+    layout.execute(this.graph.getDefaultParent());
+
+    this.fitCamera();
   }
 
   handleSelectionChange(sender, evt) {
@@ -735,9 +751,6 @@ export class GraphService {
    */
   mutateSequenceFeatureGlyph(name: string) {
     const selectionCells = this.graph.getSelectionCells();
-
-    console.debug("glyph name = " + name);
-
     if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
       let selectedCell = selectionCells[0];
 
@@ -938,8 +951,9 @@ export class GraphService {
    * and uses it to replace the current graph
    */
   setGraphToXML(graphString: string) {
-    // Creates the graph inside the given container
+    this.graph.home();
     this.graph.getModel().clear();
+
     const doc = mx.mxUtils.parseXml(graphString);
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
@@ -950,6 +964,88 @@ export class GraphService {
   }
 
   /**
+   * Decodes the given string (xml) representation of a cell
+   * and uses it ot replace the currently selected cell
+   * @param cellString
+   */
+  setSelectedToXML(cellString: string) {
+    const selectionCells = this.graph.getSelectionCells();
+
+    if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
+      // We're making a new cell to replace the selected one
+      let selectedCell = selectionCells[0];
+
+      // setup the decoding info
+      const doc = mx.mxUtils.parseXml(cellString);
+      let elt = doc.documentElement.firstChild;
+      const codec = new mx.mxCodec(doc);
+
+      // store old cell's parent
+      const origParent = selectedCell.getParent();
+
+      this.graph.getModel().beginUpdate();
+      try {
+        // get the new cell
+        let newCell = new mx.mxCell();
+        codec.decode(elt, newCell);
+
+        // new id (mxGraph id doesn't matter in SBOL, but must be unique per graph)
+        newCell.id = this.graph.getModel().createId(newCell);
+
+        // generated cells don't have a proper geometry
+        newCell.setStyle(selectedCell.getStyle());
+        this.graph.getModel().setGeometry(newCell, selectedCell.geometry);
+
+        // add new cell to the graph
+        this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+        console.log(newCell);
+
+        // move any edges from selectedCell to newCell
+        if (selectedCell.edges != null) {
+          let edgeCache = [];
+          selectedCell.edges.forEach(edge => {
+            edgeCache.push(edge);
+          });
+
+          edgeCache.forEach(edge => {
+            if (edge.source == selectedCell) {
+              this.graph.getModel().setTerminal(edge, newCell, true);
+            }
+            if (edge.target == selectedCell) {
+              this.graph.getModel().setTerminal(edge, newCell, false);
+            }
+          });
+        }
+
+        // Now create all children of the new cell
+        elt = elt.nextSibling;
+        while (elt != null) {
+          // create a new cell to decode into
+          let newCell = new mx.mxCell();
+          codec.decode(elt, newCell);
+
+          // replace id to ensure uniqueness in this graph
+          // The decoder keeps track of the orignal ids, the ones from the xml,
+          // so parent-child relationships within the new cells still work
+          newCell.id = this.graph.getModel().createId(newCell);
+
+          this.graph.addCell(newCell, newCell.parent);
+
+          elt = elt.nextSibling;
+        }
+
+        this.graph.removeCells(null, false);
+        origParent.refreshCircuitContainer(this.graph);
+        this.graph.setSelectionCell(newCell);
+        this.mutateSequenceFeatureGlyph(newCell.data.partRole);
+      } finally {
+        this.graph.getModel().endUpdate();
+      }
+    }
+
+  }
+
+  /**
    * Sets up environment variables to make decoding new graph models from xml into memory
    */
   initDecodeEnv() {
@@ -957,6 +1053,7 @@ export class GraphService {
     window['mxGraphModel'] = mx.mxGraphModel;
     window['mxGeometry'] = mx.mxGeometry;
     window['mxPoint'] = mx.mxPoint;
+    window['mxCell'] = mx.mxCell;
 
     //mxGraph uses function.name which uglifyJS breaks on production
     Object.defineProperty(GlyphInfo, "name", { configurable: true, value: "GlyphInfo" });
@@ -1000,6 +1097,20 @@ export class GraphService {
     }
     mx.mxCodecRegistry.register(interactionInfoCodec);
     window['InteractionInfo'] = InteractionInfo;
+
+    // For circuitContainers, the order of the children matters.
+    // We want it to match the order of the children's geometries
+    const defaultDecodeCell = mx.mxCodec.prototype.decodeCell;
+    mx.mxCodec.prototype.decodeCell = function(node, restoreStructures) {
+      const cell = defaultDecodeCell.apply(this, arguments);
+
+      if (cell && cell.isSequenceFeatureGlyph()) {
+        cell.parent.children.sort(function(cellA, cellB) {
+          return cellA.getGeometry().x - cellB.getGeometry().x;
+        });
+      }
+      return cell;
+    }
   }
 
   /**
@@ -1157,7 +1268,8 @@ export class GraphService {
 
       // put the backbone first in the children array so it is drawn before glyphs
       // (meaning it appears behind them)
-      graph.getModel().add(this, this.getBackbone(), 0);
+      if (!this.children[0].isBackbone())
+        graph.getModel().add(this, this.getBackbone(), 0);
 
       // Layout all the glyphs in a horizontal line, while ignoring the backbone cell.
       const layout = new mx.mxStackLayout(graph, true);
@@ -1211,6 +1323,12 @@ export class GraphService {
       }
       if (height !== 'auto') {
         newGeo.height = height;
+      }
+
+      // to save entries on undo stack, don't call setGeometry unless necessary
+      if (oldGeo.x === newGeo.x && oldGeo.y === newGeo.y
+        && oldGeo.width === newGeo.width && oldGeo.height === newGeo.height) {
+        return;
       }
 
       graph.getModel().setGeometry(this, newGeo);
@@ -1298,6 +1416,7 @@ export class GraphService {
     circuitContainerStyle[mx.mxConstants.STYLE_FILLCOLOR] = 'none';
     circuitContainerStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
     circuitContainerStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+    circuitContainerStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
     this.graph.getStylesheet().putCellStyle(circuitContainerStyleName, circuitContainerStyle);
 
     const backboneStyle = {};
@@ -1372,12 +1491,6 @@ export class GraphService {
         }
       }
 
-      // Defines the connection constraints for all sequence features
-      customStencil.constraints = [
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), false),
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), false)
-      ];
-
       // Add the stencil to the registry and set its style.
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
@@ -1392,14 +1505,6 @@ export class GraphService {
     for (const name in stencils) {
       const stencil = stencils[name][0];
       let customStencil = new mx.mxStencil(stencil.desc); // Makes of deep copy of the stencil.
-
-      // Defines the default constraints for all molecular species
-      customStencil.constraints = [
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 0), false),
-        new mx.mxConnectionConstraint(new mx.mxPoint(0.5, 1), false),
-        new mx.mxConnectionConstraint(new mx.mxPoint(0, .5), false),
-        new mx.mxConnectionConstraint(new mx.mxPoint(1, .5), false)
-      ];
       mx.mxStencilRegistry.addStencil(name, customStencil);
 
       const newGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
@@ -1557,33 +1662,5 @@ export class GraphService {
     }
 
     circuitContainer.refreshCircuitContainer(this.graph);
-  }
-
-  initConnectionSettings() {
-
-    // Overrides highlight shape for connection points
-    mx.mxConstraintHandler.prototype.createHighlightShape = function () {
-      var hl = new mx.mxEllipse(null, this.highlightColor, this.highlightColor, 0);
-      hl.opacity = mx.mxConstants.HIGHLIGHT_OPACITY;
-
-      return hl;
-    };
-
-    // Overriding this method makes it so connection constraints on sequence features
-    // stay visible when trying to create an interaction.
-    let origIsKeepFocusEvent = mx.mxConstraintHandler.prototype.isKeepFocusEvent;
-    mx.mxConstraintHandler.prototype.isKeepFocusEvent = function (me) {
-
-      // Ignore circuit containers and backbones so that the focus stays
-      // on the sequence feature, and thus the anchor points stay visible.
-      if (me.state != undefined && me.state.cell != undefined) {
-        if (me.state.cell.isCircuitContainer() || me.state.cell.isBackbone()) {
-          console.debug("mx.mxConstraintHandler.prototype.isKeepFocusEvent: Keeping focus.")
-          return true;
-        }
-      }
-
-      return origIsKeepFocusEvent.apply(this, arguments);
-    };
   }
 }

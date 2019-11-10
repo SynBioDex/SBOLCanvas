@@ -1,6 +1,8 @@
-import { Component, Inject, OnInit } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
-import { UploadDialogData } from '../toolbar/toolbar.component';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatDialogRef, MatTableDataSource, MatSort } from '@angular/material';
+import { FilesService } from '../files.service';
+import { LoginService } from '../login.service';
+import { GraphService } from '../graph.service';
 
 @Component({
   selector: 'app-upload-graph',
@@ -9,19 +11,77 @@ import { UploadDialogData } from '../toolbar/toolbar.component';
 })
 export class UploadGraphComponent implements OnInit {
 
-  collections: string[];
+  registries: string[];
+  registry: string;
+  collections = new MatTableDataSource([]);
+  collection: string;
+  moduleName: string;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: UploadDialogData, public dialogRef: MatDialogRef<UploadGraphComponent>) { }
+  displayedColumns: string[] = ['displayId', 'name', 'version', 'description'];
+  @ViewChild(MatSort) sort: MatSort;
+
+  working: boolean;
+
+  constructor(private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<UploadGraphComponent>) { }
 
   ngOnInit() {
+    this.working = true;
+    this.filesService.getRegistries().subscribe(result => {
+      this.registries = result;
+      this.working = false;
+    });
+    this.collections.sort = this.sort;
+  }
+
+  setRegistry(registry:string){
+    this.registry = registry;
+    this.collection = "";
+    this.collections.data = [];
+    this.updateCollections();
+  }
+
+  applyFilter(filterValue: string){
+    this.collections.filter = filterValue.trim().toLowerCase();
+  }
+
+  loginDisabled(){
+    return this.loginService.users[this.registry] != null || this.registry == null;
   }
 
   finishCheck(){
-    return this.data.collection != null && this.data.filename != null;
+    return this.collection != null && this.collection.length > 0 && this.moduleName != null && this.moduleName.length > 0;
   }
 
   onCancelClick() {
     this.dialogRef.close();
+  }
+
+  onUploadClick(){
+    this.working = true;
+    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.registry, this.collection, this.loginService.users[this.registry], this.moduleName).subscribe(result => {
+      this.working = false;
+      this.dialogRef.close();
+    });
+  }
+
+  onLoginClick(){
+    this.loginService.openLoginDialog(this.registry).subscribe(result => {
+      if(result){
+        this.updateCollections();
+      }
+    });
+  }
+
+  updateCollections(){
+    if(this.loginService.users[this.registry] != null){
+      this.working = true;
+      this.filesService.listMyCollections(this.loginService.users[this.registry], this.registry).subscribe(collections => {
+        this.collections.data = collections;
+        this.working = false;
+      });
+    }else{
+      this.collections.data = [];
+    }
   }
 
 }

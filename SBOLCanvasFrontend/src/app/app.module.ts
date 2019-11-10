@@ -11,7 +11,8 @@ import { DesignMenuComponent } from './design-menu/design-menu.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AppHttpInterceptor } from './http.interceptor';
 
 // Angular Material stuff. This is a different UI library than ng-bootstrap.
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
@@ -28,6 +29,7 @@ import { BannerComponent } from './banner/banner.component';
 import { ColorPickerComponent } from './color-picker/color-picker.component';
 import { UploadGraphComponent } from './upload-graph/upload-graph.component';
 import { LoginComponent } from './login/login.component';
+import { DownloadGraphComponent } from './download-graph/download-graph.component';
 
 
 @NgModule({
@@ -44,7 +46,9 @@ import { LoginComponent } from './login/login.component';
     BannerComponent,
     ColorPickerComponent,
     UploadGraphComponent,
+    DownloadGraphComponent,
     LoginComponent,
+    DownloadGraphComponent,
   ],
   imports: [
     BrowserModule,
@@ -59,9 +63,11 @@ import { LoginComponent } from './login/login.component';
     ReactiveFormsModule,
     MaterialModule
   ],
-  providers: [GraphService, MetadataService],
+  providers: [GraphService, MetadataService, {
+    provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
+    }],
   bootstrap: [AppComponent],
-  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, LoginComponent, ColorPickerComponent ]
+  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, LoginComponent, ColorPickerComponent ]
 })
 export class AppModule {
 }

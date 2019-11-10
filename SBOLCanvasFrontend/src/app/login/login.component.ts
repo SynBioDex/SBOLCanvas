@@ -1,6 +1,7 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, forwardRef } from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material';
-import { LoginDialogData } from '../toolbar/toolbar.component';
+import { LoginDialogData, LoginService } from '../login.service';
+
 
 @Component({
   selector: 'app-login',
@@ -9,20 +10,43 @@ import { LoginDialogData } from '../toolbar/toolbar.component';
 })
 export class LoginComponent implements OnInit {
 
-  servers:string[];
+  email: string;
+  password: string;
 
-  constructor(public dialogRef: MatDialogRef<LoginComponent>,
+  working: boolean;
+  badLogin: boolean;
+
+  // forwardRef because of circular dependency
+  constructor(@Inject(forwardRef(() => LoginService)) private loginService: LoginService, public dialogRef: MatDialogRef<LoginComponent>,
     @Inject(MAT_DIALOG_DATA) public data: LoginDialogData) { }
 
   ngOnInit() {
+    this.working = false;
   }
 
   finishCheck():boolean{
-    return this.data.email != null && this.data.password != null && this.data.server != null;
+    return this.email != null && this.email.length > 0 && this.password != null && this.password.length > 0;
+  }
+
+  onLoginClick(){
+    this.working = true;
+    this.badLogin = false;
+    this.loginService.login(this.email, this.password, this.data.server).subscribe(result => {
+      this.loginService.users[this.data.server] = result;
+      this.working = false;
+      this.dialogRef.close(true);
+    },
+    err => {
+      if(err.status === 401){
+        this.working = false;
+        this.badLogin = true;
+      }
+    });
   }
 
   onCancelClick(){
-    this.dialogRef.close();
+    // false signifies that they failed to login
+    this.dialogRef.close(false);
   }
 
 }
