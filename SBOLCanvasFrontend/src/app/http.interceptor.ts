@@ -2,10 +2,12 @@ import { HttpInterceptor, HttpHandler, HttpRequest, HttpEvent, HttpResponse, Htt
 import { Injectable } from "@angular/core"
 import { Observable, of, throwError } from "rxjs";
 import { tap, catchError } from "rxjs/operators";
+import { MatDialog } from '@angular/material';
+import { ErrorComponent } from './error/error.component';
 
 @Injectable()
 export class AppHttpInterceptor implements HttpInterceptor {
-    constructor() {}
+    constructor(public dialog: MatDialog) {}
 intercept(
         req: HttpRequest<any>,
         next: HttpHandler
@@ -17,7 +19,7 @@ intercept(
             }),
             catchError((err: any) => {
                 if(err instanceof HttpErrorResponse && err.status === 500) {
-                    console.log(err);
+                    this.dialog.open(ErrorComponent, {data: err.error});
                 }
                 return throwError(err);
             }));
