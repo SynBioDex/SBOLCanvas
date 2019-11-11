@@ -1,3 +1,37 @@
-<button mat-stroked-button
-        class="toolbar-row-button"
-        (click)="setStrokeClicked()">Set Stroke Color</button>
+<div *ngIf="styleInfo.hasStrokeColor()">
+  <button mat-stroked-button
+          class="toolbar-row-button"
+          (click)="setStrokeColorClicked()">Set Stroke Color</button>
+  <br>
+</div>
+
+<div *ngIf="styleInfo.hasFillColor()">
+  <button mat-stroked-button
+          class="toolbar-row-button"
+          (click)="setFillColorClicked()">Set Fill Color</button>
+  <br>
+</div>
+
+<div *ngIf="styleInfo.hasEndSize()">
+  <label mat-label>Arrow Size: </label>
+  <mat-form-field>
+    <input #endSizeInput matInput type="number" min="0" oninput="validity.valid||(value='');"
+           (change)="styleInfo.setEndSize($event.target.value)" [value]="styleInfo.currentEndSize()">
+  </mat-form-field>
+  <br>
+</div>
+
+<div *ngIf="styleInfo.hasEdgeStyle()">
+  <label mat-label>Connection Style: </label>
+  <mat-form-field>
+    <mat-select value="{{styleInfo.currentEdgeStyle()}}" (selectionChange)="styleInfo.setEdgeStyle($event.value)">
+      <mat-option value="{{'diagonal'}}">Diagonal</mat-option> <!-- mxConstants doesn't define an option for diagonal since it's the default -->
+      <mat-option value="{{mx.mxConstants.EDGESTYLE_ELBOW}}">Elbow</mat-option>
+      <mat-option value="{{mx.mxConstants.EDGESTYLE_ENTITY_RELATION}}">Entity Relation</mat-option>
+      <mat-option value="{{mx.mxConstants.EDGESTYLE_SIDETOSIDE}}">Side to side</mat-option>
+      <mat-option value="{{mx.mxConstants.EDGESTYLE_TOPTOBOTTOM}}">Top to Bottom</mat-option>
+      <mat-option value="{{mx.mxConstants.EDGESTYLE_ORTHOGONAL}}">Orthogonal</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <br>
+</div>
