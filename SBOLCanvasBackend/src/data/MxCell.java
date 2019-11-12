@@ -5,15 +5,15 @@ import org.w3c.dom.Element;
 
 public class MxCell {
 
-	private int id;
+	private transient int id;
 	private String value;
 	private String style;
 	private boolean vertex;
 	private boolean edge;
 	private boolean connectable = true;
-	private int parent;
-	private int source;
-	private int target;
+	private transient int parent;
+	private transient int source;
+	private transient int target;
 	private boolean collapsed;
 	private MxGeometry geometry;
 	// transient prevents this field from making it to json
@@ -118,7 +118,8 @@ public class MxCell {
 	public Element encode(Document doc) {
 		// cell
 		Element mxCell = doc.createElement("mxCell");
-		mxCell.setAttribute("id", "" + id);
+		if(id > 0)
+			mxCell.setAttribute("id", "" + id);
 		mxCell.setAttribute("value", value);
 		mxCell.setAttribute("style", style);
 		if (vertex)

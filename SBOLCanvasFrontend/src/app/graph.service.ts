@@ -926,7 +926,7 @@ export class GraphService {
     }
 
     // verify that the selected cell matches the type of info object
-    if (info instanceof GlyphInfo && (selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer()) ||
+    if (info instanceof GlyphInfo && (selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()) ||
       (info instanceof InteractionInfo && selectedCell.isInteraction())) {
 
       // since it does, update its info

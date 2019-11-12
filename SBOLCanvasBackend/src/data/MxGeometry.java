@@ -17,6 +17,16 @@ public class MxGeometry {
 	private MxPoint sourcePoint;
 	private MxPoint targetPoint;
 
+	public MxGeometry(double x, double y, double width, double height) {
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+	}
+
+	public MxGeometry() {
+	}
+
 	public double getX() {
 		return x;
 	}
@@ -80,7 +90,7 @@ public class MxGeometry {
 	public void setTargetPoint(MxPoint targetPoint) {
 		this.targetPoint = targetPoint;
 	}
-	
+
 	public Element encode(Document doc) {
 		Element mxGeometry = doc.createElement("mxGeometry");
 		if (x != 0)
