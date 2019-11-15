@@ -41,11 +41,15 @@ export class GlyphService {
     'assets/glyph_stencils/sequence_feature/signature.xml',
     'assets/glyph_stencils/sequence_feature/specific-recombination-site.xml',
     'assets/glyph_stencils/sequence_feature/three-prime-overhang.xml',
+    //'assets/glyph_stencils/sequence_feature/test.xml',
   ];
 
   private molecularSpeciesXMLs: string[] = [
     // 'molecular species' glyphs aka protein?
     'assets/glyph_stencils/molecular_species/macromolecule.xml',
+    'assets/glyph_stencils/molecular_species/dsNA.xml',
+    'assets/glyph_stencils/molecular_species/ssNA.xml',
+    'assets/glyph_stencils/molecular_species/small-molecule.xml',
   ]
 
   private interactionXMLs: string[] = [
