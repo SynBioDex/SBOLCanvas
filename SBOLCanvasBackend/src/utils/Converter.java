@@ -199,7 +199,7 @@ public class Converter {
 	}
 
 	public void toGraph(SBOLDocument document, OutputStream graphStream)
-			throws IOException, ParserConfigurationException, TransformerException {
+			throws IOException, ParserConfigurationException, TransformerException, SBOLValidationException {
 		ModuleDefinition modDef = null;
 		if (document.getRootModuleDefinitions().size() > 0) {
 			modDef = document.getRootModuleDefinitions().iterator().next();
@@ -619,12 +619,12 @@ public class Converter {
 	}
 
 	private void compDefToMxGraphObjects(ComponentDefinition compDef)
-			throws ParserConfigurationException, TransformerException {
+			throws ParserConfigurationException, TransformerException, SBOLValidationException {
 		compDefToMxGraphObjects(compDef, -1);
 	}
 
 	private void compDefToMxGraphObjects(ComponentDefinition compDef, int parentID)
-			throws ParserConfigurationException, TransformerException {
+			throws ParserConfigurationException, TransformerException, SBOLValidationException {
 		Annotation proteinAnn = compDef.getAnnotation(new QName(uriPrefix, "protein", annPrefix));
 		if (proteinAnn != null) {
 			MxCell proteinCell = gson.fromJson(proteinAnn.getStringValue(), MxCell.class);
@@ -693,21 +693,23 @@ public class Converter {
 		}
 
 		// glyphs
-		Component[] glyphArray = compDef.getComponents().toArray(new Component[0]);
+		Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
 		for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 			Component glyphComponent = glyphArray[glyphIndex];
 
 			// glyph data
 			Annotation glyphAnn = glyphComponent.getAnnotation(new QName(uriPrefix, "glyphCell", annPrefix));
 			MxCell glyphCell = null;
+			double maxX = 0;
 			if (glyphAnn != null) {
 				glyphCell = gson.fromJson(glyphAnn.getStringValue(), MxCell.class);
+				maxX = glyphCell.getGeometry().getX();
 			} else {
 				glyphCell = new MxCell();
 				glyphCell.setVertex(true);
 				glyphCell.setCollapsed(false);
 				// x position determines ordering in frontend
-				glyphCell.setGeometry(new MxGeometry(glyphIndex, 0, 0, 0));
+				glyphCell.setGeometry(new MxGeometry(maxX++, 0, 0, 0));
 			}
 			glyphCell.setId(nextID);
 			nextID++;

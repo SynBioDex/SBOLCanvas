@@ -1,3 +1,5 @@
+import { ParsedEventType } from '@angular/compiler';
+
 export class GlyphInfo {
   // Remember that when you change this you need to change the encode function in graph service
   static counter: number = 0;
@@ -12,9 +14,13 @@ export class GlyphInfo {
   sequence: string;
   uriPrefix: string = GlyphInfo.baseURI;
 
-  constructor() {
+  constructor(partType?: string) {
     this.displayID = 'id' + (GlyphInfo.counter++);
-    this.partType = 'DNA region';
+    if(partType){
+      this.partType = partType;
+    }else{
+      this.partType = 'DNA region';
+    }
   }
 
   makeCopy() {

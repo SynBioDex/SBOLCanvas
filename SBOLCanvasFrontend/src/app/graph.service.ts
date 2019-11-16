@@ -685,7 +685,7 @@ export class GraphService {
         molecularSpeciesGlyphWidth, molecularSpeciesGlyphHeight, molecularSpeciesGlyphBaseStyleName + name);
       molecularSpeciesGlyph.setConnectable(true);
 
-      molecularSpeciesGlyph.data = new GlyphInfo();
+      molecularSpeciesGlyph.data = new GlyphInfo("Protein");
 
       // The new glyph should be selected
       this.graph.clearSelection();
