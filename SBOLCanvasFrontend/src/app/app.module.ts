@@ -31,6 +31,7 @@ import { UploadGraphComponent } from './upload-graph/upload-graph.component';
 import { LoginComponent } from './login/login.component';
 import { DownloadGraphComponent } from './download-graph/download-graph.component';
 import { ErrorComponent } from './error/error.component';
+import { SearchfilterPipe } from './searchfilter.pipe';
 
 
 @NgModule({
@@ -51,6 +52,7 @@ import { ErrorComponent } from './error/error.component';
     LoginComponent,
     DownloadGraphComponent,
     ErrorComponent,
+    SearchfilterPipe,
   ],
   imports: [
     BrowserModule,

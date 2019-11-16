@@ -6,7 +6,7 @@
     </mat-form-field>
 
     <!-------------------------------------    Utils panel   --------------------------------------->
-    <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel [expanded]="true" *ngIf="stringMatches('backbone dna strand circuit', searchPhrase) || stringMatches('textbox text box', searchPhrase)">
       <mat-expansion-panel-header>
         <mat-panel-title>
           Util
@@ -31,7 +31,7 @@
 
 
     <!-------------------------------------    Sequence panel   --------------------------------------->
-    <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel [expanded]="true" *ngIf="(sequenceFeatureDict | keyvalue | searchfilter: searchPhrase).length > 0">
       <mat-expansion-panel-header>
         <mat-panel-title>
           Sequence Features
@@ -40,7 +40,7 @@
         </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
-        <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue" >
+        <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue | searchfilter: searchPhrase" >
           <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)" [matTooltip]="pair.key">
             <svg #canvasElement [attr.elementType]="elementTypes.SEQUENCE_FEATURE" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
@@ -51,7 +51,7 @@
 
 
     <!-------------------------------------    Molecular Species panel   --------------------------------------->
-    <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel [expanded]="true" *ngIf="(molecularSpeciesDict | keyvalue | searchfilter: searchPhrase).length > 0">
       <mat-expansion-panel-header>
         <mat-panel-title>
           Molecular Species
@@ -60,7 +60,7 @@
         </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
-        <mat-grid-tile *ngFor="let pair of molecularSpeciesDict | keyvalue">
+        <mat-grid-tile *ngFor="let pair of molecularSpeciesDict | keyvalue | searchfilter: searchPhrase">
           <button mat-button [disabled]="componentDefinitionMode" (click)="onMolecularSpeciesGlyphClicked(pair.key)" [matTooltip]="pair.key">
             <svg #canvasElement [attr.elementType]="elementTypes.MOLECULAR_SPECIES" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
@@ -70,7 +70,7 @@
 
 
     <!-------------------------------------    Interactions panel   --------------------------------------->
-    <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel [expanded]="true" *ngIf="(interactionsDict | keyvalue | searchfilter: searchPhrase).length > 0">
       <mat-expansion-panel-header>
         <mat-panel-title>
           Interactions
@@ -79,7 +79,7 @@
         </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
-        <mat-grid-tile *ngFor="let pair of interactionsDict | keyvalue">
+        <mat-grid-tile *ngFor="let pair of interactionsDict | keyvalue | searchfilter: searchPhrase">
           <button mat-button [disabled]="componentDefinitionMode" (click)="onInteractionGlyphClicked(pair.key)" [matTooltip]="pair.key">
             <svg #canvasElement [attr.elementType]="elementTypes.INTERACTION" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>

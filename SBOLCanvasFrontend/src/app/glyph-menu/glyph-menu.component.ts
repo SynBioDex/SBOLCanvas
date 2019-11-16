@@ -7,6 +7,7 @@
 import {Component, OnInit, AfterViewInit, ViewChildren, QueryList, ElementRef} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {GlyphService} from '../glyph.service';
+import {SearchfilterPipe} from '../searchfilter.pipe';
 import {DomSanitizer} from '@angular/platform-browser';
 import {MetadataService} from '../metadata.service';
 
@@ -125,4 +126,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   stringMatches(mainString:string, searchString:string) {
     return mainString.toLowerCase().indexOf(searchString.toLowerCase()) !== -1;
   }
+
+  /**
+   * Returns true if
+   */
 }
