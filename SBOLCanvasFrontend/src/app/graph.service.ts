@@ -16,6 +16,7 @@ import { GlyphService } from './glyph.service';
 import { forEach } from "@angular/router/src/utils/collection";
 import { InteractionInfo } from './interactionInfo';
 import { style } from '@angular/animations';
+import { environment } from 'src/environments/environment';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -372,7 +373,7 @@ export class GraphService {
     const yOffset = -1 * element.getBoundingClientRect().height / 2;
 
     const ds: mxDragSource = mx.mxUtils.makeDraggable(element, this.graph, insertFunc, null, xOffset, yOffset);
-    ds.isGridEnabled = function() {
+    ds.isGridEnabled = function () {
       return this.graph.graphHandler.guidesEnabled;
     };
   }
@@ -645,7 +646,7 @@ export class GraphService {
         yDist = 0;
       }
 
-      const dist = Math.sqrt(xDist*xDist + yDist*yDist);
+      const dist = Math.sqrt(xDist * xDist + yDist * yDist);
       if (!bestC || dist < bestDistance) {
         bestC = c;
         bestDistance = dist;
@@ -915,6 +916,90 @@ export class GraphService {
     }
   }
 
+  exportSVG(filename: string){
+    var background = '#ffffff';
+		var scale = 1;
+		var border = 1;
+					
+		var imgExport = new mx.mxImageExport();
+		var bounds = this.graph.getGraphBounds();
+		var vs = this.graph.view.scale;
+    
+    // Prepares SVG document that holds the output
+		var svgDoc = mx.mxUtils.createXmlDocument();
+		var root = (svgDoc.createElementNS != null) ?
+		svgDoc.createElementNS(mx.mxConstants.NS_SVG, 'svg') : svgDoc.createElement('svg');
+
+    if(background != null){
+      if(root.style != null){
+        root.style.backgroundColor = background;
+      }else{
+        root.setAttribute('style', 'background-color:' + background);
+      }
+    }
+
+    if(svgDoc.createElementNS == null){
+      root.setAttribute('xmlns', mx.mxConstants.NS_SVG);
+      root.setAttribute('xmlns:xlink', mx.mxConstants.NS_XLINK);
+    }else{
+      // KNOWN: Ignored in IE9-11, adds namespace for each image element instead. No workaround.
+      root.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', mx.mxConstants.NS_XLINK);
+    }
+
+    root.setAttribute('width', (Math.ceil(bounds.width * scale / vs) + 2 * border) + 'px');
+		root.setAttribute('height', (Math.ceil(bounds.height * scale / vs) + 2 * border) + 'px');
+    root.setAttribute('version', '1.1');
+    
+    // Adds group for anti-aliasing via transform
+    var group = (svgDoc.createElementNS != null) ? svgDoc.createElementNS(mx.mxConstants.NS_SVG, 'g') : svgDoc.createElement('g');
+    group.setAttribute('transform', 'translate(0.5,0.5)');
+    root.appendChild(group);
+    svgDoc.appendChild(root);
+  
+    // Renders graph. Offset will be multiplied with state's scale when painting state.
+    var svgCanvas = new mx.mxSvgCanvas2D(group);
+    svgCanvas.translate(Math.floor((border / scale - bounds.x) / vs), Math.floor((border / scale - bounds.y) / vs));
+    svgCanvas.scale(scale / vs);
+
+    // Displayed if a viewer does not support foreignObjects (which is needed to HTML output)
+    svgCanvas.foAltText = '[Not supported by viewer]';
+    imgExport.drawState(this.graph.getView().getState(this.graph.model.root), svgCanvas);
+    
+    var xml = encodeURIComponent(mx.mxUtils.getXml(root));
+    new mx.mxXmlRequest(environment.backendURL+'/echo', 'filename='+filename+'.svg&format=svg' + '&xml=' + xml).simulate(document, '_blank');
+  }
+
+  exportImage(filename: string, format:string) {
+    let bg = '#ffffff';
+    let scale = 1;
+    let b = 1;
+
+    let imgExport = new mx.mxImageExport();
+    let bounds = this.graph.getGraphBounds();
+    let vs = this.graph.view.scale;
+
+    let xmlDoc = mx.mxUtils.createXmlDocument();
+    let root = xmlDoc.createElement('output');
+    xmlDoc.appendChild(root);
+
+    let xmlCanvas = new mx.mxXmlCanvas2D(root);
+    xmlCanvas.translate(Math.floor((b / scale - bounds.x) / vs), Math.floor((b / scale - bounds.y) / vs));
+    xmlCanvas.scale(1 / vs);
+
+    imgExport.drawState(this.graph.getView().getState(this.graph.model.root), xmlCanvas);
+
+    let w = Math.ceil(bounds.width * scale / vs + 2 * b);
+    let h = Math.ceil(bounds.height * scale / vs + 2 * b);
+
+    let xml = mx.mxUtils.getXml(root);
+
+    if (bg != null) {
+      bg = '&bg=' + bg;
+    }
+
+    new mx.mxXmlRequest(environment.backendURL+'/export', 'filename='+filename+'.' + format + '&format=' + format + bg + '&w=' + w + '&h=' + h + '&xml=' + encodeURIComponent(xml)).simulate(document, '_blank');
+  }
+
   /**
    * Encodes the current graph to a string (xml) representation
    */
@@ -1079,11 +1164,11 @@ export class GraphService {
     // For circuitContainers, the order of the children matters.
     // We want it to match the order of the children's geometries
     const defaultDecodeCell = mx.mxCodec.prototype.decodeCell;
-    mx.mxCodec.prototype.decodeCell = function(node, restoreStructures) {
+    mx.mxCodec.prototype.decodeCell = function (node, restoreStructures) {
       const cell = defaultDecodeCell.apply(this, arguments);
 
       if (cell && cell.isSequenceFeatureGlyph()) {
-        cell.parent.children.sort(function(cellA, cellB) {
+        cell.parent.children.sort(function (cellA, cellB) {
           return cellA.getGeometry().x - cellB.getGeometry().x;
         });
       }
@@ -1563,7 +1648,7 @@ export class GraphService {
    * Sets up logic for handling sequenceFeatureGlyph movement
    */
   initSequenceFeatureGlyphMovement() {
-    this.graph.addListener(mx.mxEvent.MOVE_CELLS,  mx.mxUtils.bind(this, function (sender, evt) {
+    this.graph.addListener(mx.mxEvent.MOVE_CELLS, mx.mxUtils.bind(this, function (sender, evt) {
       // sender is the graph
 
       let movedCells = evt.getProperty("cells");

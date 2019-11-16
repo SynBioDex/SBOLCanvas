@@ -5,8 +5,6 @@
         <strokewidth width="2.88" />
         <linejoin join="miter" />
         <miterlimit limit="4" />
-        <dashpattern pattern="none" />
-        <dashed dashed="1" />
         <alpha alpha="1" />
         <path>
             <move x="24.007333076032424" y="4.999999999999993" />

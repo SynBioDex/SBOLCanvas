@@ -32,6 +32,7 @@ import { LoginComponent } from './login/login.component';
 import { DownloadGraphComponent } from './download-graph/download-graph.component';
 import { ErrorComponent } from './error/error.component';
 import { SearchfilterPipe } from './searchfilter.pipe';
+import { ExportComponent } from './export/export.component';
 
 
 @NgModule({
@@ -53,6 +54,7 @@ import { SearchfilterPipe } from './searchfilter.pipe';
     DownloadGraphComponent,
     ErrorComponent,
     SearchfilterPipe,
+    ExportComponent,
   ],
   imports: [
     BrowserModule,
@@ -71,7 +73,7 @@ import { SearchfilterPipe } from './searchfilter.pipe';
     provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
     }],
   bootstrap: [AppComponent],
-  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, LoginComponent, ErrorComponent, ColorPickerComponent ]
+  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, ExportComponent, LoginComponent, ErrorComponent, ColorPickerComponent ]
 })
 export class AppModule {
 }

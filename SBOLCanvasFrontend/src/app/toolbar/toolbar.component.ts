@@ -6,6 +6,7 @@ import { SaveGraphComponent } from '../save-graph/save-graph.component';
 import { LoadGraphComponent } from '../load-graph/load-graph.component';
 import { UploadGraphComponent } from '../upload-graph/upload-graph.component';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
+import { ExportComponent } from '../export/export.component';
 
 export interface SaveDialogData {
   filename: string;
@@ -76,5 +77,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
         this.load(result);
       }
     });
+  }
+
+  openExportDialog(): void {
+    this.dialog.open(ExportComponent, {});
   }
 }
