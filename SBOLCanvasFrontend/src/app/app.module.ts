@@ -30,6 +30,7 @@ import { ColorPickerComponent } from './color-picker/color-picker.component';
 import { UploadGraphComponent } from './upload-graph/upload-graph.component';
 import { LoginComponent } from './login/login.component';
 import { DownloadGraphComponent } from './download-graph/download-graph.component';
+import { ErrorComponent } from './error/error.component';
 
 
 @NgModule({
@@ -49,6 +50,7 @@ import { DownloadGraphComponent } from './download-graph/download-graph.componen
     DownloadGraphComponent,
     LoginComponent,
     DownloadGraphComponent,
+    ErrorComponent,
   ],
   imports: [
     BrowserModule,
@@ -67,7 +69,7 @@ import { DownloadGraphComponent } from './download-graph/download-graph.componen
     provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
     }],
   bootstrap: [AppComponent],
-  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, LoginComponent, ColorPickerComponent ]
+  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, LoginComponent, ErrorComponent, ColorPickerComponent ]
 })
 export class AppModule {
 }

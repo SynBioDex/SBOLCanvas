@@ -17,7 +17,7 @@ export class GlyphService {
     'assets/glyph_stencils/sequence_feature/promoter.xml',
     'assets/glyph_stencils/sequence_feature/cds.xml',
     'assets/glyph_stencils/sequence_feature/aptamer.xml',
-    //'assets/glyph_stencils/sequence_feature/dna-stability-element.xml',
+    'assets/glyph_stencils/sequence_feature/dna-stability-element.xml',
     'assets/glyph_stencils/sequence_feature/insulator.xml',
     'assets/glyph_stencils/sequence_feature/location-dna.xml',
     'assets/glyph_stencils/sequence_feature/engineered-region.xml',
@@ -30,9 +30,9 @@ export class GlyphService {
     'assets/glyph_stencils/sequence_feature/no-glyph-assigned.xml',
     'assets/glyph_stencils/sequence_feature/ncrna.xml',
     'assets/glyph_stencils/sequence_feature/nuclease-site.xml',
-    //'assets/glyph_stencils/sequence_feature/protease-site.xml',
-    //'assets/glyph_stencils/sequence_feature/protein-stability-element.xml',
-    //'assets/glyph_stencils/sequence_feature/ribonuclease-site.xml',
+    'assets/glyph_stencils/sequence_feature/protease-site.xml',
+    'assets/glyph_stencils/sequence_feature/protein-stability-element.xml',
+    'assets/glyph_stencils/sequence_feature/ribonuclease-site.xml',
     'assets/glyph_stencils/sequence_feature/rna-stability-element.xml',
     'assets/glyph_stencils/sequence_feature/operator.xml',
     'assets/glyph_stencils/sequence_feature/origin-of-replication.xml',
@@ -41,12 +41,23 @@ export class GlyphService {
     'assets/glyph_stencils/sequence_feature/signature.xml',
     'assets/glyph_stencils/sequence_feature/specific-recombination-site.xml',
     'assets/glyph_stencils/sequence_feature/three-prime-overhang.xml',
+    'assets/glyph_stencils/sequence_feature/polyA.xml',
+    'assets/glyph_stencils/sequence_feature/chromosomal-locus.xml',
+    'assets/glyph_stencils/sequence_feature/circular-plasmid.xml',
+    'assets/glyph_stencils/sequence_feature/transcription-end.xml',
+    'assets/glyph_stencils/sequence_feature/translation-end.xml',
+    //'assets/glyph_stencils/sequence_feature/test.xml',
   ];
 
   private molecularSpeciesXMLs: string[] = [
     // 'molecular species' glyphs aka protein?
     'assets/glyph_stencils/molecular_species/macromolecule.xml',
-  ]
+    'assets/glyph_stencils/molecular_species/dsNA.xml',
+    'assets/glyph_stencils/molecular_species/ssNA.xml',
+    'assets/glyph_stencils/molecular_species/small-molecule.xml',
+    'assets/glyph_stencils/molecular_species/no-glyph-assigned-ms.xml',
+    'assets/glyph_stencils/molecular_species/replacement-glyph.xml',
+  ];
 
   private interactionXMLs: string[] = [
     'assets/glyph_stencils/interactions/control.xml',
@@ -54,12 +65,12 @@ export class GlyphService {
     'assets/glyph_stencils/interactions/stimulation.xml',
     'assets/glyph_stencils/interactions/process.xml',
     'assets/glyph_stencils/interactions/degradation.xml',
-  ]
+  ];
 
   private utilXMLs: string[] = [
     'assets/backbone.xml',
     'assets/textBox.xml',
-  ]
+  ];
 
   private sequenceFeatures: any = {};
   private molecularSpecies: any = {};
@@ -107,7 +118,7 @@ export class GlyphService {
       canvas.setStrokeColor('#000000');
       canvas.setFillColor('none');
 
-      stencil.drawShape(canvas, shape, 1, 1, 50, 50);
+      stencil.drawShape(canvas, shape, 0, 0, 50, 50);
 
       svgs[name] = elt;
     }

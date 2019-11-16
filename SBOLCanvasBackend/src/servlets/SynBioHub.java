@@ -10,7 +10,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
 
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -40,109 +39,100 @@ import utils.SBOLData;
 @WebServlet(urlPatterns = { "/SynBioHub/*" })
 public class SynBioHub extends HttpServlet {
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		Gson gson = new Gson();
-		String body = null;
-		// parameters for the different methods
-		String authorization = request.getHeader("Authorization");
-		String email = null;
-		String password = null;
-		String user = null;
-		if (authorization != null && authorization.split(":").length > 1) {
-			String[] tokens = authorization.split(":");
-			email = tokens[0];
-			password = tokens[1];
-		} else {
-			user = authorization;
-		}
-		String server = request.getParameter("server");
+		try {
+			String body = null;
+			// parameters for the different methods
+			String authorization = request.getHeader("Authorization");
+			String email = null;
+			String password = null;
+			String user = null;
+			if (authorization != null && authorization.split(":").length > 1) {
+				String[] tokens = authorization.split(":");
+				email = tokens[0];
+				password = tokens[1];
+			} else {
+				user = authorization;
+			}
+			String server = request.getParameter("server");
 
-		if (request.getPathInfo().equals("/registries")) {
+			if (request.getPathInfo().equals("/registries")) {
 
-			List<WebOfRegistriesData> registries = null;
-			try {
+				List<WebOfRegistriesData> registries = null;
 				registries = SynBioHubFrontend.getRegistries();
-			} catch (SynBioHubException e) {
-				throw new ServletException(e);
-			}
-			LinkedList<String> registryURLs = new LinkedList<String>();
-			for (WebOfRegistriesData registry : registries) {
-				registryURLs.add(registry.getInstanceUrl());
-			}
-			body = gson.toJson(registryURLs);
+				LinkedList<String> registryURLs = new LinkedList<String>();
+				for (WebOfRegistriesData registry : registries) {
+					registryURLs.add(registry.getInstanceUrl());
+				}
+				body = gson.toJson(registryURLs);
 
-		} else if (request.getPathInfo().equals("/login")) {
+			} else if (request.getPathInfo().equals("/login")) {
 
-			if (email == null || password == null || server == null || email.equals("") || password.equals("")
-					|| server.equals("")) {
-				response.setStatus(HttpStatus.SC_BAD_REQUEST);
-				return;
-			}
-			SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-			try {
-				sbhf.login(email, password);
-			} catch (SynBioHubException e) {
-				if (e.getMessage().equals("org.synbiohub.frontend.PermissionException")) {
-					response.setStatus(HttpStatus.SC_UNAUTHORIZED);
+				if (email == null || password == null || server == null || email.equals("") || password.equals("")
+						|| server.equals("")) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
 					return;
 				}
-				throw new ServletException(e);
-			}
-			user = sbhf.getUser();
-			body = user;
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				try {
+					sbhf.login(email, password);
+				} catch (SynBioHubException e) {
+					if (e.getMessage().equals("org.synbiohub.frontend.PermissionException")) {
+						response.setStatus(HttpStatus.SC_UNAUTHORIZED);
+						return;
+					}
+					throw e;
+				}
+				user = sbhf.getUser();
+				body = user;
 
-		} else if (request.getPathInfo().equals("/listMyCollections")) {
+			} else if (request.getPathInfo().equals("/listMyCollections")) {
 
-			if (server == null || user == null) {
-				response.setStatus(HttpStatus.SC_BAD_REQUEST);
-				return;
-			}
-			SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-			try {
+				if (server == null || user == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
 				List<IdentifiedMetadata> collections = sbhf.getRootCollectionMetadata();
 				collections.removeIf(collection -> (collection.getUri().contains("/public/")));
 				body = gson.toJson(collections);
-			} catch (SynBioHubException e) {
-				throw new ServletException(e);
-			}
 
-		} else if (request.getPathInfo().equals("/listRegistryParts")) {
-			String collection = request.getParameter("collection");
-			String type = request.getParameter("type");
-			String role = request.getParameter("role");
-			String mode = request.getParameter("mode");
+			} else if (request.getPathInfo().equals("/listRegistryParts")) {
+				String collection = request.getParameter("collection");
+				String type = request.getParameter("type");
+				String role = request.getParameter("role");
+				String mode = request.getParameter("mode");
 
-			if (mode == null) {
-				response.setStatus(HttpStatus.SC_BAD_REQUEST);
-				return;
-			}
+				if (mode == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
 
-			SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-			if (user != null)
-				sbhf.setUser(user);
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				if (user != null)
+					sbhf.setUser(user);
 
-			TreeSet<URI> roles = null;
-			TreeSet<URI> types = null;
-			TreeSet<URI> collections = null;
-			if (role != null) {
-				roles = new TreeSet<URI>();
-				if (SBOLData.roles.ContainsKey(role))
-					roles.add(SBOLData.roles.getValue(role));
-				else
-					roles.add(SBOLData.refinements.getValue(role));
-			}
-			if (type != null) {
-				types = new TreeSet<URI>();
-				types.add(SBOLData.types.getValue(type));
-			}
-			if (collection != null) {
-				collections = new TreeSet<URI>();
-				collections.add(URI.create(collection));
-			}
+				TreeSet<URI> roles = null;
+				TreeSet<URI> types = null;
+				TreeSet<URI> collections = null;
+				if (role != null) {
+					roles = new TreeSet<URI>();
+					if (SBOLData.roles.ContainsKey(role))
+						roles.add(SBOLData.roles.getValue(role));
+					else
+						roles.add(SBOLData.refinements.getValue(role));
+				}
+				if (type != null) {
+					types = new TreeSet<URI>();
+					types.add(SBOLData.types.getValue(type));
+				}
+				if (collection != null) {
+					collections = new TreeSet<URI>();
+					collections.add(URI.create(collection));
+				}
 
-			try {
 				ArrayList<IdentifiedMetadata> results = new ArrayList<IdentifiedMetadata>();
 				if (mode.equals("collections")) {
 					if (collections == null) {
@@ -195,69 +185,72 @@ public class SynBioHub extends HttpServlet {
 				}
 
 				body = gson.toJson(results.toArray(new IdentifiedMetadata[0]));
-			} catch (SynBioHubException e) {
-				throw new ServletException(e);
-			}
 
-		} else if (request.getPathInfo().equals("/getRegistryPart")) {
-			String uri = request.getParameter("uri");
-			if (uri == null) {
-				response.setStatus(HttpStatus.SC_BAD_REQUEST);
-				return;
-			}
+			} else if (request.getPathInfo().equals("/getRegistryPart")) {
+				String uri = request.getParameter("uri");
+				if (uri == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
 
-			try {
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
 				Converter converter = new Converter();
 				converter.toGraph(sbhf.getSBOL(URI.create(uri), true), response.getOutputStream());
-			} catch (SynBioHubException | ParserConfigurationException | TransformerException e) {
-				throw new ServletException(e);
-			}
-			response.setStatus(HttpStatus.SC_OK);
-			return;
-		} else {
-			response.setStatus(HttpStatus.SC_BAD_REQUEST);
-			return;
-		}
-
-		ServletOutputStream outputStream = response.getOutputStream();
-		InputStream inputStream = new ByteArrayInputStream(body.getBytes());
-		IOUtils.copy(inputStream, outputStream);
-
-		// the request was good
-		response.setStatus(HttpStatus.SC_OK);
-		response.setContentType("application/json");
-		return;
-	}
-
-	protected void doPost(HttpServletRequest request, HttpServletResponse response)
-			throws ServletException, IOException {
-
-		String server = request.getParameter("server");
-		String user = request.getHeader("Authorization");
-		String uri = request.getParameter("uri");
-		String name = request.getParameter("name");
-
-		if (request.getPathInfo().equals("/addToCollection")) {
-
-			if (server == null || user == null || uri == null || name == null) {
+				response.setStatus(HttpStatus.SC_OK);
+				return;
+			} else {
 				response.setStatus(HttpStatus.SC_BAD_REQUEST);
 				return;
 			}
-			SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-			sbhf.setUser(user);
-			Converter converter = new Converter();
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			try {
+
+			ServletOutputStream outputStream = response.getOutputStream();
+			InputStream inputStream = new ByteArrayInputStream(body.getBytes());
+			IOUtils.copy(inputStream, outputStream);
+
+			// the request was good
+			response.setStatus(HttpStatus.SC_OK);
+			response.setContentType("application/json");
+			return;
+		} catch (SynBioHubException | IOException | ParserConfigurationException | TransformerException | SBOLValidationException e) {
+			ServletOutputStream outputStream = response.getOutputStream();
+			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
+			IOUtils.copy(inputStream, outputStream);
+
+			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		try {
+			String server = request.getParameter("server");
+			String user = request.getHeader("Authorization");
+			String uri = request.getParameter("uri");
+			String name = request.getParameter("name");
+
+			if (request.getPathInfo().equals("/addToCollection")) {
+
+				if (server == null || user == null || uri == null || name == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				sbhf.setUser(user);
+				Converter converter = new Converter();
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				converter.toSBOL(request.getInputStream(), out, name);
 				sbhf.addToCollection(URI.create(uri), true, new ByteArrayInputStream(out.toByteArray()));
-			} catch (SynBioHubException | SAXException | ParserConfigurationException | SBOLValidationException
-					| SBOLConversionException e) {
-				throw new ServletException(e);
-			}
-			response.setStatus(HttpStatus.SC_CREATED);
+				response.setStatus(HttpStatus.SC_CREATED);
 
+			}
+
+		} catch (SynBioHubException | SAXException | IOException | ParserConfigurationException
+				| SBOLValidationException | SBOLConversionException e) {
+			ServletOutputStream outputStream = response.getOutputStream();
+			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
+			IOUtils.copy(inputStream, outputStream);
+
+			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 		}
 
 	}

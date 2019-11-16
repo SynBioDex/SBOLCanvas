@@ -166,7 +166,9 @@ def shift_x_or_y_direction(shape, distance, x_or_y):
 				child.attrib[key] = str(val)
 
 	for ellipse in get_ellipses(shape):
-		set_elipse_attrib(ellipse, x_or_y, float(get_elipse_attrib(ellipse, x_or_y)) + distance)
+		set_obj_attrib(ellipse, x_or_y, float(get_obj_attrib(ellipse, x_or_y)) + distance)
+	for roundrect in get_roundrects(shape):
+		set_obj_attrib(roundrect, x_or_y, float(get_obj_attrib(roundrect, x_or_y)) + distance)
 
 	for text in shape.findall('./foreground/text'):
 		for key, val in text.attrib.items():
@@ -187,8 +189,24 @@ def scale_shape(shape, factor):
 				child.attrib[key] = str(val)
 
 	for ellipse in get_ellipses(shape):
-		set_elipse_attrib(ellipse, 'w', float(get_elipse_attrib(ellipse, 'w')) * factor)
-		set_elipse_attrib(ellipse, 'h', float(get_elipse_attrib(ellipse, 'h')) * factor)
+		set_obj_attrib(ellipse, 'w', float(get_obj_attrib(ellipse, 'w')) * factor)
+		set_obj_attrib(ellipse, 'h', float(get_obj_attrib(ellipse, 'h')) * factor)
+
+
+def get_obj_attrib(obj, key_arg):
+	''' Given an xml object (path, ellipse, roundrect), return the value pointed to by the key. '''
+	for key, val in obj.attrib.items():
+		if key_arg.lower() in key or key_arg.upper() in key:
+			return val
+	assert(False), "Failed to find {key} attribute in obj".format(key=key_arg)
+
+def set_obj_attrib(obj, key_arg, val_arg):
+	''' Given an xml object (path, ellipse, roundrect), set the value pointed to by the key. '''
+	for key, val in obj.attrib.items():
+		if key_arg.lower() in key or key_arg.upper() in key:
+			obj.attrib[key] = str(val_arg)
+			return
+	assert(False), "Failed to set {key} attribute in obj".format(key=key_arg)
 
 
 #
@@ -235,21 +253,11 @@ def is_centered(shape):
 def get_ellipses(shape):
 	return shape.findall('./foreground/ellipse')
 
-def get_elipse_attrib(ellipse, key_arg):
-	for key, val in ellipse.attrib.items():
-		if key_arg.lower() in key or key_arg.upper() in key:
-			return val
-	assert(False), "Failed to find {key} attribute in ellipse".format(key=key_arg)
-
-def set_elipse_attrib(ellipse, key_arg, val_arg):
-	for key, val in ellipse.attrib.items():
-		if key_arg.lower() in key:
-			ellipse.attrib[key] = str(val_arg)
-			return
-		elif key_arg.upper() in key:
-			ellipse.attrib[key] = str(val_arg)
-			return
-	assert(False), "Failed to set {key} attribute in ellipse".format(key=key_arg)
+#
+# Round Rect helpers
+#
+def get_roundrects(shape):
+	return shape.findall('./foreground/roundrect')
 
 
 #
@@ -294,35 +302,46 @@ def get_data(shape):
 					if data['max_y'] < val:
 						data['max_y'] = val
 	for ellipse in get_ellipses(shape):
-		x = float(get_elipse_attrib(ellipse, 'x'))
-		y = float(get_elipse_attrib(ellipse, 'y'))
-		w = float(get_elipse_attrib(ellipse, 'w'))
-		h = float(get_elipse_attrib(ellipse, 'h'))
-		
-		# Look for minimum x,y
-		if is_first_path_x:
-			data['min_x'] = x
-			is_first_path_x = False
-		elif data['min_x'] > x:
-			data['min_x'] = x
-		if is_first_path_y:
-			is_first_path_y = False
-		elif data['min_y'] > y:
-			data['min_y'] = y
-
-		# Look for maximum x,y
-		if data['max_x'] < x + w:
-			data['max_x'] = x + w
-		if data['max_y'] < y + h:
-			data['max_y'] = y + h
+		scrape_height_width_obj(ellipse, data, is_first_path_x, is_first_path_y)
+	for roundrect in get_roundrects(shape):
+		scrape_height_width_obj(roundrect, data, is_first_path_x, is_first_path_y)
 			
 	is_first_path_x = True
 	is_first_path_y = True
+
+	#print("minx = {min_x}, max_x = {max_x}, min_y = {min_y}, max_y = {max_y}".format(min_x=data['min_x'], max_x=data['max_x'], min_y=data['min_y'], max_y=data['max_y']))
 
 	assert (data['min_y'] <= data['max_y']), "y-coords messed up!"
 	assert (data['min_x'] <= data['max_x']), "x-coords messed up!"
 
 	return data
+
+def scrape_height_width_obj(obj, data, is_first_path_x, is_first_path_y):
+	x = float(get_obj_attrib(obj, 'x'))
+	y = float(get_obj_attrib(obj, 'y'))
+	w = float(get_obj_attrib(obj, 'w'))
+	h = float(get_obj_attrib(obj, 'h'))
+	# Look for minimum x,y
+	calc_mins(is_first_path_x, is_first_path_y, x, y, data)
+	# Look for maximum x,y
+	calc_maxes(x, y, w, h, data)
+
+def calc_mins(is_first_path_x, is_first_path_y, x, y, data):
+	if is_first_path_x:
+		data['min_x'] = x
+		is_first_path_x = False
+	elif data['min_x'] > x:
+		data['min_x'] = x
+	if is_first_path_y:
+		is_first_path_y = False
+	elif data['min_y'] > y:
+		data['min_y'] = y
+
+def calc_maxes(x, y, w, h, data):
+	if data['max_x'] < x + w:
+		data['max_x'] = x + w
+	if data['max_y'] < y + h:
+		data['max_y'] = y + h
 
 
 

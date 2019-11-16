@@ -683,7 +683,7 @@ export class GraphService {
         molecularSpeciesGlyphWidth, molecularSpeciesGlyphHeight, molecularSpeciesGlyphBaseStyleName + name);
       molecularSpeciesGlyph.setConnectable(true);
 
-      molecularSpeciesGlyph.data = new GlyphInfo();
+      molecularSpeciesGlyph.data = new GlyphInfo("Protein");
 
       // The new glyph should be selected
       this.graph.clearSelection();
@@ -904,7 +904,7 @@ export class GraphService {
     }
 
     // verify that the selected cell matches the type of info object
-    if (info instanceof GlyphInfo && (selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer()) ||
+    if (info instanceof GlyphInfo && (selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()) ||
       (info instanceof InteractionInfo && selectedCell.isInteraction())) {
 
       // since it does, update its info
