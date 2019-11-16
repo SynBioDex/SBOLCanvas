@@ -1386,6 +1386,7 @@ export class GraphService {
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
     textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
     textBoxStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
+    textBoxStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
     this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
 
     const circuitContainerStyle = {};

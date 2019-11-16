@@ -68,4 +68,16 @@ export class DesignMenuComponent implements OnInit {
     });
   }
 
+  setFontColorClicked(): void {
+    const dialogRef = this.dialog.open(ColorPickerComponent, {
+      data: { initialColor: this.styleInfo.currentFontColor()}
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result != null) {
+        this.styleInfo.setFontColor(result);
+      }
+    });
+  }
+
 }
