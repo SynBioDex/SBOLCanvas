@@ -6,8 +6,6 @@
         <linejoin join="miter" />
         <linecap cap="butt" />
         <miterlimit limit="4" />
-        <dashpattern pattern="none" />
-        <dashed dashed="1" />
         <alpha alpha="1" />
         <roundrect arcsize="25" h="13.86" w="31.76" x="8.12" y="17.07" />
         <stroke />

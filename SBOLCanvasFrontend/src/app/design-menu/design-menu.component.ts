@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import { MccColorPickerItem, MccColorPickerService } from 'material-community-components';
 import {FormBuilder, FormGroup} from '@angular/forms';
 import {MetadataService} from '../metadata.service';
@@ -7,7 +7,14 @@ import {SaveGraphComponent} from '../save-graph/save-graph.component';
 import {FilesService} from '../files.service';
 import {MatDialog} from '@angular/material/dialog';
 import {ColorPickerComponent} from '../color-picker/color-picker.component';
+import {StyleInfo} from '../style-info';
+import {style} from '@angular/animations';
 
+declare var require: any;
+const mx = require('mxgraph')({
+  mxImageBasePath: 'mxgraph/images',
+  mxBasePath: 'mxgraph'
+});
 
 export interface ColorPickerStartupData {
   initialColor: string;
@@ -20,7 +27,10 @@ export interface ColorPickerStartupData {
 })
 export class DesignMenuComponent implements OnInit {
 
-  selectedColor: string;
+  styleInfo: StyleInfo;
+
+  // Put a reference to the mxGraph namespace in the class so it's accessible to the component's html part
+  mx: any = mx;
 
   constructor(
     private metadataService: MetadataService,
@@ -31,27 +41,43 @@ export class DesignMenuComponent implements OnInit {
   ngOnInit() {
     // Subscribe to the color metadata; the 'color' variable is made available
     // to the metadata service.
-    this.metadataService.color.subscribe(color => this.newSelection(color));
+    this.metadataService.style.subscribe((styleInfo) => this.styleInfo = styleInfo);
   }
 
-  setStrokeClicked(): void {
+  setStrokeColorClicked(): void {
     const dialogRef = this.dialog.open(ColorPickerComponent, {
-      data: { initialColor: this.selectedColor}
+      data: { initialColor: this.styleInfo.currentStrokeColor()}
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result != null) {
-        this.showColor(result);
+        this.styleInfo.setStrokeColor(result);
       }
     });
   }
 
-  showColor($event) {
-    this.graphService.setSelectedCellsColor($event);
+  setFillColorClicked(): void {
+    const dialogRef = this.dialog.open(ColorPickerComponent, {
+      data: { initialColor: this.styleInfo.currentFillColor()}
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result != null) {
+        this.styleInfo.setFillColor(result);
+      }
+    });
   }
 
-  newSelection(color: string) {
-    this.selectedColor = color;
+  setFontColorClicked(): void {
+    const dialogRef = this.dialog.open(ColorPickerComponent, {
+      data: { initialColor: this.styleInfo.currentFontColor()}
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result != null) {
+        this.styleInfo.setFontColor(result);
+      }
+    });
   }
 
 }
