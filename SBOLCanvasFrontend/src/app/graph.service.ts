@@ -916,11 +916,7 @@ export class GraphService {
     }
   }
 
-  exportPNG(){
-    this.exportImage('png');
-  }
-
-  exportSVG(){
+  exportSVG(filename: string){
     var background = '#ffffff';
 		var scale = 1;
 		var border = 1;
@@ -970,10 +966,10 @@ export class GraphService {
     imgExport.drawState(this.graph.getView().getState(this.graph.model.root), svgCanvas);
     
     var xml = encodeURIComponent(mx.mxUtils.getXml(root));
-    new mx.mxXmlRequest(environment.backendURL+'/echo', 'filename=export.svg&format=svg' + '&xml=' + xml).simulate(document, '_blank');
+    new mx.mxXmlRequest(environment.backendURL+'/echo', 'filename='+filename+'.svg&format=svg' + '&xml=' + xml).simulate(document, '_blank');
   }
 
-  exportImage(format:string) {
+  exportImage(filename: string, format:string) {
     let bg = '#ffffff';
     let scale = 1;
     let b = 1;
@@ -1001,7 +997,7 @@ export class GraphService {
       bg = '&bg=' + bg;
     }
 
-    new mx.mxXmlRequest(environment.backendURL+'/export', 'filename=export.' + format + '&format=' + format + bg + '&w=' + w + '&h=' + h + '&xml=' + encodeURIComponent(xml)).simulate(document, '_blank');
+    new mx.mxXmlRequest(environment.backendURL+'/export', 'filename='+filename+'.' + format + '&format=' + format + bg + '&w=' + w + '&h=' + h + '&xml=' + encodeURIComponent(xml)).simulate(document, '_blank');
   }
 
   /**
