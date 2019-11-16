@@ -1,6 +1,9 @@
 <div class="glyphContainer">
   <div style="margin: auto">
 
+    <mat-form-field>
+      <input matInput id="displayID" placeholder="Display ID" [value]="searchPhrase" (input)="searchPhrase=$event.target.value">
+    </mat-form-field>
 
     <!-------------------------------------    Utils panel   --------------------------------------->
     <mat-expansion-panel [expanded]="true">
@@ -10,13 +13,15 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="52px" gutterSize="5px">
-        <mat-grid-tile>
-          <button mat-icon-button [disabled]="componentDefinitionMode" (click)="addStrand()" style="width:100px; height:100px">
+        <mat-grid-tile *ngIf="stringMatches('backbone dna strand circuit', searchPhrase)">
+          <button mat-icon-button [disabled]="componentDefinitionMode" (click)="addStrand()"
+                  [matTooltip]="'Backbone'"
+                  style="width:100px; height:100px">
             <svg #canvasElement [attr.elementType]="elementTypes.BACKBONE" width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>
           </button>
         </mat-grid-tile>
-        <mat-grid-tile>
-          <button mat-button (click)="addTextBox()"  width="52px" height="52px">
+        <mat-grid-tile *ngIf="stringMatches('textbox text box', searchPhrase)">
+          <button mat-button (click)="addTextBox()"  width="52px" height="52px" [matTooltip]="'Text box'">
             <svg #canvasElement [attr.elementType]="elementTypes.TEXT_BOX" width="52px" height="52px" [innerHTML]="utilsDict['textBox']"></svg>
           </button>
         </mat-grid-tile>
@@ -35,8 +40,8 @@
         </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
-        <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue">
-          <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)">
+        <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue" >
+          <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)" [matTooltip]="pair.key">
             <svg #canvasElement [attr.elementType]="elementTypes.SEQUENCE_FEATURE" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>
@@ -56,7 +61,7 @@
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of molecularSpeciesDict | keyvalue">
-          <button mat-button [disabled]="componentDefinitionMode" (click)="onMolecularSpeciesGlyphClicked(pair.key)">
+          <button mat-button [disabled]="componentDefinitionMode" (click)="onMolecularSpeciesGlyphClicked(pair.key)" [matTooltip]="pair.key">
             <svg #canvasElement [attr.elementType]="elementTypes.MOLECULAR_SPECIES" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>
@@ -75,7 +80,7 @@
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of interactionsDict | keyvalue">
-          <button mat-button [disabled]="componentDefinitionMode" (click)="onInteractionGlyphClicked(pair.key)">
+          <button mat-button [disabled]="componentDefinitionMode" (click)="onInteractionGlyphClicked(pair.key)" [matTooltip]="pair.key">
             <svg #canvasElement [attr.elementType]="elementTypes.INTERACTION" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
         </mat-grid-tile>

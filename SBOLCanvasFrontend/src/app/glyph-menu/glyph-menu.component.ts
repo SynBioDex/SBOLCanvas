@@ -19,14 +19,16 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
   // object used as an enum to identify glyph types
   elementTypes = {
-    BACKBONE: "0",
-    TEXT_BOX: "1",
-    SEQUENCE_FEATURE: "2",
-    MOLECULAR_SPECIES: "3",
-    INTERACTION: "4",
+    BACKBONE: "Backbone",
+    TEXT_BOX: "Text box",
+    SEQUENCE_FEATURE: "Sequence Feature",
+    MOLECULAR_SPECIES: "Molecular Species",
+    INTERACTION: "Interaction",
   }
 
   @ViewChildren('canvasElement') canvasElements: QueryList<ElementRef>;
+
+  private searchPhrase: string = '';
 
   public utilsDict = {};
   public sequenceFeatureDict = {};
@@ -115,5 +117,12 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
   componentDefinitionModeUpdated(newSetting: boolean) {
     this.componentDefinitionMode = newSetting;
+  }
+
+  /**
+   * Returns true if mainString contains searchString (case insensitive) false otherwise
+   */
+  stringMatches(mainString:string, searchString:string) {
+    return mainString.toLowerCase().indexOf(searchString.toLowerCase()) !== -1;
   }
 }
