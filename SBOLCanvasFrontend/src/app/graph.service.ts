@@ -10,6 +10,7 @@ import * as mxGraph from 'mxgraph';
 import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
+import { StyleInfo} from './style-info';
 import { MetadataService } from './metadata.service';
 import { GlyphService } from './glyph.service';
 import { forEach } from "@angular/router/src/utils/collection";
@@ -115,9 +116,7 @@ export class GraphService {
       // to enable, use 'return cell.isSequenceFeatureGlyph();'
     };
 
-    // Add event listeners to the graph. NOTE: MUST USE THE '=>' WAY FOR THIS TO WORK.
-    // Otherwise the callback's 'this' won't be the graphService
-    this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, (sender, event) => this.handleSelectionChange(sender, event));
+    this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
 
     this.initStyles();
     this.initCustomShapes();
@@ -155,7 +154,6 @@ export class GraphService {
       }
     }
 
-    // Cells that are being added to the selection.
     console.debug("cells added: ");
     if (cellsAdded) {
       for (var i = 0; i < cellsAdded.length; i++) {
@@ -163,7 +161,8 @@ export class GraphService {
       }
     }
 
-    this.updateAngularMetadata(cellsAdded);
+    // don't just use the new cells though, use all currently selected ones
+    this.updateAngularMetadata(this.graph.getSelectionCells());
   }
 
   /**
@@ -178,27 +177,24 @@ export class GraphService {
       return;
     }
 
-    // color first. get the color of the first selected cell
-    let firstCell = cells[0];
-    if (firstCell.isCircuitContainer()) {
-      firstCell = firstCell.getBackbone();
-    }
-    let color = this.graph.getCellStyle(firstCell)['strokeColor'];
-    this.metadataService.setColor(color);
+    // style first.
+    const styleInfo = new StyleInfo(cells, this.graph);
+    this.metadataService.setSelectedStyleInfo(styleInfo);
 
     if (cells.length !== 1) {
-      // multiple selections? can't display glyph info
+      // multiple selections? can't display glyph data
       return;
     }
 
-    if (firstCell.isSequenceFeatureGlyph() || firstCell.isMolecularSpeciesGlyph()) {
-      const glyphInfo = firstCell.data;
+    const cell = cells[0];
+    if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
+      const glyphInfo = cell.data;
       if (glyphInfo) {
         this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
       }
     }
-    else if (firstCell.isInteraction()) {
-      let interactionInfo = firstCell.data
+    else if (cell.isInteraction()) {
+      let interactionInfo = cell.data
       if (interactionInfo) {
         this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy());
       }
@@ -206,9 +202,11 @@ export class GraphService {
   }
 
   nullifyMetadata() {
-    this.metadataService.setColor(null);
     this.metadataService.setSelectedGlyphInfo(null);
     this.metadataService.setSelectedInteractionInfo(null);
+
+    // Empty 'StyleInfo' object indicates that nothing is selected, so no options should be available
+    this.metadataService.setSelectedStyleInfo(new StyleInfo([]));
   }
 
 
@@ -739,6 +737,10 @@ export class GraphService {
       }
       cell.data = new InteractionInfo();
       cell.data.interactionType = name;
+
+      // The new glyph should be selected
+      this.graph.clearSelection();
+      this.graph.setSelectionCell(cell);
     } finally {
       this.graph.getModel().endUpdate();
     }
@@ -888,30 +890,6 @@ export class GraphService {
       this.graph.setSelectionCell(cell);
     } finally {
       this.graph.getModel().endUpdate();
-    }
-  }
-
-  /**
-   * Update the color of any selected cells
-   */
-  setSelectedCellsColor(color: string) {
-    const selectedCells = this.graph.getSelectionCells();
-
-    // changing style of circuitContainers changes the backbone instead
-    for (let i = 0; i < selectedCells.length; i++) {
-      const cell = selectedCells[i];
-      if (cell.isCircuitContainer()) {
-        selectedCells.splice(i, 1, cell.getBackbone());
-      }
-    }
-
-    if (selectedCells != null) {
-      this.graph.getModel().beginUpdate();
-      try {
-        this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, color, selectedCells);
-      } finally {
-        this.graph.getModel().endUpdate();
-      }
     }
   }
 
@@ -1497,6 +1475,7 @@ export class GraphService {
     textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
     textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
     textBoxStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
+    textBoxStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
     this.graph.getStylesheet().putCellStyle(textboxStyleName, textBoxStyle);
 
     const circuitContainerStyle = {};
@@ -1517,7 +1496,7 @@ export class GraphService {
     this.graph.getStylesheet().putCellStyle(backboneStyleName, backboneStyle);
 
     // Interaction styles
-    let baseInteractionGlyphStyle = {};
+    const baseInteractionGlyphStyle = {};
     baseInteractionGlyphStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
     baseInteractionGlyphStyle[mx.mxConstants.STYLE_ENDSIZE] = 10;
     baseInteractionGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';

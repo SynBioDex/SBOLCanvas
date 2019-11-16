@@ -5,6 +5,8 @@ import { Observable } from 'rxjs';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import {InteractionInfo} from "./interactionInfo";
+import {StyleInfo} from './style-info';
+import {Style} from '@angular/cli/lib/config/schema';
 
 @Injectable({
   providedIn: 'root'
@@ -23,14 +25,6 @@ export class MetadataService {
    * In order for another object to use a variable in the metadata service, they need to
    * subscribe to it, and provide a method to handle the new data that was passed to
    * it.
-   * For example, for the color pallet component to update the selected color when a new glyph is
-   * selected, it makes this call in the constructor:
-   * 'this.metadataService.color.subscribe(color => this.newSelection(color));'
-   *
-   * Now, whenever the color is updated by selecting a new glyph, the color will be updated in
-   * this service, then color pallet will be notified of the event and be passed the new color.
-   * The color pallet will then call newSelection(color), which will update it's pallet
-   * to reflect the color of the newly selected glyph.
    *
    * In order to track data that is being passed around, all data passed to the UI components
    * should be passed through here, even it is not asynchronous.
@@ -51,9 +45,9 @@ export class MetadataService {
   private interactionInfoSource = new BehaviorSubject(null);
   selectedInteractionInfo = this.interactionInfoSource.asObservable();
 
-  // Color Info
-  private colorSource = new BehaviorSubject(null);
-  color = this.colorSource.asObservable();
+  // Style Info
+  private styleInfoSource = new BehaviorSubject(new StyleInfo([]));
+  style = this.styleInfoSource.asObservable();
 
   // This boolean tells us if the application is zoomed into a component definition or single glyph
   // If this is true, the UI will disable some things like adding a new DNA strand, because a component
@@ -83,16 +77,16 @@ export class MetadataService {
     return this.http.get(this.interactionsURL);
   }
 
+  setSelectedStyleInfo(newInfo: StyleInfo) {
+    this.styleInfoSource.next(newInfo);
+  }
+
   setSelectedGlyphInfo(newInfo: GlyphInfo) {
     this.glyphInfoSource.next(newInfo);
   }
 
   setSelectedInteractionInfo(newInfo: InteractionInfo) {
     this.interactionInfoSource.next(newInfo);
-  }
-
-  setColor(newColor: string) {
-    this.colorSource.next(newColor);
   }
 
   setComponentDefinitionMode(newSetting: boolean) {
