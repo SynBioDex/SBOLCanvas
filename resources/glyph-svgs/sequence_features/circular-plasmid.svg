@@ -14,7 +14,7 @@
    viewBox="0 0 45.000002 44.999996"
    id="svg2"
    version="1.1"
-   inkscape:version="0.91 r13725"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
    sodipodi:docname="circular-plasmid.svg"
    inkscape:export-filename="circular-plasmid-specification.png"
    inkscape:export-xdpi="300"
@@ -29,7 +29,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="11.192134"
-     inkscape:cx="31.456836"
+     inkscape:cx="-3.5677625"
      inkscape:cy="19.623291"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -38,11 +38,11 @@
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:window-width="1316"
-     inkscape:window-height="907"
-     inkscape:window-x="0"
-     inkscape:window-y="0"
-     inkscape:window-maximized="0"
+     inkscape:window-width="1853"
+     inkscape:window-height="1025"
+     inkscape:window-x="67"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
      units="in">
     <inkscape:grid
        type="xygrid"
@@ -56,7 +56,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -69,16 +69,8 @@
        id="g4159"
        transform="matrix(0.36747894,0,0,0.36747894,68.26791,261.3534)" />
     <path
-       style="opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:2.50000015;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="path4144"
-       sodipodi:type="arc"
-       sodipodi:cx="124.96247"
-       sodipodi:cy="398.48798"
-       sodipodi:rx="24.258108"
-       sodipodi:ry="6.2097182"
-       sodipodi:start="1.8212982"
-       sodipodi:end="4.7169954"
-       sodipodi:open="true"
-       d="m 118.94912,404.50388 a 24.258108,6.2097182 0 0 1 -18.04768,-6.80583 24.258108,6.2097182 0 0 1 24.17277,-5.41973" />
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:2.50000024;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 118.94912,404.50388 c -4.99851,-0.59554 -10.22165,-0.69284 -14.84912,-2.90273 -1.04671,-0.53785 -2.12214,-1.10854 -2.96256,-1.93965 -0.89863,-1.0275 -0.16215,-2.46983 0.79901,-3.14658 1.51087,-1.19441 3.43727,-1.63622 5.23404,-2.22208 5.81,-1.65752 11.89872,-1.91704 17.90372,-2.01452" />
   </g>
 </svg>

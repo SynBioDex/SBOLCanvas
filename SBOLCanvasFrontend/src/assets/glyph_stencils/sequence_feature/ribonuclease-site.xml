@@ -1,5 +1,5 @@
 <shapes>
-<shape aspect="variable" centered="False" h="48" name="ribonuclease-site" strokewidth="inherit" w="48">
+<shape aspect="variable" centered="False" h="48" name="RS (Ribonuclease Site)" strokewidth="inherit" w="48">
     <connections />
     <foreground>
         <save />
