@@ -1,3 +1,9 @@
+
+/* Needed because angular material developers are stupid. */
+.mat-icon {
+  vertical-align: middle;
+}
+
 .glyphContainer {
   width: 250px
 }

@@ -1,119 +1,123 @@
-<div *ngIf="styleInfo.hasStrokeColor()">
-  <label mat-label>Stroke Color: </label>
-  <button mat-stroked-button [style.backgroundColor]="styleInfo.currentStrokeColor()"
-          (click)="setStrokeColorClicked()">&nbsp;</button>
-  <br>
-</div>
+<div *ngIf="styleInfo" class="design-menu-container">
 
-<div *ngIf="styleInfo.hasStrokeOpacity()">
-  <label mat-label>Stroke Opacity: </label>
-  <mat-form-field>
-    <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
-           (change)="styleInfo.setStrokeOpacity($event.target.value)" [value]="styleInfo.currentStrokeOpacity()">
-  </mat-form-field>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasStrokeColor()">
+    <label mat-label>Stroke Color: </label>
+    <button mat-stroked-button [style.backgroundColor]="styleInfo.currentStrokeColor()"
+            (click)="setStrokeColorClicked()">&nbsp;</button>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasStrokeWidth()">
-  <label mat-label>Stroke Width: </label>
-  <mat-form-field>
-    <input #endSizeInput matInput type="number" min="1" step="0.1" oninput="validity.valid||(value='');"
-           (change)="styleInfo.setStrokeWidth($event.target.value)" [value]="styleInfo.currentStrokeWidth()">
-  </mat-form-field>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasStrokeOpacity()">
+    <label mat-label>Stroke Opacity: </label>
+    <mat-form-field>
+      <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
+             (change)="styleInfo.setStrokeOpacity($event.target.value)" [value]="styleInfo.currentStrokeOpacity()">
+    </mat-form-field>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasFillColor()">
-  <label mat-label>Fill Color: </label>
-  <button mat-stroked-button [style.backgroundColor]="styleInfo.currentFillColor()"
-          (click)="setFillColorClicked()">&nbsp;</button>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasStrokeWidth()">
+    <label mat-label>Stroke Width: </label>
+    <mat-form-field>
+      <input #endSizeInput matInput type="number" min="1" step="0.1" oninput="validity.valid||(value='');"
+             (change)="styleInfo.setStrokeWidth($event.target.value)" [value]="styleInfo.currentStrokeWidth()">
+    </mat-form-field>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasFillOpacity()">
-  <label mat-label>Stroke Opacity: </label>
-  <mat-form-field>
-    <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
-           (change)="styleInfo.setFillOpacity($event.target.value)" [value]="styleInfo.currentFillOpacity()">
-  </mat-form-field>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasFillColor()">
+    <label mat-label>Fill Color: </label>
+    <button mat-stroked-button [style.backgroundColor]="styleInfo.currentFillColor()"
+            (click)="setFillColorClicked()"></button>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasEdgeStyle()">
-  <label mat-label>Connection Style: </label>
-  <mat-form-field>
-    <mat-select value="{{styleInfo.currentEdgeStyle()}}" (selectionChange)="styleInfo.setEdgeStyle($event.value)">
-      <mat-option value="{{mx.mxConstants.EDGESTYLE_ORTHOGONAL}}">Orthogonal</mat-option>
-      <mat-option value="{{'diagonal'}}">Diagonal</mat-option> <!-- mxConstants doesn't define an option for diagonal since it's the default -->
-      <mat-option value="{{mx.mxConstants.EDGESTYLE_ELBOW}}">Elbow</mat-option>
-      <mat-option value="{{mx.mxConstants.EDGESTYLE_ENTITY_RELATION}}">Entity Relation</mat-option>
-      <mat-option value="{{mx.mxConstants.EDGESTYLE_SIDETOSIDE}}">Side to side</mat-option>
-      <mat-option value="{{mx.mxConstants.EDGESTYLE_TOPTOBOTTOM}}">Top to Bottom</mat-option>
-    </mat-select>
-  </mat-form-field>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasFillOpacity()">
+    <label mat-label>Stroke Opacity: </label>
+    <mat-form-field>
+      <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
+             (change)="styleInfo.setFillOpacity($event.target.value)" [value]="styleInfo.currentFillOpacity()">
+    </mat-form-field>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasBendStyle()">
-  <label mat-label>Connection Style: </label>
-  <mat-form-field>
-    <mat-select value="{{styleInfo.currentBendStyle()}}" (selectionChange)="styleInfo.setBendStyle($event.value)">
-      <mat-option value="sharp">Sharp</mat-option>
-      <mat-option value="rounded">Rounded</mat-option>
-      <mat-option value="curved">Curved</mat-option>
-    </mat-select>
-  </mat-form-field>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasEdgeStyle()">
+    <label mat-label>Connection Style: </label>
+    <mat-form-field>
+      <mat-select value="{{styleInfo.currentEdgeStyle()}}" (selectionChange)="styleInfo.setEdgeStyle($event.value)">
+        <mat-option value="{{mx.mxConstants.EDGESTYLE_ORTHOGONAL}}">Orthogonal</mat-option>
+        <mat-option value="{{'diagonal'}}">Diagonal</mat-option> <!-- mxConstants doesn't define an option for diagonal since it's the default -->
+        <mat-option value="{{mx.mxConstants.EDGESTYLE_ELBOW}}">Elbow</mat-option>
+        <mat-option value="{{mx.mxConstants.EDGESTYLE_ENTITY_RELATION}}">Entity Relation</mat-option>
+        <mat-option value="{{mx.mxConstants.EDGESTYLE_SIDETOSIDE}}">Side to side</mat-option>
+        <mat-option value="{{mx.mxConstants.EDGESTYLE_TOPTOBOTTOM}}">Top to Bottom</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasEndSize()">
-  <label mat-label>Arrow Size: </label>
-  <mat-form-field>
-    <input #endSizeInput matInput type="number" min="0" oninput="validity.valid||(value='');"
-           (change)="styleInfo.setEndSize($event.target.value)" [value]="styleInfo.currentEndSize()">
-  </mat-form-field>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasBendStyle()">
+    <label mat-label>Connection Style: </label>
+    <mat-form-field>
+      <mat-select value="{{styleInfo.currentBendStyle()}}" (selectionChange)="styleInfo.setBendStyle($event.value)">
+        <mat-option value="sharp">Sharp</mat-option>
+        <mat-option value="rounded">Rounded</mat-option>
+        <mat-option value="curved">Curved</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasSourceSpacing()">
-  <label mat-label>Source Spacing: </label>
-  <mat-form-field>
-    <input #endSizeInput matInput type="number"
-           (change)="styleInfo.setSourceSpacing($event.target.value)" [value]="styleInfo.currentSourceSpacing()">
-  </mat-form-field>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasEndSize()">
+    <label mat-label>Arrow Size: </label>
+    <mat-form-field>
+      <input #endSizeInput matInput type="number" min="0" oninput="validity.valid||(value='');"
+             (change)="styleInfo.setEndSize($event.target.value)" [value]="styleInfo.currentEndSize()">
+    </mat-form-field>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasTargetSpacing()">
-  <label mat-label>Source Spacing: </label>
-  <mat-form-field>
-    <input #endSizeInput matInput type="number"
-           (change)="styleInfo.setTargetSpacing($event.target.value)" [value]="styleInfo.currentTargetSpacing()">
-  </mat-form-field>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasSourceSpacing()">
+    <label mat-label>Source Spacing: </label>
+    <mat-form-field>
+      <input #endSizeInput matInput type="number"
+             (change)="styleInfo.setSourceSpacing($event.target.value)" [value]="styleInfo.currentSourceSpacing()">
+    </mat-form-field>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasFontColor()">
-  <label mat-label>Font Color: </label>
-  <button mat-stroked-button [style.backgroundColor]="styleInfo.currentFontColor()"
-          (click)="setFontColorClicked()">&nbsp;</button>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasTargetSpacing()">
+    <label mat-label>Source Spacing: </label>
+    <mat-form-field>
+      <input #endSizeInput matInput type="number"
+             (change)="styleInfo.setTargetSpacing($event.target.value)" [value]="styleInfo.currentTargetSpacing()">
+    </mat-form-field>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasFontOpacity()">
-  <label mat-label>Text Opacity: </label>
-  <mat-form-field>
-    <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
-           (change)="styleInfo.setFontOpacity($event.target.value)" [value]="styleInfo.currentFontOpacity()">
-  </mat-form-field>
-  <br>
-</div>
+  <div *ngIf="styleInfo.hasFontColor()">
+    <label mat-label>Font Color: </label>
+    <button mat-stroked-button [style.backgroundColor]="styleInfo.currentFontColor()"
+            (click)="setFontColorClicked()">&nbsp;</button>
+    <br>
+  </div>
 
-<div *ngIf="styleInfo.hasFontSize()">
-  <label mat-label>Font Size: </label>
-  <mat-form-field>
-    <input #endSizeInput matInput type="number" min="1" oninput="validity.valid||(value='');"
-           (change)="styleInfo.setFontSize($event.target.value)" [value]="styleInfo.currentFontSize()">
-  </mat-form-field>
-  <br>
+  <div *ngIf="styleInfo.hasFontOpacity()">
+    <label mat-label>Text Opacity: </label>
+    <mat-form-field>
+      <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
+             (change)="styleInfo.setFontOpacity($event.target.value)" [value]="styleInfo.currentFontOpacity()">
+    </mat-form-field>
+    <br>
+  </div>
+
+  <div *ngIf="styleInfo.hasFontSize()">
+    <label mat-label>Font Size: </label>
+    <mat-form-field>
+      <input #endSizeInput matInput type="number" min="1" oninput="validity.valid||(value='');"
+             (change)="styleInfo.setFontSize($event.target.value)" [value]="styleInfo.currentFontSize()">
+    </mat-form-field>
+    <br>
+  </div>
+
 </div>

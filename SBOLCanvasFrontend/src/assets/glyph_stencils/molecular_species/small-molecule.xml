@@ -8,7 +8,7 @@
         <miterlimit limit="4" />
         <alpha alpha="1" />
         <roundrect arcsize="25" h="13.86" w="31.76" x="8.12" y="17.07" />
-        <stroke />
+        <fillstroke />
     </foreground>
 </shape>
 </shapes>
