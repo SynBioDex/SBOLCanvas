@@ -66,6 +66,8 @@ public class SBOLData {
 		roles.put("PS (Protease Site)", URI.create("http://identifiers.org/so/SO:0001956"));
 		roles.put("RSE (RNA Stability Element)", URI.create("http://identifiers.org/so/SO:0001979"));
 		roles.put("PSE (Protein Stability Element)", URI.create("http://identifiers.org/so/SO:0001955"));
+		roles.put("TSE (Transcription End Site)", URI.create("http://identifiers.org/so/SO:0000616"));
+		roles.put("TTS (Translation Termination Site)", URI.create("http://identifiers.org/so/SO:0000327"));
 		
 		refinements = new BiMap<String, URI>();
 		parents = new HashMap<URI, URI>();
