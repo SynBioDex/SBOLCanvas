@@ -412,8 +412,14 @@ public class Converter {
 					for (int pointIndex = 0; pointIndex < pointNodes.getLength(); pointIndex++) {
 						Element pointElement = (Element) pointNodes.item(pointIndex);
 						MxPoint point = new MxPoint();
-						point.setX(Double.parseDouble(pointElement.getAttribute("x")));
-						point.setY(Double.parseDouble(pointElement.getAttribute("y")));
+						if(pointElement.hasAttribute("x"))
+							point.setX(Double.parseDouble(pointElement.getAttribute("x")));							
+						else
+							point.setX(0);
+						if(pointElement.hasAttribute("y"))
+							point.setY(Double.parseDouble(pointElement.getAttribute("y")));
+						else
+							point.setY(0);
 						if (pointElement.getAttribute("as").equals("sourcePoint")) {
 							geometry.setSourcePoint(point);
 						}
@@ -600,6 +606,9 @@ public class Converter {
 			info.setDisplayID(interaction.getDisplayId());
 			info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
 			edge.setInfo(info);
+			edge.setGeometry(new MxGeometry());
+			edge.getGeometry().setSourcePoint(new MxPoint());
+			edge.getGeometry().setTargetPoint(new MxPoint());
 
 			URI targetType = getParticipantType(false, interaction.getTypes().iterator().next());
 			URI sourceType = getParticipantType(true, interaction.getTypes().iterator().next());
@@ -639,6 +648,7 @@ public class Converter {
 			MxCell proteinCell = new MxCell();
 			proteinCell.setVertex(true);
 			proteinCell.setId(nextID);
+			proteinCell.setGeometry(new MxGeometry());
 			nextID++;
 			proteinCell.setParent(1);
 			proteinCell.setInfo(genGlyphInfo(compDef));
@@ -753,7 +763,7 @@ public class Converter {
 		// else
 		// lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
 		// glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
-		glyphInfo.setUriPrefix(uriPrefix);
+		glyphInfo.setUriPrefix(uriPrefix.substring(0,uriPrefix.length()-1));
 		return glyphInfo;
 	}
 

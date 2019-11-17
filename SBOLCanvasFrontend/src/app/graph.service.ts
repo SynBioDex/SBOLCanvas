@@ -52,6 +52,9 @@ const interactionStimulationName = 'Stimulation';
 const interactionProcessName = 'Process';
 const interactionDegradationName = 'Degradation';
 
+// We can import non native designs. This will be set to true if ceratin annotations weren't found
+let anyForeignCellsFound = false;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -1014,6 +1017,7 @@ export class GraphService {
    * and uses it to replace the current graph
    */
   setGraphToXML(graphString: string) {
+    anyForeignCellsFound = false;
     this.graph.home();
     this.graph.getModel().clear();
 
@@ -1022,6 +1026,18 @@ export class GraphService {
     codec.decode(doc.documentElement, this.graph.getModel());
 
     this.editor.undoManager.clear();
+
+    let children = this.graph.getModel().getChildren(this.graph.getDefaultParent());
+    children.forEach(element => {
+      if(element.isCircuitContainer())
+        element.refreshCircuitContainer(this.graph);
+    });
+
+    if(anyForeignCellsFound){
+      console.log("FORMATTING !!!!!!!!!!!!!!!!");
+      this.autoFormat();
+      anyForeignCellsFound = false;
+    }
 
     this.fitCamera();
   }
@@ -1084,8 +1100,8 @@ export class GraphService {
         elt = elt.nextSibling;
         while (elt != null) {
           // create a new cell to decode into
-          let newCell = new mx.mxCell();
-          codec.decode(elt, newCell);
+          let newCell;// = new mx.mxCell();
+          newCell = codec.decodeCell(elt);
 
           // replace id to ensure uniqueness in this graph
           // The decoder keeps track of the orignal ids, the ones from the xml,
@@ -1166,6 +1182,32 @@ export class GraphService {
     const defaultDecodeCell = mx.mxCodec.prototype.decodeCell;
     mx.mxCodec.prototype.decodeCell = function (node, restoreStructures) {
       const cell = defaultDecodeCell.apply(this, arguments);
+
+      // reconstruct the cell style
+      if(cell && cell.id > 1 && (cell.style == null || cell.style.length == 0)){
+        anyForeignCellsFound = true;
+        if(cell.data instanceof GlyphInfo){
+          if(cell.data.partType === 'DNA region'){
+            // sequence feature
+            cell.style = sequenceFeatureGlyphBaseStyleName+cell.data.partRole;
+            cell.geometry.width = sequenceFeatureGlyphWidth;
+            cell.geometry.height = sequenceFeatureGlyphHeight;
+            cell.setCollapsed(true);
+          }else{
+            // molecular species
+            cell.style = molecularSpeciesGlyphBaseStyleName+"macromolecule";
+            cell.geometry.width = molecularSpeciesGlyphWidth;
+            cell.geometry.height = molecularSpeciesGlyphHeight;
+          }
+        }else if(cell.data instanceof InteractionInfo){
+          // interaction
+          let name = cell.data.interactionType;
+          if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
+            name = "Process";
+          }
+          cell.style = interactionGlyphBaseStyleName+name;
+        }
+      }
 
       if (cell && cell.isSequenceFeatureGlyph()) {
         cell.parent.children.sort(function (cellA, cellB) {
