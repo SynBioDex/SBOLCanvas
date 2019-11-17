@@ -30,19 +30,19 @@
   </mat-form-field>
 
   <mat-form-field>
-    <input matInput id="displayID" placeholder="Display ID" value="{{ glyphInfo.displayID }}" (input)="inputChange($event)">
+    <input matInput id="displayID" placeholder="Display ID" value="{{ glyphInfo.displayID }}" (change)="inputChange($event)">
   </mat-form-field>
 
   <mat-form-field>
-    <input matInput id="name" placeholder="Name" value="{{ glyphInfo.name }}" (input)="inputChange($event)">
+    <input matInput id="name" placeholder="Name" value="{{ glyphInfo.name }}" (change)="inputChange($event)">
   </mat-form-field>
 
   <mat-form-field>
-    <textarea matInput id="description" placeholder="Description" value="{{ glyphInfo.description }}" (input)="inputChange($event)"></textarea>
+    <textarea matInput id="description" placeholder="Description" value="{{ glyphInfo.description }}" (change)="inputChange($event)"></textarea>
   </mat-form-field>
 
   <mat-form-field>
-      <textarea matInput id="version" placeholder="Version" value="{{ glyphInfo.version }}" (input)="inputChange($event)"></textarea>
+      <textarea matInput id="version" placeholder="Version" value="{{ glyphInfo.version }}" (change)="inputChange($event)"></textarea>
   </mat-form-field>
 
   <mat-label>URI: {{generateURI()}}</mat-label>
@@ -57,7 +57,7 @@
 <!--    </mat-form-field>-->
 
   <mat-form-field>
-    <textarea matInput id="sequence" placeholder="Sequence" value="{{glyphInfo.sequence}}" (input)="inputChange($event)"></textarea>
+    <textarea matInput id="sequence" placeholder="Sequence" value="{{glyphInfo.sequence}}" (change)="inputChange($event)"></textarea>
   </mat-form-field>
 </div>
 
@@ -73,6 +73,6 @@
   </mat-form-field>
 
   <mat-form-field>
-    <input matInput id="displayID" placeholder="Display ID" value="{{ interactionInfo.displayID }}" (input)="inputChange($event)">
+    <input matInput id="displayID" placeholder="Display ID" value="{{ interactionInfo.displayID }}" (change)="inputChange($event)">
   </mat-form-field>
 </div>
