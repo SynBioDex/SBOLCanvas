@@ -71,7 +71,6 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'partRole':{
         this.glyphInfo.partRole = event.value;
-        this.graphService.mutateSequenceFeatureGlyph(event.value);
         this.glyphInfo.partRefine = "";
         if(event.value !== "")
           this.getRefinements(event.value);
@@ -87,7 +86,6 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'interactionType':{
         this.interactionInfo.interactionType = event.value;
-        this.graphService.mutateInteractionGlyph(event.value); // Change the style of the interaction glyph based on the selection.
         break;
       }default:{
         console.log('Unexpected id encountered in info menu dropdown = ' + id);

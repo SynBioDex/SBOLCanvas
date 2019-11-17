@@ -76,6 +76,30 @@ export class GraphService {
   // This object handles the hotkeys for the graph.
   keyHandler: any;
 
+  static infoEdit = class {
+    cell: mxCell;
+    info: any;
+    previous: any;
+    constructor(cell, info){
+      this.cell = cell;
+      this.info = info;
+      this.previous = info;
+    }
+
+    execute(){
+      if(this.cell != null){
+        let tmp = this.cell.data.makeCopy();
+        if(this.previous == null){
+          this.cell.data = null;
+        }else{
+          this.cell.data.copyDataFrom(this.previous);
+        }
+  
+        this.previous = tmp;
+      }
+    }
+  }
+
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
     // constructor code is divided into helper methods for organization,
     // but these methods aren't entirely modular; order of some of
@@ -918,7 +942,17 @@ export class GraphService {
       // since it does, update its info
       const cellData = selectedCell.data;
       if (cellData) {
-        cellData.copyDataFrom(info);
+        this.graph.getModel().beginUpdate();
+        try{
+          let edit = new GraphService.infoEdit(selectedCell, info);
+          if(info instanceof GlyphInfo)
+            this.mutateSequenceFeatureGlyph(info.partRole);
+          else
+            this.mutateInteractionGlyph(info.interactionType);
+          this.graph.getModel().execute(edit);
+        }finally{
+          this.graph.getModel().endUpdate();
+        }
       }
     }
   }
