@@ -306,7 +306,7 @@ export class StyleInfo {
   }
 
   hasFontOpacity() : boolean {
-    return this.selection.length > 0 && !this.selectionTypes.has(elementTypes.INTERACTION);
+    return this.selectionTypes.has(elementTypes.TEXT_BOX) && this.selectionTypes.size === 1;
   }
   currentFontOpacity() : number {
     const cell = this.selection[0];
@@ -323,7 +323,7 @@ export class StyleInfo {
   }
 
   hasFontSize() : boolean {
-    return this.selection.length > 0 && !this.selectionTypes.has(elementTypes.INTERACTION);
+    return this.selectionTypes.has(elementTypes.TEXT_BOX) && this.selectionTypes.size === 1;
   }
   currentFontSize() : number {
     const cell = this.selection[0];

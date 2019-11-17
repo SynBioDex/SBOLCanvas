@@ -108,7 +108,11 @@ export class GraphService {
     // Can't create edges without the glyph menu
     this.graph.connectionHandler.enabled = false;
 
+    // Edges are allowed to be detached
     this.graph.setAllowDanglingEdges(true);
+
+    // slightly clearer selection highlighting
+    mx.mxConstants.VERTEX_SELECTION_STROKEWIDTH = 2;
 
     // Enables click-and-drag selection
     new mx.mxRubberband(this.graph);
@@ -923,11 +927,11 @@ export class GraphService {
     var background = '#ffffff';
 		var scale = 1;
 		var border = 1;
-					
+
 		var imgExport = new mx.mxImageExport();
 		var bounds = this.graph.getGraphBounds();
 		var vs = this.graph.view.scale;
-    
+
     // Prepares SVG document that holds the output
 		var svgDoc = mx.mxUtils.createXmlDocument();
 		var root = (svgDoc.createElementNS != null) ?
@@ -952,13 +956,13 @@ export class GraphService {
     root.setAttribute('width', (Math.ceil(bounds.width * scale / vs) + 2 * border) + 'px');
 		root.setAttribute('height', (Math.ceil(bounds.height * scale / vs) + 2 * border) + 'px');
     root.setAttribute('version', '1.1');
-    
+
     // Adds group for anti-aliasing via transform
     var group = (svgDoc.createElementNS != null) ? svgDoc.createElementNS(mx.mxConstants.NS_SVG, 'g') : svgDoc.createElement('g');
     group.setAttribute('transform', 'translate(0.5,0.5)');
     root.appendChild(group);
     svgDoc.appendChild(root);
-  
+
     // Renders graph. Offset will be multiplied with state's scale when painting state.
     var svgCanvas = new mx.mxSvgCanvas2D(group);
     svgCanvas.translate(Math.floor((border / scale - bounds.x) / vs), Math.floor((border / scale - bounds.y) / vs));
@@ -967,7 +971,7 @@ export class GraphService {
     // Displayed if a viewer does not support foreignObjects (which is needed to HTML output)
     svgCanvas.foAltText = '[Not supported by viewer]';
     imgExport.drawState(this.graph.getView().getState(this.graph.model.root), svgCanvas);
-    
+
     var xml = encodeURIComponent(mx.mxUtils.getXml(root));
     new mx.mxXmlRequest(environment.backendURL+'/echo', 'filename='+filename+'.svg&format=svg' + '&xml=' + xml).simulate(document, '_blank');
   }
