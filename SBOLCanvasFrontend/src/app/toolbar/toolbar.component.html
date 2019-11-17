@@ -13,71 +13,65 @@
     <!--    File menu-->
     <button mat-stroked-button class="toolbar-row-button" [matMenuTriggerFor]="fileMenu">File</button>
     <mat-menu #fileMenu="matMenu">
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="openUploadDialog()">Upload</button>
 
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="openDownloadDialog()">Download</button>
 
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="openSaveDialog()">Save</button>
 
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="openLoadDialog()">Load</button>
 
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="openExportDialog()">Export</button>
     </mat-menu>
 
     <!--    View menu-->
     <button mat-stroked-button class="toolbar-row-button" [matMenuTriggerFor]="viewMenu">View</button>
     <mat-menu #viewMenu="matMenu">
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="graphService.enterGlyph()">Enter Glyph</button>
 
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="graphService.exitGlyph()">Exit Glyph</button>
 
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="graphService.zoomIn()">Zoom In</button>
 
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="graphService.zoomOut()">Zoom Out</button>
 
-      <button mat-menu-item
-              class="toolbar-row-button"
+      <button mat-menu-item class="toolbar-row-button"
               (click)="graphService.fitCamera()">Reset View</button>
     </mat-menu>
 
+    <mat-form-field style="max-width: 70px;">
+      <input matInput (change)="zoomChanged($event)" [value]="getZoomDisplayValue()">
+    </mat-form-field>
 
-      <button mat-stroked-button
-              class="toolbar-row-button"
-              (click)="graphService.delete()">Delete</button>
+    <button mat-stroked-button class="toolbar-row-button"
+            (click)="graphService.zoomIn()"><mat-icon>zoom_in</mat-icon></button>
 
-      <button mat-stroked-button
-              class="toolbar-row-button"
-              (click)="graphService.undo()">Undo</button>
+    <button mat-stroked-button class="toolbar-row-button"
+            (click)="graphService.zoomOut()"><mat-icon>zoom_out</mat-icon></button>
 
-      <button mat-stroked-button
-              class="toolbar-row-button"
-              (click)="graphService.redo()">Redo</button>
+    <button mat-stroked-button class="toolbar-row-button"
+            (click)="graphService.delete()"><mat-icon>delete</mat-icon></button>
 
-      <button mat-stroked-button
-              class="toolbar-row-button"
-              (click)="graphService.flipSequenceFeatureGlyph()">Flip</button>
+    <button mat-stroked-button class="toolbar-row-button"
+            (click)="graphService.undo()"><mat-icon>undo</mat-icon></button>
 
-      <button mat-stroked-button
-              class="toolbar-row-button"
-              (click)="graphService.toggleScars()">Toggle Scars</button>
+    <button mat-stroked-button class="toolbar-row-button"
+            (click)="graphService.redo()"><mat-icon>redo</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            (click)="graphService.flipSequenceFeatureGlyph()">Flip</button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            (click)="graphService.toggleScars()">Toggle Scars</button>
 
   </mat-toolbar-row>
 </mat-toolbar>

@@ -94,7 +94,7 @@ export class GraphService {
         }else{
           this.cell.data.copyDataFrom(this.previous);
         }
-  
+
         this.previous = tmp;
       }
     }
@@ -489,13 +489,19 @@ export class GraphService {
   }
 
   zoomIn() {
-    // (un/re)doing is managed by the editor; it only works
-    // if all changes are encapsulated by graphModel.(begin/end)Update
     this.graph.zoomIn();
   }
 
   zoomOut() {
     this.graph.zoomOut();
+  }
+
+  setZoom(scale: number) {
+    this.graph.zoomTo(scale);
+  }
+
+  getZoom() :number {
+    return this.graph.getView().getScale();
   }
 
   fitCamera() {
