@@ -1,13 +1,15 @@
 <div *ngIf="styleInfo" class="design-menu-container">
 
-  <div *ngIf="styleInfo.hasStrokeColor()">
+  <div *ngIf="styleInfo.hasStrokeColor()"
+       [matTooltip]="'Color of the selected glyph\'s lines'">
     <label mat-label>Stroke Color: </label>
     <button mat-stroked-button class="design-menu-input" [style.backgroundColor]="styleInfo.currentStrokeColor()"
             (click)="setStrokeColorClicked()">&nbsp;</button>
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasStrokeOpacity()">
+  <div *ngIf="styleInfo.hasStrokeOpacity()"
+       [matTooltip]="'Opacity of the selected glyph\'s lines'">
     <label mat-label>Stroke Opacity: </label>
 <!--    <span class="design-input-spacer"></span>-->
     <mat-form-field appearance="outline" class="number-input design-menu-input">
@@ -17,7 +19,8 @@
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasStrokeWidth()">
+  <div *ngIf="styleInfo.hasStrokeWidth()"
+       [matTooltip]="'Width of the selected glyph\'s lines'">
     <label mat-label>Stroke Width: </label>
     <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="1" step="0.1" oninput="validity.valid||(value='');"
@@ -26,14 +29,16 @@
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasFillColor()">
+  <div *ngIf="styleInfo.hasFillColor()"
+       [matTooltip]="'Color of the selected glyph\'s interior'">
     <label mat-label>Fill Color: </label>
     <button mat-stroked-button [style.backgroundColor]="styleInfo.currentFillColor()"
             (click)="setFillColorClicked()">&nbsp;</button>
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasFillOpacity()">
+  <div *ngIf="styleInfo.hasFillOpacity()"
+       [matTooltip]="'Opacity of the selected glyph\'s interior'">
     <label mat-label>Fill Opacity: </label>
     <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
@@ -42,23 +47,41 @@
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasEdgeStyle()">
-    <label mat-label>Edge Style: </label>
-    <mat-form-field>
+  <div *ngIf="styleInfo.hasEdgeStyle()"
+       [matTooltip]="'Shape of the interaction\'s line'">
+    <label mat-label>Connection Style: </label>
+    <mat-form-field appearance="outline" style="max-width:90px;">
       <mat-select value="{{styleInfo.currentEdgeStyle()}}" (selectionChange)="styleInfo.setEdgeStyle($event.value)">
-        <mat-option value="{{mx.mxConstants.EDGESTYLE_ORTHOGONAL}}">Orthogonal</mat-option>
-        <mat-option value="{{'diagonal'}}">Diagonal</mat-option> <!-- mxConstants doesn't define an option for diagonal since it's the default -->
-        <mat-option value="{{mx.mxConstants.EDGESTYLE_ELBOW}}">Elbow</mat-option>
-        <mat-option value="{{mx.mxConstants.EDGESTYLE_ENTITY_RELATION}}">Entity Relation</mat-option>
-        <mat-option value="{{mx.mxConstants.EDGESTYLE_SIDETOSIDE}}">Side to side</mat-option>
-        <mat-option value="{{mx.mxConstants.EDGESTYLE_TOPTOBOTTOM}}">Top to Bottom</mat-option>
+        <mat-select-trigger>
+          <img src="assets/icons/{{styleInfo.currentEdgeStyle()}}.png"/>
+        </mat-select-trigger>
+
+        <mat-option value="{{mx.mxConstants.EDGESTYLE_ORTHOGONAL}}" [matTooltip]="'Customizable line composed of orthogonal segments'">
+          <img src="assets/icons/orthogonalEdgeStyle.png"/>
+        </mat-option>
+
+        <!-- mxConstants doesn't define an option for diagonal since it's the default -->
+        <mat-option value="{{'diagonalEdgeStyle'}}" [matTooltip]="'Straight line between endpoints'">
+          <img src="assets/icons/diagonalEdgeStyle.png"/>
+        </mat-option>
+
+        <mat-option value="{{mx.mxConstants.EDGESTYLE_ENTITY_RELATION}}" [matTooltip]="'Horizontal segments near endpoints'">
+          <img src="assets/icons/entityRelationEdgeStyle.png"/>
+        </mat-option>
+        <mat-option value="{{mx.mxConstants.EDGESTYLE_SIDETOSIDE}}" [matTooltip]="'Simple style for horizontally spaced endpoints'">
+          <img src="assets/icons/sideToSideEdgeStyle.png"/>
+        </mat-option>
+        <mat-option value="{{mx.mxConstants.EDGESTYLE_TOPTOBOTTOM}}" [matTooltip]="'Simple style for vertically spaced endpoints'">
+          <img src="assets/icons/topToBottomEdgeStyle.png"/>
+        </mat-option>
       </mat-select>
     </mat-form-field>
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasBendStyle()">
-    <label mat-label>Elbow Style: </label>
+  <div *ngIf="styleInfo.hasBendStyle()"
+       [matTooltip]="'Shape of interaction\'s corners'">
+    <label mat-label>Corner Style: </label>
     <mat-form-field>
       <mat-select value="{{styleInfo.currentBendStyle()}}" (selectionChange)="styleInfo.setBendStyle($event.value)">
         <mat-option value="sharp">Sharp</mat-option>
@@ -69,7 +92,8 @@
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasEndSize()">
+  <div *ngIf="styleInfo.hasEndSize()"
+       [matTooltip]="'Size of interaction glyph'">
     <label mat-label>Arrow Size: </label>
     <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="0" oninput="validity.valid||(value='');"
@@ -78,7 +102,8 @@
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasSourceSpacing()">
+  <div *ngIf="styleInfo.hasSourceSpacing()"
+       [matTooltip]="'Space between interaction and its source participant. Use negative values to get closer.'">
     <label mat-label>Source Spacing: </label>
     <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number"
@@ -87,7 +112,8 @@
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasTargetSpacing()">
+  <div *ngIf="styleInfo.hasTargetSpacing()"
+       [matTooltip]="'Space between interaction and its target participant. Use negative values to get closer.'">
     <label mat-label>Target Spacing: </label>
     <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number"
@@ -96,14 +122,16 @@
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasFontColor()">
+  <div *ngIf="styleInfo.hasFontColor()"
+       [matTooltip]="'Color of selected object\'s text'">
     <label mat-label>Font Color: </label>
     <button mat-stroked-button [style.backgroundColor]="styleInfo.currentFontColor()"
             (click)="setFontColorClicked()">&nbsp;</button>
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasFontOpacity()">
+  <div *ngIf="styleInfo.hasFontOpacity()"
+       [matTooltip]="'Opacity of selected object\'s text'">
     <label mat-label>Text Opacity: </label>
     <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
@@ -112,7 +140,8 @@
     <br>
   </div>
 
-  <div *ngIf="styleInfo.hasFontSize()">
+  <div *ngIf="styleInfo.hasFontSize()"
+       [matTooltip]="'Size of selected object\'s text'">
     <label mat-label>Font Size: </label>
     <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="1" oninput="validity.valid||(value='');"

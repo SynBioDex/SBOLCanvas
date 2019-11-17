@@ -27,7 +27,7 @@
         <mat-grid-tile *ngIf="stringMatches('backbone dna strand circuit', searchPhrase)">
           <button mat-icon-button [disabled]="componentDefinitionMode" (click)="addStrand()"
                   [matTooltip]="'Backbone'"
-                  style="width:100px; height:100px">
+                  style="width:52px;height:52px;">
             <svg #canvasElement [attr.elementType]="elementTypes.BACKBONE" width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>
           </button>
         </mat-grid-tile>
