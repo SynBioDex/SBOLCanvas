@@ -4,12 +4,13 @@
 <!-- Toolbar -->
 <app-toolbar></app-toolbar>
 
-<!-- We are using the Angular Materials library for layout. -->
+<!-- We are using the Angular Material library for layout. -->
 <mat-sidenav-container style="height: 100vh;" [hasBackdrop]="false"><!-- A sidebar -->
 
   <!-- On the left is the glyph menu -->
   <mat-sidenav [(opened)]="leftBarOpened" position="start"
-  mode="side" >
+  mode="side"
+  disableClose="true">
       <app-glyph-menu></app-glyph-menu>
   </mat-sidenav>
 
