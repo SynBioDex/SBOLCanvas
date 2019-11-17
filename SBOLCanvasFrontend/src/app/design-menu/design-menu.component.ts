@@ -1,6 +1,6 @@
 import {Component, ElementRef, OnInit, ViewChild, ViewEncapsulation} from '@angular/core';
 import { MccColorPickerItem, MccColorPickerService } from 'material-community-components';
-import {FormBuilder, FormGroup} from '@angular/forms';
+import {FormBuilder, FormControl, FormGroup} from '@angular/forms';
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 import {SaveGraphComponent} from '../save-graph/save-graph.component';
@@ -27,6 +27,7 @@ export interface ColorPickerStartupData {
 })
 export class DesignMenuComponent implements OnInit {
 
+  // Style options for the selected glyphs
   styleInfo: StyleInfo;
 
   // Put a reference to the mxGraph namespace in the class so it's accessible to the component's html part
