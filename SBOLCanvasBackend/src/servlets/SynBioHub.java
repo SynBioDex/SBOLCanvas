@@ -117,14 +117,14 @@ public class SynBioHub extends HttpServlet {
 				TreeSet<URI> roles = null;
 				TreeSet<URI> types = null;
 				TreeSet<URI> collections = null;
-				if (role != null) {
+				if (role != null && role.length() > 0) {
 					roles = new TreeSet<URI>();
 					if (SBOLData.roles.ContainsKey(role))
 						roles.add(SBOLData.roles.getValue(role));
 					else
 						roles.add(SBOLData.refinements.getValue(role));
 				}
-				if (type != null) {
+				if (type != null && type.length() > 0) {
 					types = new TreeSet<URI>();
 					types.add(SBOLData.types.getValue(type));
 				}
@@ -153,24 +153,6 @@ public class SynBioHub extends HttpServlet {
 					objectCriteria.setKey("objectType");
 					objectCriteria.setValue("ModuleDefinition");
 					query.addCriteria(objectCriteria);
-
-					if (roles != null) {
-						for (URI uri : roles) {
-							SearchCriteria roleCriteria = new SearchCriteria();
-							roleCriteria.setKey("role");
-							roleCriteria.setValue(uri.toString());
-							query.getCriteria().add(roleCriteria);
-						}
-					}
-
-					if (types != null) {
-						for (URI uri : types) {
-							SearchCriteria typeCriteria = new SearchCriteria();
-							typeCriteria.setKey("type");
-							typeCriteria.setValue(uri.toString());
-							query.getCriteria().add(typeCriteria);
-						}
-					}
 
 					if (collections != null) {
 						for (URI uri : collections) {

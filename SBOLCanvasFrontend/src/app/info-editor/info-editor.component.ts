@@ -3,7 +3,8 @@ import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo } from "../interactionInfo";
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
-import { MatSelectChange } from '@angular/material';
+import { MatSelectChange, MatDialog } from '@angular/material';
+import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 
 
 @Component({
@@ -28,7 +29,7 @@ export class InfoEditorComponent implements OnInit {
   glyphInfo: GlyphInfo;
   interactionInfo: InteractionInfo;
 
-  constructor(private graphService: GraphService, private metadataService: MetadataService) { }
+  constructor(private graphService: GraphService, private metadataService: MetadataService, public dialog: MatDialog) { }
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
@@ -135,6 +136,12 @@ export class InfoEditorComponent implements OnInit {
       this.graphService.setSelectedCellInfo(this.glyphInfo);
     else if(this.interactionInfo != null)
       this.graphService.setSelectedCellInfo(this.interactionInfo);
+  }
+
+  openDownloadDialog(){
+    this.dialog.open(DownloadGraphComponent, {
+      data: this.glyphInfo
+    });
   }
 
   /**

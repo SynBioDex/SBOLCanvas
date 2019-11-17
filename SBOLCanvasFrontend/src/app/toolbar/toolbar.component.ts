@@ -49,7 +49,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   openDownloadDialog(): void{
-    this.dialog.open(DownloadGraphComponent, {});
+    this.dialog.open(DownloadGraphComponent, {
+      data: null
+    });
   }
 
   openSaveDialog(): void {
