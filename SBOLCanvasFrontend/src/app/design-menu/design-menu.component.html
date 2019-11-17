@@ -28,7 +28,7 @@
   <div *ngIf="styleInfo.hasFillColor()">
     <label mat-label>Fill Color: </label>
     <button mat-stroked-button [style.backgroundColor]="styleInfo.currentFillColor()"
-            (click)="setFillColorClicked()"></button>
+            (click)="setFillColorClicked()">&nbsp;</button>
     <br>
   </div>
 
