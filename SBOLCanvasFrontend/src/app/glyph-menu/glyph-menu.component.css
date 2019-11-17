@@ -5,7 +5,8 @@
 }
 
 .glyphContainer {
-  width: 250px
+  width: 250px;
+  padding: 5px;
 }
 
 button {

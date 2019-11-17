@@ -4,7 +4,7 @@
  * A tile-view list of glyphs the user can use to add components to the graph.
  */
 
-import {Component, OnInit, AfterViewInit, ViewChildren, QueryList, ElementRef} from '@angular/core';
+import {Component, OnInit, AfterViewInit, ViewChildren, QueryList, ElementRef, ViewEncapsulation} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {GlyphService} from '../glyph.service';
 import {SearchfilterPipe} from '../searchfilter.pipe';

@@ -2,14 +2,15 @@
 
   <div *ngIf="styleInfo.hasStrokeColor()">
     <label mat-label>Stroke Color: </label>
-    <button mat-stroked-button [style.backgroundColor]="styleInfo.currentStrokeColor()"
+    <button mat-stroked-button class="design-menu-input" [style.backgroundColor]="styleInfo.currentStrokeColor()"
             (click)="setStrokeColorClicked()">&nbsp;</button>
     <br>
   </div>
 
   <div *ngIf="styleInfo.hasStrokeOpacity()">
     <label mat-label>Stroke Opacity: </label>
-    <mat-form-field>
+<!--    <span class="design-input-spacer"></span>-->
+    <mat-form-field appearance="outline" class="number-input design-menu-input">
       <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
              (change)="styleInfo.setStrokeOpacity($event.target.value)" [value]="styleInfo.currentStrokeOpacity()">
     </mat-form-field>
@@ -18,7 +19,7 @@
 
   <div *ngIf="styleInfo.hasStrokeWidth()">
     <label mat-label>Stroke Width: </label>
-    <mat-form-field>
+    <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="1" step="0.1" oninput="validity.valid||(value='');"
              (change)="styleInfo.setStrokeWidth($event.target.value)" [value]="styleInfo.currentStrokeWidth()">
     </mat-form-field>
@@ -33,8 +34,8 @@
   </div>
 
   <div *ngIf="styleInfo.hasFillOpacity()">
-    <label mat-label>Stroke Opacity: </label>
-    <mat-form-field>
+    <label mat-label>Fill Opacity: </label>
+    <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
              (change)="styleInfo.setFillOpacity($event.target.value)" [value]="styleInfo.currentFillOpacity()">
     </mat-form-field>
@@ -42,7 +43,7 @@
   </div>
 
   <div *ngIf="styleInfo.hasEdgeStyle()">
-    <label mat-label>Connection Style: </label>
+    <label mat-label>Edge Style: </label>
     <mat-form-field>
       <mat-select value="{{styleInfo.currentEdgeStyle()}}" (selectionChange)="styleInfo.setEdgeStyle($event.value)">
         <mat-option value="{{mx.mxConstants.EDGESTYLE_ORTHOGONAL}}">Orthogonal</mat-option>
@@ -70,7 +71,7 @@
 
   <div *ngIf="styleInfo.hasEndSize()">
     <label mat-label>Arrow Size: </label>
-    <mat-form-field>
+    <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="0" oninput="validity.valid||(value='');"
              (change)="styleInfo.setEndSize($event.target.value)" [value]="styleInfo.currentEndSize()">
     </mat-form-field>
@@ -79,7 +80,7 @@
 
   <div *ngIf="styleInfo.hasSourceSpacing()">
     <label mat-label>Source Spacing: </label>
-    <mat-form-field>
+    <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number"
              (change)="styleInfo.setSourceSpacing($event.target.value)" [value]="styleInfo.currentSourceSpacing()">
     </mat-form-field>
@@ -88,12 +89,12 @@
 
   <div *ngIf="styleInfo.hasTargetSpacing()">
     <label mat-label>Target Spacing: </label>
-    <mat-form-field>
+    <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number"
              (change)="styleInfo.setTargetSpacing($event.target.value)" [value]="styleInfo.currentTargetSpacing()">
     </mat-form-field>
     <br>
-  </div>\
+  </div>
 
   <div *ngIf="styleInfo.hasFontColor()">
     <label mat-label>Font Color: </label>
@@ -104,7 +105,7 @@
 
   <div *ngIf="styleInfo.hasFontOpacity()">
     <label mat-label>Text Opacity: </label>
-    <mat-form-field>
+    <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
              (change)="styleInfo.setFontOpacity($event.target.value)" [value]="styleInfo.currentFontOpacity()">
     </mat-form-field>
@@ -113,7 +114,7 @@
 
   <div *ngIf="styleInfo.hasFontSize()">
     <label mat-label>Font Size: </label>
-    <mat-form-field>
+    <mat-form-field appearance="outline" class="number-input">
       <input #endSizeInput matInput type="number" min="1" oninput="validity.valid||(value='');"
              (change)="styleInfo.setFontSize($event.target.value)" [value]="styleInfo.currentFontSize()">
     </mat-form-field>

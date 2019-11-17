@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, OnInit, ViewChild, ViewEncapsulation} from '@angular/core';
 import { MccColorPickerItem, MccColorPickerService } from 'material-community-components';
 import {FormBuilder, FormGroup} from '@angular/forms';
 import {MetadataService} from '../metadata.service';

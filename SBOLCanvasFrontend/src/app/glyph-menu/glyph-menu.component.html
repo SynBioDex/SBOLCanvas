@@ -1,16 +1,20 @@
 <div class="glyphContainer">
   <div style="margin: auto">
 
+    <!-- Lawwwwdd -->
+      <!-- The style in here eliminates all the terrible crap angular material devs do. https://github.com/angular/components/issues/7975 -->
+      <mat-form-field style=" margin-bottom: -1.5em; width: 100%;" floatLabel="never" appearance="outline">
+        <input matInput id="displayID" placeholder="Search..." [value]="searchPhrase" (input)="searchPhrase=$event.target.value">
 
-    <mat-form-field floatLabel="never">
-<!--      <mat-placeholder><mat-icon>search</mat-icon></mat-placeholder>-->
-<!--      placeholder="Display ID"-->
-      <mat-icon matPrefix>search</mat-icon>
-      <input matInput id="displayID" placeholder="Search..." [value]="searchPhrase" (input)="searchPhrase=$event.target.value">
-      <button mat-button *ngIf="searchPhrase" matSuffix mat-icon-button aria-label="Clear" (click)="searchPhrase=''">
-        <mat-icon>close</mat-icon>
-      </button>
-    </mat-form-field>
+        <!-- Icon in search bar changes depending on content -->
+        <button mat-button *ngIf="searchPhrase" matSuffix mat-icon-button aria-label="Clear" (click)="searchPhrase=''">
+          <mat-icon>close</mat-icon>
+        </button>
+        <button mat-button *ngIf="!searchPhrase" matSuffix mat-icon-button aria-label="Clear" (click)="searchPhrase=''">
+          <mat-icon>search</mat-icon>
+        </button>
+      </mat-form-field>
+
 
     <!-------------------------------------    Utils panel   --------------------------------------->
     <mat-expansion-panel [expanded]="true" *ngIf="stringMatches('backbone dna strand circuit', searchPhrase) || stringMatches('textbox text box', searchPhrase)">

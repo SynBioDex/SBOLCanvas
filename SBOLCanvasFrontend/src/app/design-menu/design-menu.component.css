@@ -1,10 +1,45 @@
 .design-menu-container {
   display: flex;
   flex-direction: column;
-  padding-left: 5px;
-  padding-right: 5px;
+  /*padding-left: 5px;*/
+  /*padding-right: 5px;*/
+  padding: 5px;
 }
 
 .design-menu-container > * {
   width: 100%;
 }
+
+.number-input {
+  max-width: 70px;
+}
+
+.design-menu-input {
+  text-align: right;
+}
+
+/* This sets the space between sets of buttons */
+/*.design-input-spacer {*/
+/*  flex: 1 1 auto;*/
+/*}*/
+
+/**
+This is needed to reduce the padding for the outline appearance of mat-form-field
+NOTE: This has global effects
+ */
+::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
+  padding: 0.1em 0 0.1em 0 !important;
+  top: -0.25em;
+}
+
+/* This makes arrows in matInput type=number always show up in chrome.
+    Normally in chrome they only show on hover*/
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+
+  opacity: 1;
+
+}
+
+
+
