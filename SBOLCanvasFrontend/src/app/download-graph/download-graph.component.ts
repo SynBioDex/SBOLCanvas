@@ -1,10 +1,11 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, Inject } from '@angular/core';
 import { LoginService } from '../login.service';
-import { MatDialogRef, MatSort, MatTableDataSource } from '@angular/material';
+import { MatDialogRef, MatSort, MatTableDataSource, MAT_DIALOG_DATA } from '@angular/material';
 import { FilesService } from '../files.service';
 import { GraphService } from '../graph.service';
 import { MetadataService } from '../metadata.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable, Subscription } from 'rxjs';
+import { GlyphInfo } from '../glyphInfo';
 
 @Component({
   selector: 'app-download-graph',
@@ -29,6 +30,8 @@ export class DownloadGraphComponent implements OnInit {
   partRole: string;
   partRefine: string;
 
+  partRequest: Subscription;
+
   parts = new MatTableDataSource([]);
   partRow: any;
 
@@ -37,29 +40,33 @@ export class DownloadGraphComponent implements OnInit {
 
   working: boolean;
 
-  constructor(private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent>) { }
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent>) { }
 
   ngOnInit() {
     this.working = true;
-    let registryQuery = true;
-    let typesQuery = true;
-    let rolesQuery = true;
+    if(this.data != null){
+      this.partType = this.data.partType;
+      this.partRole = this.data.partRole;
+      this.partRefine = this.data.partRefine;
 
-    this.filesService.getRegistries().subscribe(registries => {
-      this.registries = registries;
-      registryQuery = false;
-      this.working = registryQuery || typesQuery || rolesQuery;
-    });
-    this.metadataService.loadTypes().subscribe(partTypes => {
-      this.partTypes = partTypes;
-      typesQuery = false;
-      this.working = registryQuery || typesQuery || rolesQuery;
-    });
-    this.metadataService.loadRoles().subscribe(partRoles => {
-      this.partRoles = partRoles;
-      rolesQuery = false;
-      this.working = registryQuery || typesQuery || rolesQuery;
-    });
+      forkJoin(
+        this.filesService.getRegistries(),
+        this.metadataService.loadTypes(),
+        this.metadataService.loadRoles(),
+        this.metadataService.loadRefinements(this.partRole)
+      ).subscribe(results => {
+        this.registries = results[0];
+        this.partTypes = results[1];
+        this.partRoles = results[2];
+        this.roleRefinements = results[3];
+        this.working = false;
+      });
+    }else{
+      this.filesService.getRegistries().subscribe(registries =>{
+        this.registries = registries;
+        this.working = false;
+      });
+    }
     this.updateParts();
     this.parts.sort = this.sort;
     this.history = [];
@@ -91,7 +98,8 @@ export class DownloadGraphComponent implements OnInit {
   setPartRole(partRole: string){
     this.partRole = partRole;
     this.partRefine = null;
-    this.updateRefinements();
+    if(this.partRole != null && this.partRole.length > 0)
+      this.updateRefinements();
     this.updateParts();
   }
 
@@ -194,31 +202,51 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   updateParts(){
+    if(this.partRequest && !this.partRequest.closed){
+      this.partRequest.unsubscribe();
+    }
+
     if(this.registry != null){
       this.working = true;
-      let roleOrRefine = this.partRefine != null && this.partRefine.length > 0 ? this.partRefine : this.partRole;
       this.parts.data = [];
-      forkJoin(
-        this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "collections"),
-        this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "modules"),
-        this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "components")
-      ).subscribe(parts => {
-        let partCache = [];
+      if(this.data != null){
+        // collection and components
+        let roleOrRefine = this.partRefine != null && this.partRefine.length > 0 ? this.partRefine : this.partRole;
+        this.partRequest = forkJoin(
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "components")
+        ).subscribe(parts => {
+          let partCache = [];
         parts[0].forEach(part => {
           part.type = DownloadGraphComponent.collectionType;
           partCache.push(part);
         });
         parts[1].forEach(part => {
-          part.type = DownloadGraphComponent.moduleType;
-          partCache.push(part);
-        });
-        parts[2].forEach(part => {
           part.type = DownloadGraphComponent.componentType;
           partCache.push(part);
         });
         this.parts.data = partCache;
         this.working = false;
-      });
+        })
+      }else{
+        // collection and modules
+        this.partRequest = forkJoin(
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules")
+        ).subscribe(parts => {
+          let partCache = [];
+          parts[0].forEach(part => {
+            part.type = DownloadGraphComponent.collectionType;
+            partCache.push(part);
+          });
+          parts[1].forEach(part => {
+            part.type = DownloadGraphComponent.moduleType;
+            partCache.push(part);
+          });
+          this.parts.data = partCache;
+          this.working = false;
+        });
+      }
     }else{
       this.parts.data = [];
     }

@@ -59,6 +59,8 @@
   <mat-form-field>
     <textarea matInput id="sequence" placeholder="Sequence" value="{{glyphInfo.sequence}}" (input)="inputChange($event)"></textarea>
   </mat-form-field>
+
+  <button mat-button (click)="openDownloadDialog()">Import Component</button>
 </div>
 
 
