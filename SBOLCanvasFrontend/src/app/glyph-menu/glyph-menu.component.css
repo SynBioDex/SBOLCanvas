@@ -9,6 +9,11 @@
   padding: 5px;
 }
 
+:host ::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
+  padding: 0.1em 0 0.1em 0 !important;
+  top: -0.25em;
+}
+
 button {
   padding: 0px 0px 0px 0px;
   margin: 0px 0px 0px 0px;

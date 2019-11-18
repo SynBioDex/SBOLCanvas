@@ -17,6 +17,7 @@ import { AppHttpInterceptor } from './http.interceptor';
 // Angular Material stuff. This is a different UI library than ng-bootstrap.
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import { MaterialModule } from './material.module';
+import { FlexLayoutModule } from '@angular/flex-layout';
 
 import {GraphService} from './graph.service';
 
@@ -67,7 +68,8 @@ import { ExportComponent } from './export/export.component';
       used_colors: ['#000000', '#123456', '#777666']
     }),
     ReactiveFormsModule,
-    MaterialModule
+    MaterialModule,
+    FlexLayoutModule
   ],
   providers: [GraphService, MetadataService, {
     provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true

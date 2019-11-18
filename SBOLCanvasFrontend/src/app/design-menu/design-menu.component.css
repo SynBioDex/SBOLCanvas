@@ -1,8 +1,6 @@
 .design-menu-container {
   display: flex;
   flex-direction: column;
-  /*padding-left: 5px;*/
-  /*padding-right: 5px;*/
   padding: 5px;
 }
 
@@ -14,20 +12,29 @@
   max-width: 70px;
 }
 
+.setting-label {
+  text-align: right;
+}
+
+:host ::ng-deep .mat-form-field-wrapper {
+  padding: 0.1em 0 0.1em 0 !important;
+  top: -0.15em;
+}
+
 .design-menu-input {
   text-align: right;
 }
 
-/* This sets the space between sets of buttons */
-/*.design-input-spacer {*/
-/*  flex: 1 1 auto;*/
-/*}*/
+/* This makes it so the select value is right aligned. Blows my mind there is
+no other way to do this when ng-deep is deprecated in Angular 8*/
+:host ::ng-deep .mat-select-value {
+  text-align: right;
+}
 
 /**
 This is needed to reduce the padding for the outline appearance of mat-form-field
-NOTE: This has global effects
  */
-::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
+:host ::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
   padding: 0.1em 0 0.1em 0 !important;
   top: -0.25em;
 }
