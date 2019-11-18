@@ -16,29 +16,6 @@
       </mat-form-field>
 
 
-    <!-------------------------------------    Utils panel   --------------------------------------->
-    <mat-expansion-panel [expanded]="true" *ngIf="stringMatches('backbone dna strand circuit', searchPhrase) || stringMatches('textbox text box', searchPhrase)">
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          Util
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      <mat-grid-list cols="4" rowHeight="52px" gutterSize="5px">
-        <mat-grid-tile *ngIf="stringMatches('backbone dna strand circuit', searchPhrase)">
-          <button mat-icon-button [disabled]="componentDefinitionMode" (click)="addStrand()"
-                  [matTooltip]="'Backbone'"
-                  style="width:52px;height:52px;">
-            <svg #canvasElement [attr.elementType]="elementTypes.BACKBONE" width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>
-          </button>
-        </mat-grid-tile>
-        <mat-grid-tile *ngIf="stringMatches('textbox text box', searchPhrase)">
-          <button mat-button (click)="addTextBox()"  width="52px" height="52px" [matTooltip]="'Text box'">
-            <svg #canvasElement [attr.elementType]="elementTypes.TEXT_BOX" width="52px" height="52px" [innerHTML]="utilsDict['textBox']"></svg>
-          </button>
-        </mat-grid-tile>
-      </mat-grid-list>
-    </mat-expansion-panel>
-
 
 
     <!-------------------------------------    Sequence panel   --------------------------------------->
@@ -97,5 +74,31 @@
         </mat-grid-tile>
       </mat-grid-list>
     </mat-expansion-panel>
+
+
+    <!-------------------------------------    Utils panel   --------------------------------------->
+    <mat-expansion-panel [expanded]="true" *ngIf="stringMatches('backbone dna strand circuit', searchPhrase) || stringMatches('textbox text box', searchPhrase)">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Util
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-grid-list cols="4" rowHeight="52px" gutterSize="5px">
+        <mat-grid-tile *ngIf="stringMatches('backbone dna strand circuit', searchPhrase)">
+          <button mat-icon-button [disabled]="componentDefinitionMode" (click)="addStrand()"
+                  [matTooltip]="'Backbone'"
+                  style="width:52px;height:52px;">
+            <svg #canvasElement [attr.elementType]="elementTypes.BACKBONE" width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>
+          </button>
+        </mat-grid-tile>
+        <mat-grid-tile *ngIf="stringMatches('textbox text box', searchPhrase)">
+          <button mat-button (click)="addTextBox()"  width="52px" height="52px" [matTooltip]="'Text box'">
+            <svg #canvasElement [attr.elementType]="elementTypes.TEXT_BOX" width="52px" height="52px" [innerHTML]="utilsDict['textBox']"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel>
+
+
   </div>
 </div>
