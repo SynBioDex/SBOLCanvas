@@ -29,7 +29,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
   @ViewChildren('canvasElement') canvasElements: QueryList<ElementRef>;
 
-  private searchPhrase: string = '';
+  public searchPhrase = '';
 
   public utilsDict = {};
   public sequenceFeatureDict = {};
