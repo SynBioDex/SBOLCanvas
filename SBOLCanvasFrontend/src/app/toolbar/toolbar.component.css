@@ -16,6 +16,14 @@
   margin-left: 8px;
 }
 
+.zoom-input {
+  text-align: right;
+  padding-left: 10px;
+  padding-right: 10px;
+  max-width: 50px;
+  font-size: .8em;
+}
+
 /* There is a bug with vertical dividers in
    toolbar rows so you have to manually fix
    the styling for the divider.

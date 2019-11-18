@@ -1,31 +1,33 @@
 <mat-toolbar color="primary">
-<!--             style="background-image:url('assets/banner.png'); background-repeat:no-repeat; background-position:center; background-size:contain">-->
 
 <!-- menu -->
   <mat-toolbar-row class="toolbar-row">
 
-<!--    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>-->
-
-<!--    <span class="toolbar-spacer"></span>-->
-
-<!--    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>-->
-
     <!--    File menu-->
     <button mat-stroked-button class="toolbar-row-button" [matMenuTriggerFor]="fileMenu">File</button>
     <mat-menu #fileMenu="matMenu">
-      <button mat-menu-item class="toolbar-row-button"
-              (click)="openUploadDialog()">Upload</button>
+      <span style="font-family:sans-serif;font-size:.8em;color:gray;">SynBioHub</span>
 
       <button mat-menu-item class="toolbar-row-button"
-              (click)="openDownloadDialog()">Download</button>
-
-      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Save module to SynBioHub'"
               (click)="openSaveDialog()">Save</button>
 
       <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Load module from SynBioHub'"
               (click)="openLoadDialog()">Load</button>
 
+      <span style="font-family:sans-serif;font-size:.8em;color:gray;">Local Device</span>
+
       <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Download module as xml'"
+              (click)="openDownloadDialog()">Download</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Upload module from xml'"
+              (click)="openUploadDialog()">Upload</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Export diagram as picture'"
               (click)="openExportDialog()">Export</button>
     </mat-menu>
 
@@ -33,48 +35,72 @@
     <button mat-stroked-button class="toolbar-row-button" [matMenuTriggerFor]="viewMenu">View</button>
     <mat-menu #viewMenu="matMenu">
       <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Focus in the selected part to view and edit its subparts'"
               (click)="graphService.enterGlyph()">Enter Glyph</button>
 
       <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Focus out to the parent part'"
               (click)="graphService.exitGlyph()">Exit Glyph</button>
 
       <button mat-menu-item class="toolbar-row-button"
-              (click)="graphService.zoomIn()">Zoom In</button>
+              [matTooltip]="'Show or hide scar glyphs'"
+              (click)="graphService.toggleScars()">Toggle Scar Visibility</button>
 
       <button mat-menu-item class="toolbar-row-button"
-              (click)="graphService.zoomOut()">Zoom Out</button>
-
-      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Center camera so all parts are visible'"
               (click)="graphService.fitCamera()">Reset View</button>
 
       <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Return to 100% zoom'"
               (click)="graphService.setZoom(1)">Reset Zoom</button>
     </mat-menu>
 
-    <mat-form-field style="max-width: 70px;">
+    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
+
+    <mat-form-field class="zoom-input" [matTooltip]="'Camera zoom'">
       <input matInput (change)="zoomChanged($event)" [value]="getZoomDisplayValue()">
     </mat-form-field>
 
     <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Zoom in'"
             (click)="graphService.zoomIn()"><mat-icon>zoom_in</mat-icon></button>
 
     <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Zoom out'"
             (click)="graphService.zoomOut()"><mat-icon>zoom_out</mat-icon></button>
 
+    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
+
     <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Delete selected parts'"
             (click)="graphService.delete()"><mat-icon>delete</mat-icon></button>
 
     <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Undo'"
             (click)="graphService.undo()"><mat-icon>undo</mat-icon></button>
 
     <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Redo'"
             (click)="graphService.redo()"><mat-icon>redo</mat-icon></button>
 
-    <button mat-stroked-button class="toolbar-row-button"
-            (click)="graphService.flipSequenceFeatureGlyph()">Flip</button>
+    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
 
     <button mat-stroked-button class="toolbar-row-button"
-            (click)="graphService.toggleScars()">Toggle Scars</button>
+            [matTooltip]="'Flip selected part\'s orientation'"
+            (click)="graphService.flipSequenceFeatureGlyph()"><mat-icon>swap_vert</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Bring selected part to front'"
+            (click)="graphService.sendSelectionToFront()"><mat-icon>flip_to_back</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Send selected part to back'"
+            (click)="graphService.sendSelectionToBack()"><mat-icon>flip_to_front</mat-icon></button>
+
+    <span class="toolbar-spacer"></span>
+
+    <img src="assets/banner.png"
+        style="max-width:100%;max-height:100%"/>
 
   </mat-toolbar-row>
 </mat-toolbar>

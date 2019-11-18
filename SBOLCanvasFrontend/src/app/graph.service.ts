@@ -504,6 +504,14 @@ export class GraphService {
     return this.graph.getView().getScale();
   }
 
+  sendSelectionToFront() {
+    this.graph.orderCells(false)
+  }
+
+  sendSelectionToBack() {
+    this.graph.orderCells(true)
+  }
+
   fitCamera() {
     // graph.fit() does most of the work. however by default it will zoom in far too much.
     // Instead, it makes sense to stay at the user's zoom level unless it is too small to

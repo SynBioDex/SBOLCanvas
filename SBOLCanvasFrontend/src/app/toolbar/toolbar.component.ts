@@ -28,7 +28,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   popupOpen: boolean;
   users: {};
 
-  constructor(public graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) { }
+  constructor(public graphService: GraphService, private filesService: FilesService,
+              public dialog: MatDialog) {
+  }
 
   ngOnInit() {
   }
@@ -44,17 +46,17 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.filesService.loadLocal(file, this.graphService);
   }
 
-  openUploadDialog(): void {
+  openSaveDialog(): void {
     this.dialog.open(UploadGraphComponent, {});
   }
 
-  openDownloadDialog(): void{
+  openLoadDialog(): void{
     this.dialog.open(DownloadGraphComponent, {
       data: null
     });
   }
 
-  openSaveDialog(): void {
+  openDownloadDialog(): void {
     const dialogRef = this.dialog.open(SaveGraphComponent, {
       data: { filename: this.filename }
     });
@@ -68,7 +70,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     });
   }
 
-  openLoadDialog(): void {
+  openUploadDialog(): void {
     const dialogRef = this.dialog.open(LoadGraphComponent, {
       data: { file: null }
     });
