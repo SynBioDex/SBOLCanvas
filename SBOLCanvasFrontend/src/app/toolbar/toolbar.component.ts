@@ -28,7 +28,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   popupOpen: boolean;
   users: {};
 
-  constructor(public graphService: GraphService, private filesService: FilesService, public dialog: MatDialog) { }
+  constructor(public graphService: GraphService, private filesService: FilesService,
+              public dialog: MatDialog) {
+  }
 
   ngOnInit() {
   }
@@ -44,15 +46,17 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.filesService.loadLocal(file, this.graphService);
   }
 
-  openUploadDialog(): void {
+  openSaveDialog(): void {
     this.dialog.open(UploadGraphComponent, {});
   }
 
-  openDownloadDialog(): void{
-    this.dialog.open(DownloadGraphComponent, {});
+  openLoadDialog(): void{
+    this.dialog.open(DownloadGraphComponent, {
+      data: null
+    });
   }
 
-  openSaveDialog(): void {
+  openDownloadDialog(): void {
     const dialogRef = this.dialog.open(SaveGraphComponent, {
       data: { filename: this.filename }
     });
@@ -66,7 +70,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     });
   }
 
-  openLoadDialog(): void {
+  openUploadDialog(): void {
     const dialogRef = this.dialog.open(LoadGraphComponent, {
       data: { file: null }
     });
@@ -81,5 +85,23 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
   openExportDialog(): void {
     this.dialog.open(ExportComponent, {});
+  }
+
+  zoomChanged($event) {
+    let number = parseInt($event.target.value);
+    if (!isNaN(number)) {
+      const percent = number / 100;
+      this.graphService.setZoom(percent);
+    }
+
+    // if they entered nonsense the zoom doesn't change, which
+    // means angular won't refresh the input box on its own
+    $event.target.value = this.getZoomDisplayValue();
+  }
+
+  getZoomDisplayValue() {
+    let percent = this.graphService.getZoom() * 100;
+    let string = percent.toFixed(0);
+    return string.toString() + '%';
   }
 }

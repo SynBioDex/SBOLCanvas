@@ -1,6 +1,6 @@
 <mat-card>
 
-  <h1 mat-dialog-title>Download</h1>
+  <h1 mat-dialog-title>Load</h1>
   <div class="mat-form-field-container">
     <mat-form-field>
       <mat-label>Server</mat-label>
@@ -12,10 +12,11 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field>
+    <mat-form-field *ngIf="data != null">
       <mat-label>Part type</mat-label>
       <mat-select id="partType" [disabled]="partTypes == null || partTypes.length < 1"
-      (selectionChange)="setPartType($event.value)">
+      (selectionChange)="setPartType($event.value)" value="{{partType}}">
+        <mat-option value="">All_types</mat-option>
         <mat-option *ngFor="let partType of partTypes" [value]="partType">
           {{partType}}
         </mat-option>
@@ -33,20 +34,22 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field>
+    <mat-form-field *ngIf="data != null">
       <mat-label>Part role</mat-label>
       <mat-select id="partRole" [disabled]="partRoles == null || partRoles.length < 1"
-      (selectionChange)="setPartRole($event.value)">
+      (selectionChange)="setPartRole($event.value)" value="{{partRole}}">
+        <mat-option value="">IDK (Unspecified)</mat-option>
         <mat-option *ngFor="let partRole of partRoles" [value]="partRole">
           {{partRole}}
         </mat-option>
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field>
+    <mat-form-field *ngIf="data != null">
       <mat-label>Role refinement</mat-label>
       <mat-select id="roleRefinement" [disabled]="roleRefinements == null || roleRefinements.length < 1"
-      (selectionChange)="setPartRefinement($event.value)">
+      (selectionChange)="setPartRefinement($event.value)" value="{{partRefine}}">
+        <mat-option value="">None</mat-option>
         <mat-option *ngFor="let refinement of roleRefinements" [value]="refinement">
           {{refinement}}
         </mat-option>

@@ -17,8 +17,6 @@
         <stroke />
         <strokewidth width="2.88" />
         <miterlimit limit="4" />
-        <dashpattern pattern="none" />
-        <dashed dashed="1" />
         <alpha alpha="1" />
         <path>
             <move x="23.52636030448266" y="17.833662249788553" />

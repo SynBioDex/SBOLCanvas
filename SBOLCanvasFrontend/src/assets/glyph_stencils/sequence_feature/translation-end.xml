@@ -9,8 +9,6 @@
         <stroke />
         <strokewidth width="2.88" />
         <miterlimit limit="4" />
-        <dashpattern pattern="none" />
-        <dashed dashed="1" />
         <path>
             <move x="23.987745098039216" y="48.0" />
             <curve x1="29.28186274509804" x2="18.877450980392158" x3="23.987745098039216" y1="42.11764705882353" y2="42.25245098039216" y3="37.1421568627451" />

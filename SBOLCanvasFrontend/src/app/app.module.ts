@@ -14,6 +14,9 @@ import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppHttpInterceptor } from './http.interceptor';
 
+// for warning against leaving the page with unsaved changes
+import { PendingChangesGuard} from './pending-changes.guard';
+
 // Angular Material stuff. This is a different UI library than ng-bootstrap.
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import { MaterialModule } from './material.module';
@@ -71,7 +74,7 @@ import { ExportComponent } from './export/export.component';
     MaterialModule,
     FlexLayoutModule
   ],
-  providers: [GraphService, MetadataService, {
+  providers: [PendingChangesGuard, GraphService, MetadataService, {
     provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
     }],
   bootstrap: [AppComponent],

@@ -2,6 +2,8 @@ import {Component, HostListener, OnInit, ViewChild} from '@angular/core';
 import {GlyphInfo} from '../glyphInfo';
 import {GraphService} from "../graph.service";
 import { ToolbarComponent } from "../toolbar/toolbar.component";
+import {ComponentCanDeactivate} from '../pending-changes.guard';
+import {Observable} from 'rxjs';
 
 export enum KEY_CODE {
   DELETE = "Delete",
@@ -15,7 +17,7 @@ export enum KEY_CODE {
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, ComponentCanDeactivate {
 
   @ViewChild(ToolbarComponent) toolbar
 
@@ -64,5 +66,14 @@ export class HomeComponent implements OnInit {
         this.graphService.redo();
       }
     }
+  }
+
+  // @HostListener allows us to also guard against browser refresh, close, etc.
+  @HostListener('window:beforeunload')
+  canDeactivate(): Observable<boolean> | boolean {
+    // insert logic to check if there are pending changes here;
+    // returning true will navigate without confirmation
+    // returning false will show a confirm dialog before navigating away
+    return false;
   }
 }

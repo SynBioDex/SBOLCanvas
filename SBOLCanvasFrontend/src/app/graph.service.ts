@@ -76,6 +76,30 @@ export class GraphService {
   // This object handles the hotkeys for the graph.
   keyHandler: any;
 
+  static infoEdit = class {
+    cell: mxCell;
+    info: any;
+    previous: any;
+    constructor(cell, info){
+      this.cell = cell;
+      this.info = info;
+      this.previous = info;
+    }
+
+    execute(){
+      if(this.cell != null){
+        let tmp = this.cell.data.makeCopy();
+        if(this.previous == null){
+          this.cell.data = null;
+        }else{
+          this.cell.data.copyDataFrom(this.previous);
+        }
+
+        this.previous = tmp;
+      }
+    }
+  }
+
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
     // constructor code is divided into helper methods for organization,
     // but these methods aren't entirely modular; order of some of
@@ -465,13 +489,27 @@ export class GraphService {
   }
 
   zoomIn() {
-    // (un/re)doing is managed by the editor; it only works
-    // if all changes are encapsulated by graphModel.(begin/end)Update
     this.graph.zoomIn();
   }
 
   zoomOut() {
     this.graph.zoomOut();
+  }
+
+  setZoom(scale: number) {
+    this.graph.zoomTo(scale);
+  }
+
+  getZoom() :number {
+    return this.graph.getView().getScale();
+  }
+
+  sendSelectionToFront() {
+    this.graph.orderCells(false)
+  }
+
+  sendSelectionToBack() {
+    this.graph.orderCells(true)
   }
 
   fitCamera() {
@@ -918,7 +956,17 @@ export class GraphService {
       // since it does, update its info
       const cellData = selectedCell.data;
       if (cellData) {
-        cellData.copyDataFrom(info);
+        this.graph.getModel().beginUpdate();
+        try{
+          let edit = new GraphService.infoEdit(selectedCell, info);
+          if(info instanceof GlyphInfo)
+            this.mutateSequenceFeatureGlyph(info.partRole);
+          else
+            this.mutateInteractionGlyph(info.interactionType);
+          this.graph.getModel().execute(edit);
+        }finally{
+          this.graph.getModel().endUpdate();
+        }
       }
     }
   }
@@ -1753,6 +1801,16 @@ export class GraphService {
       let cells = sender.getChildVertices(sender.getDefaultParent());
       for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
         this.horizontalSortBasedOnPosition(circuitContainer);
+      }
+
+      // finallly, another special case: if a circuitContainer only has one sequenceFeatureGlyph,
+      // moving the glyph should move the circuitContainer
+      for (const cell of movedCells) {
+        if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {
+          const x = cell.getParent().getGeometry().x + evt.getProperty("dx");
+          const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
+          cell.getParent().replaceGeometry(x, y, 'auto', 'auto', sender);
+        }
       }
 
       evt.consume();

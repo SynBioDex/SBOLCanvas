@@ -10,8 +10,6 @@
         <fillcolor color="#000000" />
         <strokewidth width="2.56858516" />
         <miterlimit limit="4" />
-        <dashpattern pattern="none" />
-        <dashed dashed="1" />
         <alpha alpha="1" />
         <path>
             <move x="23.17732669475297" y="24.947416698582916" />

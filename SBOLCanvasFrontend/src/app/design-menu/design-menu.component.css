@@ -43,9 +43,7 @@ This is needed to reduce the padding for the outline appearance of mat-form-fiel
     Normally in chrome they only show on hover*/
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
-
   opacity: 1;
-
 }
 
 /* For icon drop down options */
