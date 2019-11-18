@@ -4,6 +4,7 @@ import {GraphService} from "../graph.service";
 import { ToolbarComponent } from "../toolbar/toolbar.component";
 import {ComponentCanDeactivate} from '../pending-changes.guard';
 import {Observable} from 'rxjs';
+import {Title} from "@angular/platform-browser";
 
 export enum KEY_CODE {
   DELETE = "Delete",
@@ -24,7 +25,9 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
   rightBarOpened = true;
   leftBarOpened = true;
 
-  constructor(private graphService: GraphService) { }
+  constructor(private graphService: GraphService, private titleService: Title) {
+    this.titleService.setTitle('SBOL Canvas');
+  }
 
   ngOnInit() {
   }
@@ -49,7 +52,7 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
 
   handleEvent(event: KeyboardEvent, code: string) {
 
-    let target = event.target as HTMLElement;
+    const target = event.target as HTMLElement;
 
     // If we are not an input field, then we are safe to assume the user is trying to do
     // stuff to the graph.
