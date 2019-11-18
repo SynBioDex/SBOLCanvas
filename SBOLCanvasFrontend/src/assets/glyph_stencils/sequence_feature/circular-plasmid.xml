@@ -6,8 +6,6 @@
         <linejoin join="round" />
         <linecap cap="butt" />
         <miterlimit limit="4" />
-        <dashpattern pattern="none" />
-        <dashed dashed="1" />
         <alpha alpha="1" />
         <path>
             <move x="33.96152351340847" y="48.0" />

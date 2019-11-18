@@ -5,8 +5,6 @@
         <strokewidth width="1.0" />
         <linecap cap="butt" />
         <miterlimit limit="4" />
-        <dashpattern pattern="none" />
-        <dashed dashed="1" />
         <alpha alpha="1" />
         <fontsize size="16.15233421" />
         <path>
