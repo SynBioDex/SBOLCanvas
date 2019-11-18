@@ -12,8 +12,6 @@
         <fillstroke />
         <linecap cap="butt" />
         <miterlimit limit="4" />
-        <dashpattern pattern="none" />
-        <dashed dashed="1" />
         <alpha alpha="1" />
         <path>
             <move x="15.543498596819456" y="8.0" />
