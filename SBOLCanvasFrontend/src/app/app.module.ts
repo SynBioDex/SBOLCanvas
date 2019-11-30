@@ -37,6 +37,7 @@ import { DownloadGraphComponent } from './download-graph/download-graph.componen
 import { ErrorComponent } from './error/error.component';
 import { SearchfilterPipe } from './searchfilter.pipe';
 import { ExportComponent } from './export/export.component';
+import { LandingPageComponent } from './landing-page/landing-page.component';
 
 
 @NgModule({
@@ -59,6 +60,7 @@ import { ExportComponent } from './export/export.component';
     ErrorComponent,
     SearchfilterPipe,
     ExportComponent,
+    LandingPageComponent,
   ],
   imports: [
     BrowserModule,
