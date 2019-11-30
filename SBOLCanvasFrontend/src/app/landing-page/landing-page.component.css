@@ -5,6 +5,7 @@
 /* This sets the space between sets of buttons */
 .toolbar-spacer {
   flex: 1 1 auto;
+  text-align: center;
 }
 
 /* This sets the css for the buttons on the row */
