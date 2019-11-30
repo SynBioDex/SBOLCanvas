@@ -8,7 +8,7 @@
 
 <!--    <div  style="text-align: center; width: 100%; position: absolute;">About</div>-->
 
-    <span class="toolbar-spacer">About</span>
+    <span class="toolbar-spacer" style="font-weight: bold; font-size: 34px">About</span>
 
     <img src="assets/banner.png"
          style="max-width:100%;max-height:100%" [routerLink]="['/home']"/>
@@ -17,13 +17,12 @@
 
 
 <mat-card fxLayout="column" style="margin: 8px;" >
-  <mat-card-title style="width: 100%; text-align: center">SBOL Canvas</mat-card-title>
   <mat-card-content fxLayout="row wrap" fxLayoutAlign="space-around center">
-    <div style="max-width: 800px;">
-      <p style="text-align: center;">
+    <div style="max-width: 1200px;">
+      <p class="about-text">
       Biologists often face the challenge of effectively communicating DNA sequences and their behaviors. An increasingly popular solution is SBOL, the Synthetic Biology Open Language. It is a diagram syntax that models genetic systems, allowing for both abstract visualizations and detailed data. Unfortunately, the complexity of creating SBOL documents is limiting this powerful language’s growth. SBOL, while characterized by graphic models, is lacking tools for graphical editing. Until now.
       </p>
-      <p style="text-align: center;">
+      <p class="about-text">
       SBOL Canvas is a web-based graphical editor that opens synthetic biology design to anyone from students to advanced researchers. Users will enjoy a simple interface for creating diagrams that are both artistic and scientific. By interfacing with existing SBOL databases, SBOL Canvas lets users share their designs and easily reference the research of others. This editor significantly lowers SBOL’s barrier to entry, helping it carry synthetic biology to new heights.
       </p>
     </div>
@@ -32,38 +31,42 @@
 
 <mat-divider></mat-divider>
 
-<mat-grid-list cols="3">
-
-  <mat-grid-tile>
-    <mat-grid-tile-header>Jared Earl</mat-grid-tile-header>
-    adfs
-  </mat-grid-tile>
-
-  <mat-grid-tile>
-    <mat-grid-tile-header>Logan Terry</mat-grid-tile-header>
-    adfs
-  </mat-grid-tile>
-
-  <mat-grid-tile>
-    <mat-card class="example-card">
-      <mat-card-header>
-        <div mat-card-avatar class="example-header-image"></div>
-        <mat-card-title>Samuel Thayer</mat-card-title>
-      </mat-card-header>
-      <img mat-card-image style="width:25%; align:center" src="assets/profile_sam.jpg" alt="Photo of a Shiba Inu">
-      <mat-card-content>
-        <p>
-          As a young lad, Sam  often played an open source strategy game called The Battle for Wesnoth. In his young teens, he found the game’s config files and started tinkering with them. Before long, he created several add-ons to the game, which by now have been download well over 10,000 times by players around the world. This was Sam’s first taste of programming, and he loved it even more than his first taste of homemade habanero salsa (another life-changing experience).
-        </p>
-        <p>
-          After taking every programming-related class his high school offered, Sam enrolled in the University of Utah and earned a Computer Science Bachelor’s Degree in December 2019. During his time there, he became involved with Lawrence Livermore National Lab, and helped them advance high performance computing by building a data race debugging tool.
-        </p><p>
-
-          Sam worked on SBOL Canvas in his final year of his undergraduate studies. He was mainly involved in the front end interface, especially the appearance and behavior of the editing canvas.
-        </p>
-      </mat-card-content>
-    </mat-card>
 
 
-  </mat-grid-tile>
-</mat-grid-list>
+<div fxLayout="row" fxLayoutAlign="space-evenly">
+  <mat-card class="bio-card">
+    <mat-card-header>
+      <div mat-card-avatar style="background-image: url('assets/profile_jared.jpeg'); background-size: cover"></div>
+
+      <mat-card-title class="bio-title">Jared Earl</mat-card-title>
+      <mat-card-subtitle>Developer</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="bio-card">
+
+  </mat-card>
+  <mat-card class="bio-card">
+    <mat-card-header>
+      <div mat-card-avatar style="background-image: url('assets/profile_sam.jpg'); background-size: cover"></div>
+
+      <mat-card-title class="bio-title">Samuel Thayer</mat-card-title>
+      <mat-card-subtitle>Developer</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p>
+        As a young lad, Sam  often played an open source strategy game called The Battle for Wesnoth. In his young teens, he found the game’s config files and started tinkering with them. Before long, he created several add-ons to the game, which by now have been download well over 10,000 times by players around the world. This was Sam’s first taste of programming, and he loved it even more than his first taste of homemade habanero salsa (another life-changing experience).
+      </p>
+      <p>
+        After taking every programming-related class his high school offered, Sam enrolled in the University of Utah and earned a Computer Science Bachelor’s Degree in December 2019. During his time there, he became involved with Lawrence Livermore National Lab, and helped them advance high performance computing by building a data race debugging tool.
+      </p><p>
+
+        Sam worked on SBOL Canvas in his final year of his undergraduate studies. He was mainly involved in the front end interface, especially the appearance and behavior of the editing canvas.
+      </p>
+    </mat-card-content>
+  </mat-card>
+</div>

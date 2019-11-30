@@ -14,6 +14,19 @@
   margin-left: 8px;
 }
 
+.bio-card {
+  width: 25%;
+}
+
+.bio-title {
+  font-size: 24px;
+}
+
+.about-text {
+  text-align: justify;
+  font-size: 24px
+}
+
 mat-grid-tile-header {
   font-size: large;
   font-weight: bold;
