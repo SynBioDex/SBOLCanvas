@@ -18,16 +18,43 @@
   <mat-card-content fxLayout="row wrap" fxLayoutAlign="space-around center">
     <div style="max-width: 1200px;">
       <p class="about-text">
-        This is an app for making SBOL. See sbol visual page (links)
+        SBOL Canvas is the newest tool for creating SBOL documents.
+        For an in-depth guide to SBOL structure and syntax, go to <a href="https://sbolstandard.org/">sbolstandard.org</a>.
+        During development, SBOL Canvas's designers drew inspiration from <a href="https://sboldesigner.github.io/">SBOL Designer</a> and <a href="https://draw.io">Draw.io</a>, so it's workflow should be intuitive for anyone familiar with those editors.
       </p>
+      <p class="about-text">
+        SBOL Canavas's <a [routerLink]="['/']">main page</a> is divided into four parts. We will refer to these parts by name throughout the tutorial.
+      </p>
+      <ul class="about-text">
+        <li>
+          <b>The toolbar:</b> The blue bar at the top of the screen. It is full of options for manipulating your diagram.
+        </li>
+        <li>
+          <b>The glyph menu:</b> The list of glyphs on the left side of the screen. This allows you to add components to your diagram.
+        </li>
+        <li>
+          <b>The canvas:</b> The large region in the center of the screen. This is where your diagram appears.
+        </li>
+        <li>
+          <b>The side menu:</b> A menu on the right side of the screen.
+          This is split between the <b>info menu,</b> which has options for editing components' SBOL attributes; and the <b>design menu,</b> which has options for changing glyph's appearances.
+          To switch between the <b>info menu</b> and the <b>design menu,</b> click on the words "Info" or "Design," as pictured here:
+          <br>
+          <img src="assets/tutorial_pics/side_menu_top.png"/>
+        </li>
+      </ul>
+
+
       <h2>
         Using SBOL Canvas
       </h2>
       <ul class="about-text">
         <li>
-          Basic navigation and use
+          Basic features and use
         </li>
       </ul>
+
+
       <h2>
         More Features
       </h2>
