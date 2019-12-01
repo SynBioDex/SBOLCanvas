@@ -13,6 +13,35 @@
   </mat-toolbar-row>
 </mat-toolbar>
 
+<mat-sidenav-container [hasBackdrop]="false"><!-- A sidebar -->
+
+  <!-- table of contents -->
+  <mat-sidenav style="margin: 8px;" opened="true" position="end"
+  mode="side">
+  <ul>
+
+  <li title="Getting Started">
+    <a href="/tutorial#gettingStarted">Getting Started</a>
+  </li>
+
+  <li title="Manipulating the Canvas">
+    <a href="/tutorial#manipulatingTheCanvas">Manipulating the Canvas</a>
+  </li>
+
+  <li title="Saving and Loading">
+    <a href="/tutorial#savingAndLoading">Saving and Loading</a>
+  </li>
+
+  <li title="More Features">
+    <a href="/tutorial#moreFeatures">More Features</a>
+  </li>
+
+  </ul>
+  </mat-sidenav>
+
+    <!-- tutorial text -->
+    <div ng-sidebar-content>
+
 
 <mat-card fxLayout="column" style="margin: 8px;" >
   <mat-card-content fxLayout="row wrap" fxLayoutAlign="space-around center">
@@ -48,7 +77,7 @@
       <p class="about-text">Most of SBOL Canvas's options have a tooltip. Move the mouse over buttons or text fields to see a brief description.</p>
 
 
-      <h2>
+      <h2 id="gettingStarted">
         Getting Started
       </h2>
       <ul class="about-text">
@@ -74,7 +103,7 @@
         </li>
       </ul>
 
-      <h2>
+      <h2 id="manipulatingTheCanvas">
         Manipulating the Canvas
       </h2>
       <ul class="about-text">
@@ -111,7 +140,7 @@
       </ul>
 
 
-      <h2>
+      <h2 id="savingAndLoading">
         Saving and Loading
       </h2>
       <ul class="about-text">
@@ -133,7 +162,7 @@
       </ul>
 
 
-      <h2>
+      <h2 id="moreFeatures">
         More Features
       </h2>
       <ul class="about-text">
@@ -153,3 +182,5 @@
     </div>
   </mat-card-content>
 </mat-card>
+</div>
+</mat-sidenav-container>
