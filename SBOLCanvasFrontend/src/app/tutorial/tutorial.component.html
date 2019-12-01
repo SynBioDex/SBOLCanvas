@@ -33,7 +33,7 @@
           <b>The glyph menu:</b> The list of glyphs on the left side of the screen. This allows you to add components to your diagram.
         </li>
         <li>
-          <b>The canvas:</b> The large region in the center of the screen. This is where your diagram appears.
+          <b>The canvas:</b> The large region in the center of the screen. This is where your diagram appears. In SBOL terms, this canvas is a Module Definition that you will add components to.
         </li>
         <li>
           <b>The side menu:</b> A menu on the right side of the screen.
@@ -41,19 +41,74 @@
           To switch between the <b>info menu</b> and the <b>design menu,</b> click on the words "Info" or "Design," as pictured here:
           <br>
           <img src="assets/tutorial_pics/side_menu_top.png"/>
+          <br>
+          Note that both of these menus are empty unless a component is selected on the <b>canvas.</b>
         </li>
       </ul>
+      <p class="about-text">Most of SBOL Canvas's options have a tooltip. Move the mouse over buttons or text fields to see a brief description.</p>
 
 
       <h2>
-        Using SBOL Canvas
+        Getting Started
       </h2>
       <ul class="about-text">
         <li>
-          Basic features and use
+          Get started by adding a DNA strand to the canvas. Find the search bar at the top of the <b>glyph menu:</b>
+          <br>
+          <img src="assets/tutorial_pics/search_bar.png" />
+          <br>
+          Then type in "dna." This brings up an icon for creating new backbones: the horizontal line as shown below.
+          <br>
+          <img src="assets/tutorial_pics/backbone.png" />
+          <br>
+          You can click on the horizontal line to create a backbone in the center of your <b>canvas</b>, or click-and-drag to drop it anywhere you like.
+        </li>
+
+        <li>
+          To add components to your strand, first click the search bar's "X" to clear your search, then choose any glyph from the "Sequence Features" section.
+          Clicking on them will add them to the currently selected strand, and click-and-dragging will add them to the strand of your choice.
+        </li>
+
+        <li>
+          You can add Molecular Species glyphs, Interactions, Textboxes, and additional DNA strands in the same way.
         </li>
       </ul>
 
+      <h2>
+        Manipulating the Canvas
+      </h2>
+      <ul class="about-text">
+        <li>
+          Tap left-click to select different components. The contents of the <b>info menu</b> and <b>design menu</b> apply to whatever you have selected. Selection is indicated by a green, dashed box.
+        </li>
+        <li>
+          <b>IMPORTANT:</b> Selecting glyphs on a DNA strand is different from selecting the strand itself. To select a single glyph on the strand, click exactly on it.
+          To select the entire strand, click on the horizontal line, or the empty space near it.
+          <br>
+          <img src="assets/tutorial_pics/selection_glyph_vs_strand.png" />
+        </li>
+        <li>
+          To select multiple parts, left-click on an empty part of the canvas (away from any component), and drag to create a light-blue box. Anything inside the box when you release the mouse button will be selected.
+          Note that the <b>info menu</b> will be empty if more than one component is selected.
+        </li>
+        <li>
+          Holding CTRL (CMD for Mac) while clicking adds or removes components from the selection.
+        </li>
+        <li>
+          Left-click-and-drag on a component to move it (and other selected components, if any).
+        </li>
+        <li>
+          Right-click-and-drag on an empty part of the canvas to move your view around.
+        </li>
+        <li>
+          This section of the <b>toolbar</b> has several important options:
+          <br>
+          <img src="assets/tutorial_pics/simple_toolbar_options.png" />
+          <br>
+          These are controls for zooming in and out of the <b>canavs,</b> deleting the selected components, and undoing/redoing recent changes.
+          Deleting glyphs can also be done with the "delete" and "backspace" keys on your keyboard, and undoing/redoing can be done with CTRL+Z and CTRL+SHIFT+Z respectively.
+        </li>
+      </ul>
 
       <h2>
         More Features
