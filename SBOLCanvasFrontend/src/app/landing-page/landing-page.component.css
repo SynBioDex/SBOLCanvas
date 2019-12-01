@@ -27,6 +27,10 @@
   font-size: 16pt;
 }
 
+.botton-half {
+  background: #D3D3D3;
+}
+
 mat-grid-tile-header {
   font-size: large;
   font-weight: bold;
