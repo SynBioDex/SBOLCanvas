@@ -1,0 +1,41 @@
+<mat-toolbar color="primary">
+  <mat-toolbar-row class="toolbar-row">
+
+    <div style="width: 230.77px"><button mat-stroked-button class="toolbar-row-button"
+                                         [matTooltip]="'Back to the Canvas'"
+                                         [routerLink]="['/']"><mat-icon>exit_to_app</mat-icon></button>
+    </div>
+
+    <span class="toolbar-spacer" style="font-weight: bold; font-size: 34px">Tutorial</span>
+
+    <img src="assets/banner.png"
+         style="max-width:100%;max-height:100%" [routerLink]="['/']"/>
+  </mat-toolbar-row>
+</mat-toolbar>
+
+
+<mat-card fxLayout="column" style="margin: 8px;" >
+  <mat-card-content fxLayout="row wrap" fxLayoutAlign="space-around center">
+    <div style="max-width: 1200px;">
+      <p class="about-text">
+        This is an app for making SBOL. See sbol visual page (links)
+      </p>
+      <h2>
+        Using SBOL Canvas
+      </h2>
+      <ul class="about-text">
+        <li>
+          Basic navigation and use
+        </li>
+      </ul>
+      <h2>
+        More Features
+      </h2>
+      <ul class="about-text">
+        <li>
+          Situationally useful features like glyph flipping
+        </li>
+      </ul>
+    </div>
+  </mat-card-content>
+</mat-card>

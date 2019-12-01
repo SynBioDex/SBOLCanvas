@@ -59,11 +59,11 @@
     <button mat-stroked-button class="toolbar-row-button" [matMenuTriggerFor]="helpMenu">Help</button>
     <mat-menu #helpMenu="matMenu">
       <button mat-menu-item class="toolbar-row-button"
-              [matTooltip]="'Focus in the selected part to view and edit its subparts'"
-              (click)="graphService.enterGlyph()">Tutorial</button>
+              [matTooltip]="'Help using SBOL Canvas'"
+              [routerLink]="['/tutorial']">Tutorial</button>
 
       <button mat-menu-item class="toolbar-row-button"
-              [matTooltip]="'Focus out to the parent part'"
+              [matTooltip]="'About SBOL Canavs and its creators'"
               [routerLink]="['/about']">About</button>
     </mat-menu>
 

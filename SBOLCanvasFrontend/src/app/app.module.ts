@@ -38,6 +38,7 @@ import { ErrorComponent } from './error/error.component';
 import { SearchfilterPipe } from './searchfilter.pipe';
 import { ExportComponent } from './export/export.component';
 import { LandingPageComponent } from './landing-page/landing-page.component';
+import { TutorialComponent } from './tutorial/tutorial.component';
 
 
 @NgModule({
@@ -61,6 +62,7 @@ import { LandingPageComponent } from './landing-page/landing-page.component';
     SearchfilterPipe,
     ExportComponent,
     LandingPageComponent,
+    TutorialComponent,
   ],
   imports: [
     BrowserModule,
