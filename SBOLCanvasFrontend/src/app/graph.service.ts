@@ -459,6 +459,21 @@ export class GraphService {
           circuitContainers.push(cell.getParent());
       }
 
+      // If we are not at the top level, we need to check
+      // for a corner case where we can't allow the backbone
+      // to be deleted
+      if (this.graph.getCurrentRoot() != null) {
+        let newSelection = [];
+        for (let cell of selectedCells) {
+          // Anything other than the backbone gets added to
+          // the revised selection
+          if (!(cell.isBackbone() || cell.isCircuitContainer())) {
+            newSelection.push(cell);
+          }
+        }
+        this.graph.setSelectionCells(newSelection);
+      }
+
       this.editor.execute('delete');
 
       for (let cell of circuitContainers) {
