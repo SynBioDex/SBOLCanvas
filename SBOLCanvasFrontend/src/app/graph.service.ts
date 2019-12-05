@@ -67,9 +67,6 @@ export class GraphService {
   // Boolean for keeping track of whether we are showing scars or not in the graph.
   showingScars: boolean = true;
 
-  // Counter for keeping track of how many times the user drilled into a glyph.
-  drillDepth: number = 0;
-
   baseMolecularSpeciesGlyphStyle: any;
   baseSequenceFeatureGlyphStyle: any;
 
@@ -355,7 +352,6 @@ export class GraphService {
     }
 
     this.graph.enterGroup();
-    this.drillDepth++;
 
     this.fitCamera();
 
@@ -369,11 +365,12 @@ export class GraphService {
    * at the top of the drilling hierarchy, does nothing)
    */
   exitGlyph() {
-    if (this.drillDepth > 0) {
-      // Exit twice: the first only gets you to the circuitContainer
+    // Exit twice or not at all: the first exit only gets you to the circuitContainer
+    const possibleNewRoot = this.graph.getDefaultParent().getParent().getParent();
+
+    if (this.graph.isValidRoot(possibleNewRoot)) {
       this.graph.exitGroup();
       this.graph.exitGroup();
-      this.drillDepth--;
 
       // We call this here when we zoom out to synchronize
       // the current graph vertices with the showing scars setting
@@ -382,8 +379,8 @@ export class GraphService {
       this.fitCamera();
     }
 
-    // Broadcast to the UI that we are no longer in component definition mode
-    if (this.drillDepth < 1) {
+    if (!this.graph.getCurrentRoot()) {
+      // Broadcast to the UI that we are no longer in component definition mode
       this.metadataService.setComponentDefinitionMode(false);
     }
   }
