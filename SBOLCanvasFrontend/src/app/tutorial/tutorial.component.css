@@ -28,7 +28,7 @@ a {
 }
 
 /* Hanging indent to make bullet point separation more distinct */
-ul {
+div > ul {
   padding-left: 50pt ;
   text-indent: -20pt ;
 }

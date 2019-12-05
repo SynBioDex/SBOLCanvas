@@ -16,34 +16,38 @@
 <mat-sidenav-container [hasBackdrop]="false"><!-- A sidebar -->
 
   <!-- table of contents -->
-  <mat-sidenav style="margin: 8px;" opened="true" position="end"
-  mode="side">
-  <ul>
+  <mat-sidenav style="padding: 10px;" opened="true" position="end"
+  mode="side" [disableClose]="true">
+    <ul style="padding-left:25px">
 
-  <li title="Getting Started">
-    <a href="/tutorial#gettingStarted">Getting Started</a>
-  </li>
+      <li title="Tutorial">
+        <a href="/tutorial#SBOLCanvas">SBOL Canvas</a>
+      </li>
 
-  <li title="Manipulating the Canvas">
-    <a href="/tutorial#manipulatingTheCanvas">Manipulating the Canvas</a>
-  </li>
+      <li title="Getting Started">
+        <a href="/tutorial#gettingStarted">Getting Started</a>
+      </li>
 
-  <li title="Saving and Loading">
-    <a href="/tutorial#savingAndLoading">Saving and Loading</a>
-  </li>
+      <li title="Manipulating the Canvas">
+        <a href="/tutorial#manipulatingTheCanvas">Manipulating the Canvas</a>
+      </li>
 
-  <li title="More Features">
-    <a href="/tutorial#moreFeatures">More Features</a>
-  </li>
+      <li title="Saving and Loading">
+        <a href="/tutorial#savingAndLoading">Saving and Loading</a>
+      </li>
 
-  </ul>
+      <li title="More Features">
+        <a href="/tutorial#moreFeatures">More Features</a>
+      </li>
+
+    </ul>
   </mat-sidenav>
 
     <!-- tutorial text -->
     <div ng-sidebar-content style="height: 90vh;">
 
 
-<mat-card fxLayout="column" style="margin: 8px;" >
+<mat-card fxLayout="column" style="margin: 8px;"  id="SBOLCanvas">
   <mat-card-content fxLayout="row wrap" fxLayoutAlign="space-around center">
     <div style="max-width: 1200px;">
       <p class="about-text">
@@ -167,16 +171,20 @@
       </h2>
       <ul class="about-text">
         <li>
-          Recursive glyphs
+          To define composite glyphs, select a sequence feature glyph. Then, in the <b>toolbar,</b> choose "View" and "Enter Glyph." To exit to your previous view, choose "View" and "Exit Glyph."
         </li>
         <li>
-          Toggle scars
+          To hide scar glyphs, look in the <b>toolbar</b> and choose "View" and "Toggle Scar Visibility." Choosing this option again will show scars again.
         </li>
         <li>
-          Move to Front and Back
+          Moving Components like Molecular Species and textboxes near eachother can cause one to be hidden behind another. To change the ordering, select a glyph that you want to move and then use these buttons from the <b>toolbar:</b>
+          <br />
+          <img src="assets/tutorial_pics/front_and_back.png" />
         </li>
         <li>
-          Glyph flipping
+          To indicate the orientation of a sequence feature glyph, select the glyph that needs to change and then use this button from the <b>toolbar:</b>
+          <br />
+          <img src="assets/tutorial_pics/glyph_flip.png" />
         </li>
       </ul>
     </div>
