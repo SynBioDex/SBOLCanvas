@@ -67,9 +67,6 @@ export class GraphService {
   // Boolean for keeping track of whether we are showing scars or not in the graph.
   showingScars: boolean = true;
 
-  // Counter for keeping track of how many times the user drilled into a glyph.
-  drillDepth: number = 0;
-
   baseMolecularSpeciesGlyphStyle: any;
   baseSequenceFeatureGlyphStyle: any;
 
@@ -355,7 +352,6 @@ export class GraphService {
     }
 
     this.graph.enterGroup();
-    this.drillDepth++;
 
     this.fitCamera();
 
@@ -369,11 +365,12 @@ export class GraphService {
    * at the top of the drilling hierarchy, does nothing)
    */
   exitGlyph() {
-    if (this.drillDepth > 0) {
-      // Exit twice: the first only gets you to the circuitContainer
+    // Exit twice or not at all: the first exit only gets you to the circuitContainer
+    const possibleNewRoot = this.graph.getDefaultParent().getParent().getParent();
+
+    if (this.graph.isValidRoot(possibleNewRoot)) {
       this.graph.exitGroup();
       this.graph.exitGroup();
-      this.drillDepth--;
 
       // We call this here when we zoom out to synchronize
       // the current graph vertices with the showing scars setting
@@ -382,8 +379,8 @@ export class GraphService {
       this.fitCamera();
     }
 
-    // Broadcast to the UI that we are no longer in component definition mode
-    if (this.drillDepth < 1) {
+    if (!this.graph.getCurrentRoot()) {
+      // Broadcast to the UI that we are no longer in component definition mode
       this.metadataService.setComponentDefinitionMode(false);
     }
   }
@@ -460,6 +457,21 @@ export class GraphService {
       for (let cell of selectedCells) {
         if (cell.isSequenceFeatureGlyph())
           circuitContainers.push(cell.getParent());
+      }
+
+      // If we are not at the top level, we need to check
+      // for a corner case where we can't allow the backbone
+      // to be deleted
+      if (this.graph.getCurrentRoot() != null) {
+        let newSelection = [];
+        for (let cell of selectedCells) {
+          // Anything other than the backbone gets added to
+          // the revised selection
+          if (!(cell.isBackbone() || cell.isCircuitContainer())) {
+            newSelection.push(cell);
+          }
+        }
+        this.graph.setSelectionCells(newSelection);
       }
 
       this.editor.execute('delete');
