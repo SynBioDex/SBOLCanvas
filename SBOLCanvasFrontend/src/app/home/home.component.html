@@ -10,13 +10,13 @@
   <!-- On the left is the glyph menu -->
   <mat-sidenav [(opened)]="leftBarOpened" position="start"
   mode="side"
-  disableClose="true">
+  disableClose="true" [disableClose]="true">
       <app-glyph-menu></app-glyph-menu>
   </mat-sidenav>
 
   <!-- On the right will be the info menu and color palette -->
   <mat-sidenav [(opened)]="rightBarOpened" position="end"
-  mode="side">
+  mode="side" [disableClose]="true">
     <mat-tab-group>
       <mat-tab label="Info">
         <app-info-editor></app-info-editor>
