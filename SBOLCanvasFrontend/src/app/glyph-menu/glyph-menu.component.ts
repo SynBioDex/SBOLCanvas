@@ -10,6 +10,7 @@ import {GlyphService} from '../glyph.service';
 import {SearchfilterPipe} from '../searchfilter.pipe';
 import {DomSanitizer} from '@angular/platform-browser';
 import {MetadataService} from '../metadata.service';
+import {register} from 'ts-node';
 
 @Component({
   selector: 'app-glyph-menu',
@@ -60,8 +61,21 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    for (const element of this.canvasElements.toArray()) {
+    this.canvasElements.changes.subscribe(
+      (next: QueryList<ElementRef>) => {
+        this.registerDragsources();
+      }
+    );
+    this.registerDragsources();
+  }
+
+  registerDragsources() {
+    for (const element of this.canvasElements.toArray().filter(
+      element => !(element.nativeElement.getAttribute('isDragsource') == 'true')
+    ))
+    {
       const elt = element.nativeElement;
+      element.nativeElement.setAttribute('isDragsource', 'true');
       switch (elt.getAttribute('elementType')) {
         case this.elementTypes.BACKBONE:
           this.graphService.makeBackboneDragsource(elt);
@@ -80,6 +94,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
           break;
       }
     }
+
+
   }
 
   registerSvgElements() {
