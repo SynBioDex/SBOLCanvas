@@ -16,34 +16,38 @@
 <mat-sidenav-container [hasBackdrop]="false"><!-- A sidebar -->
 
   <!-- table of contents -->
-  <mat-sidenav style="margin: 8px;" opened="true" position="end"
-  mode="side">
-  <ul>
+  <mat-sidenav style="padding: 10px;" opened="true" position="end"
+  mode="side" [disableClose]="true">
+    <ul style="padding-left:25px">
 
-  <li title="Getting Started">
-    <a href="/tutorial#gettingStarted">Getting Started</a>
-  </li>
+      <li title="Tutorial">
+        <a href="/tutorial#SBOLCanvas">SBOL Canvas</a>
+      </li>
 
-  <li title="Manipulating the Canvas">
-    <a href="/tutorial#manipulatingTheCanvas">Manipulating the Canvas</a>
-  </li>
+      <li title="Getting Started">
+        <a href="/tutorial#gettingStarted">Getting Started</a>
+      </li>
 
-  <li title="Saving and Loading">
-    <a href="/tutorial#savingAndLoading">Saving and Loading</a>
-  </li>
+      <li title="Manipulating the Canvas">
+        <a href="/tutorial#manipulatingTheCanvas">Manipulating the Canvas</a>
+      </li>
 
-  <li title="More Features">
-    <a href="/tutorial#moreFeatures">More Features</a>
-  </li>
+      <li title="Saving and Loading">
+        <a href="/tutorial#savingAndLoading">Saving and Loading</a>
+      </li>
 
-  </ul>
+      <li title="More Features">
+        <a href="/tutorial#moreFeatures">More Features</a>
+      </li>
+
+    </ul>
   </mat-sidenav>
 
     <!-- tutorial text -->
     <div ng-sidebar-content style="height: 90vh;">
 
 
-<mat-card fxLayout="column" style="margin: 8px;" >
+<mat-card fxLayout="column" style="margin: 8px;"  id="SBOLCanvas">
   <mat-card-content fxLayout="row wrap" fxLayoutAlign="space-around center">
     <div style="max-width: 1200px;">
       <p class="about-text">
