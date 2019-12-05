@@ -253,6 +253,19 @@ export class GraphService {
     this.setAllScars(this.showingScars);
   }
 
+  getScarsVisible() {
+    let allGraphCells = this.graph.getDefaultParent().children;
+    for (let i = 0; i < allGraphCells.length; i++) {
+      for (let j = 0; j < allGraphCells[i].children.length; j++) {
+        if (allGraphCells[i].children[j].isScar()) {
+          if (allGraphCells[i].children[j].getGeometry().width > 0)
+            return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /**
    * Sets all scars in the current view
    * @param isCollapsed
@@ -491,6 +504,9 @@ export class GraphService {
     // (un/re)doing is managed by the editor; it only works
     // if all changes are encapsulated by graphModel.(begin/end)Update
     this.editor.execute('undo');
+
+    // If the undo caused scars to become visible, we should update
+    this.showingScars = this.getScarsVisible();
   }
 
   /**
@@ -498,6 +514,9 @@ export class GraphService {
    */
   redo() {
     this.editor.execute('redo');
+
+    // If the undo caused scars to become visible, we should update
+    this.showingScars = this.getScarsVisible();
   }
 
   zoomIn() {
