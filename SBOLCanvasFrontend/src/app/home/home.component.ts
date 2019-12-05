@@ -56,7 +56,7 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
 
     // If we are not an input field or text area, then we are safe to assume the user is trying to do
     // stuff to the graph.
-    if ((target == null || (target.tagName != "INPUT" && target.tagName != "TEXTAREA")) && !this.toolbar.popupOpen) {
+    if ((target == null || (target.tagName != "INPUT" && target.tagName != "TEXTAREA" && target.tagName != "DIV")) && !this.toolbar.popupOpen) {
       // prevent default actions on keypresses using preventDefault()
 
       if (code === KEY_CODE.DELETE || code === KEY_CODE.BACKSPACE) {
