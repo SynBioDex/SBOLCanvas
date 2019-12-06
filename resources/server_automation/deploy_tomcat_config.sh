@@ -21,6 +21,13 @@ scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/ROOT_config/index.jsp root@${
 scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/base_config_files/tomcat.service root@${SERVER_ADDRESS}:/etc/systemd/system/ \
 || die "Failed to scp systemd unit file for tomcat to server"
 
+scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_context.html root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR}/webapps/canvas/META-INF/context.html \
+|| die "Failed to scp front end config files to server"
+scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_rewrite.config root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR}/webapps/canvas/WEB-INF/rewrite.config \
+|| die "Failed to scp front end config files to server"
+scp -P ${SERVER_SSH_PORT} ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_web.xml root@${SERVER_ADDRESS}:${TOMCAT_SERVER_DIR}/webapps/canvas/WEB-INF/web.xml \
+|| die "Failed to scp front end config files to server"
+
 # Runs script on the server directly.
 ssh -p ${SERVER_SSH_PORT} root@${SERVER_ADDRESS} /bin/bash -s < ./runs_on_target_machine/refresh_tomcat.sh root \
 || die "Failed to refresh systemd tomcat service on server"
