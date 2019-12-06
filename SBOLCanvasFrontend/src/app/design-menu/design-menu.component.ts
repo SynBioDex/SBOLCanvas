@@ -1,14 +1,9 @@
 import {Component, ElementRef, OnInit, ViewChild, ViewEncapsulation} from '@angular/core';
-import { MccColorPickerItem, MccColorPickerService } from 'material-community-components';
-import {FormBuilder, FormControl, FormGroup} from '@angular/forms';
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
-import {SaveGraphComponent} from '../save-graph/save-graph.component';
-import {FilesService} from '../files.service';
 import {MatDialog} from '@angular/material/dialog';
 import {ColorPickerComponent} from '../color-picker/color-picker.component';
 import {StyleInfo} from '../style-info';
-import {style} from '@angular/animations';
 
 declare var require: any;
 const mx = require('mxgraph')({
