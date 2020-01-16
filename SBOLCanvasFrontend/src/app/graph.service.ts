@@ -17,6 +17,7 @@ import { forEach } from "@angular/router/src/utils/collection";
 import { InteractionInfo } from './interactionInfo';
 import { style } from '@angular/animations';
 import { environment } from 'src/environments/environment';
+import { mxAbstractCanvas2D } from 'src/mxgraph';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -63,6 +64,9 @@ export class GraphService {
   graph: mxGraph;
   editor: mxEditor;
   graphContainer: HTMLElement;
+
+  // Keeps track of the cell order we entered
+  viewStack: mxCell[];
 
   // Boolean for keeping track of whether we are showing scars or not in the graph.
   showingScars: boolean = true;
@@ -149,6 +153,18 @@ export class GraphService {
     this.initStyles();
     this.initCustomShapes();
     this.initSequenceFeatureGlyphMovement();
+
+    // initalize the root view cell of the graph
+    const cell1 = this.graph.getModel().getCell(1);
+    const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0,0,0,0, null);
+    this.graph.enterGroup(rootViewCell);
+    this.viewStack = [];
+    this.viewStack.push(rootViewCell);
+
+    // initalize the GlyphInfoDictionary
+    const cell0 = this.graph.getModel().getCell(0);
+    const glyphInfoDict: {[id:string]: GlyphInfo} = {};
+    cell0.data = glyphInfoDict;
   }
 
   /**
@@ -216,7 +232,8 @@ export class GraphService {
 
     const cell = cells[0];
     if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
-      const glyphInfo = cell.data;
+      console.log(this.getFromGlyphDict(cell.displayID));
+      const glyphInfo = this.getFromGlyphDict(cell.displayID);
       if (glyphInfo) {
         this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
       }
@@ -310,7 +327,7 @@ export class GraphService {
       }
 
       if (children[i].isSequenceFeatureGlyph()) {
-        this.setScars(children[i].getCircuitContainer(), isCollapsed);
+        this.setScars(children[i].getCircuitContainer(this.graph), isCollapsed);
       }
     }
     circuitContainer.refreshCircuitContainer(this.graph)
@@ -364,7 +381,12 @@ export class GraphService {
       return;
     }
 
-    this.graph.enterGroup();
+    const childViewCell = this.graph.getModel().getCell(selection[0].displayID);
+    this.viewStack.push(childViewCell);
+    this.graph.enterGroup(childViewCell);
+
+    // set the default selection to the circuit container
+    this.graph.setSelectionCell(childViewCell.children[0]);
 
     this.fitCamera();
 
@@ -378,21 +400,22 @@ export class GraphService {
    * at the top of the drilling hierarchy, does nothing)
    */
   exitGlyph() {
-    // Exit twice or not at all: the first exit only gets you to the circuitContainer
-    const possibleNewRoot = this.graph.getDefaultParent().getParent().getParent();
-
-    if (this.graph.isValidRoot(possibleNewRoot)) {
-      this.graph.exitGroup();
-      this.graph.exitGroup();
+    // the root view should always be left on the viewStack
+    if(this.viewStack.length > 1){
+      this.viewStack.pop();
+      const newViewCell = this.viewStack[this.viewStack.length-1];
+      this.graph.enterGroup(newViewCell);
 
       // We call this here when we zoom out to synchronize
       // the current graph vertices with the showing scars setting
       this.setAllScars(this.showingScars);
 
+      //TODO set selection to correct cell
+
       this.fitCamera();
     }
 
-    if (!this.graph.getCurrentRoot()) {
+    if (this.viewStack.length == 1) {
       // Broadcast to the UI that we are no longer in component definition mode
       this.metadataService.setComponentDefinitionMode(false);
     }
@@ -657,15 +680,24 @@ export class GraphService {
       x = x - circuitContainer.getGeometry().x;
       y = y - circuitContainer.getGeometry().y;
 
+      // create the glyph info and add it to the dictionary
+      const glyphInfo = new GlyphInfo();
+      glyphInfo.partRole = name;
+      this.updateGlyphDict(glyphInfo);
+
       // Insert new glyph and its components
-      const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, '', x, y, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
-      const childCircuitContainer = this.graph.insertVertex(sequenceFeatureCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
+      const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, null, x, y, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
+      sequenceFeatureCell.displayID = glyphInfo.displayID;
+
+      // construct the view cell for it's children
+      const cell1 = this.graph.getModel().getCell(1);
+      const childViewCell = this.graph.insertVertex(cell1, glyphInfo.displayID, '', 0, 0, 0, 0, null);
+
+      // add the backbone to the child view cell
+      const childCircuitContainer = this.graph.insertVertex(childViewCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
       const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
 
-      sequenceFeatureCell.data = new GlyphInfo();
-      sequenceFeatureCell.data.partRole = name;
-
-      sequenceFeatureCell.setCollapsed(true);
+      //sequenceFeatureCell.setCollapsed(true);
 
       childCircuitContainerBackbone.setConnectable(false);
       childCircuitContainer.setConnectable(false);
@@ -967,6 +999,19 @@ export class GraphService {
     } finally {
       this.graph.getModel().endUpdate();
     }
+  }
+
+  /**
+   * Updates the glyph dictionary and any other side effects
+   */
+  updateGlyphDict(info: GlyphInfo){
+    const cell0 = this.graph.getModel().getCell(0);
+    cell0.data[info.displayID] = info;
+  }
+
+  getFromGlyphDict(displayID: string){
+    const cell0 = this.graph.getModel().getCell(0);
+    return cell0.data[displayID];
   }
 
   /**
@@ -1427,7 +1472,7 @@ export class GraphService {
       }
 
       // format our child circuitContainer (width, height, subcomponents)
-      this.getCircuitContainer().refreshCircuitContainer(graph);
+      this.getCircuitContainer(graph).refreshCircuitContainer(graph);
     };
 
     /**
@@ -1471,9 +1516,10 @@ export class GraphService {
     /**
      * Returns the circuit container associated with this cell.
      */
-    mx.mxCell.prototype.getCircuitContainer = function () {
+    mx.mxCell.prototype.getCircuitContainer = function (graph) {
       if (this.isSequenceFeatureGlyph()) {
-        for (let child of this.children) {
+        const children = graph.getModel().getCell(this.displayID).children;
+        for (let child of children) {
           if (child.isCircuitContainer()) {
             return child;
           }
