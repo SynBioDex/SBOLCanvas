@@ -67,6 +67,7 @@ export class GraphService {
 
   // Keeps track of the cell order we entered
   viewStack: mxCell[];
+  selectionStack: mxCell[];
 
   // Boolean for keeping track of whether we are showing scars or not in the graph.
   showingScars: boolean = true;
@@ -77,7 +78,8 @@ export class GraphService {
   // This object handles the hotkeys for the graph.
   keyHandler: any;
 
-  static infoEdit = class {
+  // edit object for interaction history
+  static interactionEdit = class {
     cell: mxCell;
     info: any;
     previous: any;
@@ -100,6 +102,30 @@ export class GraphService {
       }
     }
   }
+
+  // edit object for glyph history
+  static glyphEdit = class{
+    info: GlyphInfo;
+    previous: GlyphInfo;
+    constructor(glyphInfo){
+      this.info = glyphInfo;
+      this.previous = glyphInfo;
+    }
+
+    execute(){
+      if(this.info != null){
+        let tmp = this.info.makeCopy();
+        if(this.previous == null){
+          this.info = null;
+        }else{
+          this.info.copyDataFrom(this.previous);
+        }
+
+        this.previous = tmp;
+      }
+    }
+  }
+
 
   constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
     // constructor code is divided into helper methods for organization,
@@ -160,6 +186,7 @@ export class GraphService {
     this.graph.enterGroup(rootViewCell);
     this.viewStack = [];
     this.viewStack.push(rootViewCell);
+    this.selectionStack = [];
 
     // initalize the GlyphInfoDictionary
     const cell0 = this.graph.getModel().getCell(0);
@@ -232,7 +259,6 @@ export class GraphService {
 
     const cell = cells[0];
     if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
-      console.log(this.getFromGlyphDict(cell.displayID));
       const glyphInfo = this.getFromGlyphDict(cell.displayID);
       if (glyphInfo) {
         this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
@@ -382,6 +408,7 @@ export class GraphService {
     }
 
     const childViewCell = this.graph.getModel().getCell(selection[0].displayID);
+    this.selectionStack.push(selection[0]);
     this.viewStack.push(childViewCell);
     this.graph.enterGroup(childViewCell);
 
@@ -405,6 +432,10 @@ export class GraphService {
       this.viewStack.pop();
       const newViewCell = this.viewStack[this.viewStack.length-1];
       this.graph.enterGroup(newViewCell);
+
+      // reset the selection to the glyph we just exited
+      const newSelectedCell = this.selectionStack.pop();
+      this.graph.setSelectionCell(newSelectedCell);
 
       // We call this here when we zoom out to synchronize
       // the current graph vertices with the showing scars setting
@@ -683,7 +714,7 @@ export class GraphService {
       // create the glyph info and add it to the dictionary
       const glyphInfo = new GlyphInfo();
       glyphInfo.partRole = name;
-      this.updateGlyphDict(glyphInfo);
+      this.addToGlyphDict(glyphInfo);
 
       // Insert new glyph and its components
       const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, null, x, y, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
@@ -1002,13 +1033,61 @@ export class GraphService {
   }
 
   /**
-   * Updates the glyph dictionary and any other side effects
+   * Updates a GlyphInfo and performs the necessary side effects if the displayID changed
    */
-  updateGlyphDict(info: GlyphInfo){
+  updateGlyphDict(cell: mxCell, info: GlyphInfo){
+    const oldDisplayID = cell.displayID;
+    const newDisplayID = info.displayID;
+    const cell0 = this.graph.getModel().getCell(0);
+    if(oldDisplayID != newDisplayID){
+      // check for a cycle
+      let cycle = false;
+      this.viewStack.forEach(function (viewCell){
+        if(viewCell.id === newDisplayID)
+          cycle = true;
+      });
+      if(cycle){
+        // TODO tell the user a cycle isn't allowed
+        return;
+      }
+
+      if(this.graph.getModel().getCell(newDisplayID) != null){
+        // TODO: a cell with this display ID already exists prompt user if they want to couple them
+      }
+      
+      const coupledCells = this.graph.getModel().filterCells(this.graph.getModel().cells, function (cell) {
+        return cell.id === oldDisplayID;
+      });
+      if(coupledCells.length > 1){
+        // TODO prompt the user if they want to keep the cells coupled
+      }
+
+      // update the glyphDict
+      delete cell0.data[oldDisplayID];
+      cell0.data[newDisplayID] = info;
+      cell.displayID = newDisplayID;
+
+      // update the viewCell id
+      const viewCell = this.graph.getModel().getCell(oldDisplayID);
+      viewCell.id = newDisplayID;
+      delete this.graph.getModel().cells[oldDisplayID];
+      this.graph.getModel().cells[newDisplayID] = viewCell;
+    }else{
+      cell0.data[newDisplayID] = info;
+    }
+  }
+
+  /**
+   * Add a GlyphInfo object to the dictionary
+   */
+  addToGlyphDict(info: GlyphInfo){
     const cell0 = this.graph.getModel().getCell(0);
     cell0.data[info.displayID] = info;
   }
 
+  /**
+   * Get the GlyphInfo with the given displayID from the dictionary
+   */
   getFromGlyphDict(displayID: string){
     const cell0 = this.graph.getModel().getCell(0);
     return cell0.data[displayID];
@@ -1030,19 +1109,20 @@ export class GraphService {
       (info instanceof InteractionInfo && selectedCell.isInteraction())) {
 
       // since it does, update its info
-      const cellData = selectedCell.data;
-      if (cellData) {
-        this.graph.getModel().beginUpdate();
-        try{
-          let edit = new GraphService.infoEdit(selectedCell, info);
-          if(info instanceof GlyphInfo)
-            this.mutateSequenceFeatureGlyph(info.partRole);
-          else
-            this.mutateInteractionGlyph(info.interactionType);
-          this.graph.getModel().execute(edit);
-        }finally{
-          this.graph.getModel().endUpdate();
+      this.graph.getModel().beginUpdate();
+      try{
+        if(info instanceof GlyphInfo){
+          //let glyphEdit = new GraphService.glyphEdit(info);
+          this.updateGlyphDict(selectedCell, info);
+          this.mutateSequenceFeatureGlyph(info.partRole);
+          //this.graph.getModel().execute(glyphEdit);
+        }else{
+          let interactionEdit = new GraphService.interactionEdit(selectedCell, info);
+          this.mutateInteractionGlyph(info.interactionType);
+          this.graph.getModel().execute(interactionEdit);
         }
+      }finally{
+        this.graph.getModel().endUpdate();
       }
     }
   }
