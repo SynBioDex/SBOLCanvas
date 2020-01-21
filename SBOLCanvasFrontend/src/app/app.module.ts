@@ -39,6 +39,7 @@ import { SearchfilterPipe } from './searchfilter.pipe';
 import { ExportComponent } from './export/export.component';
 import { LandingPageComponent } from './landing-page/landing-page.component';
 import { TutorialComponent } from './tutorial/tutorial.component';
+import { ConfirmComponent } from './confirm/confirm.component';
 
 
 @NgModule({
@@ -63,6 +64,7 @@ import { TutorialComponent } from './tutorial/tutorial.component';
     ExportComponent,
     LandingPageComponent,
     TutorialComponent,
+    ConfirmComponent,
   ],
   imports: [
     BrowserModule,
@@ -82,7 +84,7 @@ import { TutorialComponent } from './tutorial/tutorial.component';
     provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
     }],
   bootstrap: [AppComponent],
-  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, ExportComponent, LoginComponent, ErrorComponent, ColorPickerComponent ]
+  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, ExportComponent, LoginComponent, ErrorComponent, ConfirmComponent, ColorPickerComponent ]
 })
 export class AppModule {
 }

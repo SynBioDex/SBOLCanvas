@@ -13,11 +13,11 @@ import { GlyphInfo } from './glyphInfo';
 import { StyleInfo} from './style-info';
 import { MetadataService } from './metadata.service';
 import { GlyphService } from './glyph.service';
-import { forEach } from "@angular/router/src/utils/collection";
 import { InteractionInfo } from './interactionInfo';
-import { style } from '@angular/animations';
 import { environment } from 'src/environments/environment';
-import { mxAbstractCanvas2D } from 'src/mxgraph';
+import { MatDialog } from '@angular/material';
+import { ErrorComponent } from './error/error.component';
+import { ConfirmComponent } from './confirm/confirm.component';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -127,7 +127,7 @@ export class GraphService {
   }
 
 
-  constructor(private metadataService: MetadataService, private glyphService: GlyphService) {
+  constructor(public dialog: MatDialog, private metadataService: MetadataService, private glyphService: GlyphService) {
     // constructor code is divided into helper methods for organization,
     // but these methods aren't entirely modular; order of some of
     // these calls is important
@@ -887,15 +887,21 @@ export class GraphService {
     return cell;
   }
 
+
   /**
    * Changes the selected sequence feature's style based on the one selected in the info menu.
-   * @param name
    */
-  mutateSequenceFeatureGlyph(name: string) {
-    const selectionCells = this.graph.getSelectionCells();
-    if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
-      let selectedCell = selectionCells[0];
-
+  mutateSequenceFeatureGlyph(name: string);
+  mutateSequenceFeatureGlyph(name: string, cells: mxCell);
+  mutateSequenceFeatureGlyph(name: string, cells?: mxCell) {
+    if (!cells) {
+      const selectionCells = this.graph.getSelectionCells();
+      if (selectionCells.length > 0) {
+        this.mutateSequenceFeatureGlyph(name, selectionCells);
+      }
+      return;
+    }
+    try {
       this.graph.getModel().beginUpdate();
       // make sure the glyph style matches the partRole
       let newStyleName = sequenceFeatureGlyphBaseStyleName + name;
@@ -907,21 +913,26 @@ export class GraphService {
       if (!cellStyle.fillColor)
         newStyleName = sequenceFeatureGlyphBaseStyleName + noGlyphAssignedName;
 
-      // Modify the style string
-      let styleString = selectedCell.style.slice();
-      if (!styleString.includes(';')) {
-        // nothing special needed, the original style only had the glyphStyleName
-        styleString = newStyleName;
-      } else {
-        // the string is something like "strokecolor=#000000;glyphStyleName;fillcolor=#ffffff;etc;etc;"
-        // we only want to replace the 'glyphStyleName' bit
-        let startIdx = styleString.indexOf(sequenceFeatureGlyphBaseStyleName);
-        let endIdx = styleString.indexOf(';', startIdx);
-        let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
-        styleString = styleString.replace(stringToReplace, newStyleName);
-      }
+      cells.forEach(function (cell) {
+        if (cell.isSequenceFeatureGlyph()) {
+          // Modify the style string
+          let styleString = cell.style.slice();
+          if (!styleString.includes(';')) {
+            // nothing special needed, the original style only had the glyphStyleName
+            styleString = newStyleName;
+          } else {
+            // the string is something like "strokecolor=#000000;glyphStyleName;fillcolor=#ffffff;etc;etc;"
+            // we only want to replace the 'glyphStyleName' bit
+            let startIdx = styleString.indexOf(sequenceFeatureGlyphBaseStyleName);
+            let endIdx = styleString.indexOf(';', startIdx);
+            let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
+            styleString = styleString.replace(stringToReplace, newStyleName);
+          }
 
-      this.graph.getModel().setStyle(selectedCell, styleString);
+          this.graph.getModel().setStyle(cell, styleString);
+        }
+      });
+    } finally {
       this.graph.getModel().endUpdate();
     }
   }
@@ -1035,46 +1046,21 @@ export class GraphService {
   /**
    * Updates a GlyphInfo and performs the necessary side effects if the displayID changed
    */
-  updateGlyphDict(cell: mxCell, info: GlyphInfo){
-    const oldDisplayID = cell.displayID;
-    const newDisplayID = info.displayID;
+  updateGlyphDict(oldDisplayID: string, info: GlyphInfo){
     const cell0 = this.graph.getModel().getCell(0);
+    const newDisplayID = info.displayID;
     if(oldDisplayID != newDisplayID){
-      // check for a cycle
-      let cycle = false;
-      this.viewStack.forEach(function (viewCell){
-        if(viewCell.id === newDisplayID)
-          cycle = true;
-      });
-      if(cycle){
-        // TODO tell the user a cycle isn't allowed
-        return;
-      }
-
-      if(this.graph.getModel().getCell(newDisplayID) != null){
-        // TODO: a cell with this display ID already exists prompt user if they want to couple them
-      }
-      
-      const coupledCells = this.graph.getModel().filterCells(this.graph.getModel().cells, function (cell) {
-        return cell.id === oldDisplayID;
-      });
-      if(coupledCells.length > 1){
-        // TODO prompt the user if they want to keep the cells coupled
-      }
-
       // update the glyphDict
       delete cell0.data[oldDisplayID];
       cell0.data[newDisplayID] = info;
-      cell.displayID = newDisplayID;
-
-      // update the viewCell id
-      const viewCell = this.graph.getModel().getCell(oldDisplayID);
-      viewCell.id = newDisplayID;
-      delete this.graph.getModel().cells[oldDisplayID];
-      this.graph.getModel().cells[newDisplayID] = viewCell;
     }else{
       cell0.data[newDisplayID] = info;
     }
+  }
+
+  removeFromGlyphDict(displayID: string){
+    const cell0 = this.graph.getModel().getCell(0);
+    delete cell0.data[displayID];
   }
 
   /**
@@ -1112,9 +1098,111 @@ export class GraphService {
       this.graph.getModel().beginUpdate();
       try{
         if(info instanceof GlyphInfo){
+
+          const oldDisplayID = selectedCell.displayID;
+          const newDisplayID = info.displayID;
+          if(oldDisplayID != newDisplayID){
+            // check for a cycle
+            let cycle = false;
+            this.viewStack.forEach(function (viewCell){
+              if(viewCell.id === newDisplayID)
+                cycle = true;
+            });
+            if(cycle){
+              // Tell the user a cycle isn't allowed
+              this.dialog.open(ErrorComponent, {data: "ComponentInstance objects MUST NOT form circular reference chains via their definition properties and parent ComponentDefinition objects."});
+              return;
+            }
+      
+            const coupledCells = this.graph.getModel().filterCells(this.graph.getModel().cells, function (cell) {
+              return cell.id === oldDisplayID;
+            });
+            if(coupledCells.length > 1){
+              // prompt the user if they want to keep the cells coupled
+              const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "Other components are coupled with this one. Would you like to keep them coupled?", options: ["Yes","Cancel"]}});
+              confirmRef.afterClosed().subscribe(result => {
+                if(result === "Yes"){
+                  // update the glyph dict
+                  this.updateGlyphDict(oldDisplayID, info);
+
+                  // update viewCell id
+                  const viewCell = this.graph.getModel().getCell(oldDisplayID);
+                  viewCell.id = newDisplayID;
+                  delete this.graph.getModel().cells[oldDisplayID];
+                  this.graph.getModel().cells[newDisplayID] = viewCell;
+
+                  // update the displayID of the other cells
+                  coupledCells.foreach(function (cell) {
+                    cell.displayID = newDisplayID;
+                  });
+                  this.mutateSequenceFeatureGlyph(info.partRole, coupledCells);
+                }else{
+                  // don't use update, as it will remove the old one
+                  this.addToGlyphDict(info);
+
+                  // copy viewCell
+                  const viewCell = this.graph.getModel().getCell(oldDisplayID);
+                  const viewCellClone = this.graph.getModel().cloneCell(viewCell);
+
+                  // update the clones id
+                  viewCellClone.id = newDisplayID;
+                  delete this.graph.getModel().cells[oldDisplayID];
+                  this.graph.getModel().cells[newDisplayID] = viewCellClone;
+
+                  // update the selected cell's displayID
+                  selectedCell.displayID = newDisplayID;
+                  this.mutateSequenceFeatureGlyph(info.partRole);
+                }
+                this.graph.getModel().endUpdate();
+              });
+              //TODO keeping coupling is handled, but what if you are trying to change to an existing displayID after
+              return;
+            }
+      
+            const conflictViewCell = this.graph.getModel().getCell(newDisplayID);
+            if(conflictViewCell != null){
+              // a cell with this display ID already exists prompt user if they want to couple them
+              const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "A component with this displayID already exists. Would you like to couple them and keep the current substructure, or update it?", options: ["Keep", "Update", "Cancel"]}});
+              confirmRef.afterClosed().subscribe(result => {
+                if(result === "Keep"){
+                  // remove the found viewCell and replace it with this one
+                  this.graph.getModel().remove(conflictViewCell);
+      
+                  // update the glyphDict
+                  this.updateGlyphDict(oldDisplayID, info);
+      
+                  // update the viewCell id
+                  const viewCell = this.graph.getModel().getCell(oldDisplayID);
+                  viewCell.id = newDisplayID;
+                  delete this.graph.getModel().cells[oldDisplayID];
+                  this.graph.getModel().cells[newDisplayID] = viewCell;
+
+                  // TODO update the conflicting cells graphics
+                  const conflictingCells = this.graph.getModel().filterCells(this.graph.getModel().cells, function(cell){
+                    return cell.displayID === newDisplayID;
+                  });
+                  this.mutateSequenceFeatureGlyph(info.partRole, conflictingCells);
+                }else if(result === "Update"){
+                  // remove this cells viewCell and update the displayID
+                  const viewCell = this.graph.getModel().getCell(oldDisplayID);
+                  this.graph.getModel().remove(viewCell);
+      
+                  // update the glyphDict
+                  this.removeFromGlyphDict(oldDisplayID);
+
+                  // update the selected cell's graphics
+                  this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newDisplayID).partRole);
+                }
+                this.graph.getModel().endUpdate();
+              });
+              return;
+            }
+          }
+
           //let glyphEdit = new GraphService.glyphEdit(info);
           this.updateGlyphDict(selectedCell, info);
-          this.mutateSequenceFeatureGlyph(info.partRole);
+          // the glyphInfo may be different than info, so use getFromGlyphDict
+          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.displayID).partRole);
           //this.graph.getModel().execute(glyphEdit);
         }else{
           let interactionEdit = new GraphService.interactionEdit(selectedCell, info);
