@@ -893,7 +893,11 @@ export class GraphService {
    */
   mutateSequenceFeatureGlyph(name: string);
   mutateSequenceFeatureGlyph(name: string, cells: mxCell);
-  mutateSequenceFeatureGlyph(name: string, cells?: mxCell) {
+  mutateSequenceFeatureGlyph(name: string, cells: mxCell, graph: mxGraph);
+  mutateSequenceFeatureGlyph(name: string, cells?: mxCell, graph?: mxGraph) {
+    if(!graph){
+      graph = this.graph;
+    }
     if (!cells) {
       const selectionCells = this.graph.getSelectionCells();
       if (selectionCells.length > 0) {
@@ -902,12 +906,12 @@ export class GraphService {
       return;
     }
     try {
-      this.graph.getModel().beginUpdate();
+      graph.getModel().beginUpdate();
       // make sure the glyph style matches the partRole
       let newStyleName = sequenceFeatureGlyphBaseStyleName + name;
 
       // if there's no style for the partRole, use noGlyphAssigned
-      let cellStyle = this.graph.getStylesheet().getCellStyle(newStyleName);
+      let cellStyle = graph.getStylesheet().getCellStyle(newStyleName);
       // if there is no registered style for the newStyleName, getCellStyle returns an empty object.
       // all of our registered styles have several fields, use fillcolor as an example to check
       if (!cellStyle.fillColor)
@@ -929,11 +933,11 @@ export class GraphService {
             styleString = styleString.replace(stringToReplace, newStyleName);
           }
 
-          this.graph.getModel().setStyle(cell, styleString);
+          graph.getModel().setStyle(cell, styleString);
         }
       });
     } finally {
-      this.graph.getModel().endUpdate();
+      graph.getModel().endUpdate();
     }
   }
 
@@ -1111,15 +1115,20 @@ export class GraphService {
             if(cycle){
               // Tell the user a cycle isn't allowed
               this.dialog.open(ErrorComponent, {data: "ComponentInstance objects MUST NOT form circular reference chains via their definition properties and parent ComponentDefinition objects."});
+              //TODO update the info menu to undo the change
               return;
             }
       
-            const coupledCells = this.graph.getModel().filterCells(this.graph.getModel().cells, function (cell) {
-              return cell.id === oldDisplayID;
-            });
+            const coupledCells = [];
+            for(let key in this.graph.getModel().cells){
+              const cell = this.graph.getModel().cells[key];
+              if(cell.displayID === oldDisplayID){
+                coupledCells.push(cell);
+              }
+            }
             if(coupledCells.length > 1){
               // prompt the user if they want to keep the cells coupled
-              const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "Other components are coupled with this one. Would you like to keep them coupled?", options: ["Yes","Cancel"]}});
+              const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "Other components are coupled with this one. Would you like to keep them coupled?", options: ["Yes","No","Cancel"]}});
               confirmRef.afterClosed().subscribe(result => {
                 if(result === "Yes"){
                   // update the glyph dict
@@ -1132,11 +1141,11 @@ export class GraphService {
                   this.graph.getModel().cells[newDisplayID] = viewCell;
 
                   // update the displayID of the other cells
-                  coupledCells.foreach(function (cell) {
+                  coupledCells.forEach(function (cell) {
                     cell.displayID = newDisplayID;
                   });
-                  this.mutateSequenceFeatureGlyph(info.partRole, coupledCells);
-                }else{
+                  this.mutateSequenceFeatureGlyph(info.partRole, coupledCells, this.graph);
+                }else if(result === "No"){
                   // don't use update, as it will remove the old one
                   this.addToGlyphDict(info);
 
@@ -1177,10 +1186,17 @@ export class GraphService {
                   delete this.graph.getModel().cells[oldDisplayID];
                   this.graph.getModel().cells[newDisplayID] = viewCell;
 
-                  // TODO update the conflicting cells graphics
-                  const conflictingCells = this.graph.getModel().filterCells(this.graph.getModel().cells, function(cell){
-                    return cell.displayID === newDisplayID;
-                  });
+                  // update the display of the selectioncell
+                  selectedCell.displayID = newDisplayID;
+
+                  // update the conflicting cells graphics
+                  const conflictingCells = [];
+                  for(let key in this.graph.getModel().cells){
+                    const cell = this.graph.getModel().cells[key];
+                    if(cell.displayID === newDisplayID){
+                      conflictingCells.push(cell);
+                    }
+                  }
                   this.mutateSequenceFeatureGlyph(info.partRole, conflictingCells);
                 }else if(result === "Update"){
                   // remove this cells viewCell and update the displayID
@@ -1190,6 +1206,9 @@ export class GraphService {
                   // update the glyphDict
                   this.removeFromGlyphDict(oldDisplayID);
 
+                  // update the selected cells displayID
+                  selectedCell.displayID = newDisplayID;
+
                   // update the selected cell's graphics
                   this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newDisplayID).partRole);
                 }
@@ -1197,6 +1216,17 @@ export class GraphService {
               });
               return;
             }
+
+            // default case
+            // update the viewcell ID
+            const viewCell = this.graph.getModel().getCell(oldDisplayID);
+            viewCell.id = newDisplayID;
+            delete this.graph.getModel().cells[oldDisplayID];
+            this.graph.getModel().cells[newDisplayID] = viewCell;
+
+            // update the selected cell id
+            selectedCell.displayID = newDisplayID;
+
           }
 
           //let glyphEdit = new GraphService.glyphEdit(info);
