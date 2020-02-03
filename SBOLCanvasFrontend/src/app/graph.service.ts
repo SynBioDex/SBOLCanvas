@@ -891,10 +891,10 @@ export class GraphService {
   /**
    * Changes the selected sequence feature's style based on the one selected in the info menu.
    */
-  mutateSequenceFeatureGlyph(name: string);
-  mutateSequenceFeatureGlyph(name: string, cells: mxCell);
-  mutateSequenceFeatureGlyph(name: string, cells: mxCell, graph: mxGraph);
-  mutateSequenceFeatureGlyph(name: string, cells?: mxCell, graph?: mxGraph) {
+  private mutateSequenceFeatureGlyph(name: string);
+  private mutateSequenceFeatureGlyph(name: string, cells: mxCell);
+  private mutateSequenceFeatureGlyph(name: string, cells: mxCell, graph: mxGraph);
+  private mutateSequenceFeatureGlyph(name: string, cells?: mxCell, graph?: mxGraph) {
     if(!graph){
       graph = this.graph;
     }
@@ -1119,13 +1119,7 @@ export class GraphService {
               return;
             }
       
-            const coupledCells = [];
-            for(let key in this.graph.getModel().cells){
-              const cell = this.graph.getModel().cells[key];
-              if(cell.displayID === oldDisplayID){
-                coupledCells.push(cell);
-              }
-            }
+            const coupledCells = this.getCoupledCells(oldDisplayID);
             if(coupledCells.length > 1){
               // prompt the user if they want to keep the cells coupled
               const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "Other components are coupled with this one. Would you like to keep them coupled?", options: ["Yes","No","Cancel"]}});
@@ -1136,9 +1130,7 @@ export class GraphService {
 
                   // update viewCell id
                   const viewCell = this.graph.getModel().getCell(oldDisplayID);
-                  viewCell.id = newDisplayID;
-                  delete this.graph.getModel().cells[oldDisplayID];
-                  this.graph.getModel().cells[newDisplayID] = viewCell;
+                  this.updateViewCell(viewCell, newDisplayID);
 
                   // update the displayID of the other cells
                   coupledCells.forEach(function (cell) {
@@ -1154,9 +1146,7 @@ export class GraphService {
                   const viewCellClone = this.graph.getModel().cloneCell(viewCell);
 
                   // update the clones id
-                  viewCellClone.id = newDisplayID;
-                  delete this.graph.getModel().cells[oldDisplayID];
-                  this.graph.getModel().cells[newDisplayID] = viewCellClone;
+                  this.updateViewCell(viewCellClone, newDisplayID);
 
                   // update the selected cell's displayID
                   selectedCell.displayID = newDisplayID;
@@ -1182,22 +1172,13 @@ export class GraphService {
       
                   // update the viewCell id
                   const viewCell = this.graph.getModel().getCell(oldDisplayID);
-                  viewCell.id = newDisplayID;
-                  delete this.graph.getModel().cells[oldDisplayID];
-                  this.graph.getModel().cells[newDisplayID] = viewCell;
+                  this.updateViewCell(viewCell, newDisplayID);
 
                   // update the display of the selectioncell
                   selectedCell.displayID = newDisplayID;
 
                   // update the conflicting cells graphics
-                  const conflictingCells = [];
-                  for(let key in this.graph.getModel().cells){
-                    const cell = this.graph.getModel().cells[key];
-                    if(cell.displayID === newDisplayID){
-                      conflictingCells.push(cell);
-                    }
-                  }
-                  this.mutateSequenceFeatureGlyph(info.partRole, conflictingCells);
+                  this.mutateSequenceFeatureGlyph(info.partRole, this.getCoupledCells(newDisplayID));
                 }else if(result === "Update"){
                   // remove this cells viewCell and update the displayID
                   const viewCell = this.graph.getModel().getCell(oldDisplayID);
@@ -1210,7 +1191,7 @@ export class GraphService {
                   selectedCell.displayID = newDisplayID;
 
                   // update the selected cell's graphics
-                  this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newDisplayID).partRole);
+                  this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newDisplayID).partRole, [selectedCell]);
                 }
                 this.graph.getModel().endUpdate();
               });
@@ -1220,9 +1201,7 @@ export class GraphService {
             // default case
             // update the viewcell ID
             const viewCell = this.graph.getModel().getCell(oldDisplayID);
-            viewCell.id = newDisplayID;
-            delete this.graph.getModel().cells[oldDisplayID];
-            this.graph.getModel().cells[newDisplayID] = viewCell;
+            this.updateViewCell(viewCell, newDisplayID);
 
             // update the selected cell id
             selectedCell.displayID = newDisplayID;
@@ -1231,8 +1210,10 @@ export class GraphService {
 
           //let glyphEdit = new GraphService.glyphEdit(info);
           this.updateGlyphDict(selectedCell, info);
+
+          // there may be coupled cells that need to also be mutated
           // the glyphInfo may be different than info, so use getFromGlyphDict
-          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.displayID).partRole);
+          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.displayID).partRole, this.getCoupledCells(selectedCell.displayID));
           //this.graph.getModel().execute(glyphEdit);
         }else{
           let interactionEdit = new GraphService.interactionEdit(selectedCell, info);
@@ -1243,6 +1224,23 @@ export class GraphService {
         this.graph.getModel().endUpdate();
       }
     }
+  }
+
+  private getCoupledCells(displayID: string): mxCell[]{
+    const coupledCells = [];
+    for(let key in this.graph.getModel().cells){
+      const cell = this.graph.getModel().cells[key];
+      if(cell.displayID === displayID){
+        coupledCells.push(cell);
+      }
+    }
+    return coupledCells;
+  }
+
+  private updateViewCell(cell: mxCell, newDisplayID: string){
+    this.graph.getModel().remove(cell);
+    cell.id = newDisplayID;
+    this.graph.getModel().add(this.graph.getModel().getCell(0), cell);
   }
 
   exportSVG(filename: string){
