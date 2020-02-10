@@ -103,26 +103,56 @@ export class GraphService {
     }
   }
 
-  // edit object for glyph history
-  static glyphEdit = class{
+  // edit object for glyph adding history
+  static glyphInfoEdit = class{
+    cell0: mxCell;
     info: GlyphInfo;
-    previous: GlyphInfo;
-    constructor(glyphInfo){
-      this.info = glyphInfo;
-      this.previous = glyphInfo;
+    previousInfo: GlyphInfo;
+    constructor(cell0: string, info: GlyphInfo, previousInfo: GlyphInfo){
+      this.cell0 = cell0;
+      // store them in reverse so the execute performs the action the first time
+      this.info = previousInfo;
+      this.previousInfo = info;
+    }
+
+    // Execute is called for both un-doing and re-doing
+    execute(){
+      if(this.previousInfo == null){
+        // if the previous was null, then the dictionary didn't have an entry before so remove it
+        delete this.cell0.data[this.info.displayID];
+        this.previousInfo = this.info;
+        this.info = null;
+      }else if(this.info == null){
+        // if the current one is null, then it was removed, so re-add it
+        this.cell0.data[this.previousInfo.displayID] = this.previousInfo;
+        this.info = this.previousInfo;
+        this.previousInfo = null;
+      }else{
+        // some information was changed, so update it
+        this.cell0.data[this.info.displayID] = this.previousInfo;
+        const tmpInfo = this.info;
+        this.info = this.previousInfo;
+        this.previousInfo = tmpInfo;
+      }
+    }
+  }
+
+  static cellDisplayIDEdit = class {
+    cell: mxCell;
+    current: string;
+    previous: string;
+    constructor(cell: mxCell, current: string, previous: string){
+      this.cell = cell;
+      // load backwards so first execute performs actions
+      this.current = previous;
+      this.previous = current;
     }
 
     execute(){
-      if(this.info != null){
-        let tmp = this.info.makeCopy();
-        if(this.previous == null){
-          this.info = null;
-        }else{
-          this.info.copyDataFrom(this.previous);
-        }
-
-        this.previous = tmp;
-      }
+      this.cell.displayID = this.previous;
+      const tmp = this.current;
+      this.current = this.previous;
+      this.previous = tmp;
     }
   }
 
@@ -557,6 +587,7 @@ export class GraphService {
   undo() {
     // (un/re)doing is managed by the editor; it only works
     // if all changes are encapsulated by graphModel.(begin/end)Update
+    const cell0 = this.graph.getModel().getCell(0);
     this.editor.execute('undo');
 
     // If the undo caused scars to become visible, we should update
@@ -718,7 +749,7 @@ export class GraphService {
 
       // Insert new glyph and its components
       const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, null, x, y, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, sequenceFeatureGlyphBaseStyleName + name);
-      sequenceFeatureCell.displayID = glyphInfo.displayID;
+      this.graph.getModel().execute(new GraphService.cellDisplayIDEdit(sequenceFeatureCell, glyphInfo.displayID, null));
 
       // construct the view cell for it's children
       const cell1 = this.graph.getModel().getCell(1);
@@ -1048,31 +1079,25 @@ export class GraphService {
   }
 
   /**
-   * Updates a GlyphInfo and performs the necessary side effects if the displayID changed
+   * Updates a GlyphInfo
+   * NOTE: Should only be used if the displayID is the same
    */
-  updateGlyphDict(oldDisplayID: string, info: GlyphInfo){
+  private updateGlyphDict(info: GlyphInfo){
     const cell0 = this.graph.getModel().getCell(0);
-    const newDisplayID = info.displayID;
-    if(oldDisplayID != newDisplayID){
-      // update the glyphDict
-      delete cell0.data[oldDisplayID];
-      cell0.data[newDisplayID] = info;
-    }else{
-      cell0.data[newDisplayID] = info;
-    }
+    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, info, cell0.data[info.displayID]));
   }
 
-  removeFromGlyphDict(displayID: string){
+  private removeFromGlyphDict(displayID: string){
     const cell0 = this.graph.getModel().getCell(0);
-    delete cell0.data[displayID];
+    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, null, cell0.data[displayID]));
   }
 
   /**
    * Add a GlyphInfo object to the dictionary
    */
-  addToGlyphDict(info: GlyphInfo){
+  private addToGlyphDict(info: GlyphInfo){
     const cell0 = this.graph.getModel().getCell(0);
-    cell0.data[info.displayID] = info;
+    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, info, null));
   }
 
   /**
@@ -1121,12 +1146,15 @@ export class GraphService {
       
             const coupledCells = this.getCoupledCells(oldDisplayID);
             if(coupledCells.length > 1){
+              // start a new begin so that when the dialog closes, all changes are in one edit
+              this.graph.getModel().beginUpdate();
               // prompt the user if they want to keep the cells coupled
               const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "Other components are coupled with this one. Would you like to keep them coupled?", options: ["Yes","No","Cancel"]}});
               confirmRef.afterClosed().subscribe(result => {
                 if(result === "Yes"){
                   // update the glyph dict
-                  this.updateGlyphDict(oldDisplayID, info);
+                  this.removeFromGlyphDict(oldDisplayID);
+                  this.addToGlyphDict(info);
 
                   // update viewCell id
                   const viewCell = this.graph.getModel().getCell(oldDisplayID);
@@ -1134,7 +1162,7 @@ export class GraphService {
 
                   // update the displayID of the other cells
                   coupledCells.forEach(function (cell) {
-                    cell.displayID = newDisplayID;
+                    this.graph.getModel().execute(new GraphService.cellDisplayIDEdit(cell, newDisplayID, cell.displayID));
                   });
                   this.mutateSequenceFeatureGlyph(info.partRole, coupledCells, this.graph);
                 }else if(result === "No"){
@@ -1149,7 +1177,7 @@ export class GraphService {
                   this.updateViewCell(viewCellClone, newDisplayID);
 
                   // update the selected cell's displayID
-                  selectedCell.displayID = newDisplayID;
+                  this.graph.getModel().execute(new GraphService.cellDisplayIDEdit(selectedCell, newDisplayID, selectedCell.displayID));
                   this.mutateSequenceFeatureGlyph(info.partRole);
                 }
                 this.graph.getModel().endUpdate();
@@ -1160,6 +1188,8 @@ export class GraphService {
       
             const conflictViewCell = this.graph.getModel().getCell(newDisplayID);
             if(conflictViewCell != null){
+              // start a new begin so that when the dialog closes, all changes are in one edit
+              this.graph.getModel().beginUpdate();
               // a cell with this display ID already exists prompt user if they want to couple them
               const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "A component with this displayID already exists. Would you like to couple them and keep the current substructure, or update it?", options: ["Keep", "Update", "Cancel"]}});
               confirmRef.afterClosed().subscribe(result => {
@@ -1168,14 +1198,16 @@ export class GraphService {
                   this.graph.getModel().remove(conflictViewCell);
       
                   // update the glyphDict
-                  this.updateGlyphDict(oldDisplayID, info);
+                  this.removeFromGlyphDict(oldDisplayID);
+                  this.removeFromGlyphDict(newDisplayID);
+                  this.addToGlyphDict(info);
       
                   // update the viewCell id
                   const viewCell = this.graph.getModel().getCell(oldDisplayID);
                   this.updateViewCell(viewCell, newDisplayID);
 
                   // update the display of the selectioncell
-                  selectedCell.displayID = newDisplayID;
+                  this.graph.getModel().execute(new GraphService.cellDisplayIDEdit(selectedCell, newDisplayID, selectedCell.displayID));
 
                   // update the conflicting cells graphics
                   this.mutateSequenceFeatureGlyph(info.partRole, this.getCoupledCells(newDisplayID));
@@ -1188,7 +1220,7 @@ export class GraphService {
                   this.removeFromGlyphDict(oldDisplayID);
 
                   // update the selected cells displayID
-                  selectedCell.displayID = newDisplayID;
+                  this.graph.getModel().execute(new GraphService.cellDisplayIDEdit(selectedCell, newDisplayID, selectedCell.displayID));
 
                   // update the selected cell's graphics
                   this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newDisplayID).partRole, [selectedCell]);
@@ -1202,14 +1234,18 @@ export class GraphService {
             // update the viewcell ID
             const viewCell = this.graph.getModel().getCell(oldDisplayID);
             this.updateViewCell(viewCell, newDisplayID);
+            
+            // update the glyphDictionary
+            this.removeFromGlyphDict(oldDisplayID);
+            this.addToGlyphDict(info);
 
             // update the selected cell id
-            selectedCell.displayID = newDisplayID;
-
+            this.graph.getModel().execute(new GraphService.cellDisplayIDEdit(selectedCell, newDisplayID, selectedCell.displayID));
+            return;
           }
 
           //let glyphEdit = new GraphService.glyphEdit(info);
-          this.updateGlyphDict(selectedCell, info);
+          this.updateGlyphDict(info);
 
           // there may be coupled cells that need to also be mutated
           // the glyphInfo may be different than info, so use getFromGlyphDict
@@ -1240,7 +1276,7 @@ export class GraphService {
   private updateViewCell(cell: mxCell, newDisplayID: string){
     this.graph.getModel().remove(cell);
     cell.id = newDisplayID;
-    this.graph.getModel().add(this.graph.getModel().getCell(0), cell);
+    this.graph.getModel().add(this.graph.getModel().getCell(1), cell);
   }
 
   exportSVG(filename: string){
