@@ -591,6 +591,9 @@ export class GraphService {
 
     // If the undo caused scars to become visible, we should update
     this.showingScars = this.getScarsVisible();
+
+    // selections after an undo break things if annother undo/redo happens
+    this.filterSelectionCells();
   }
 
   /**
@@ -601,6 +604,23 @@ export class GraphService {
 
     // If the undo caused scars to become visible, we should update
     this.showingScars = this.getScarsVisible();
+
+    // selections after an undo break things if annother undo/redo happens
+    this.filterSelectionCells();
+  }
+
+  /**
+   * Only the currently viewable layer should be allowed to have selections
+   */
+  private filterSelectionCells(){
+    const selectionCells = this.graph.getSelectionCells();
+    const newSelectionCells = [];
+    for(let i = 0; i < selectionCells.length; i++){
+      if(selectionCells[i].getParent() && selectionCells[i].getParent().getParent() === this.viewStack[this.viewStack.length-1]){
+        newSelectionCells.push(selectionCells[i]);
+      }
+    }
+    this.graph.setSelectionCells(newSelectionCells);
   }
 
   zoomIn() {
