@@ -1266,6 +1266,9 @@ export class GraphService {
 
             // update the selected cell id
             this.graph.getModel().execute(new GraphService.cellDisplayIDEdit(selectedCell, newDisplayID, selectedCell.displayID));
+
+            // update the view
+            this.updateAngularMetadata(this.graph.getSelectionCells());
             return;
           }
 
