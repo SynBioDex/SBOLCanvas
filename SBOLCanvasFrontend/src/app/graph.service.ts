@@ -587,7 +587,6 @@ export class GraphService {
   undo() {
     // (un/re)doing is managed by the editor; it only works
     // if all changes are encapsulated by graphModel.(begin/end)Update
-    const cell0 = this.graph.getModel().getCell(0);
     this.editor.execute('undo');
 
     // If the undo caused scars to become visible, we should update
@@ -1161,8 +1160,10 @@ export class GraphService {
                   this.updateViewCell(viewCell, newDisplayID);
 
                   // update the displayID of the other cells
+                  // this.graph can't be used in the foreach apparently
+                  const graph = this.graph;
                   coupledCells.forEach(function (cell) {
-                    this.graph.getModel().execute(new GraphService.cellDisplayIDEdit(cell, newDisplayID, cell.displayID));
+                    graph.getModel().execute(new GraphService.cellDisplayIDEdit(cell, newDisplayID, cell.displayID));
                   });
                   this.mutateSequenceFeatureGlyph(info.partRole, coupledCells, this.graph);
                 }else if(result === "No"){
@@ -1181,6 +1182,8 @@ export class GraphService {
                   this.mutateSequenceFeatureGlyph(info.partRole);
                 }
                 this.graph.getModel().endUpdate();
+                // update the view
+                this.updateAngularMetadata(this.graph.getSelectionCells());
               });
               //TODO keeping coupling is handled, but what if you are trying to change to an existing displayID after
               return;
@@ -1226,6 +1229,8 @@ export class GraphService {
                   this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newDisplayID).partRole, [selectedCell]);
                 }
                 this.graph.getModel().endUpdate();
+                // update the view
+                this.updateAngularMetadata(this.graph.getSelectionCells());
               });
               return;
             }
@@ -1250,7 +1255,9 @@ export class GraphService {
           // there may be coupled cells that need to also be mutated
           // the glyphInfo may be different than info, so use getFromGlyphDict
           this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.displayID).partRole, this.getCoupledCells(selectedCell.displayID));
-          //this.graph.getModel().execute(glyphEdit);
+          // update the view
+          this.updateAngularMetadata(this.graph.getSelectionCells());
+          
         }else{
           let interactionEdit = new GraphService.interactionEdit(selectedCell, info);
           this.mutateInteractionGlyph(info.interactionType);
