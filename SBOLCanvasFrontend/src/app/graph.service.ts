@@ -119,22 +119,21 @@ export class GraphService {
     execute(){
       if(this.previousInfo == null){
         // if the previous was null, then the dictionary didn't have an entry before so remove it
-        this.cell0.data.delete(this.info.displayID);
+        this.cell0.value.delete(this.info.displayID);
         this.previousInfo = this.info;
         this.info = null;
       }else if(this.info == null){
         // if the current one is null, then it was removed, so re-add it
-        this.cell0.data.set(this.previousInfo.displayID, this.previousInfo);
+        this.cell0.value.set(this.previousInfo.displayID, this.previousInfo);
         this.info = this.previousInfo;
         this.previousInfo = null;
       }else{
         // some information was changed, so update it
-        this.cell0.data.set(this.info.displayID, this.previousInfo);
+        this.cell0.value.set(this.info.displayID, this.previousInfo);
         const tmpInfo = this.info;
         this.info = this.previousInfo;
         this.previousInfo = tmpInfo;
       }
-      console.log(this.cell0.data);
     }
   }
 
@@ -202,7 +201,7 @@ export class GraphService {
     // initalize the GlyphInfoDictionary
     const cell0 = this.graph.getModel().getCell(0);
     const glyphDict = new Map<string, GlyphInfo>();
-    cell0.data = glyphDict;
+    this.graph.getModel().setValue(cell0, glyphDict);
   }
 
   /**
@@ -892,7 +891,7 @@ export class GraphService {
 
     this.graph.getModel().beginUpdate();
     try {
-      cell = new mx.mxCell('', new mx.mxGeometry(x, y, 0, 0), interactionGlyphBaseStyleName + name);
+      cell = new mx.mxCell(new InteractionInfo(), new mx.mxGeometry(x, y, 0, 0), interactionGlyphBaseStyleName + name);
 
       cell.geometry.setTerminalPoint(new mx.mxPoint(x, y + defaultInteractionSize), true);
       cell.geometry.setTerminalPoint(new mx.mxPoint(x + defaultInteractionSize, y), false);
@@ -904,8 +903,8 @@ export class GraphService {
       if (name == "Process") {
         name = "Genetic Production"
       }
-      cell.data = new InteractionInfo();
-      cell.data.interactionType = name;
+      //cell.data = new InteractionInfo();
+      cell.value.interactionType = name;
 
       // The new glyph should be selected
       this.graph.clearSelection();
@@ -1083,12 +1082,12 @@ export class GraphService {
    */
   private updateGlyphDict(info: GlyphInfo){
     const cell0 = this.graph.getModel().getCell(0);
-    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, info, cell0.data.get(info.displayID)));
+    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, info, cell0.value.get(info.displayID)));
   }
 
   private removeFromGlyphDict(displayID: string){
     const cell0 = this.graph.getModel().getCell(0);
-    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, null, cell0.data.get(displayID)));
+    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, null, cell0.value.get(displayID)));
   }
 
   /**
@@ -1104,7 +1103,7 @@ export class GraphService {
    */
   getFromGlyphDict(displayID: string){
     const cell0 = this.graph.getModel().getCell(0);
-    return cell0.data.get(displayID);
+    return cell0.value.get(displayID);
   }
 
   /**
@@ -1568,7 +1567,7 @@ export class GraphService {
       //TODO come back to me
     }
     mapCodec.encode = function(enc, object){
-      let node = enc.document.createElement('Map');
+      let node = enc.document.createElement('HashMap');
       for(let key of Array.from(object.keys())){
         let entryNode = enc.document.createElement('Entry');
         entryNode.setAttribute('key', key);

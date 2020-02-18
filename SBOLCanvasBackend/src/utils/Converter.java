@@ -50,6 +50,8 @@ import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
 import com.mxgraph.io.mxCodec;
+import com.mxgraph.io.mxCodecRegistry;
+import com.mxgraph.io.mxObjectCodec;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGraphModel;
 import com.mxgraph.util.mxUtils;
@@ -82,6 +84,15 @@ public class Converter {
 		}
 	};
 
+	static {
+		// InteractionInfo decoder
+		mxCodecRegistry.addPackage("data");
+		mxCodecRegistry.register(new mxObjectCodec(new HashMap<String, GlyphInfo>()) {
+			
+		});
+		//mxCodecRegistry.register(new mxObjectCodec(new InteractionInfo()) {});
+	};
+	
 	private HashMap<Integer, HashMap<Integer, MxCell>> containers = new HashMap<Integer, HashMap<Integer, MxCell>>();
 	private HashMap<Integer, MxCell> backbones = new HashMap<Integer, MxCell>();
 	private LinkedList<MxCell> proteins = new LinkedList<MxCell>();
