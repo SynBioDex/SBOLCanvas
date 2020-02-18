@@ -5,7 +5,7 @@ import org.w3c.dom.Element;
 
 public class MxCell {
 
-	private transient int id;
+	private transient String id;
 	private String value;
 	private String style;
 	private boolean vertex;
@@ -19,11 +19,11 @@ public class MxCell {
 	// transient prevents this field from making it to json
 	private transient Info info;
 
-	public int getId() {
+	public String getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 
@@ -118,8 +118,7 @@ public class MxCell {
 	public Element encode(Document doc) {
 		// cell
 		Element mxCell = doc.createElement("mxCell");
-		if(id > 0)
-			mxCell.setAttribute("id", "" + id);
+		mxCell.setAttribute("id", "" + id);
 		mxCell.setAttribute("value", value);
 		mxCell.setAttribute("style", style);
 		if (vertex)

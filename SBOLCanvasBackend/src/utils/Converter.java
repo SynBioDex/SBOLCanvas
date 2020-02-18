@@ -49,6 +49,12 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
+import com.mxgraph.io.mxCodec;
+import com.mxgraph.model.mxCell;
+import com.mxgraph.model.mxGraphModel;
+import com.mxgraph.util.mxUtils;
+import com.mxgraph.util.mxXmlUtils;
+import com.mxgraph.view.mxGraph;
 
 import data.GlyphInfo;
 import data.InteractionInfo;
@@ -92,14 +98,10 @@ public class Converter {
 
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename) throws SAXException,
 			IOException, ParserConfigurationException, SBOLValidationException, SBOLConversionException {
-		// convert the stream to a document
-		Document graph = null;
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder builder = factory.newDocumentBuilder();
-		graph = builder.parse(graphStream);
-
-		// create objects from the document
-		createMxGraphObjects(graph);
+		// read in the mxGraph
+		mxGraph graph = parseGraph(graphStream);
+		mxGraphModel model = (mxGraphModel) graph.getModel();
+		mxCell cell = (mxCell) model.getCell("0");
 
 		// create the document
 		SBOLDocument document = new SBOLDocument();
@@ -347,6 +349,15 @@ public class Converter {
 		}
 	}
 
+	private mxGraph parseGraph(InputStream graphStream) throws IOException {
+		mxGraph graph = new mxGraph();
+		Document document = mxXmlUtils.parseXml(mxUtils.readInputStream(graphStream));
+		mxCodec codec = new mxCodec(document);
+		codec.decode(document.getDocumentElement(), graph.getModel());
+		return graph;
+	}
+	
+	/*
 	private void createMxGraphObjects(Document document) {
 		document.normalize();
 		NodeList nList = document.getElementsByTagName("mxCell");
@@ -499,6 +510,7 @@ public class Converter {
 		}
 	}
 
+	*/
 	/**
 	 * Takes the mxGraph objects and converts them to an xml that can be used to
 	 * override a cell in mxGraph.
