@@ -1567,11 +1567,10 @@ export class GraphService {
       //TODO come back to me
     }
     mapCodec.encode = function(enc, object){
-      let node = enc.document.createElement('HashMap');
+      let node = enc.document.createElement('Array');
       for(let key of Array.from(object.keys())){
-        let entryNode = enc.document.createElement('Entry');
-        entryNode.setAttribute('key', key);
-        entryNode.appendChild(object.get(key).encode(enc));
+        let entryNode = object.get(key).encode(enc);
+        entryNode.setAttribute('as', key);
         node.appendChild(entryNode);
       }
       return node;

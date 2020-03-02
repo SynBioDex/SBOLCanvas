@@ -54,6 +54,7 @@ import com.mxgraph.io.mxCodecRegistry;
 import com.mxgraph.io.mxObjectCodec;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGraphModel;
+import com.mxgraph.model.mxGraphModel.Filter;
 import com.mxgraph.util.mxUtils;
 import com.mxgraph.util.mxXmlUtils;
 import com.mxgraph.view.mxGraph;
@@ -84,35 +85,61 @@ public class Converter {
 		}
 	};
 
-	static {
-		// InteractionInfo decoder
-		mxCodecRegistry.addPackage("data");
-		mxCodecRegistry.register(new mxObjectCodec(new HashMap<String, GlyphInfo>()) {
-			
-		});
-		//mxCodecRegistry.register(new mxObjectCodec(new InteractionInfo()) {});
+	/**
+	 * Filters mxCells that contain "textBox" in the style string
+	 */
+	static Filter textBoxFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("textBox");
+		}
 	};
 	
-	private HashMap<Integer, HashMap<Integer, MxCell>> containers = new HashMap<Integer, HashMap<Integer, MxCell>>();
+	/**
+	 * Used to filter out proteins in an array of mxCells
+	 */
+	static Filter proteinFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("molecularSpeciesGlyph");
+		}
+	};
+	
+	static Filter containerFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("circuitContainer");
+		}
+	};
+
+	static {
+		// Necessary for encoding/decoding GlyphInfo and InteractionInfo
+		mxCodecRegistry.addPackage("data");
+	};
+
+	/*private HashMap<Integer, HashMap<Integer, MxCell>> containers = new HashMap<Integer, HashMap<Integer, MxCell>>();
 	private HashMap<Integer, MxCell> backbones = new HashMap<Integer, MxCell>();
 	private LinkedList<MxCell> proteins = new LinkedList<MxCell>();
 	private HashMap<Integer, LinkedList<MxCell>> textSets = new HashMap<Integer, LinkedList<MxCell>>();
 	private HashMap<Integer, Set<MxCell>> glyphSets = new HashMap<Integer, Set<MxCell>>();
 	private LinkedList<MxCell> edges = new LinkedList<MxCell>();
 	private HashMap<Integer, MxCell> cells = new HashMap<Integer, MxCell>();
-	private HashMap<ComponentDefinition, Integer> defToID = new HashMap<ComponentDefinition, Integer>();
+	private HashMap<ComponentDefinition, Integer> defToID = new HashMap<ComponentDefinition, Integer>();*/
+
+	private HashMap<String, GlyphInfo> glyphInfoDict = new HashMap<String, GlyphInfo>();
 
 	// these are here because of the possibility of having a mix of having/not
 	// having cell annotations
 	// it's easier to generate them every time
 	private int nextID = 2;
 
+	@SuppressWarnings("unchecked")
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename) throws SAXException,
 			IOException, ParserConfigurationException, SBOLValidationException, SBOLConversionException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
-		mxCell cell = (mxCell) model.getCell("0");
+		glyphInfoDict = (HashMap<String, GlyphInfo>) ((mxCell) model.getCell("0")).getValue();
 
 		// create the document
 		SBOLDocument document = new SBOLDocument();
@@ -123,15 +150,16 @@ public class Converter {
 		// top level module definition that contains all strands and proteins
 		// filename because that's what synbiohub uses to distinguish
 		ModuleDefinition modDef = document.createModuleDefinition(filename);
-		LinkedList<MxCell> topTexts = textSets.get(1);
-		if (topTexts != null) {
-			modDef.createAnnotation(new QName(uriPrefix, "textBoxes", annPrefix),
-					gson.toJson(topTexts.toArray(new MxCell[0])));
+		Object[] rootChildren = mxGraphModel.getChildCells(model, model.getCell("rootView"), true, false);
+		mxCell[] rootViewTexts = (mxCell[]) mxGraphModel.filterCells(rootChildren, textBoxFilter);
+		if (rootViewTexts.length > 0) {
+			modDef.createAnnotation(new QName(uriPrefix, "textBoxes", annPrefix), gson.toJson(rootViewTexts));
 		}
 
 		// create the proteins
-		for (MxCell protein : proteins) {
-			GlyphInfo proteinInfo = (GlyphInfo) protein.getInfo();
+		mxCell[] proteins = (mxCell[]) mxGraphModel.filterCells(rootChildren, proteinFilter);
+		for (mxCell protein : proteins) {
+			GlyphInfo proteinInfo = (GlyphInfo) glyphInfoDict.get(protein.getValue());
 			ComponentDefinition proteinCD = document.createComponentDefinition(proteinInfo.getDisplayID(),
 					proteinInfo.getVersion(), SBOLData.types.getValue(proteinInfo.getPartType()));
 			proteinCD.setDescription(proteinInfo.getDescription());
@@ -143,10 +171,10 @@ public class Converter {
 		}
 
 		// create the top level component definitions, aka strands
-		HashMap<Integer, MxCell> topContainers = containers.get(1);
-		if (topContainers != null)
-			for (MxCell containerCell : topContainers.values()) {
-				MxCell backboneCell = backbones.get(containerCell.getId());
+		mxCell[] topContainers = (mxCell[]) mxGraphModel.filterCells(rootChildren, containerFilter);
+		if (topContainers.length > 0)
+			for (mxCell containerCell : topContainers) {
+				mxCell backboneCell = (mxCell) containerCell.getChildAt(0);
 				ComponentDefinition containerCD = document.createComponentDefinition(
 						((GlyphInfo) backboneCell.getInfo()).getDisplayID(), ComponentDefinition.DNA_REGION);
 				containerCD.addRole(SequenceOntology.ENGINEERED_REGION);
@@ -367,161 +395,119 @@ public class Converter {
 		codec.decode(document.getDocumentElement(), graph.getModel());
 		return graph;
 	}
-	
+
 	/*
-	private void createMxGraphObjects(Document document) {
-		document.normalize();
-		NodeList nList = document.getElementsByTagName("mxCell");
-		for (int temp = 0; temp < nList.getLength(); temp++) {
-			Node node = nList.item(temp);
-
-			// cell info
-			Element cellElement = (Element) node;
-			MxCell cell = new MxCell();
-			cell.setId(Integer.parseInt(cellElement.getAttribute("id")));
-			cell.setValue(cellElement.getAttribute("value"));
-			cell.setStyle(cellElement.getAttribute("style"));
-			if (cellElement.hasAttribute("vertex"))
-				cell.setVertex(Integer.parseInt(cellElement.getAttribute("vertex")) == 1);
-			if (cellElement.hasAttribute("edge"))
-				cell.setEdge(Integer.parseInt(cellElement.getAttribute("edge")) == 1);
-			if (cellElement.hasAttribute("connectable"))
-				cell.setConnectable(Integer.parseInt(cellElement.getAttribute("connectable")) == 1);
-			if (cellElement.hasAttribute("collapsed"))
-				cell.setCollapsed(Integer.parseInt(cellElement.getAttribute("collapsed")) == 1);
-			if (cellElement.hasAttribute("parent"))
-				cell.setParent(Integer.parseInt(cellElement.getAttribute("parent")));
-			else
-				cell.setParent(-1);
-			if (cellElement.hasAttribute("source"))
-				cell.setSource(Integer.parseInt(cellElement.getAttribute("source")));
-			if (cellElement.hasAttribute("target"))
-				cell.setTarget(Integer.parseInt(cellElement.getAttribute("target")));
-
-			// geometry info
-			if (cellElement.getElementsByTagName("mxGeometry").getLength() > 0) {
-				Element geoElement = (Element) cellElement.getElementsByTagName("mxGeometry").item(0);
-				MxGeometry geometry = new MxGeometry();
-				if (geoElement.hasAttribute("x"))
-					geometry.setX(Double.parseDouble(geoElement.getAttribute("x")));
-				if (geoElement.hasAttribute("y"))
-					geometry.setY(Double.parseDouble(geoElement.getAttribute("y")));
-				if (geoElement.hasAttribute("width"))
-					geometry.setWidth(Double.parseDouble(geoElement.getAttribute("width")));
-				if (geoElement.hasAttribute("height"))
-					geometry.setHeight(Double.parseDouble(geoElement.getAttribute("height")));
-				if (geoElement.getElementsByTagName("Array").getLength() > 0) {
-					LinkedList<MxPoint> points = new LinkedList<MxPoint>();
-					Element arrayElement = (Element) geoElement.getElementsByTagName("Array").item(0);
-					NodeList pointNodes = arrayElement.getElementsByTagName("mxPoint");
-					for (int pointIndex = 0; pointIndex < pointNodes.getLength(); pointIndex++) {
-						Element pointElement = (Element) pointNodes.item(pointIndex);
-						MxPoint point = new MxPoint();
-						if (pointElement.hasAttribute("x"))
-							point.setX(Double.parseDouble(pointElement.getAttribute("x")));
-						else
-							point.setX(0);
-						if (pointElement.hasAttribute("y"))
-							point.setY(Integer.parseInt(pointElement.getAttribute("y")));
-						else
-							point.setY(0);
-						points.add(point);
-					}
-					geometry.setPoints(points);
-				}
-				if (geoElement.getElementsByTagName("mxPoint").getLength() > 0) {
-					NodeList pointNodes = geoElement.getElementsByTagName("mxPoint");
-					for (int pointIndex = 0; pointIndex < pointNodes.getLength(); pointIndex++) {
-						Element pointElement = (Element) pointNodes.item(pointIndex);
-						MxPoint point = new MxPoint();
-						if(pointElement.hasAttribute("x"))
-							point.setX(Double.parseDouble(pointElement.getAttribute("x")));							
-						else
-							point.setX(0);
-						if(pointElement.hasAttribute("y"))
-							point.setY(Double.parseDouble(pointElement.getAttribute("y")));
-						else
-							point.setY(0);
-						if (pointElement.getAttribute("as").equals("sourcePoint")) {
-							geometry.setSourcePoint(point);
-						}
-						if (pointElement.getAttribute("as").equals("targetPoint")) {
-							geometry.setTargetPoint(point);
-						}
-
-					}
-
-				}
-				cell.setGeometry(geometry);
-			}
-
-			// glyph info
-			if (cellElement.getElementsByTagName("GlyphInfo").getLength() > 0) {
-				Element infoElement = (Element) cellElement.getElementsByTagName("GlyphInfo").item(0);
-				GlyphInfo info = new GlyphInfo();
-				info.setPartType(infoElement.getAttribute("partType"));
-				info.setPartRole(infoElement.getAttribute("partRole"));
-				info.setPartRefine(infoElement.getAttribute("partRefine"));
-				info.setDisplayID(infoElement.getAttribute("displayID"));
-				info.setName(infoElement.getAttribute("name"));
-				info.setDescription(infoElement.getAttribute("description"));
-				info.setVersion(infoElement.getAttribute("version"));
-				info.setSequence(infoElement.getAttribute("sequence"));
-				info.setUriPrefix(infoElement.getAttribute("uriPrefix"));
-				cell.setInfo(info);
-			}
-
-			// interaction info
-			if (cellElement.getElementsByTagName("InteractionInfo").getLength() > 0) {
-				Element infoElement = (Element) cellElement.getElementsByTagName("InteractionInfo").item(0);
-				InteractionInfo info = new InteractionInfo();
-				info.setDisplayID(infoElement.getAttribute("displayID"));
-				info.setInteractionType(infoElement.getAttribute("interactionType"));
-				info.setFromParticipationType(infoElement.getAttribute("fromParticipationType"));
-				info.setToParticipationType(infoElement.getAttribute("toParticipationType"));
-				cell.setInfo(info);
-			}
-
-			if (cell.isEdge()) {
-				edges.add(cell);
-			} else if (cell.getStyle().contains("circuitContainer")) {
-				if (containers.containsKey(cell.getParent())) {
-					containers.get(cell.getParent()).put(cell.getId(), cell);
-				} else {
-					HashMap<Integer, MxCell> subContainers = new HashMap<Integer, MxCell>();
-					subContainers.put(cell.getId(), cell);
-					containers.put(cell.getParent(), subContainers);
-				}
-			} else if (cell.getStyle().contains("backbone")) {
-				// TODO remove me when the user can set the displayID
-				GlyphInfo glyphInfo = new GlyphInfo();
-				glyphInfo.setDisplayID("cd" + cell.getId());
-				cell.setInfo(glyphInfo);
-				backbones.put(cell.getParent(), cell);
-			} else if (proteins != null && cell.getStyle().contains("molecularSpeciesGlyph")) {
-				proteins.add(cell);
-			} else if (cell.getStyle().contains("textBox")) {
-				if (textSets.get(cell.getParent()) != null) {
-					textSets.get(cell.getParent()).add(cell);
-				} else {
-					LinkedList<MxCell> list = new LinkedList<MxCell>();
-					list.add(cell);
-					textSets.put(cell.getParent(), list);
-				}
-			} else if (cell.getStyle().contains("sequenceFeatureGlyph")) {
-				if (glyphSets.get(cell.getParent()) != null) {
-					glyphSets.get(cell.getParent()).add(cell);
-				} else {
-					TreeSet<MxCell> set = new TreeSet<MxCell>(geoSorter);
-					set.add(cell);
-					glyphSets.put(cell.getParent(), set);
-				}
-			}
-			cells.put(cell.getId(), cell);
-		}
-	}
-
-	*/
+	 * private void createMxGraphObjects(Document document) { document.normalize();
+	 * NodeList nList = document.getElementsByTagName("mxCell"); for (int temp = 0;
+	 * temp < nList.getLength(); temp++) { Node node = nList.item(temp);
+	 * 
+	 * // cell info Element cellElement = (Element) node; MxCell cell = new
+	 * MxCell(); cell.setId(Integer.parseInt(cellElement.getAttribute("id")));
+	 * cell.setValue(cellElement.getAttribute("value"));
+	 * cell.setStyle(cellElement.getAttribute("style")); if
+	 * (cellElement.hasAttribute("vertex"))
+	 * cell.setVertex(Integer.parseInt(cellElement.getAttribute("vertex")) == 1); if
+	 * (cellElement.hasAttribute("edge"))
+	 * cell.setEdge(Integer.parseInt(cellElement.getAttribute("edge")) == 1); if
+	 * (cellElement.hasAttribute("connectable"))
+	 * cell.setConnectable(Integer.parseInt(cellElement.getAttribute("connectable"))
+	 * == 1); if (cellElement.hasAttribute("collapsed"))
+	 * cell.setCollapsed(Integer.parseInt(cellElement.getAttribute("collapsed")) ==
+	 * 1); if (cellElement.hasAttribute("parent"))
+	 * cell.setParent(Integer.parseInt(cellElement.getAttribute("parent"))); else
+	 * cell.setParent(-1); if (cellElement.hasAttribute("source"))
+	 * cell.setSource(Integer.parseInt(cellElement.getAttribute("source"))); if
+	 * (cellElement.hasAttribute("target"))
+	 * cell.setTarget(Integer.parseInt(cellElement.getAttribute("target")));
+	 * 
+	 * // geometry info if
+	 * (cellElement.getElementsByTagName("mxGeometry").getLength() > 0) { Element
+	 * geoElement = (Element)
+	 * cellElement.getElementsByTagName("mxGeometry").item(0); MxGeometry geometry =
+	 * new MxGeometry(); if (geoElement.hasAttribute("x"))
+	 * geometry.setX(Double.parseDouble(geoElement.getAttribute("x"))); if
+	 * (geoElement.hasAttribute("y"))
+	 * geometry.setY(Double.parseDouble(geoElement.getAttribute("y"))); if
+	 * (geoElement.hasAttribute("width"))
+	 * geometry.setWidth(Double.parseDouble(geoElement.getAttribute("width"))); if
+	 * (geoElement.hasAttribute("height"))
+	 * geometry.setHeight(Double.parseDouble(geoElement.getAttribute("height"))); if
+	 * (geoElement.getElementsByTagName("Array").getLength() > 0) {
+	 * LinkedList<MxPoint> points = new LinkedList<MxPoint>(); Element arrayElement
+	 * = (Element) geoElement.getElementsByTagName("Array").item(0); NodeList
+	 * pointNodes = arrayElement.getElementsByTagName("mxPoint"); for (int
+	 * pointIndex = 0; pointIndex < pointNodes.getLength(); pointIndex++) { Element
+	 * pointElement = (Element) pointNodes.item(pointIndex); MxPoint point = new
+	 * MxPoint(); if (pointElement.hasAttribute("x"))
+	 * point.setX(Double.parseDouble(pointElement.getAttribute("x"))); else
+	 * point.setX(0); if (pointElement.hasAttribute("y"))
+	 * point.setY(Integer.parseInt(pointElement.getAttribute("y"))); else
+	 * point.setY(0); points.add(point); } geometry.setPoints(points); } if
+	 * (geoElement.getElementsByTagName("mxPoint").getLength() > 0) { NodeList
+	 * pointNodes = geoElement.getElementsByTagName("mxPoint"); for (int pointIndex
+	 * = 0; pointIndex < pointNodes.getLength(); pointIndex++) { Element
+	 * pointElement = (Element) pointNodes.item(pointIndex); MxPoint point = new
+	 * MxPoint(); if(pointElement.hasAttribute("x"))
+	 * point.setX(Double.parseDouble(pointElement.getAttribute("x"))); else
+	 * point.setX(0); if(pointElement.hasAttribute("y"))
+	 * point.setY(Double.parseDouble(pointElement.getAttribute("y"))); else
+	 * point.setY(0); if (pointElement.getAttribute("as").equals("sourcePoint")) {
+	 * geometry.setSourcePoint(point); } if
+	 * (pointElement.getAttribute("as").equals("targetPoint")) {
+	 * geometry.setTargetPoint(point); }
+	 * 
+	 * }
+	 * 
+	 * } cell.setGeometry(geometry); }
+	 * 
+	 * // glyph info if (cellElement.getElementsByTagName("GlyphInfo").getLength() >
+	 * 0) { Element infoElement = (Element)
+	 * cellElement.getElementsByTagName("GlyphInfo").item(0); GlyphInfo info = new
+	 * GlyphInfo(); info.setPartType(infoElement.getAttribute("partType"));
+	 * info.setPartRole(infoElement.getAttribute("partRole"));
+	 * info.setPartRefine(infoElement.getAttribute("partRefine"));
+	 * info.setDisplayID(infoElement.getAttribute("displayID"));
+	 * info.setName(infoElement.getAttribute("name"));
+	 * info.setDescription(infoElement.getAttribute("description"));
+	 * info.setVersion(infoElement.getAttribute("version"));
+	 * info.setSequence(infoElement.getAttribute("sequence"));
+	 * info.setUriPrefix(infoElement.getAttribute("uriPrefix")); cell.setInfo(info);
+	 * }
+	 * 
+	 * // interaction info if
+	 * (cellElement.getElementsByTagName("InteractionInfo").getLength() > 0) {
+	 * Element infoElement = (Element)
+	 * cellElement.getElementsByTagName("InteractionInfo").item(0); InteractionInfo
+	 * info = new InteractionInfo();
+	 * info.setDisplayID(infoElement.getAttribute("displayID"));
+	 * info.setInteractionType(infoElement.getAttribute("interactionType"));
+	 * info.setFromParticipationType(infoElement.getAttribute(
+	 * "fromParticipationType"));
+	 * info.setToParticipationType(infoElement.getAttribute("toParticipationType"));
+	 * cell.setInfo(info); }
+	 * 
+	 * if (cell.isEdge()) { edges.add(cell); } else if
+	 * (cell.getStyle().contains("circuitContainer")) { if
+	 * (containers.containsKey(cell.getParent())) {
+	 * containers.get(cell.getParent()).put(cell.getId(), cell); } else {
+	 * HashMap<Integer, MxCell> subContainers = new HashMap<Integer, MxCell>();
+	 * subContainers.put(cell.getId(), cell); containers.put(cell.getParent(),
+	 * subContainers); } } else if (cell.getStyle().contains("backbone")) { // TODO
+	 * remove me when the user can set the displayID GlyphInfo glyphInfo = new
+	 * GlyphInfo(); glyphInfo.setDisplayID("cd" + cell.getId());
+	 * cell.setInfo(glyphInfo); backbones.put(cell.getParent(), cell); } else if
+	 * (proteins != null && cell.getStyle().contains("molecularSpeciesGlyph")) {
+	 * proteins.add(cell); } else if (cell.getStyle().contains("textBox")) { if
+	 * (textSets.get(cell.getParent()) != null) {
+	 * textSets.get(cell.getParent()).add(cell); } else { LinkedList<MxCell> list =
+	 * new LinkedList<MxCell>(); list.add(cell); textSets.put(cell.getParent(),
+	 * list); } } else if (cell.getStyle().contains("sequenceFeatureGlyph")) { if
+	 * (glyphSets.get(cell.getParent()) != null) {
+	 * glyphSets.get(cell.getParent()).add(cell); } else { TreeSet<MxCell> set = new
+	 * TreeSet<MxCell>(geoSorter); set.add(cell); glyphSets.put(cell.getParent(),
+	 * set); } } cells.put(cell.getId(), cell); } }
+	 * 
+	 */
 	/**
 	 * Takes the mxGraph objects and converts them to an xml that can be used to
 	 * override a cell in mxGraph.
@@ -747,7 +733,7 @@ public class Converter {
 			glyphCell.setId(nextID);
 			nextID++;
 			glyphCell.setParent(containerCell.getId());
-			
+
 			// glyph info
 			ComponentDefinition glyphCD = glyphComponent.getDefinition();
 			GlyphInfo glyphInfo = genGlyphInfo(glyphCD);
@@ -755,7 +741,7 @@ public class Converter {
 			defToID.put(glyphCD, glyphCell.getId());
 
 			cells.put(glyphCell.getId(), glyphCell);
-			
+
 			compDefToMxGraphObjects(glyphCD, glyphCell.getId());
 
 		}
@@ -786,7 +772,7 @@ public class Converter {
 		// else
 		// lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
 		// glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
-		glyphInfo.setUriPrefix(uriPrefix.substring(0,uriPrefix.length()-1));
+		glyphInfo.setUriPrefix(uriPrefix.substring(0, uriPrefix.length() - 1));
 		return glyphInfo;
 	}
 
