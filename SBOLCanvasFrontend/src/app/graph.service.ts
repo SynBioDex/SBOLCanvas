@@ -242,7 +242,7 @@ export class GraphService {
       }
     }
 
-    // don't just use the new cells though, use all currently selected ones
+    // Don't just use the new cells though, use all currently selected ones.
     this.updateAngularMetadata(this.graph.getSelectionCells());
   }
 
@@ -272,6 +272,16 @@ export class GraphService {
       const glyphInfo = this.getFromGlyphDict(cell.value);
       if (glyphInfo) {
         this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
+      }
+    }
+    else if (cell.isCircuitContainer()) {
+      // If the cell is a circuit container, and we are zoomed into a component
+      // definition, then we can display the info of the parent component definition.
+      if (cell.parent.id != "rootView") {
+        const glyphInfo = this.getFromGlyphDict(cell.parent.id);
+        if (glyphInfo) {
+          this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
+        }
       }
     }
     else if (cell.isInteraction()) {
@@ -1126,7 +1136,13 @@ export class GraphService {
       try{
         if(info instanceof GlyphInfo){
 
-          const oldDisplayID = selectedCell.value;
+          let oldDisplayID = "";
+          // The selected cell might be a circuit container, in which case we need the id of the parent.
+          if (selectedCell.isCircuitContainer()) {
+            oldDisplayID = selectedCell.parent.id;
+          } else {
+            oldDisplayID = selectedCell.value;
+          }
           const newDisplayID = info.displayID;
           if(oldDisplayID != newDisplayID){
             // check for a cycle
@@ -1140,13 +1156,13 @@ export class GraphService {
               this.dialog.open(ErrorComponent, {data: "ComponentInstance objects MUST NOT form circular reference chains via their definition properties and parent ComponentDefinition objects."});
               return;
             }
-      
+
             const coupledCells = this.getCoupledCells(oldDisplayID);
             if(coupledCells.length > 1){
               this.promptDeCouple(selectedCell, coupledCells, info, newDisplayID, oldDisplayID);
               return;
             }
-      
+
             const conflictViewCell = this.graph.getModel().getCell(newDisplayID);
             if(conflictViewCell != null){
               this.promptCouple(conflictViewCell, [selectedCell], info, newDisplayID, oldDisplayID);
@@ -1157,7 +1173,7 @@ export class GraphService {
             // update the viewcell ID
             const viewCell = this.graph.getModel().getCell(oldDisplayID);
             this.updateViewCell(viewCell, newDisplayID);
-            
+
             // update the glyphDictionary
             this.removeFromGlyphDict(oldDisplayID);
             this.addToGlyphDict(info);
@@ -1178,7 +1194,7 @@ export class GraphService {
           this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.value).partRole, this.getCoupledCells(selectedCell.value));
           // update the view
           this.updateAngularMetadata(this.graph.getSelectionCells());
-          
+
         }else{
           let interactionEdit = new GraphService.interactionEdit(selectedCell, info);
           this.mutateInteractionGlyph(info.interactionType);
