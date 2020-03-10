@@ -1203,19 +1203,30 @@ export class GraphService {
               return;
             }
 
-            // default case
-            // update the viewcell ID
-            const viewCell = this.graph.getModel().getCell(oldDisplayID);
-            this.updateViewCell(viewCell, newDisplayID);
-
             // update the glyphDictionary
             this.removeFromGlyphDict(oldDisplayID);
             this.addToGlyphDict(info);
 
-            // update the selected cell id
             if(selectedCell.isCircuitContainer()){
-              this.graph.getModel().setValue(this.selectionStack[this.selectionStack.length-1], newDisplayID);
+              const glyphZoomed = this.selectionStack[this.selectionStack.length-1];
+              this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+              
+              // default case
+              // update the viewcell ID
+              const viewCell = this.graph.getModel().getCell(oldDisplayID);
+              this.updateViewCell(viewCell, newDisplayID);
+
+              // update the selected cell id
+              this.graph.getModel().setValue(glyphZoomed, newDisplayID);
+
+              this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
             }else{
+              // default case
+              // update the viewcell ID
+              const viewCell = this.graph.getModel().getCell(oldDisplayID);
+              this.updateViewCell(viewCell, newDisplayID);
+
+              // update the selected cell id
               this.graph.getModel().setValue(selectedCell, newDisplayID);
             }
 
@@ -1354,14 +1365,31 @@ export class GraphService {
 
         // update viewCell id
         const viewCell = this.graph.getModel().getCell(oldDisplayID);
-        this.updateViewCell(viewCell, newDisplayID);
+        // if the current selectedcell is a circuit container we need to unzoom and rezoom
+        if(selectedCell.isCircuitContainer()){
+          const zoomedCell = this.selectionStack[this.selectionStack.length-1];
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+          this.updateViewCell(viewCell, newDisplayID);
 
-        // update the displayID of the other cells
-        // this.graph can't be used in the foreach apparently
-        const graph = this.graph;
-        coupledCells.forEach(function (cell) {
-          graph.getModel().setValue(cell, newDisplayID);
-        });
+          // update the displayID of the other cells
+          // this.graph can't be used in the foreach apparently
+          const graph = this.graph;
+          coupledCells.forEach(function (cell) {
+            graph.getModel().setValue(cell, newDisplayID);
+          });
+
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), zoomedCell, this));
+        }else{
+          this.updateViewCell(viewCell, newDisplayID);
+
+          // update the displayID of the other cells
+          // this.graph can't be used in the foreach apparently
+          const graph = this.graph;
+          coupledCells.forEach(function (cell) {
+            graph.getModel().setValue(cell, newDisplayID);
+          });
+        }
+        
         this.mutateSequenceFeatureGlyph(info.partRole, coupledCells, this.graph);
       }else if(result === "No"){
         // don't use update, as it will remove the old one
@@ -1374,8 +1402,15 @@ export class GraphService {
         // update the clones id
         this.updateViewCell(viewCellClone, newDisplayID);
 
-        // update the selected cell's displayID
-        this.graph.getModel().setValue(selectedCell, newDisplayID);
+        if(selectedCell.isCircuitContainer()){
+          const glyphZoomed = this.selectionStack[this.selectionStack.length-1];
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+          this.graph.getModel().setValue(glyphZoomed, newDisplayID);
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
+        }else{
+          // update the selected cell's displayID
+          this.graph.getModel().setValue(selectedCell, newDisplayID);
+        }
         this.mutateSequenceFeatureGlyph(info.partRole);
       }
       this.graph.getModel().endUpdate();
