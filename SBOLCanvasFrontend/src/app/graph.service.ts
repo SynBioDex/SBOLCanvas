@@ -18,6 +18,7 @@ import { environment } from 'src/environments/environment';
 import { MatDialog } from '@angular/material';
 import { ErrorComponent } from './error/error.component';
 import { ConfirmComponent } from './confirm/confirm.component';
+import { mxGraphView } from 'src/mxgraph';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -137,6 +138,66 @@ export class GraphService {
     }
   }
 
+  // because the mxCurrentRootChange doesn't do what we want
+  static zoomEdit = class{
+    view: mxGraphView;
+    glyphCell: mxCell;
+    goDown: boolean;
+    graphService: GraphService;
+    constructor(view: mxGraphView, glyphCell: mxCell, graphService: GraphService){
+      this.view = view;
+      this.glyphCell = glyphCell;
+      this.goDown = glyphCell != null;
+      this.graphService = graphService;
+    }
+
+    execute(){
+      if(this.glyphCell != null){
+        // Zoom into the glyph
+        // get the view cell for the selected cell
+        const childViewCell = this.graphService.graph.getModel().getCell(this.glyphCell.value);
+
+        // add the necessary info to the viewstack and selectionstack
+        this.graphService.viewStack.push(childViewCell);
+        this.graphService.selectionStack.push(this.glyphCell);
+
+        // change the view
+        this.view.clear(this.view.currentRoot, true);
+        this.view.currentRoot = childViewCell;
+        
+        // set the selection to the circuit container
+        this.graphService.graph.setSelectionCell(childViewCell.children[0]);
+        this.graphService.fitCamera();
+
+        // make sure we can't add new strands/interactions/molecules
+        this.graphService.metadataService.setComponentDefinitionMode(true);
+
+        this.glyphCell = null;
+      }else{
+        // Zoom out of the glyph
+        // remove the last items on the stack
+        this.graphService.viewStack.pop();
+        const newSelectedCell = this.graphService.selectionStack.pop();
+
+        // change the view
+        this.view.clear(this.view.currentRoot, true);
+        this.view.currentRoot = this.graphService.viewStack[this.graphService.viewStack.length-1];
+
+        // set the selection back
+        this.graphService.graph.setSelectionCell(newSelectedCell);
+        this.graphService.setAllScars(this.graphService.showingScars);
+        this.graphService.fitCamera();
+
+        // make sure we can add new strands/interactions/molecules on the top level
+        if(this.graphService.viewStack.length == 1){
+          this.graphService.metadataService.setComponentDefinitionMode(false);
+        }
+
+        this.glyphCell = newSelectedCell;
+      }
+    }
+  }
+
   constructor(public dialog: MatDialog, private metadataService: MetadataService, private glyphService: GlyphService) {
     // constructor code is divided into helper methods for organization,
     // but these methods aren't entirely modular; order of some of
@@ -202,6 +263,9 @@ export class GraphService {
     const cell0 = this.graph.getModel().getCell(0);
     const glyphDict = new Map<string, GlyphInfo>();
     this.graph.getModel().setValue(cell0, glyphDict);
+
+    // don't let any of the setup be on the undo stack
+    this.editor.undoManager.clear();
   }
 
   /**
@@ -427,18 +491,8 @@ export class GraphService {
       return;
     }
 
-    const childViewCell = this.graph.getModel().getCell(selection[0].value);
-    this.selectionStack.push(selection[0]);
-    this.viewStack.push(childViewCell);
-    this.graph.enterGroup(childViewCell);
-
-    // set the default selection to the circuit container
-    this.graph.setSelectionCell(childViewCell.children[0]);
-
-    this.fitCamera();
-
-    // Broadcast to the UI that we are now in component definition mode
-    this.metadataService.setComponentDefinitionMode(true);
+    let zoomEdit = new GraphService.zoomEdit(this.graph.getView(), selection[0], this);
+    this.graph.getModel().execute(zoomEdit);
   }
 
   /**
@@ -448,28 +502,8 @@ export class GraphService {
    */
   exitGlyph() {
     // the root view should always be left on the viewStack
-    if(this.viewStack.length > 1){
-      this.viewStack.pop();
-      const newViewCell = this.viewStack[this.viewStack.length-1];
-      this.graph.enterGroup(newViewCell);
-
-      // reset the selection to the glyph we just exited
-      const newSelectedCell = this.selectionStack.pop();
-      this.graph.setSelectionCell(newSelectedCell);
-
-      // We call this here when we zoom out to synchronize
-      // the current graph vertices with the showing scars setting
-      this.setAllScars(this.showingScars);
-
-      //TODO set selection to correct cell
-
-      this.fitCamera();
-    }
-
-    if (this.viewStack.length == 1) {
-      // Broadcast to the UI that we are no longer in component definition mode
-      this.metadataService.setComponentDefinitionMode(false);
-    }
+    let zoomEdit = new GraphService.zoomEdit(this.graph.getView(), null, this);
+    this.graph.getModel().execute(zoomEdit);
   }
 
   /**
@@ -1179,7 +1213,11 @@ export class GraphService {
             this.addToGlyphDict(info);
 
             // update the selected cell id
-            this.graph.getModel().setValue(selectedCell, newDisplayID);
+            if(selectedCell.isCircuitContainer()){
+              this.graph.getModel().setValue(this.selectionStack[this.selectionStack.length-1], newDisplayID);
+            }else{
+              this.graph.getModel().setValue(selectedCell, newDisplayID);
+            }
 
             // update the view
             this.updateAngularMetadata(this.graph.getSelectionCells());
@@ -1191,7 +1229,11 @@ export class GraphService {
 
           // there may be coupled cells that need to also be mutated
           // the glyphInfo may be different than info, so use getFromGlyphDict
-          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.value).partRole, this.getCoupledCells(selectedCell.value));
+          if(selectedCell.isCircuitContainer()){
+            this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.parent.id).partRole, this.getCoupledCells(selectedCell.parent.id));
+          }else{
+            this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.value).partRole, this.getCoupledCells(selectedCell.value));
+          }
           // update the view
           this.updateAngularMetadata(this.graph.getSelectionCells());
 
@@ -1213,8 +1255,6 @@ export class GraphService {
     const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "A component with this displayID already exists. Would you like to couple them and keep the current substructure, or update it?", options: ["Keep", "Update", "Cancel"]}});
     confirmRef.afterClosed().subscribe(result => {
       if(result === "Keep"){
-        // remove the found viewCell and replace it with this one
-        this.graph.getModel().remove(conflictViewCell);
 
         // update the glyphDict
         this.removeFromGlyphDict(oldDisplayID);
@@ -1223,32 +1263,77 @@ export class GraphService {
 
         // update the viewCell id
         const viewCell = this.graph.getModel().getCell(oldDisplayID);
-        this.updateViewCell(viewCell, newDisplayID);
+        
 
         // update the display of the selectioncell
-        const graph = this.graph;
-        selectedCells.forEach(function (cell){
-          graph.getModel().setValue(cell, newDisplayID);
-        });
+        if(selectedCells.length == 1 && selectedCells[0].isCircuitContainer()){
+          const glyphZoomed = this.selectionStack[this.selectionStack.length-1];
+          // zoom out before making changes
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+
+          // remove the found viewCell and replace it with this one
+          this.graph.getModel().remove(conflictViewCell);
+          
+          // change the displayID associated with the glyph
+          this.graph.getModel().setValue(glyphZoomed, newDisplayID);
+
+          // update the viewCell's id
+          this.updateViewCell(viewCell, newDisplayID);
+
+          // rezoom after the ID has been changed
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
+        }else{
+          // remove the found viewCell and replace it with this one
+          this.graph.getModel().remove(conflictViewCell);
+          
+          // update the viewCell's id
+          this.updateViewCell(viewCell, newDisplayID);
+
+          // change the displayID assicated with the glyphs
+          const graph = this.graph;
+          selectedCells.forEach(function (cell){
+            graph.getModel().setValue(cell, newDisplayID);
+          });
+        }
 
         // update the conflicting cells graphics
         this.mutateSequenceFeatureGlyph(info.partRole, this.getCoupledCells(newDisplayID));
       }else if(result === "Update"){
-        // remove this cells viewCell and update the displayID
-        const viewCell = this.graph.getModel().getCell(oldDisplayID);
-        this.graph.getModel().remove(viewCell);
-
-        // update the glyphDict
-        this.removeFromGlyphDict(oldDisplayID);
-
         // update the selected cells displayID
-        const graph = this.graph;
-        selectedCells.forEach(function (cell){
-          graph.getModel().setValue(cell, newDisplayID);
-        });
+        if(selectedCells.length == 1 && selectedCells[0].isCircuitContainer()){
+          // update the glyphDict
+          this.removeFromGlyphDict(oldDisplayID);
+
+          const glyphZoomed = this.selectionStack[this.selectionStack.length-1];
+          // unzoom and rezoom after the rename
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+
+          // remove this cells viewCell and update the displayID
+          const viewCell = this.graph.getModel().getCell(oldDisplayID);
+          this.graph.getModel().remove(viewCell);
+
+          this.graph.getModel().setValue(glyphZoomed, newDisplayID);
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
+        }else{
+          // remove this cells viewCell and update the displayID
+          const viewCell = this.graph.getModel().getCell(oldDisplayID);
+          this.graph.getModel().remove(viewCell);
+
+          // update the glyphDict
+          this.removeFromGlyphDict(oldDisplayID);
+
+          const graph = this.graph;
+          selectedCells.forEach(function (cell){
+            graph.getModel().setValue(cell, newDisplayID);
+          });
+        }
 
         // update the selected cell's graphics
-        this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newDisplayID).partRole, selectedCells);
+        if(selectedCells.length == 1 && selectedCells[0].isCircuitContainer()){
+          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newDisplayID).partRole, [this.selectionStack[this.selectionStack.length-1]]);
+        }else{
+          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newDisplayID).partRole, selectedCells);
+        }
       }
       this.graph.getModel().endUpdate();
       // update the view
@@ -1311,9 +1396,11 @@ export class GraphService {
   }
 
   private updateViewCell(cell: mxCell, newDisplayID: string){
+    const newViewCell = this.graph.getModel().cloneCell(cell);
     this.graph.getModel().remove(cell);
-    cell.id = newDisplayID;
-    this.graph.getModel().add(this.graph.getModel().getCell(1), cell);
+    // clone it because the previous remove will keep the id change if we don't
+    newViewCell.id = newDisplayID;
+    this.graph.getModel().add(this.graph.getModel().getCell(1), newViewCell);
   }
 
   exportSVG(filename: string){
