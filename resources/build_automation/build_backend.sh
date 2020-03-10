@@ -17,3 +17,5 @@ javac -source 1.8 -target 1.8 -sourcepath ${compile_source_dir} -d ${compile_des
 # Build .war file and deploy
 cd ${BACKEND_DIR}/WebContent
 jar -cf ${war_filename} *
+echo "$PWD"
+echo $(ls)
