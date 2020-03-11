@@ -19,14 +19,19 @@ RUN resources/build_automation/build_frontend.sh
 
 # New container
 FROM tomcat:9.0-jdk8-openjdk
+
+# Copy backend
 COPY --from=0 /opt/backend/SBOLCanvasBackend/WebContent/api.war webapps
+
+# Copy frontend
+COPY --from=0 /opt/backend/SBOLCanvasFrontend/dist/SBOLCanvasFrontend webapps/canvas
 
 # Copying configs for tomcat
 ARG TOMCAT_AUTOMATION_DIR=/opt/backend/resources/server_automation/tomcat
-COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/tomcat-users.xml ${TOMCAT_AUTOMATION_DIR}/base_config_files/web.xml conf/
-COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/server.xml conf/
-COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/manager-context.xml webapps/manager/META-INF/context.xml 
-COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/host-manager-context.xml webapps/host-manager/META-INF/context.xml 
+#COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/tomcat-users.xml ${TOMCAT_AUTOMATION_DIR}/base_config_files/web.xml conf/
+#COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/server.xml conf/
+#COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/manager-context.xml webapps/manager/META-INF/context.xml 
+#COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/host-manager-context.xml webapps/host-manager/META-INF/context.xml 
 COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/ROOT_config/index.jsp webapps/ROOT/index.jsp 
 
 COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_context.html webapps/canvas/META-INF/context.html 
