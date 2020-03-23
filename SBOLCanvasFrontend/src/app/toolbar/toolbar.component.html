@@ -65,6 +65,10 @@
       <button mat-menu-item class="toolbar-row-button"
               [matTooltip]="'About SBOL Canavs and its creators'"
               [routerLink]="['/about']">About</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Links to Github issue tracker.'"
+              onClick="window.open('https://github.com/SynBioDex/SBOLCanvas/issues')">Report Issue</button>
     </mat-menu>
 
     <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
