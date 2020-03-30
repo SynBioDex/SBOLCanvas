@@ -5,8 +5,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeSet;
@@ -17,8 +19,10 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
@@ -71,19 +75,6 @@ public class Converter {
 
 	static String uriPrefix = "https://sbolcanvas.org/";
 	static String annPrefix = "SBOLCanvas";
-	static Comparator<MxCell> geoSorter = new Comparator<MxCell>() {
-		// The x position implies the order on the strand
-		@Override
-		public int compare(MxCell o1, MxCell o2) {
-			return o1.getGeometry().getX() < o2.getGeometry().getX() ? -1 : 1;
-		}
-	};
-	static Comparator<MxCell> idSorter = new Comparator<MxCell>() {
-		@Override
-		public int compare(MxCell o1, MxCell o2) {
-			return o1.getId() - o2.getId();
-		}
-	};
 
 	/**
 	 * Filters mxCells that contain "textBox" in the style string
@@ -94,9 +85,9 @@ public class Converter {
 			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("textBox");
 		}
 	};
-	
+
 	/**
-	 * Used to filter out proteins in an array of mxCells
+	 * Filters mxCells that contain "protein" in the style string
 	 */
 	static Filter proteinFilter = new Filter() {
 		@Override
@@ -104,11 +95,34 @@ public class Converter {
 			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("molecularSpeciesGlyph");
 		}
 	};
-	
+
+	/**
+	 * Filters mxCells that contain "circuitContainer" in the style string
+	 */
 	static Filter containerFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
 			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("circuitContainer");
+		}
+	};
+
+	/**
+	 * Filters mxCells that contain "backbone" in the style string
+	 */
+	static Filter backboneFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("backbone");
+		}
+	};
+
+	/**
+	 * Filters mxCells that contain "sequenceFeatureGlyph" in the style string
+	 */
+	static Filter sequenceFeatureFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("sequenceFeatureGlyph");
 		}
 	};
 
@@ -117,16 +131,7 @@ public class Converter {
 		mxCodecRegistry.addPackage("data");
 	};
 
-	/*private HashMap<Integer, HashMap<Integer, MxCell>> containers = new HashMap<Integer, HashMap<Integer, MxCell>>();
-	private HashMap<Integer, MxCell> backbones = new HashMap<Integer, MxCell>();
-	private LinkedList<MxCell> proteins = new LinkedList<MxCell>();
-	private HashMap<Integer, LinkedList<MxCell>> textSets = new HashMap<Integer, LinkedList<MxCell>>();
-	private HashMap<Integer, Set<MxCell>> glyphSets = new HashMap<Integer, Set<MxCell>>();
-	private LinkedList<MxCell> edges = new LinkedList<MxCell>();
-	private HashMap<Integer, MxCell> cells = new HashMap<Integer, MxCell>();
-	private HashMap<ComponentDefinition, Integer> defToID = new HashMap<ComponentDefinition, Integer>();*/
-
-	private HashMap<String, GlyphInfo> glyphInfoDict = new HashMap<String, GlyphInfo>();
+	private Hashtable<String, GlyphInfo> glyphInfoDict = new Hashtable<String, GlyphInfo>();
 
 	// these are here because of the possibility of having a mix of having/not
 	// having cell annotations
@@ -135,11 +140,11 @@ public class Converter {
 
 	@SuppressWarnings("unchecked")
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename) throws SAXException,
-			IOException, ParserConfigurationException, SBOLValidationException, SBOLConversionException {
+			IOException, ParserConfigurationException, SBOLValidationException, SBOLConversionException, TransformerFactoryConfigurationError, TransformerException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
-		glyphInfoDict = (HashMap<String, GlyphInfo>) ((mxCell) model.getCell("0")).getValue();
+		glyphInfoDict = (Hashtable<String, GlyphInfo>) ((mxCell) model.getCell("0")).getValue();
 
 		// create the document
 		SBOLDocument document = new SBOLDocument();
@@ -147,84 +152,38 @@ public class Converter {
 		document.setComplete(true);
 		document.setCreateDefaults(true);
 
-		// top level module definition that contains all strands and proteins
-		// filename because that's what synbiohub uses to distinguish
-		ModuleDefinition modDef = document.createModuleDefinition(filename);
-		Object[] rootChildren = mxGraphModel.getChildCells(model, model.getCell("rootView"), true, false);
-		mxCell[] rootViewTexts = (mxCell[]) mxGraphModel.filterCells(rootChildren, textBoxFilter);
-		if (rootViewTexts.length > 0) {
-			modDef.createAnnotation(new QName(uriPrefix, "textBoxes", annPrefix), gson.toJson(rootViewTexts));
+		// Arrays.stream is the java 8 way to cast Object[] to some other array
+		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false)).toArray(mxCell[]::new);
+
+		// construct the module/component definitions
+		for (mxCell viewCell : viewCells) {
+			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, true);
+			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter)).toArray(mxCell[]::new);
+			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter)).toArray(mxCell[]::new);
+			//TODO remove rootView when modDefs are supported
+			if (viewCell.getId().equals("rootView") || circuitContainers.length > 1 || proteins.length > 0) {
+				// TODO when moddefs are supported the id should already be correct
+				// module definitions
+				((mxCell) viewCell).setId(filename);
+				createModuleDefinition(document, model, viewCell);
+			} else {
+				// component definitions
+				createComponentDefinition(document, model, viewCell);
+			}
 		}
 
-		// create the proteins
-		mxCell[] proteins = (mxCell[]) mxGraphModel.filterCells(rootChildren, proteinFilter);
-		for (mxCell protein : proteins) {
-			GlyphInfo proteinInfo = (GlyphInfo) glyphInfoDict.get(protein.getValue());
-			ComponentDefinition proteinCD = document.createComponentDefinition(proteinInfo.getDisplayID(),
-					proteinInfo.getVersion(), SBOLData.types.getValue(proteinInfo.getPartType()));
-			proteinCD.setDescription(proteinInfo.getDescription());
-			proteinCD.setName(proteinInfo.getName());
-			proteinCD.addRole(SystemsBiologyOntology.INHIBITOR);
-			modDef.createFunctionalComponent(proteinCD.getDisplayId(), AccessType.PUBLIC, proteinCD.getIdentity(),
-					DirectionType.INOUT);
-			proteinCD.createAnnotation(new QName(uriPrefix, "protein", annPrefix), gson.toJson(protein));
-		}
-
-		// create the top level component definitions, aka strands
-		mxCell[] topContainers = (mxCell[]) mxGraphModel.filterCells(rootChildren, containerFilter);
-		if (topContainers.length > 0)
-			for (mxCell containerCell : topContainers) {
-				mxCell backboneCell = (mxCell) containerCell.getChildAt(0);
-				ComponentDefinition containerCD = document.createComponentDefinition(
-						((GlyphInfo) backboneCell.getInfo()).getDisplayID(), ComponentDefinition.DNA_REGION);
-				containerCD.addRole(SequenceOntology.ENGINEERED_REGION);
-
-				modDef.createFunctionalComponent(containerCD.getDisplayId(), AccessType.PUBLIC,
-						containerCD.getIdentity(), DirectionType.INOUT);
-
-				createComponentDefinition(document, containerCD, containerCell, backboneCell);
+		// link the module/component definitions
+		for (mxCell viewCell : viewCells) {
+			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, true);
+			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter)).toArray(mxCell[]::new);
+			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter)).toArray(mxCell[]::new);
+			if (viewCell.getId().equals(filename) || circuitContainers.length > 1 || proteins.length > 0) {
+				// module definitions
+				linkModuleDefinition(document, model, viewCell);
+			} else {
+				// component definitions
+				linkComponentDefinition(document, model, viewCell);
 			}
-
-		// edges to interactions
-		for (MxCell edge : edges) {
-			// interaction
-			InteractionInfo intInfo = (InteractionInfo) edge.getInfo();
-			Interaction interaction = modDef.createInteraction(intInfo.getDisplayID(),
-					SBOLData.interactions.getValue(intInfo.getInteractionType()));
-			interaction.createAnnotation(new QName(uriPrefix, "edge", annPrefix), gson.toJson(edge));
-
-			// participants
-			GlyphInfo sourceInfo = null;
-			GlyphInfo targetInfo = null;
-			if (edge.getSource() > 0)
-				sourceInfo = (GlyphInfo) cells.get(edge.getSource()).getInfo();
-			if (edge.getTarget() > 0)
-				targetInfo = (GlyphInfo) cells.get(edge.getTarget()).getInfo();
-
-			// source participant
-			if (sourceInfo != null) {
-				FunctionalComponent sourceFC = modDef.getFunctionalComponent(sourceInfo.getDisplayID());
-				if (sourceFC == null) {
-					ComponentDefinition sourceCD = document.getComponentDefinition(sourceInfo.getDisplayID(), null);
-					sourceFC = modDef.createFunctionalComponent(sourceInfo.getDisplayID(), AccessType.PUBLIC,
-							sourceCD.getIdentity(), DirectionType.INOUT);
-				}
-				interaction.createParticipation(sourceInfo.getDisplayID(), sourceFC.getIdentity(),
-						getParticipantType(true, interaction.getTypes().iterator().next()));
-			}
-
-			// target participant
-			if (targetInfo != null) {
-				FunctionalComponent targetFC = modDef.getFunctionalComponent(targetInfo.getDisplayID());
-				if (targetFC == null) {
-					ComponentDefinition targetCD = document.getComponentDefinition(targetInfo.getDisplayID(), null);
-					targetFC = modDef.createFunctionalComponent(targetInfo.getDisplayID(), AccessType.PUBLIC,
-							targetCD.getIdentity(), DirectionType.INOUT);
-				}
-				interaction.createParticipation(targetInfo.getDisplayID(), targetFC.getIdentity(),
-						getParticipantType(false, interaction.getTypes().iterator().next()));
-			}
-
 		}
 
 		// write to body
@@ -303,75 +262,130 @@ public class Converter {
 
 	}
 
-	private void createComponentDefinition(SBOLDocument document, ComponentDefinition compDef, MxCell container,
-			MxCell backbone) throws SBOLValidationException {
-		// container and backbone stuff
-		compDef.createAnnotation(new QName(uriPrefix, "containerCell", annPrefix), gson.toJson(container));
-		compDef.createAnnotation(new QName(uriPrefix, "backboneCell", annPrefix), gson.toJson(backbone));
+	private void createModuleDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
+			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
+		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false)).toArray(mxCell[]::new);
+		mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter)).toArray(mxCell[]::new);
+		mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter)).toArray(mxCell[]::new);
+		mxCell[] textBoxes = Arrays.stream(mxGraphModel.filterCells(viewChildren, textBoxFilter)).toArray(mxCell[]::new);
+
+		ModuleDefinition modDef = document.createModuleDefinition(viewCell.getId());
 
 		// text boxes
-		if (container.getParent() != 1) {
-			LinkedList<MxCell> textBoxes = textSets.get(container.getParent());
-			if (textBoxes != null) {
-				compDef.createAnnotation(new QName(uriPrefix, "textBoxes", annPrefix),
-						gson.toJson(textBoxes.toArray(new MxCell[0])));
-			}
+		if (textBoxes.length > 0) {
+			modDef.createAnnotation(new QName(uriPrefix, "textBoxes", annPrefix), encodeMxGraphObject(textBoxes));
 		}
 
-		// create the things needed for components
-		Component previous = null;
-		int count = 0;
-		int start = 0, end = 0;
-		Set<MxCell> glyphs = glyphSets.get(container.getId());
-		if (glyphs != null) {
-			for (MxCell glyphCell : glyphs) {
+		// proteins
+		for (mxCell protein : proteins) {
+			// proteins also have glyphInfos
+			GlyphInfo proteinInfo = (GlyphInfo) glyphInfoDict.get(protein.getValue());
+			ComponentDefinition proteinCD = document.createComponentDefinition(proteinInfo.getDisplayID(),
+					proteinInfo.getVersion(), SBOLData.types.getValue(proteinInfo.getPartType()));
+			proteinCD.setDescription(proteinInfo.getDescription());
+			proteinCD.setName(proteinInfo.getName());
+			proteinCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
+			modDef.createFunctionalComponent(proteinCD.getDisplayId(), AccessType.PUBLIC, proteinCD.getIdentity(),
+					DirectionType.INOUT);
+			// the layout information in the component definition
+			proteinCD.createAnnotation(new QName(uriPrefix, "protein", annPrefix), encodeMxGraphObject(protein));
+		}
 
-				// component definition
-				GlyphInfo glyphInfo = (GlyphInfo) glyphCell.getInfo();
-				if (glyphInfo.getUriPrefix() == null || glyphInfo.getUriPrefix().equals(""))
-					glyphInfo.setUriPrefix(uriPrefix);
-				ComponentDefinition componentCD = document.createComponentDefinition(glyphInfo.getUriPrefix(),
-						glyphInfo.getDisplayID(), glyphInfo.getVersion(),
-						SBOLData.types.getValue(glyphInfo.getPartType()));
-				if (glyphInfo.getPartRefine() == null || glyphInfo.getPartRefine().equals("")) {
-					componentCD.addRole(SBOLData.roles.getValue(glyphInfo.getPartRole()));
-				} else {
-					componentCD.addRole(SBOLData.refinements.getValue(glyphInfo.getPartRefine()));
-				}
-				componentCD.setName(glyphInfo.getName());
-				componentCD.setDescription(glyphInfo.getDescription());
+		// component definitions
+		for (mxCell circuitContainer : circuitContainers) {
+			// TODO placeholder component definitions
+			// pull from glyph dict with container.value when modDefs support editing
+			// glyphInfo of containers
+			ComponentDefinition containerCD = document.createComponentDefinition("cd" + circuitContainer.getId(),
+					ComponentDefinition.DNA_REGION);
+			containerCD.addRole(SequenceOntology.ENGINEERED_REGION);
 
-				// component
-				Component component = compDef.createComponent(glyphInfo.getDisplayID(), AccessType.PUBLIC,
-						componentCD.getDisplayId(), glyphInfo.getVersion());
+			// store extra graph information
+			mxCell[] containerChildren = Arrays.stream(mxGraphModel.getChildCells(model, circuitContainer, true, false)).toArray(mxCell[]::new);
+			mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
 
-				// composite
-				if (containers.containsKey(glyphCell.getId())) {
-					// composite
-					MxCell subContainer = containers.get(glyphCell.getId()).values().iterator().next();
-					MxCell subBackbone = backbones.get(subContainer.getId());
-					createComponentDefinition(document, componentCD, subContainer, subBackbone);
-				}
+			containerCD.createAnnotation(new QName(uriPrefix, "containerCell", annPrefix),
+					encodeMxGraphObject(circuitContainer));
+			containerCD.createAnnotation(new QName(uriPrefix, "backboneCell", annPrefix), encodeMxGraphObject(backboneCell));
 
-				// component sequence
-				if (glyphInfo.getSequence() != null && !glyphInfo.getSequence().equals("")) {
-					Sequence seq = document.createSequence(componentCD.getDisplayId() + "Sequence",
-							glyphInfo.getSequence(), Sequence.IUPAC_DNA);
-					componentCD.addSequence(seq.getIdentity());
-				}
+			modDef.createFunctionalComponent(containerCD.getDisplayId(), AccessType.PUBLIC, containerCD.getIdentity(),
+					DirectionType.INOUT);
+		}
+	}
+
+	private void createComponentDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
+			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
+		// get the glyph info associated with this view cell
+		GlyphInfo glyphInfo = glyphInfoDict.get(viewCell.getId());
+
+		// if there isn't a uri prefix give it the default
+		if (glyphInfo.getUriPrefix() == null || glyphInfo.getUriPrefix().equals(""))
+			glyphInfo.setUriPrefix(uriPrefix);
+
+		ComponentDefinition compDef = document.createComponentDefinition(glyphInfo.getUriPrefix(),
+				glyphInfo.getDisplayID(), glyphInfo.getVersion(), SBOLData.types.getValue(glyphInfo.getPartType()));
+
+		if (glyphInfo.getPartRefine() == null || glyphInfo.getPartRefine().equals("")) {
+			// if there isn't a part refine set the role
+			compDef.addRole(SBOLData.roles.getValue(glyphInfo.getPartRole()));
+		} else {
+			// otherwise set the part refinement
+			compDef.addRole(SBOLData.refinements.getValue(glyphInfo.getPartRefine()));
+		}
+
+		compDef.setName(glyphInfo.getName());
+		compDef.setDescription(glyphInfo.getDescription());
+
+		// component sequence
+		if (glyphInfo.getSequence() != null && !glyphInfo.getSequence().equals("")) {
+			Sequence seq = document.createSequence(compDef.getDisplayId() + "Sequence", glyphInfo.getSequence(),
+					Sequence.IUPAC_DNA);
+			compDef.addSequence(seq.getIdentity());
+		}
+
+		// store extra mxGraph information
+		Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
+		mxCell containerCell = (mxCell) mxGraphModel.filterCells(viewChildren, containerFilter)[0];
+		Object[] containerChildren = mxGraphModel.getChildCells(model, containerCell, true, false);
+		mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
+
+		compDef.createAnnotation(new QName(uriPrefix, "containerCell", annPrefix), encodeMxGraphObject(containerCell));
+		compDef.createAnnotation(new QName(uriPrefix, "backboneCell", annPrefix), encodeMxGraphObject(backboneCell));
+	}
+
+	private void linkModuleDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
+			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
+		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false)).toArray(mxCell[]::new);
+		mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter)).toArray(mxCell[]::new);
+		mxCell[] edges = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, false, true)).toArray(mxCell[]::new);
+
+		ModuleDefinition modDef = document.getModuleDefinition(viewCell.getId(), null);
+		
+		// components for component definitions
+		for (mxCell circuitContainer : circuitContainers) {
+			ComponentDefinition compDef = document.getComponentDefinition("cd" + circuitContainer.getId(), null);
+			Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
+			mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter)).toArray(mxCell[]::new);
+			Component previous = null;
+			int count = 0, start = 0, end = 0;
+			for (mxCell glyph : glyphs) {
+
+				GlyphInfo info = glyphInfoDict.get(glyph.getValue());
+				ComponentDefinition glyphCD = document.getComponentDefinition((String) glyph.getValue(), null);
+				Component component = compDef.createComponent(info.getDisplayID()+"_"+glyph.getId(), AccessType.PUBLIC,
+						glyphCD.getDisplayId(), info.getVersion());
 
 				// cell annotation
-				component.createAnnotation(new QName(uriPrefix, "glyphCell", annPrefix), gson.toJson(glyphCell));
+				component.createAnnotation(new QName(uriPrefix, "glyphcell", annPrefix), encodeMxGraphObject(glyph));
 
 				// sequence constraints
 				if (previous != null) {
 					compDef.createSequenceConstraint(compDef.getDisplayId() + "Constraint" + count,
 							RestrictionType.PRECEDES, previous.getIdentity(), component.getIdentity());
 				}
-				previous = component;
 
 				// container sequence annotation
-				int length = getSequenceLength(document, componentCD);
+				int length = getSequenceLength(document, glyphCD);
 				if (length > 0) {
 					start = end + 1;
 					end = start + length - 1;
@@ -381,10 +395,93 @@ public class Converter {
 					annotation.setComponent(component.getIdentity());
 				}
 
-				// container sequence maybe
-
+				previous = component;
 				count++;
 			}
+		}
+
+		// edges to interactions
+		for (mxCell edge : edges) {
+			// interaction
+			InteractionInfo intInfo = (InteractionInfo) edge.getValue();
+			Interaction interaction = modDef.createInteraction(intInfo.getDisplayID(),
+					SBOLData.interactions.getValue(intInfo.getInteractionType()));
+			interaction.createAnnotation(new QName(uriPrefix, "edge", annPrefix), encodeMxGraphObject(edge));
+
+			// participants
+			GlyphInfo sourceInfo = null;
+			GlyphInfo targetInfo = null;
+			if (edge.getSource() != null)
+				sourceInfo = glyphInfoDict.get(edge.getSource().getValue());
+			if (edge.getTarget() != null)
+				targetInfo = glyphInfoDict.get(edge.getTarget().getValue());
+
+			// source participant
+			if (sourceInfo != null) {
+				FunctionalComponent sourceFC = modDef.getFunctionalComponent(sourceInfo.getDisplayID());
+				if (sourceFC == null) {
+					ComponentDefinition sourceCD = document.getComponentDefinition(sourceInfo.getDisplayID(), null);
+					sourceFC = modDef.createFunctionalComponent(sourceInfo.getDisplayID(), AccessType.PUBLIC,
+							sourceCD.getIdentity(), DirectionType.INOUT);
+				}
+				interaction.createParticipation(sourceInfo.getDisplayID(), sourceFC.getIdentity(),
+						getParticipantType(true, interaction.getTypes().iterator().next()));
+			}
+
+			// target participant
+			if (targetInfo != null) {
+				FunctionalComponent targetFC = modDef.getFunctionalComponent(targetInfo.getDisplayID());
+				if (targetFC == null) {
+					ComponentDefinition targetCD = document.getComponentDefinition(targetInfo.getDisplayID(), null);
+					targetFC = modDef.createFunctionalComponent(targetInfo.getDisplayID(), AccessType.PUBLIC,
+							targetCD.getIdentity(), DirectionType.INOUT);
+				}
+				interaction.createParticipation(targetInfo.getDisplayID(), targetFC.getIdentity(),
+						getParticipantType(false, interaction.getTypes().iterator().next()));
+			}
+
+		}
+
+	}
+
+	private void linkComponentDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell) throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
+		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false)).toArray(mxCell[]::new);
+		mxCell circuitContainer = (mxCell) mxGraphModel.filterCells(viewChildren, containerFilter)[0];
+		
+		ComponentDefinition compDef = document.getComponentDefinition((String) viewCell.getId(), null);
+		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
+		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter)).toArray(mxCell[]::new);
+		Component previous = null;
+		int count = 0, start = 0, end = 0;
+		for (mxCell glyph : glyphs) {
+
+			GlyphInfo info = glyphInfoDict.get(glyph.getValue());
+			ComponentDefinition glyphCD = document.getComponentDefinition((String) glyph.getValue(), null);
+			Component component = compDef.createComponent(info.getDisplayID(), AccessType.PUBLIC,
+					glyphCD.getDisplayId());//, info.getVersion());
+
+			// cell annotation
+			component.createAnnotation(new QName(uriPrefix, "glyphcell", annPrefix), encodeMxGraphObject(glyph));
+
+			// sequence constraints
+			if (previous != null) {
+				compDef.createSequenceConstraint(compDef.getDisplayId() + "Constraint" + count,
+						RestrictionType.PRECEDES, previous.getIdentity(), component.getIdentity());
+			}
+
+			// container sequence annotation
+			int length = getSequenceLength(document, glyphCD);
+			if (length > 0) {
+				start = end + 1;
+				end = start + length - 1;
+				SequenceAnnotation annotation = compDef.createSequenceAnnotation(
+						compDef.getDisplayId() + "Annotation" + count, "location" + count, start, end,
+						OrientationType.INLINE);
+				annotation.setComponent(component.getIdentity());
+			}
+
+			previous = component;
+			count++;
 		}
 	}
 
@@ -394,6 +491,17 @@ public class Converter {
 		mxCodec codec = new mxCodec(document);
 		codec.decode(document.getDocumentElement(), graph.getModel());
 		return graph;
+	}
+	
+	private String encodeMxGraphObject(Object obj) throws TransformerFactoryConfigurationError, TransformerException {
+		mxCodec codec = new mxCodec();
+		Node cellNode = codec.encode(obj);
+		StringWriter sw = new StringWriter();
+		Transformer t = TransformerFactory.newInstance().newTransformer();
+		t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+		t.setOutputProperty(OutputKeys.INDENT,"no");
+		t.transform(new DOMSource(cellNode), new StreamResult(sw));
+		return sw.toString();
 	}
 
 	/*

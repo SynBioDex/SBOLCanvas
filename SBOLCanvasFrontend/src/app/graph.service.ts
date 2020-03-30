@@ -892,11 +892,36 @@ export class GraphService {
   addMolecularSpeciesAt(name, x, y) {
     this.graph.getModel().beginUpdate();
     try {
-      const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', x, y,
+      
+      //TODO partRoles for proteins
+      let proteinInfo = new GlyphInfo();
+      switch(name){
+        case "dsNA":
+          proteinInfo.partType = "DNA molecule";
+          break;
+        case "macromolecule":
+          proteinInfo.partType = "Protein";
+          break;
+        case "NGA (No Glyph Assigned Molecular Species)":
+          proteinInfo.partType = "Protein";
+          break;
+        case "small-molecule":
+          proteinInfo.partType = "Small molecule";
+          break;
+        case "ssNA":
+          proteinInfo.partType = "RNA molecule";
+          break;
+        case "replacement-glyph":
+          proteinInfo.partType = "All_types";
+          break;
+        default:
+          proteinInfo.partType = "Protein";
+      }
+      this.addToGlyphDict(proteinInfo);
+
+      const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, proteinInfo.displayID, x, y,
         molecularSpeciesGlyphWidth, molecularSpeciesGlyphHeight, molecularSpeciesGlyphBaseStyleName + name);
       molecularSpeciesGlyph.setConnectable(true);
-
-      molecularSpeciesGlyph.data = new GlyphInfo("Protein");
 
       // The new glyph should be selected
       this.graph.clearSelection();
