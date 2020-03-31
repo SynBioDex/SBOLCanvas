@@ -6,8 +6,8 @@ DOCKER:
 
 To build & run the docker image locally:
 (from the top level directory of this repository)
--$docker build -t sbolcanvas/sbolcanvas .
--$docker run -p 8080:8080 sbolcanvas/sbolcanvas:latest
+     -$docker build -t sbolcanvas/sbolcanvas .
+     -$docker run -p 8080:8080 sbolcanvas/sbolcanvas:latest
 
 To run the latest version on the dockerhub repository locally:
--$docker run --rm -p 8080:8080 samuelfbridge/sbolcanvas_1.0
+     -$docker run --rm -p 8080:8080 samuelfbridge/sbolcanvas_1.0
