@@ -1,5 +1,6 @@
 package utils;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -139,8 +140,9 @@ public class Converter {
 	private int nextID = 2;
 
 	@SuppressWarnings("unchecked")
-	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename) throws SAXException,
-			IOException, ParserConfigurationException, SBOLValidationException, SBOLConversionException, TransformerFactoryConfigurationError, TransformerException {
+	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename)
+			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
+			SBOLConversionException, TransformerFactoryConfigurationError, TransformerException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
@@ -153,14 +155,17 @@ public class Converter {
 		document.setCreateDefaults(true);
 
 		// Arrays.stream is the java 8 way to cast Object[] to some other array
-		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false)).toArray(mxCell[]::new);
+		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
+				.toArray(mxCell[]::new);
 
 		// construct the module/component definitions
 		for (mxCell viewCell : viewCells) {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, true);
-			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter)).toArray(mxCell[]::new);
-			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter)).toArray(mxCell[]::new);
-			//TODO remove rootView when modDefs are supported
+			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+					.toArray(mxCell[]::new);
+			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
+					.toArray(mxCell[]::new);
+			// TODO remove rootView when modDefs are supported
 			if (viewCell.getId().equals("rootView") || circuitContainers.length > 1 || proteins.length > 0) {
 				// TODO when moddefs are supported the id should already be correct
 				// module definitions
@@ -175,8 +180,10 @@ public class Converter {
 		// link the module/component definitions
 		for (mxCell viewCell : viewCells) {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, true);
-			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter)).toArray(mxCell[]::new);
-			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter)).toArray(mxCell[]::new);
+			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+					.toArray(mxCell[]::new);
+			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
+					.toArray(mxCell[]::new);
 			if (viewCell.getId().equals(filename) || circuitContainers.length > 1 || proteins.length > 0) {
 				// module definitions
 				linkModuleDefinition(document, model, viewCell);
@@ -200,6 +207,12 @@ public class Converter {
 
 	public void toGraph(SBOLDocument document, OutputStream graphStream)
 			throws IOException, ParserConfigurationException, TransformerException, SBOLValidationException {
+		// set up the graph and glyphdict
+		mxGraph graph = new mxGraph();
+		mxGraphModel model = (mxGraphModel) graph.getModel();
+		mxCell cell0 = (mxCell) model.getCell("0");
+		cell0.setValue(glyphInfoDict);
+
 		ModuleDefinition modDef = null;
 		if (document.getRootModuleDefinitions().size() > 0) {
 			modDef = document.getRootModuleDefinitions().iterator().next();
@@ -211,7 +224,11 @@ public class Converter {
 			if (modDef == null) {
 				// If we're importing a sub part, the main cell was attached to the component
 				// which we no longer have
-				MxCell cell = new MxCell();
+
+				mxCell cell1 = (mxCell) model.getCell("1");
+				GlyphInfo info = genGlyphInfo(topCD);
+				mxCell cell = (mxCell) graph.insertVertex(cell1, "" + nextID++, "", 0, 0, 0, 0);
+
 				cell.setInfo(genGlyphInfo(topCD));
 				cell.setGeometry(new MxGeometry());
 				cell.setCollapsed(true);
@@ -264,10 +281,13 @@ public class Converter {
 
 	private void createModuleDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
-		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false)).toArray(mxCell[]::new);
-		mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter)).toArray(mxCell[]::new);
+		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
+				.toArray(mxCell[]::new);
+		mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+				.toArray(mxCell[]::new);
 		mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter)).toArray(mxCell[]::new);
-		mxCell[] textBoxes = Arrays.stream(mxGraphModel.filterCells(viewChildren, textBoxFilter)).toArray(mxCell[]::new);
+		mxCell[] textBoxes = Arrays.stream(mxGraphModel.filterCells(viewChildren, textBoxFilter))
+				.toArray(mxCell[]::new);
 
 		ModuleDefinition modDef = document.createModuleDefinition(viewCell.getId());
 
@@ -301,12 +321,14 @@ public class Converter {
 			containerCD.addRole(SequenceOntology.ENGINEERED_REGION);
 
 			// store extra graph information
-			mxCell[] containerChildren = Arrays.stream(mxGraphModel.getChildCells(model, circuitContainer, true, false)).toArray(mxCell[]::new);
+			mxCell[] containerChildren = Arrays.stream(mxGraphModel.getChildCells(model, circuitContainer, true, false))
+					.toArray(mxCell[]::new);
 			mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
 
 			containerCD.createAnnotation(new QName(uriPrefix, "containerCell", annPrefix),
 					encodeMxGraphObject(circuitContainer));
-			containerCD.createAnnotation(new QName(uriPrefix, "backboneCell", annPrefix), encodeMxGraphObject(backboneCell));
+			containerCD.createAnnotation(new QName(uriPrefix, "backboneCell", annPrefix),
+					encodeMxGraphObject(backboneCell));
 
 			modDef.createFunctionalComponent(containerCD.getDisplayId(), AccessType.PUBLIC, containerCD.getIdentity(),
 					DirectionType.INOUT);
@@ -345,35 +367,40 @@ public class Converter {
 
 		// store extra mxGraph information
 		Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
+		mxCell[] textBoxes = Arrays.stream(mxGraphModel.filterCells(viewChildren, textBoxFilter)).toArray(mxCell[]::new);
 		mxCell containerCell = (mxCell) mxGraphModel.filterCells(viewChildren, containerFilter)[0];
 		Object[] containerChildren = mxGraphModel.getChildCells(model, containerCell, true, false);
 		mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
 
+		compDef.createAnnotation(new QName(uriPrefix, "textBoxes", annPrefix), encodeMxGraphObject(textBoxes));
 		compDef.createAnnotation(new QName(uriPrefix, "containerCell", annPrefix), encodeMxGraphObject(containerCell));
 		compDef.createAnnotation(new QName(uriPrefix, "backboneCell", annPrefix), encodeMxGraphObject(backboneCell));
 	}
 
 	private void linkModuleDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
-		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false)).toArray(mxCell[]::new);
-		mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter)).toArray(mxCell[]::new);
+		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
+				.toArray(mxCell[]::new);
+		mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+				.toArray(mxCell[]::new);
 		mxCell[] edges = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, false, true)).toArray(mxCell[]::new);
 
 		ModuleDefinition modDef = document.getModuleDefinition(viewCell.getId(), null);
-		
+
 		// components for component definitions
 		for (mxCell circuitContainer : circuitContainers) {
 			ComponentDefinition compDef = document.getComponentDefinition("cd" + circuitContainer.getId(), null);
 			Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
-			mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter)).toArray(mxCell[]::new);
+			mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
+					.toArray(mxCell[]::new);
 			Component previous = null;
 			int count = 0, start = 0, end = 0;
 			for (mxCell glyph : glyphs) {
 
 				GlyphInfo info = glyphInfoDict.get(glyph.getValue());
 				ComponentDefinition glyphCD = document.getComponentDefinition((String) glyph.getValue(), null);
-				Component component = compDef.createComponent(info.getDisplayID()+"_"+glyph.getId(), AccessType.PUBLIC,
-						glyphCD.getDisplayId(), info.getVersion());
+				Component component = compDef.createComponent(info.getDisplayID() + "_" + glyph.getId(),
+						AccessType.PUBLIC, glyphCD.getDisplayId(), info.getVersion());
 
 				// cell annotation
 				component.createAnnotation(new QName(uriPrefix, "glyphcell", annPrefix), encodeMxGraphObject(glyph));
@@ -444,13 +471,16 @@ public class Converter {
 
 	}
 
-	private void linkComponentDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell) throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
-		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false)).toArray(mxCell[]::new);
+	private void linkComponentDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
+			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
+		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
+				.toArray(mxCell[]::new);
 		mxCell circuitContainer = (mxCell) mxGraphModel.filterCells(viewChildren, containerFilter)[0];
-		
+
 		ComponentDefinition compDef = document.getComponentDefinition((String) viewCell.getId(), null);
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
-		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter)).toArray(mxCell[]::new);
+		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
+				.toArray(mxCell[]::new);
 		Component previous = null;
 		int count = 0, start = 0, end = 0;
 		for (mxCell glyph : glyphs) {
@@ -458,10 +488,10 @@ public class Converter {
 			GlyphInfo info = glyphInfoDict.get(glyph.getValue());
 			ComponentDefinition glyphCD = document.getComponentDefinition((String) glyph.getValue(), null);
 			Component component = compDef.createComponent(info.getDisplayID(), AccessType.PUBLIC,
-					glyphCD.getDisplayId());//, info.getVersion());
+					glyphCD.getDisplayId());// , info.getVersion());
 
 			// cell annotation
-			component.createAnnotation(new QName(uriPrefix, "glyphcell", annPrefix), encodeMxGraphObject(glyph));
+			component.createAnnotation(new QName(uriPrefix, "glyphCell", annPrefix), encodeMxGraphObject(glyph));
 
 			// sequence constraints
 			if (previous != null) {
@@ -485,6 +515,156 @@ public class Converter {
 		}
 	}
 
+	private void createModuleView(SBOLDocument document, mxGraph graph, ModuleDefinition modDef) throws SAXException, IOException, ParserConfigurationException {
+		mxGraphModel model = (mxGraphModel) graph.getModel();
+		mxCell cell1 = (mxCell) model.getCell("1");
+		
+		// create the root view cell
+		//TODO pull the the module id when multiple modules are supported.
+		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0);
+		
+		// text boxes
+		Annotation textBoxAnn = modDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
+		if(textBoxAnn != null) {
+			mxCell[] textBoxes = Arrays.stream((Object[]) decodeMxGraphObject(textBoxAnn.getStringValue())).toArray(mxCell[]::new);
+			for(mxCell textBox : textBoxes) {
+				model.add(rootViewCell, textBox, 0);
+			}
+		}
+		
+		// interactions
+		Set<Interaction> interactions = modDef.getInteractions();
+		for(Interaction interaction : interactions) {
+			Annotation interactionAnn = interaction.getAnnotation(new QName(uriPrefix, "edge", annPrefix));
+			mxCell edge = null;
+			if(interactionAnn != null) {
+				edge = (mxCell) decodeMxGraphObject(interactionAnn.getStringValue());
+				model.add(rootViewCell, edge, 0);
+			}else {
+				edge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
+			}
+			edge.setValue(genInteractionInfo(interaction));
+			
+			URI targetType = getParticipantType(false, interaction.getTypes().iterator().next());
+			URI sourceType = getParticipantType(true, interaction.getTypes().iterator().next());
+			
+			Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
+			for(int i = 0; i < participations.length; i++) {
+				// theoretically more than 2, but we currently only support 2
+				if (participations[i].getRoles().iterator().next().equals(sourceType)) {
+					edge.setSource(defToID.get(participations[i].getParticipant().getDefinition()));
+				} else if (participations[i].getRoles().iterator().next().equals(targetType)) {
+					edge.setTarget(defToID.get(participations[i].getParticipant().getDefinition()));
+				}
+			}
+		}
+	}
+	
+	// call after compDefToMxGraphObjects
+		private void modDefToMxGraphObjects(ModuleDefinition modDef) {
+			Annotation textBoxAnn = modDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
+			if (textBoxAnn != null) {
+				MxCell[] textBoxes = gson.fromJson(textBoxAnn.getStringValue(), MxCell[].class);
+				for (MxCell textBox : textBoxes) {
+					textBox.setId(nextID);
+					nextID++;
+					textBox.setParent(1);
+					cells.put(textBox.getId(), textBox);
+				}
+			}
+
+			Set<Interaction> interactions = modDef.getInteractions();
+			for (Interaction interaction : interactions) {
+				Annotation interactionAnn = interaction.getAnnotation(new QName(uriPrefix, "edge", annPrefix));
+				MxCell edge = null;
+				if (interactionAnn != null) {
+					edge = gson.fromJson(
+							interaction.getAnnotation(new QName(uriPrefix, "edge", annPrefix)).getStringValue(),
+							MxCell.class);
+				} else {
+					edge = new MxCell();
+					edge.setEdge(true);
+				}
+				edge.setId(nextID);
+				nextID++;
+				edge.setParent(1);
+				InteractionInfo info = new InteractionInfo();
+				info.setDisplayID(interaction.getDisplayId());
+				info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
+				edge.setInfo(info);
+				edge.setGeometry(new MxGeometry());
+				edge.getGeometry().setSourcePoint(new MxPoint());
+				edge.getGeometry().setTargetPoint(new MxPoint());
+
+				URI targetType = getParticipantType(false, interaction.getTypes().iterator().next());
+				URI sourceType = getParticipantType(true, interaction.getTypes().iterator().next());
+
+				Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
+				for (int i = 0; i < participations.length; i++) {
+					// theoretically more than 2, but we currently only support 2
+					if (participations[i].getRoles().iterator().next().equals(sourceType)) {
+						edge.setSource(defToID.get(participations[i].getParticipant().getDefinition()));
+					} else if (participations[i].getRoles().iterator().next().equals(targetType)) {
+						edge.setTarget(defToID.get(participations[i].getParticipant().getDefinition()));
+					}
+				}
+
+				cells.put(edge.getId(), edge);
+			}
+		}
+	
+	private void createComponentView(SBOLDocument document, mxGraph graph, ComponentDefinition compDef) throws SAXException, IOException, ParserConfigurationException, SBOLValidationException {
+		mxGraphModel model = (mxGraphModel) graph.getModel();
+		mxCell cell1 = (mxCell) model.getCell("1");
+		
+		// create the glyphInfo and store it in the dictionary
+		GlyphInfo info = genGlyphInfo(compDef);
+		glyphInfoDict.put(info.getDisplayID(), info);
+		
+		// create the top view cell
+		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getDisplayId(), null, 0, 0, 0, 0);
+		
+		// if there are text boxes add them
+		Annotation textBoxAnn = compDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
+		if(textBoxAnn != null) {
+			mxCell[] textBoxes = Arrays.stream((Object[]) decodeMxGraphObject(textBoxAnn.getStringValue())).toArray(mxCell[]::new);
+			for (mxCell textBox : textBoxes) {
+				model.add(viewCell, textBox, 0);
+			}
+		}
+		
+		// add the container cell and backbone
+		Annotation containerAnn = compDef.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix));
+		mxCell container = null;
+		mxCell backbone = null;
+		if(containerAnn != null) {
+			container = (mxCell) decodeMxGraphObject(containerAnn.getStringValue());
+			model.add(viewCell, container, 0);			
+			Annotation backboneAnn = compDef.getAnnotation(new QName(uriPrefix, "backboneCell", annPrefix));
+			backbone = (mxCell) decodeMxGraphObject(backboneAnn.getStringValue());
+			model.add(container, backbone, 0);
+		}else {
+			container = (mxCell) graph.insertVertex(viewCell, null, null, 0, 0, 0, 0, "circuitContainer");
+			backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, "backbone");
+		}
+		
+		// glyphs
+		Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
+		for(int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
+			Component glyphComponent = glyphArray[glyphIndex];
+			Annotation glyphAnn = glyphComponent.getAnnotation(new QName(uriPrefix, "glyphCell", annPrefix));
+			mxCell glyphCell = null;
+			double maxX = 0;
+			if(glyphAnn != null) {
+				glyphCell = (mxCell) decodeMxGraphObject(glyphAnn.getStringValue());
+				maxX = glyphCell.getGeometry().getX();
+				model.add(container, glyphCell, glyphIndex);
+			}else {
+				graph.insertVertex(container, null, glyphComponent.getDefinition().getDisplayId(), maxX++, 0, 0, 0, "sequenceFeatureGlyph");
+			}	
+		}
+	}
+
 	private mxGraph parseGraph(InputStream graphStream) throws IOException {
 		mxGraph graph = new mxGraph();
 		Document document = mxXmlUtils.parseXml(mxUtils.readInputStream(graphStream));
@@ -492,16 +672,24 @@ public class Converter {
 		codec.decode(document.getDocumentElement(), graph.getModel());
 		return graph;
 	}
-	
+
 	private String encodeMxGraphObject(Object obj) throws TransformerFactoryConfigurationError, TransformerException {
 		mxCodec codec = new mxCodec();
 		Node cellNode = codec.encode(obj);
 		StringWriter sw = new StringWriter();
 		Transformer t = TransformerFactory.newInstance().newTransformer();
 		t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-		t.setOutputProperty(OutputKeys.INDENT,"no");
+		t.setOutputProperty(OutputKeys.INDENT, "no");
 		t.transform(new DOMSource(cellNode), new StreamResult(sw));
 		return sw.toString();
+	}
+
+	private Object decodeMxGraphObject(String xml) throws SAXException, IOException, ParserConfigurationException {
+		mxCodec codec = new mxCodec();
+		// turn the string into a Node
+		Element node = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+				.parse(new ByteArrayInputStream(xml.getBytes())).getDocumentElement();
+		return codec.decode(node);
 	}
 
 	/*
@@ -691,170 +879,6 @@ public class Converter {
 		return sw.toString();
 	}
 
-	// call after compDefToMxGraphObjects
-	private void modDefToMxGraphObjects(ModuleDefinition modDef) {
-		Annotation textBoxAnn = modDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
-		if (textBoxAnn != null) {
-			MxCell[] textBoxes = gson.fromJson(textBoxAnn.getStringValue(), MxCell[].class);
-			for (MxCell textBox : textBoxes) {
-				textBox.setId(nextID);
-				nextID++;
-				textBox.setParent(1);
-				cells.put(textBox.getId(), textBox);
-			}
-		}
-
-		Set<Interaction> interactions = modDef.getInteractions();
-		for (Interaction interaction : interactions) {
-			Annotation interactionAnn = interaction.getAnnotation(new QName(uriPrefix, "edge", annPrefix));
-			MxCell edge = null;
-			if (interactionAnn != null) {
-				edge = gson.fromJson(
-						interaction.getAnnotation(new QName(uriPrefix, "edge", annPrefix)).getStringValue(),
-						MxCell.class);
-			} else {
-				edge = new MxCell();
-				edge.setEdge(true);
-			}
-			edge.setId(nextID);
-			nextID++;
-			edge.setParent(1);
-			InteractionInfo info = new InteractionInfo();
-			info.setDisplayID(interaction.getDisplayId());
-			info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
-			edge.setInfo(info);
-			edge.setGeometry(new MxGeometry());
-			edge.getGeometry().setSourcePoint(new MxPoint());
-			edge.getGeometry().setTargetPoint(new MxPoint());
-
-			URI targetType = getParticipantType(false, interaction.getTypes().iterator().next());
-			URI sourceType = getParticipantType(true, interaction.getTypes().iterator().next());
-
-			Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
-			for (int i = 0; i < participations.length; i++) {
-				// theoretically more than 2, but we currently only support 2
-				if (participations[i].getRoles().iterator().next().equals(sourceType)) {
-					edge.setSource(defToID.get(participations[i].getParticipant().getDefinition()));
-				} else if (participations[i].getRoles().iterator().next().equals(targetType)) {
-					edge.setTarget(defToID.get(participations[i].getParticipant().getDefinition()));
-				}
-			}
-
-			cells.put(edge.getId(), edge);
-		}
-	}
-
-	private void compDefToMxGraphObjects(ComponentDefinition compDef)
-			throws ParserConfigurationException, TransformerException, SBOLValidationException {
-		compDefToMxGraphObjects(compDef, -1);
-	}
-
-	private void compDefToMxGraphObjects(ComponentDefinition compDef, int parentID)
-			throws ParserConfigurationException, TransformerException, SBOLValidationException {
-		Annotation proteinAnn = compDef.getAnnotation(new QName(uriPrefix, "protein", annPrefix));
-		if (proteinAnn != null) {
-			MxCell proteinCell = gson.fromJson(proteinAnn.getStringValue(), MxCell.class);
-			proteinCell.setId(nextID);
-			nextID++;
-			proteinCell.setParent(1);
-			proteinCell.setInfo(genGlyphInfo(compDef));
-			cells.put(proteinCell.getId(), proteinCell);
-			defToID.put(compDef, proteinCell.getId());
-			return;
-		} else if (compDef.getTypes().iterator().next().equals(ComponentDefinition.PROTEIN)) {
-			MxCell proteinCell = new MxCell();
-			proteinCell.setVertex(true);
-			proteinCell.setId(nextID);
-			proteinCell.setGeometry(new MxGeometry());
-			nextID++;
-			proteinCell.setParent(1);
-			proteinCell.setInfo(genGlyphInfo(compDef));
-			cells.put(proteinCell.getId(), proteinCell);
-			defToID.put(compDef, proteinCell.getId());
-			return;
-		}
-
-		Annotation containerAnn = compDef.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix));
-		MxCell containerCell = null, backboneCell = null;
-		if (containerAnn != null) {
-			// container data
-			containerCell = gson.fromJson(containerAnn.getStringValue(), MxCell.class);
-
-			// backbone data
-			backboneCell = gson.fromJson(
-					compDef.getAnnotation(new QName(uriPrefix, "backboneCell", annPrefix)).getStringValue(),
-					MxCell.class);
-		} else {
-			containerCell = new MxCell();
-			containerCell.setStyle("circuitContainer");
-			containerCell.setVertex(true);
-			containerCell.setGeometry(new MxGeometry(0, 0, 0, 0));
-
-			backboneCell = new MxCell();
-			backboneCell.setStyle("backbone");
-			backboneCell.setVertex(true);
-			backboneCell.setGeometry(new MxGeometry(0, 0, 0, 0));
-		}
-		containerCell.setId(nextID);
-		nextID++;
-		if (parentID > 0)
-			containerCell.setParent(parentID);
-		else
-			containerCell.setParent(1);
-		cells.put(containerCell.getId(), containerCell);
-
-		backboneCell.setId(nextID);
-		nextID++;
-		backboneCell.setParent(containerCell.getId());
-		cells.put(backboneCell.getId(), backboneCell);
-
-		Annotation textBoxAnn = compDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
-		if (textBoxAnn != null) {
-			MxCell[] textBoxes = gson.fromJson(textBoxAnn.getStringValue(), MxCell[].class);
-			for (MxCell textBox : textBoxes) {
-				textBox.setId(nextID);
-				textBox.setParent(parentID);
-				nextID++;
-				cells.put(textBox.getId(), textBox);
-			}
-		}
-
-		// glyphs
-		Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
-		for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
-			Component glyphComponent = glyphArray[glyphIndex];
-
-			// glyph data
-			Annotation glyphAnn = glyphComponent.getAnnotation(new QName(uriPrefix, "glyphCell", annPrefix));
-			MxCell glyphCell = null;
-			double maxX = 0;
-			if (glyphAnn != null) {
-				glyphCell = gson.fromJson(glyphAnn.getStringValue(), MxCell.class);
-				maxX = glyphCell.getGeometry().getX();
-			} else {
-				glyphCell = new MxCell();
-				glyphCell.setVertex(true);
-				glyphCell.setCollapsed(false);
-				// x position determines ordering in frontend
-				glyphCell.setGeometry(new MxGeometry(maxX++, 0, 0, 0));
-			}
-			glyphCell.setId(nextID);
-			nextID++;
-			glyphCell.setParent(containerCell.getId());
-
-			// glyph info
-			ComponentDefinition glyphCD = glyphComponent.getDefinition();
-			GlyphInfo glyphInfo = genGlyphInfo(glyphCD);
-			glyphCell.setInfo(glyphInfo);
-			defToID.put(glyphCD, glyphCell.getId());
-
-			cells.put(glyphCell.getId(), glyphCell);
-
-			compDefToMxGraphObjects(glyphCD, glyphCell.getId());
-
-		}
-	}
-
 	private GlyphInfo genGlyphInfo(ComponentDefinition glyphCD) {
 		GlyphInfo glyphInfo = new GlyphInfo();
 		glyphInfo.setDescription(glyphCD.getDescription());
@@ -882,6 +906,13 @@ public class Converter {
 		// glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
 		glyphInfo.setUriPrefix(uriPrefix.substring(0, uriPrefix.length() - 1));
 		return glyphInfo;
+	}
+	
+	private InteractionInfo genInteractionInfo(Interaction interaction) {
+		InteractionInfo info = new InteractionInfo();
+		info.setDisplayID(interaction.getDisplayId());
+		info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
+		return info;
 	}
 
 	private URI getParticipantType(boolean source, URI interactionType) {
