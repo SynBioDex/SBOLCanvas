@@ -17,6 +17,7 @@ export class GlyphService {
     'assets/glyph_stencils/sequence_feature/promoter.xml',
     'assets/glyph_stencils/sequence_feature/cds.xml',
     'assets/glyph_stencils/sequence_feature/aptamer.xml',
+    'assets/glyph_stencils/sequence_feature/blunt-restriction-site.xml',
     //'assets/glyph_stencils/sequence_feature/dna-stability-element.xml',
     'assets/glyph_stencils/sequence_feature/insulator.xml',
     'assets/glyph_stencils/sequence_feature/location-dna.xml',

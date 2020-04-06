@@ -1,0 +1,40 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="BRS (Blunt Restriction Site)" strokewidth="inherit" w="48">
+  <connections />
+  <foreground>
+    <strokewidth width="2.88" />
+    <linejoin join="round" />
+    <linecap cap="round" />
+    <path>
+      <move x="23.0" y="40.0" />
+      <line x="23.0" y="10.0" />
+    </path>
+    <stroke />
+    <path>
+      <move x="29.0" y="40.0" />
+      <line x="29.0" y="10.0" />
+    </path>
+    <stroke />
+    <path>
+      <move x="23.0" y="40.3" />
+      <line x="21.0" y="40.3" />
+    </path>
+    <stroke />
+    <path>
+      <move x="23.0" y="9.7" />
+      <line x="21.0" y="9.7" />
+    </path>
+    <stroke />
+    <path>
+      <move x="29.0" y="40.3" />
+      <line x="31.0" y="40.3" />
+    </path>
+    <stroke />
+    <path>
+      <move x="29.0" y="9.7" />
+      <line x="31.0" y="9.7" />
+    </path>
+    <stroke />
+  </foreground>
+</shape>
+</shapes>
