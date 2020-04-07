@@ -120,17 +120,17 @@ export class GraphService {
     execute(){
       if(this.previousInfo == null){
         // if the previous was null, then the dictionary didn't have an entry before so remove it
-        this.cell0.value.delete(this.info.displayID);
+        delete this.cell0.value[this.info.displayID];
         this.previousInfo = this.info;
         this.info = null;
       }else if(this.info == null){
         // if the current one is null, then it was removed, so re-add it
-        this.cell0.value.set(this.previousInfo.displayID, this.previousInfo);
+        this.cell0.value[this.previousInfo.displayID] = this.previousInfo;
         this.info = this.previousInfo;
         this.previousInfo = null;
       }else{
         // some information was changed, so update it
-        this.cell0.value.set(this.info.displayID, this.previousInfo);
+        this.cell0.value[this.info.displayID] = this.previousInfo;
         const tmpInfo = this.info;
         this.info = this.previousInfo;
         this.previousInfo = tmpInfo;
@@ -261,7 +261,7 @@ export class GraphService {
 
     // initalize the GlyphInfoDictionary
     const cell0 = this.graph.getModel().getCell(0);
-    const glyphDict = new Map<string, GlyphInfo>();
+    const glyphDict = [];
     this.graph.getModel().setValue(cell0, glyphDict);
 
     // don't let any of the setup be on the undo stack
@@ -1151,12 +1151,12 @@ export class GraphService {
    */
   private updateGlyphDict(info: GlyphInfo){
     const cell0 = this.graph.getModel().getCell(0);
-    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, info, cell0.value.get(info.displayID)));
+    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, info, cell0.value[info.displayID]));
   }
 
   private removeFromGlyphDict(displayID: string){
     const cell0 = this.graph.getModel().getCell(0);
-    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, null, cell0.value.get(displayID)));
+    this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, null, cell0.value[displayID]));
   }
 
   /**
@@ -1172,7 +1172,7 @@ export class GraphService {
    */
   getFromGlyphDict(displayID: string){
     const cell0 = this.graph.getModel().getCell(0);
-    return cell0.value.get(displayID);
+    return cell0.value[displayID];
   }
 
   /**
@@ -1569,14 +1569,18 @@ export class GraphService {
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
 
-    this.editor.undoManager.clear();
+    const rootViewCell = this.graph.getModel().getCell("rootView");
+    this.graph.enterGroup(rootViewCell);
+    this.viewStack = [];
+    this.viewStack.push(rootViewCell);
+    this.selectionStack = [];
 
     let children = this.graph.getModel().getChildren(this.graph.getDefaultParent());
     children.forEach(element => {
       if(element.isCircuitContainer())
-        element.refreshCircuitContainer(this.graph);
+      element.refreshCircuitContainer(this.graph);
     });
-
+    
     if(anyForeignCellsFound){
       console.log("FORMATTING !!!!!!!!!!!!!!!!");
       this.autoFormat();
@@ -1584,6 +1588,8 @@ export class GraphService {
     }
 
     this.fitCamera();
+    
+    this.editor.undoManager.clear();
   }
 
   /**
@@ -1722,24 +1728,6 @@ export class GraphService {
     }
     mx.mxCodecRegistry.register(interactionInfoCodec);
     window['InteractionInfo'] = InteractionInfo;
-
-    // Map encoder decoder
-    Object.defineProperty(Map, "name", { configurable: true, value: "Map" });
-    const mapCodec = new mx.mxObjectCodec(new Map<string, string>());
-    mapCodec.decode = function(dec, node, into){
-      //TODO come back to me
-    }
-    mapCodec.encode = function(enc, object){
-      let node = enc.document.createElement('Array');
-      for(let key of Array.from(object.keys())){
-        let entryNode = object.get(key).encode(enc);
-        entryNode.setAttribute('as', key);
-        node.appendChild(entryNode);
-      }
-      return node;
-    }
-    mx.mxCodecRegistry.register(mapCodec);
-    window['Map'] = Map;
 
     // For circuitContainers, the order of the children matters.
     // We want it to match the order of the children's geometries

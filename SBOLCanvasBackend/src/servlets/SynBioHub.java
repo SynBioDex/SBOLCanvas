@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
@@ -194,7 +195,7 @@ public class SynBioHub extends HttpServlet {
 			response.setStatus(HttpStatus.SC_OK);
 			response.setContentType("application/json");
 			return;
-		} catch (SynBioHubException | IOException | ParserConfigurationException | TransformerException | SBOLValidationException e) {
+		} catch (SynBioHubException | IOException | ParserConfigurationException | TransformerException | SBOLValidationException | SAXException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
 			IOUtils.copy(inputStream, outputStream);
@@ -227,7 +228,7 @@ public class SynBioHub extends HttpServlet {
 			}
 
 		} catch (SynBioHubException | SAXException | IOException | ParserConfigurationException
-				| SBOLValidationException | SBOLConversionException e) {
+				| SBOLValidationException | SBOLConversionException | TransformerFactoryConfigurationError | TransformerException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
 			IOUtils.copy(inputStream, outputStream);
