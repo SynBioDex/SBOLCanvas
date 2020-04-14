@@ -60,7 +60,7 @@
             <line x="11.214745465184318" y="38.16091281451141" />
             <close />
         </path>
-        <stroke />
+        <fillstroke />
     </foreground>
 </shape>
 </shapes>
