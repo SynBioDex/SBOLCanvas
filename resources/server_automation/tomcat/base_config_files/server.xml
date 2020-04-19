@@ -66,15 +66,12 @@
          APR (HTTP/AJP) Connector: /docs/apr.html
          Define a non-SSL/TLS HTTP/1.1 Connector on port 8080
     -->
-    <Connector port="8080" protocol="HTTP/1.1" redirectPort="443"/>
-    <Connector port="80" protocol="HTTP/1.1" redirectPort="443"/>
+    <!--<Connector port="8080" protocol="HTTP/1.1" redirectPort="443"/>
+    <Connector port="80" protocol="HTTP/1.1" redirectPort="443"/> -->
     <!-- A "Connector" using the shared thread pool-->
-    <!--
     <Connector executor="tomcatThreadPool"
                port="8080" protocol="HTTP/1.1"
-               connectionTimeout="20000"
-               redirectPort="8443" />
-    -->
+               connectionTimeout="20000"/>
     <!-- Define an SSL/TLS HTTP/1.1 Connector on port 8443
          This connector uses the NIO implementation. The default
          SSLImplementation will depend on the presence of the APR/native
@@ -84,7 +81,7 @@
          the SSLImplementation selected. JSSE style configuration is used below.
     -->
     
-    <Connector port="443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+    <!-- <Connector port="443" protocol="org.apache.coyote.http11.Http11NioProtocol"
                maxThreads="150" SSLEnabled="true">
         <SSLHostConfig>
             <Certificate certificateKeystoreFile="conf/sbolcanvas.org.jks"
@@ -92,7 +89,7 @@
                          type="RSA" />
         </SSLHostConfig>
     </Connector>
-    
+    -->
     <!-- Define an SSL/TLS HTTP/1.1 Connector on port 8443 with HTTP/2
          This connector uses the APR/native implementation which always uses
          OpenSSL for TLS.
