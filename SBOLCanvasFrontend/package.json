@@ -2,12 +2,7 @@
   "name": "sbolcanvas-frontend",
   "version": "0.0.0",
   "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "test": "ng test",
-    "lint": "ng lint",
-    "e2e": "ng e2e"
+    "bundle-report": "ng build --prod --stats-json && webpack-bundle-analyzer dist/SBOLCanvasFrontend/stats.json"
   },
   "private": true,
   "dependencies": {
@@ -60,8 +55,5 @@
     "tslint": "~5.11.0",
     "typescript": "~3.2.2",
     "webpack-bundle-analyzer": "^3.6.0"
-  },
-  "scripts": {
-    "bundle-report": "ng build --prod --stats-json && webpack-bundle-analyzer dist/SBOLCanvasFrontend/stats.json"
   }
 }
