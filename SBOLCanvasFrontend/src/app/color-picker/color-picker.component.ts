@@ -12,7 +12,8 @@ export class ColorPickerComponent implements OnInit {
   selectedColor: string;
 
   defaultColors: string[] = [
-    'none',
+    // 'none',
+    '#000000',
     '#FF6633',
     '#FFB399',
     '#FF33FF',
