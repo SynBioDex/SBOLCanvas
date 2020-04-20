@@ -35,7 +35,7 @@ const molecularSpeciesGlyphHeight = 50;
 const defaultTextWidth = 120;
 const defaultTextHeight = 80;
 
-const defaultInteractionSize = 60;
+const defaultInteractionSize = 80;
 
 const circuitContainerStyleName = 'circuitContainer';
 const backboneStyleName = 'backbone';
@@ -784,8 +784,15 @@ export class GraphService {
    * Creates an interaction edge of the given type at the center of the current view
    */
   addInteraction(name) {
-    const pt = this.getDefaultNewCellCoords();
-    this.addInteractionAt(name, pt.x, pt.y);
+    const selectedCell = this.graph.getSelectionCell();
+    if (selectedCell) {
+      const selectedParent = selectedCell.getParent();
+      this.addInteractionAt(name, selectedParent.geometry.x + selectedCell.geometry.x + (selectedCell.geometry.width/2),
+        selectedParent.geometry.y);
+    } else {
+      const pt = this.getDefaultNewCellCoords();
+      this.addInteractionAt(name, pt.x, pt.y);
+    }
   }
 
   /**
@@ -801,11 +808,18 @@ export class GraphService {
     try {
       cell = new mx.mxCell('', new mx.mxGeometry(x, y, 0, 0), interactionGlyphBaseStyleName + name);
 
-      cell.geometry.setTerminalPoint(new mx.mxPoint(x, y + defaultInteractionSize), true);
-      cell.geometry.setTerminalPoint(new mx.mxPoint(x + defaultInteractionSize, y), false);
+      const selectedCell = this.graph.getSelectionCell();
+      if (selectedCell) {
+        cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - defaultInteractionSize), false);
+        cell.edge = true;
+        this.graph.addEdge(cell, null, selectedCell, null);
+      } else {
+        cell.geometry.setTerminalPoint(new mx.mxPoint(x, y + defaultInteractionSize), true);
+        cell.geometry.setTerminalPoint(new mx.mxPoint(x + defaultInteractionSize, y), false);
+        cell.edge = true;
+        this.graph.addEdge(cell, null, null, null);
+      }
 
-      cell.edge = true;
-      this.graph.addEdge(cell, null, null, null);
 
       // Default name for a process interaction
       if (name == "Process") {
