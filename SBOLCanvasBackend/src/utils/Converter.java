@@ -1,6 +1,5 @@
 package utils;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -14,7 +13,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -47,7 +45,6 @@ import org.sbolstandard.core2.SequenceAnnotation;
 import org.sbolstandard.core2.SequenceOntology;
 import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
@@ -211,6 +208,36 @@ public class Converter {
 		// we don't want to create views for componentDefinitions handled in the module
 		// definition (top level strands/proteins)
 		compDefs.removeAll(handledCompDefs);
+		for (ComponentDefinition compDef : compDefs) {
+			createComponentView(document, graph, compDef);
+		}
+
+		// convert the objects to the graph xml
+		graphStream.write(encodeMxGraphObject(model).getBytes());
+	}
+
+	public void toSubGraph(InputStream sbolStream, OutputStream graphStream)
+			throws SBOLValidationException, IOException, SBOLConversionException, SAXException, ParserConfigurationException, TransformerFactoryConfigurationError, TransformerException {
+		SBOLDocument document = SBOLReader.read(sbolStream);
+		toSubGraph(document, graphStream);
+	}
+
+	public void toSubGraph(SBOLDocument document, OutputStream graphStream)
+			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
+			TransformerFactoryConfigurationError, TransformerException {
+		// set up the graph and glyphdict
+		mxGraph graph = new mxGraph();
+		mxGraphModel model = (mxGraphModel) graph.getModel();
+		mxCell cell0 = (mxCell) model.getCell("0");
+		cell0.setValue(glyphInfoDict);
+
+		// top level component definition
+		ComponentDefinition rootCompDef = document.getRootComponentDefinitions().iterator().next();
+
+		graph.insertVertex((mxCell) model.getCell("1"), null, rootCompDef.getDisplayId(), 0, 0, 0, 0);
+
+		Set<ComponentDefinition> compDefs = document.getComponentDefinitions();
+
 		for (ComponentDefinition compDef : compDefs) {
 			createComponentView(document, graph, compDef);
 		}
@@ -542,17 +569,18 @@ public class Converter {
 		HashMap<URI, mxCell> compToCell = new HashMap<URI, mxCell>();
 		for (FunctionalComponent funcComp : notMappedFCs) {
 			ComponentDefinition compDef = funcComp.getDefinition();
-			
+
 			// proteins
-			if(!compDef.getTypes().iterator().next().equals(ComponentDefinition.DNA_REGION)) {
+			if (!compDef.getTypes().iterator().next().equals(ComponentDefinition.DNA_REGION)) {
 				// proteins don't have a mapping, but we need it for interactions
 				Annotation protienAnn = compDef.getAnnotation(new QName(uriPrefix, "protein", annPrefix));
 				mxCell protien = null;
-				if(protienAnn != null) {
+				if (protienAnn != null) {
 					protien = (mxCell) decodeMxGraphObject(protienAnn.getStringValue());
 					model.add(rootViewCell, protien, 0);
-				}else {
-					protien = (mxCell) graph.insertVertex(rootViewCell, null, null, 0, 0, 0, 0, "molecularSpeciesGlyph");
+				} else {
+					protien = (mxCell) graph.insertVertex(rootViewCell, null, null, 0, 0, 0, 0,
+							"molecularSpeciesGlyph");
 				}
 				compToCell.put(compDef.getIdentity(), protien);
 				GlyphInfo info = genGlyphInfo(compDef);
@@ -617,13 +645,13 @@ public class Converter {
 				// theoretically more than 2, but we currently only support 2
 				if (participations[i].getRoles().iterator().next().equals(sourceType)) {
 					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
-					if(mappedURI == null)
+					if (mappedURI == null)
 						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
 					mxCell source = compToCell.get(mappedURI);
 					edge.setSource(source);
 				} else if (participations[i].getRoles().iterator().next().equals(targetType)) {
 					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
-					if(mappedURI == null)
+					if (mappedURI == null)
 						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
 					mxCell target = compToCell.get(mappedURI);
 					edge.setTarget(target);
@@ -683,8 +711,7 @@ public class Converter {
 				maxX = glyphCell.getGeometry().getX();
 				model.add(container, glyphCell, glyphIndex);
 			} else {
-				graph.insertVertex(container, null, glyphComponent.getDefinition().getDisplayId(), maxX++, 0, 0, 0,
-						"sequenceFeatureGlyph");
+				graph.insertVertex(container, null, glyphComponent.getDefinition().getDisplayId(), maxX++, 0, 0, 0);
 			}
 		}
 	}
