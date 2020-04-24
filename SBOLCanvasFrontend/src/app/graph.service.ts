@@ -347,6 +347,15 @@ export class GraphService {
         } finally {
           this.graph.getModel().endUpdate();
         }
+      } else if (cell.isInteraction()) {
+        this.graph.getModel().beginUpdate();
+        try {
+          const src = cell.source;
+          const dest = cell.target;
+          this.graph.addEdge(cell, null, dest, src);
+        } finally {
+          this.graph.getModel().endUpdate();
+        }
       }
     }
   }
