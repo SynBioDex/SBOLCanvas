@@ -143,6 +143,9 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     return mainString.toLowerCase().indexOf(searchString.toLowerCase()) !== -1;
   }
 
+  keepOrder = (a, b) => {
+    return a;
+  }
   /**
    * Returns true if
    */

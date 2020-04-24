@@ -19,7 +19,7 @@
 
 
     <!-------------------------------------    Sequence panel   --------------------------------------->
-    <mat-expansion-panel [expanded]="true" *ngIf="(sequenceFeatureDict | keyvalue | searchfilter: searchPhrase).length > 0">
+    <mat-expansion-panel [expanded]="true" *ngIf="(sequenceFeatureDict | keyvalue: keepOrder| searchfilter: searchPhrase).length > 0">
       <mat-expansion-panel-header>
         <mat-panel-title>
           Sequence Features
@@ -28,7 +28,7 @@
         </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
-        <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue | searchfilter: searchPhrase" >
+        <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue:keepOrder | searchfilter: searchPhrase" >
           <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)" [matTooltip]="pair.key">
             <svg #canvasElement [attr.elementType]="elementTypes.SEQUENCE_FEATURE" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
           </button>
