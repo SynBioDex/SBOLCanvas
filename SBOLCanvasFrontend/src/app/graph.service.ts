@@ -784,11 +784,20 @@ export class GraphService {
    * Creates an interaction edge of the given type at the center of the current view
    */
   addInteraction(name) {
-    const selectedCell = this.graph.getSelectionCell();
-    if (selectedCell) {
+    let selectedCell = this.graph.getSelectionCell();
+    const selectionCells = this.graph.getSelectionCells();
+    if (selectionCells.length == 1 || selectionCells.length == 2) {
+      if (selectionCells.length == 2) {
+        selectedCell = selectionCells[0];
+      }
       const selectedParent = selectedCell.getParent();
-      this.addInteractionAt(name, selectedParent.geometry.x + selectedCell.geometry.x + (selectedCell.geometry.width/2),
-        selectedParent.geometry.y);
+      if (!selectedParent.geometry) {
+        this.addInteractionAt(name, selectedCell.geometry.x + (selectedCell.geometry.width/2),
+          selectedCell.geometry.y);
+      } else {
+        this.addInteractionAt(name, selectedParent.geometry.x + selectedCell.geometry.x + (selectedCell.geometry.width / 2),
+          selectedParent.geometry.y);
+      }
     } else {
       const pt = this.getDefaultNewCellCoords();
       this.addInteractionAt(name, pt.x, pt.y);
@@ -808,11 +817,17 @@ export class GraphService {
     try {
       cell = new mx.mxCell('', new mx.mxGeometry(x, y, 0, 0), interactionGlyphBaseStyleName + name);
 
-      const selectedCell = this.graph.getSelectionCell();
-      if (selectedCell) {
+      const selectionCells = this.graph.getSelectionCells();
+      if (selectionCells.length == 1) {
+        const selectedCell = this.graph.getSelectionCell();
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - defaultInteractionSize), false);
         cell.edge = true;
         this.graph.addEdge(cell, null, selectedCell, null);
+      } else if (selectionCells.length == 2) {
+        const sourceCell = selectionCells[0];
+        const destCell = selectionCells[1];
+        cell.edge = true;
+        this.graph.addEdge(cell, null, sourceCell, destCell);
       } else {
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y + defaultInteractionSize), true);
         cell.geometry.setTerminalPoint(new mx.mxPoint(x + defaultInteractionSize, y), false);
