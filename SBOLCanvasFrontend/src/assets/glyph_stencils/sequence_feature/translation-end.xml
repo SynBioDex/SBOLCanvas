@@ -6,7 +6,7 @@
         <linejoin join="round" />
         <linecap cap="round" />
         <ellipse h="17.15686274509804" w="17.15686274509804" x="15.42156862745098" y="8.0" />
-        <stroke />
+        <fillstroke />
         <strokewidth width="2.88" />
         <miterlimit limit="4" />
         <path>
