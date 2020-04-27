@@ -65,6 +65,10 @@
       <button mat-menu-item class="toolbar-row-button"
               [matTooltip]="'About SBOL Canavs and its creators'"
               [routerLink]="['/about']">About</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Links to Github issue tracker.'"
+              onClick="window.open('https://github.com/SynBioDex/SBOLCanvas/issues')">Report Issue</button>
     </mat-menu>
 
     <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
@@ -108,6 +112,16 @@
     <button mat-stroked-button class="toolbar-row-button"
             [matTooltip]="'Send selected part to back'"
             (click)="graphService.sendSelectionToBack()"><mat-icon>flip_to_front</mat-icon></button>
+
+    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Focus in the selected part to view and edit its subparts'"
+            (click)="graphService.enterGlyph()"><mat-icon>save_alt</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Focus out to the parent part'"
+            (click)="graphService.exitGlyph()"><mat-icon>open_in_browser</mat-icon></button>
 
     <span class="toolbar-spacer"></span>
 

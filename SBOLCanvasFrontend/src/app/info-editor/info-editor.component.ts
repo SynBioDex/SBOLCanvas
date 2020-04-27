@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
-import { InteractionInfo } from "../interactionInfo";
+import { InteractionInfo } from '../interactionInfo';
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 import { MatSelectChange, MatDialog } from '@angular/material';
@@ -15,16 +15,16 @@ import { DownloadGraphComponent } from '../download-graph/download-graph.compone
 
 export class InfoEditorComponent implements OnInit {
 
-  baseURI = "https://sbolcanvas.org/";
+  baseURI = 'https://sbolcanvas.org/';
 
   // placeholders that get generated from http calls
-  partTypes:string[];
-  partRoles:string[];
-  partRefinements:string[]; //these depend on role
-  interactionTypes:string[];
+  partTypes: string[];
+  partRoles: string[];
+  partRefinements: string[]; // these depend on role
+  interactionTypes: string[];
 
-  //TODO get these from the backend
-  encodings:string[];
+  // TODO get these from the backend
+  encodings: string[];
 
   glyphInfo: GlyphInfo;
   interactionInfo: InteractionInfo;
@@ -33,82 +33,87 @@ export class InfoEditorComponent implements OnInit {
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
-    this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo))
+    this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo));
     this.getTypes();
     this.getRoles();
     this.getInteractions();
   }
 
-  getTypes(){
+  getTypes() {
     this.metadataService.loadTypes().subscribe(types => this.partTypes = types);
   }
 
-  getRoles(){
+  getRoles() {
     this.metadataService.loadRoles().subscribe(roles => this.partRoles = roles);
   }
 
-  getRefinements(role:string){
+  getRefinements(role: string) {
     this.metadataService.loadRefinements(role).subscribe(refinements => this.partRefinements = refinements);
   }
 
-  getInteractions(){
+  getInteractions() {
     this.metadataService.loadInteractions().subscribe(interactions => this.interactionTypes = interactions);
   }
 
-  generateURI(): string{
-    let uri: string = this.glyphInfo.uriPrefix + "/" + this.glyphInfo.displayID;
-    if(this.glyphInfo.version && this.glyphInfo.version.length > 0)
-      uri += "/" + this.glyphInfo.version;
+  generateURI(): string {
+    let uri: string = this.glyphInfo.uriPrefix + '/' + this.glyphInfo.displayID;
+    if (this.glyphInfo.version && this.glyphInfo.version.length > 0) {
+      uri += '/' + this.glyphInfo.version;
+    }
     return uri;
   }
 
-  dropDownChange(event: MatSelectChange){
+  dropDownChange(event: MatSelectChange) {
     const id = event.source.id;
 
-    switch(id){
-      case 'partType':{
+    switch (id) {
+      case 'partType': {
         this.glyphInfo.partType = event.value;
         break;
       }
-      case 'partRole':{
+      case 'partRole': {
         this.glyphInfo.partRole = event.value;
-        this.glyphInfo.partRefine = "";
-        if(event.value !== "")
+        this.glyphInfo.partRefine = '';
+        if (event.value !== '') {
           this.getRefinements(event.value);
-        else
-          this.partRefinements=[];
+        } else {
+          this.partRefinements = [];
+        }
         break;
       }
-      case 'partRefinement':{
-        if(event.value != "none"){
+      case 'partRefinement': {
+        if (event.value != 'none') {
           this.glyphInfo.partRefine = event.value;
         }
         break;
       }
-      case 'interactionType':{
+      case 'interactionType': {
         this.interactionInfo.interactionType = event.value;
         break;
-      }default:{
+      }default: {
         console.log('Unexpected id encountered in info menu dropdown = ' + id);
         break;
       }
     }
 
-    if(this.glyphInfo != null)
+    if (this.glyphInfo != null) {
       this.graphService.setSelectedCellInfo(this.glyphInfo);
-    else if(this.interactionInfo != null)
+    } else if (this.interactionInfo != null) {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
+         }
   }
 
   inputChange(event: any) {
     const id = event.target.id;
 
     switch (id) {
-      case 'displayID':{
-        if(this.glyphInfo != null){
-          this.glyphInfo.displayID = event.target.value;
-        }else if(this.interactionInfo != null)
-          this.interactionInfo.displayID = event.target.value;
+      case 'displayID': {
+        const replaced = event.target.value.replace(/[\W_]+/g, '_');
+        if (this.glyphInfo != null) {
+          this.glyphInfo.displayID = replaced;
+        } else if (this.interactionInfo != null) {
+          this.interactionInfo.displayID = replaced;
+              }
         break;
       }
       case 'name': {
@@ -119,11 +124,11 @@ export class InfoEditorComponent implements OnInit {
         this.glyphInfo.description = event.target.value;
         break;
       }
-      case 'version':{
+      case 'version': {
         this.glyphInfo.version = event.target.value;
         break;
       }
-      case 'sequence':{
+      case 'sequence': {
         this.glyphInfo.sequence = event.target.value;
       }
       default: {
@@ -132,13 +137,14 @@ export class InfoEditorComponent implements OnInit {
       }
     }
 
-    if(this.glyphInfo != null)
+    if (this.glyphInfo != null) {
       this.graphService.setSelectedCellInfo(this.glyphInfo);
-    else if(this.interactionInfo != null)
+    } else if (this.interactionInfo != null) {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
+         }
   }
 
-  openDownloadDialog(){
+  openDownloadDialog() {
     this.dialog.open(DownloadGraphComponent, {
       data: {
         import: false,
@@ -153,7 +159,7 @@ export class InfoEditorComponent implements OnInit {
    */
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
-    if (glyphInfo != null){
+    if (glyphInfo != null) {
       if (glyphInfo.partRole != null) {
         this.getRefinements(glyphInfo.partRole);
       } else {
