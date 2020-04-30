@@ -30,6 +30,8 @@ export class DownloadGraphComponent implements OnInit {
   partRole: string;
   partRefine: string;
 
+  import: boolean;
+
   partRequest: Subscription;
 
   parts = new MatTableDataSource([]);
@@ -45,22 +47,29 @@ export class DownloadGraphComponent implements OnInit {
   ngOnInit() {
     this.working = true;
     if(this.data != null){
-      this.partType = this.data.partType;
-      this.partRole = this.data.partRole;
-      this.partRefine = this.data.partRefine;
-
-      forkJoin(
-        this.filesService.getRegistries(),
-        this.metadataService.loadTypes(),
-        this.metadataService.loadRoles(),
-        this.metadataService.loadRefinements(this.partRole)
-      ).subscribe(results => {
-        this.registries = results[0];
-        this.partTypes = results[1];
-        this.partRoles = results[2];
-        this.roleRefinements = results[3];
-        this.working = false;
-      });
+      if(this.data.import != null){
+        this.import = this.data.import;
+      }else{
+        this.data.import = false;
+      }
+      if(this.data.info != null){
+        this.partType = this.data.info.partType;
+        this.partRole = this.data.info.partRole;
+        this.partRefine = this.data.info.partRefine;
+  
+        forkJoin(
+          this.filesService.getRegistries(),
+          this.metadataService.loadTypes(),
+          this.metadataService.loadRoles(),
+          this.metadataService.loadRefinements(this.partRole)
+        ).subscribe(results => {
+          this.registries = results[0];
+          this.partTypes = results[1];
+          this.partRoles = results[2];
+          this.roleRefinements = results[3];
+          this.working = false;
+        });
+      }
     }else{
       this.filesService.getRegistries().subscribe(registries =>{
         this.registries = registries;
@@ -168,7 +177,7 @@ export class DownloadGraphComponent implements OnInit {
 
   downloadComponent(){
     this.working = true;
-    this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml =>{
+    this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml =>{
       this.graphService.setSelectedToXML(xml);
       this.working = false;
       this.dialogRef.close();

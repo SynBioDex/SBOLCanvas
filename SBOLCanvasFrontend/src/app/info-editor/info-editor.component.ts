@@ -146,7 +146,10 @@ export class InfoEditorComponent implements OnInit {
 
   openDownloadDialog() {
     this.dialog.open(DownloadGraphComponent, {
-      data: this.glyphInfo
+      data: {
+        import: false,
+        info: this.glyphInfo
+      }
     });
   }
 
