@@ -45,7 +45,7 @@
       <textarea matInput id="version" placeholder="Version" value="{{ glyphInfo.version }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Recomended style is numbers and qualifiers that are separated by '.' and '-'."></textarea>
   </mat-form-field>
 
-  <mat-label>URI: {{generateURI()}}</mat-label>
+  <mat-label>URI: {{glyphInfo.getFullURI()}}</mat-label>
 
 <!--    <mat-form-field>-->
 <!--      <mat-label>Sequence encoding</mat-label>-->
