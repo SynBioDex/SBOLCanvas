@@ -10,7 +10,7 @@ import * as mxGraph from 'mxgraph';
 import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
-import { StyleInfo} from './style-info';
+import { StyleInfo } from './style-info';
 import { MetadataService } from './metadata.service';
 import { GlyphService } from './glyph.service';
 import { InteractionInfo } from './interactionInfo';
@@ -84,18 +84,18 @@ export class GraphService {
     cell: mxCell;
     info: any;
     previous: any;
-    constructor(cell, info){
+    constructor(cell, info) {
       this.cell = cell;
       this.info = info;
       this.previous = info;
     }
 
-    execute(){
-      if(this.cell != null){
+    execute() {
+      if (this.cell != null) {
         let tmp = this.cell.value.makeCopy();
-        if(this.previous == null){
+        if (this.previous == null) {
           this.cell.value = null;
-        }else{
+        } else {
           this.cell.value.copyDataFrom(this.previous);
         }
 
@@ -105,11 +105,11 @@ export class GraphService {
   }
 
   // edit object for glyph adding history
-  static glyphInfoEdit = class{
+  static glyphInfoEdit = class {
     cell0: mxCell;
     info: GlyphInfo;
     previousInfo: GlyphInfo;
-    constructor(cell0: string, info: GlyphInfo, previousInfo: GlyphInfo){
+    constructor(cell0: string, info: GlyphInfo, previousInfo: GlyphInfo) {
       this.cell0 = cell0;
       // store them in reverse so the execute performs the action the first time
       this.info = previousInfo;
@@ -117,18 +117,18 @@ export class GraphService {
     }
 
     // Execute is called for both un-doing and re-doing
-    execute(){
-      if(this.previousInfo == null){
+    execute() {
+      if (this.previousInfo == null) {
         // if the previous was null, then the dictionary didn't have an entry before so remove it
         delete this.cell0.value[this.info.getFullURI()];
         this.previousInfo = this.info;
         this.info = null;
-      }else if(this.info == null){
+      } else if (this.info == null) {
         // if the current one is null, then it was removed, so re-add it
         this.cell0.value[this.previousInfo.getFullURI()] = this.previousInfo;
         this.info = this.previousInfo;
         this.previousInfo = null;
-      }else{
+      } else {
         // some information was changed, so update it
         this.cell0.value[this.info.getFullURI()] = this.previousInfo;
         const tmpInfo = this.info;
@@ -139,20 +139,20 @@ export class GraphService {
   }
 
   // because the mxCurrentRootChange doesn't do what we want
-  static zoomEdit = class{
+  static zoomEdit = class {
     view: mxGraphView;
     glyphCell: mxCell;
     goDown: boolean;
     graphService: GraphService;
-    constructor(view: mxGraphView, glyphCell: mxCell, graphService: GraphService){
+    constructor(view: mxGraphView, glyphCell: mxCell, graphService: GraphService) {
       this.view = view;
       this.glyphCell = glyphCell;
       this.goDown = glyphCell != null;
       this.graphService = graphService;
     }
 
-    execute(){
-      if(this.glyphCell != null){
+    execute() {
+      if (this.glyphCell != null) {
         // Zoom into the glyph
         // get the view cell for the selected cell
         const childViewCell = this.graphService.graph.getModel().getCell(this.glyphCell.value);
@@ -164,7 +164,7 @@ export class GraphService {
         // change the view
         this.view.clear(this.view.currentRoot, true);
         this.view.currentRoot = childViewCell;
-        
+
         // set the selection to the circuit container
         this.graphService.graph.setSelectionCell(childViewCell.children[0]);
         this.graphService.fitCamera();
@@ -173,7 +173,7 @@ export class GraphService {
         this.graphService.metadataService.setComponentDefinitionMode(true);
 
         this.glyphCell = null;
-      }else{
+      } else {
         // Zoom out of the glyph
         // remove the last items on the stack
         this.graphService.viewStack.pop();
@@ -181,7 +181,7 @@ export class GraphService {
 
         // change the view
         this.view.clear(this.view.currentRoot, true);
-        this.view.currentRoot = this.graphService.viewStack[this.graphService.viewStack.length-1];
+        this.view.currentRoot = this.graphService.viewStack[this.graphService.viewStack.length - 1];
 
         // set the selection back
         this.graphService.graph.setSelectionCell(newSelectedCell);
@@ -189,7 +189,7 @@ export class GraphService {
         this.graphService.fitCamera();
 
         // make sure we can add new strands/interactions/molecules on the top level
-        if(this.graphService.viewStack.length == 1){
+        if (this.graphService.viewStack.length == 1) {
           this.graphService.metadataService.setComponentDefinitionMode(false);
         }
 
@@ -253,22 +253,22 @@ export class GraphService {
 
     // setup how names should be displayed
     let graphService = this;
-    this.graph.convertValueToString = function (cell){
-      if(cell.isSequenceFeatureGlyph()){
+    this.graph.convertValueToString = function (cell) {
+      if (cell.isSequenceFeatureGlyph()) {
         let info = graphService.getFromGlyphDict(cell.value);
-        if(info.name != null && info.name != ''){
+        if (info.name != null && info.name != '') {
           return info.name;
-        }else{
+        } else {
           return info.displayID;
         }
-      }else{
+      } else {
         return '';
       }
     }
 
     // initalize the root view cell of the graph
     const cell1 = this.graph.getModel().getCell(1);
-    const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0,0,0,0, null);
+    const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, null);
     this.graph.enterGroup(rootViewCell);
     this.viewStack = [];
     this.viewStack.push(rootViewCell);
@@ -526,7 +526,7 @@ export class GraphService {
    */
   exitGlyph() {
     // the root view should always be left on the viewStack
-    if(this.viewStack.length > 1){
+    if (this.viewStack.length > 1) {
       let zoomEdit = new GraphService.zoomEdit(this.graph.getView(), null, this);
       this.graph.getModel().execute(zoomEdit);
     }
@@ -664,11 +664,11 @@ export class GraphService {
   /**
    * Only the currently viewable layer should be allowed to have selections
    */
-  private filterSelectionCells(){
+  private filterSelectionCells() {
     const selectionCells = this.graph.getSelectionCells();
     const newSelectionCells = [];
-    for(let i = 0; i < selectionCells.length; i++){
-      if(selectionCells[i].getParent() && selectionCells[i].getParent().getParent() === this.viewStack[this.viewStack.length-1]){
+    for (let i = 0; i < selectionCells.length; i++) {
+      if (selectionCells[i].getParent() && selectionCells[i].getParent().getParent() === this.viewStack[this.viewStack.length - 1]) {
         newSelectionCells.push(selectionCells[i]);
       }
     }
@@ -687,7 +687,7 @@ export class GraphService {
     this.graph.zoomTo(scale);
   }
 
-  getZoom() :number {
+  getZoom(): number {
     return this.graph.getView().getScale();
   }
 
@@ -920,10 +920,10 @@ export class GraphService {
   addMolecularSpeciesAt(name, x, y) {
     this.graph.getModel().beginUpdate();
     try {
-      
+
       //TODO partRoles for proteins
       let proteinInfo = new GlyphInfo();
-      switch(name){
+      switch (name) {
         case "dsNA":
           proteinInfo.partType = "DNA molecule";
           break;
@@ -981,7 +981,7 @@ export class GraphService {
       }
       const selectedParent = selectedCell.getParent();
       if (!selectedParent.geometry) {
-        this.addInteractionAt(name, selectedCell.geometry.x + (selectedCell.geometry.width/2),
+        this.addInteractionAt(name, selectedCell.geometry.x + (selectedCell.geometry.width / 2),
           selectedCell.geometry.y);
       } else {
         this.addInteractionAt(name, selectedParent.geometry.x + selectedCell.geometry.x + (selectedCell.geometry.width / 2),
@@ -1050,7 +1050,7 @@ export class GraphService {
   private mutateSequenceFeatureGlyph(name: string, cells: mxCell);
   private mutateSequenceFeatureGlyph(name: string, cells: mxCell, graph: mxGraph);
   private mutateSequenceFeatureGlyph(name: string, cells?: mxCell, graph?: mxGraph) {
-    if(!graph){
+    if (!graph) {
       graph = this.graph;
     }
     if (!cells) {
@@ -1206,12 +1206,15 @@ export class GraphService {
    * Updates a GlyphInfo
    * NOTE: Should only be used if the glyphURI is the same
    */
-  private updateGlyphDict(info: GlyphInfo){
+  private updateGlyphDict(info: GlyphInfo) {
     const cell0 = this.graph.getModel().getCell(0);
     this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, info, cell0.value[info.getFullURI()]));
   }
 
-  private removeFromGlyphDict(glyphURI: string){
+  /**
+   * Remove a GlyphInfo object from the dictionary
+   */
+  private removeFromGlyphDict(glyphURI: string) {
     const cell0 = this.graph.getModel().getCell(0);
     this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, null, cell0.value[glyphURI]));
   }
@@ -1219,7 +1222,7 @@ export class GraphService {
   /**
    * Add a GlyphInfo object to the dictionary
    */
-  private addToGlyphDict(info: GlyphInfo){
+  private addToGlyphDict(info: GlyphInfo) {
     const cell0 = this.graph.getModel().getCell(0);
     this.graph.getModel().execute(new GraphService.glyphInfoEdit(cell0, info, null));
   }
@@ -1227,7 +1230,7 @@ export class GraphService {
   /**
    * Get the GlyphInfo with the given glyphURI from the dictionary
    */
-  getFromGlyphDict(glyphURI: string){
+  getFromGlyphDict(glyphURI: string) : GlyphInfo {
     const cell0 = this.graph.getModel().getCell(0);
     return cell0.value[glyphURI];
   }
@@ -1249,8 +1252,8 @@ export class GraphService {
 
       // since it does, update its info
       this.graph.getModel().beginUpdate();
-      try{
-        if(info instanceof GlyphInfo){
+      try {
+        if (info instanceof GlyphInfo) {
 
           let oldGlyphURI = "";
           // The selected cell might be a circuit container, in which case we need the id of the parent.
@@ -1260,21 +1263,21 @@ export class GraphService {
             oldGlyphURI = selectedCell.value;
           }
           const newGlyphURI = info.getFullURI();
-          if(oldGlyphURI != newGlyphURI){
-            if(this.checkCycleUp(selectedCell, newGlyphURI)){
+          if (oldGlyphURI != newGlyphURI) {
+            if (this.checkCycleUp(selectedCell, newGlyphURI)) {
               // Tell the user a cycle isn't allowed
-              this.dialog.open(ErrorComponent, {data: "ComponentInstance objects MUST NOT form circular reference chains via their definition properties and parent ComponentDefinition objects."});
+              this.dialog.open(ErrorComponent, { data: "ComponentInstance objects MUST NOT form circular reference chains via their definition properties and parent ComponentDefinition objects." });
               return;
             }
 
             const coupledCells = this.getCoupledCells(oldGlyphURI);
-            if(coupledCells.length > 1){
+            if (coupledCells.length > 1) {
               this.promptDeCouple(selectedCell, coupledCells, info, newGlyphURI, oldGlyphURI);
               return;
             }
 
             const conflictViewCell = this.graph.getModel().getCell(newGlyphURI);
-            if(conflictViewCell != null){
+            if (conflictViewCell != null) {
               this.promptCouple(conflictViewCell, [selectedCell], info, newGlyphURI, oldGlyphURI);
               return;
             }
@@ -1283,10 +1286,10 @@ export class GraphService {
             this.removeFromGlyphDict(oldGlyphURI);
             this.addToGlyphDict(info);
 
-            if(selectedCell.isCircuitContainer()){
-              const glyphZoomed = this.selectionStack[this.selectionStack.length-1];
+            if (selectedCell.isCircuitContainer()) {
+              const glyphZoomed = this.selectionStack[this.selectionStack.length - 1];
               this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
-              
+
               // default case
               // update the viewcell ID
               const viewCell = this.graph.getModel().getCell(oldGlyphURI);
@@ -1296,7 +1299,7 @@ export class GraphService {
               this.graph.getModel().setValue(glyphZoomed, newGlyphURI);
 
               this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
-            }else{
+            } else {
               // default case
               // update the viewcell ID
               const viewCell = this.graph.getModel().getCell(oldGlyphURI);
@@ -1305,6 +1308,9 @@ export class GraphService {
               // update the selected cell id
               this.graph.getModel().setValue(selectedCell, newGlyphURI);
             }
+
+            // update the ownership
+            this.changeOwnership(selectedCell);
 
             // update the view
             this.updateAngularMetadata(this.graph.getSelectionCells());
@@ -1316,136 +1322,140 @@ export class GraphService {
 
           // there may be coupled cells that need to also be mutated
           // the glyphInfo may be different than info, so use getFromGlyphDict
-          if(selectedCell.isCircuitContainer()){
+          if (selectedCell.isCircuitContainer()) {
             this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.parent.id).partRole, this.getCoupledCells(selectedCell.parent.id));
-          }else{
+          } else {
             this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.value).partRole, this.getCoupledCells(selectedCell.value));
           }
+
+          // change the ownership
+          this.changeOwnership(selectedCell);
+
           // update the view
           this.updateAngularMetadata(this.graph.getSelectionCells());
 
-        }else{
+        } else {
           let interactionEdit = new GraphService.interactionEdit(selectedCell, info);
           this.mutateInteractionGlyph(info.interactionType);
           this.graph.getModel().execute(interactionEdit);
         }
-      }finally{
+      } finally {
         this.graph.getModel().endUpdate();
         this.updateAngularMetadata(this.graph.getSelectionCells());
       }
     }
   }
 
-  private promptCouple(conflictViewCell: mxCell, selectedCells: mxCell[], info: GlyphInfo, newGlyphURI: string, oldGlyphURI: string){
+  private promptCouple(conflictViewCell: mxCell, selectedCells: mxCell[], info: GlyphInfo, newGlyphURI: string, oldGlyphURI: string) {
     // start a new begin so that when the dialog closes, all changes are in one edit
     this.graph.getModel().beginUpdate();
     // a cell with this display ID already exists prompt user if they want to couple them
-    const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "A component with this URI already exists. Would you like to couple them and keep the current substructure, or update it?", options: ["Keep", "Update", "Cancel"]}});
+    const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: "A component with this URI already exists. Would you like to couple them and keep the current substructure, or update it?", options: ["Keep", "Update", "Cancel"] } });
     confirmRef.afterClosed().subscribe(result => {
-      try{
-      if(result === "Keep"){
+      try {
+        if (result === "Keep") {
 
-        if(this.checkCycleDown(selectedCells[0], newGlyphURI)){
-          // Tell the user a cycle isn't allowed
-          this.dialog.open(ErrorComponent, {data: "ComponentInstance objects MUST NOT form circular reference chains via their definition properties and parent ComponentDefinition objects."});
-          return;
-        }
-
-        // update the glyphDict
-        this.removeFromGlyphDict(oldGlyphURI);
-        this.removeFromGlyphDict(newGlyphURI);
-        this.addToGlyphDict(info);
-
-        // update the viewCell id
-        const viewCell = this.graph.getModel().getCell(oldGlyphURI);
-        
-
-        // update the display of the selectioncell
-        if(selectedCells.length == 1 && selectedCells[0].isCircuitContainer()){
-          const glyphZoomed = this.selectionStack[this.selectionStack.length-1];
-          // zoom out before making changes
-          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
-
-          // remove the found viewCell and replace it with this one
-          this.removeViewCell(conflictViewCell);
-          
-          // change the glyphURI associated with the glyph
-          this.graph.getModel().setValue(glyphZoomed, newGlyphURI);
-
-          // update the viewCell's id
-          this.updateViewCell(viewCell, newGlyphURI);
-
-          // rezoom after the ID has been changed
-          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
-        }else{
-          // remove the found viewCell and replace it with this one
-          this.removeViewCell(conflictViewCell);
-          
-          // update the viewCell's id
-          this.updateViewCell(viewCell, newGlyphURI);
-
-          // change the glyphURI assicated with the glyphs
-          const graph = this.graph;
-          selectedCells.forEach(function (cell){
-            graph.getModel().setValue(cell, newGlyphURI);
-          });
-        }
-
-        // update the conflicting cells graphics
-        this.mutateSequenceFeatureGlyph(info.partRole, this.getCoupledCells(newGlyphURI));
-      }else if(result === "Update"){
-
-        // update the selected cells glyphURI
-        if(selectedCells.length == 1 && selectedCells[0].isCircuitContainer()){
-          // update the glyphDict
-          this.removeFromGlyphDict(oldGlyphURI);
-
-          const glyphZoomed = this.selectionStack[this.selectionStack.length-1];
-          // unzoom and rezoom after the rename
-          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
-
-          // remove this cells viewCell and update the glyphURI
-          const viewCell = this.graph.getModel().getCell(oldGlyphURI);
-          this.removeViewCell(viewCell);
-
-          this.graph.getModel().setValue(glyphZoomed, newGlyphURI);
-          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
-        }else{
-          // remove this cells viewCell and update the glyphURI
-          const viewCell = this.graph.getModel().getCell(oldGlyphURI);
-          this.removeViewCell(viewCell);
+          if (this.checkCycleDown(selectedCells[0], newGlyphURI)) {
+            // Tell the user a cycle isn't allowed
+            this.dialog.open(ErrorComponent, { data: "ComponentInstance objects MUST NOT form circular reference chains via their definition properties and parent ComponentDefinition objects." });
+            return;
+          }
 
           // update the glyphDict
           this.removeFromGlyphDict(oldGlyphURI);
+          this.removeFromGlyphDict(newGlyphURI);
+          this.addToGlyphDict(info);
 
-          const graph = this.graph;
-          selectedCells.forEach(function (cell){
-            graph.getModel().setValue(cell, newGlyphURI);
-          });
-        }
+          // update the viewCell id
+          const viewCell = this.graph.getModel().getCell(oldGlyphURI);
 
-        // update the selected cell's graphics
-        if(selectedCells.length == 1 && selectedCells[0].isCircuitContainer()){
-          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newGlyphURI).partRole, [this.selectionStack[this.selectionStack.length-1]]);
-        }else{
-          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newGlyphURI).partRole, selectedCells);
+
+          // update the display of the selectioncell
+          if (selectedCells.length == 1 && selectedCells[0].isCircuitContainer()) {
+            const glyphZoomed = this.selectionStack[this.selectionStack.length - 1];
+            // zoom out before making changes
+            this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+
+            // remove the found viewCell and replace it with this one
+            this.removeViewCell(conflictViewCell);
+
+            // change the glyphURI associated with the glyph
+            this.graph.getModel().setValue(glyphZoomed, newGlyphURI);
+
+            // update the viewCell's id
+            this.updateViewCell(viewCell, newGlyphURI);
+
+            // rezoom after the ID has been changed
+            this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
+          } else {
+            // remove the found viewCell and replace it with this one
+            this.removeViewCell(conflictViewCell);
+
+            // update the viewCell's id
+            this.updateViewCell(viewCell, newGlyphURI);
+
+            // change the glyphURI assicated with the glyphs
+            const graph = this.graph;
+            selectedCells.forEach(function (cell) {
+              graph.getModel().setValue(cell, newGlyphURI);
+            });
+          }
+
+          // update the conflicting cells graphics
+          this.mutateSequenceFeatureGlyph(info.partRole, this.getCoupledCells(newGlyphURI));
+        } else if (result === "Update") {
+
+          // update the selected cells glyphURI
+          if (selectedCells.length == 1 && selectedCells[0].isCircuitContainer()) {
+            // update the glyphDict
+            this.removeFromGlyphDict(oldGlyphURI);
+
+            const glyphZoomed = this.selectionStack[this.selectionStack.length - 1];
+            // unzoom and rezoom after the rename
+            this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+
+            // remove this cells viewCell and update the glyphURI
+            const viewCell = this.graph.getModel().getCell(oldGlyphURI);
+            this.removeViewCell(viewCell);
+
+            this.graph.getModel().setValue(glyphZoomed, newGlyphURI);
+            this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
+          } else {
+            // remove this cells viewCell and update the glyphURI
+            const viewCell = this.graph.getModel().getCell(oldGlyphURI);
+            this.removeViewCell(viewCell);
+
+            // update the glyphDict
+            this.removeFromGlyphDict(oldGlyphURI);
+
+            const graph = this.graph;
+            selectedCells.forEach(function (cell) {
+              graph.getModel().setValue(cell, newGlyphURI);
+            });
+          }
+
+          // update the selected cell's graphics
+          if (selectedCells.length == 1 && selectedCells[0].isCircuitContainer()) {
+            this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newGlyphURI).partRole, [this.selectionStack[this.selectionStack.length - 1]]);
+          } else {
+            this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newGlyphURI).partRole, selectedCells);
+          }
         }
+      } finally {
+        this.graph.getModel().endUpdate();
+        // update the view
+        this.updateAngularMetadata(this.graph.getSelectionCells());
       }
-    }finally{
-      this.graph.getModel().endUpdate();
-      // update the view
-      this.updateAngularMetadata(this.graph.getSelectionCells());
-    }
     });
   }
 
-  private promptDeCouple(selectedCell: mxCell, coupledCells: mxCell[], info: GlyphInfo, newGlyphURI: string, oldGlyphURI: string){
+  private promptDeCouple(selectedCell: mxCell, coupledCells: mxCell[], info: GlyphInfo, newGlyphURI: string, oldGlyphURI: string) {
     // start a new begin so that when the dialog closes, all changes are in one edit
     this.graph.getModel().beginUpdate();
     // prompt the user if they want to keep the cells coupled
-    const confirmRef = this.dialog.open(ConfirmComponent, {data: {message: "Other components are coupled with this one. Would you like to keep them coupled?", options: ["Yes","No","Cancel"]}});
+    const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: "Other components are coupled with this one. Would you like to keep them coupled?", options: ["Yes", "No", "Cancel"] } });
     confirmRef.afterClosed().subscribe(result => {
-      if(result === "Yes"){
+      if (result === "Yes") {
         // update the glyph dict
         this.removeFromGlyphDict(oldGlyphURI);
         this.addToGlyphDict(info);
@@ -1453,8 +1463,8 @@ export class GraphService {
         // update viewCell id
         const viewCell = this.graph.getModel().getCell(oldGlyphURI);
         // if the current selectedcell is a circuit container we need to unzoom and rezoom
-        if(selectedCell.isCircuitContainer()){
-          const zoomedCell = this.selectionStack[this.selectionStack.length-1];
+        if (selectedCell.isCircuitContainer()) {
+          const zoomedCell = this.selectionStack[this.selectionStack.length - 1];
           this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
           this.updateViewCell(viewCell, newGlyphURI);
 
@@ -1466,7 +1476,7 @@ export class GraphService {
           });
 
           this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), zoomedCell, this));
-        }else{
+        } else {
           this.updateViewCell(viewCell, newGlyphURI);
 
           // update the glyphURI of the other cells
@@ -1476,9 +1486,9 @@ export class GraphService {
             graph.getModel().setValue(cell, newGlyphURI);
           });
         }
-        
+
         this.mutateSequenceFeatureGlyph(info.partRole, coupledCells, this.graph);
-      }else if(result === "No"){
+      } else if (result === "No") {
         // don't use update, as it will remove the old one
         this.addToGlyphDict(info);
 
@@ -1489,12 +1499,12 @@ export class GraphService {
         // update the clones id
         this.updateViewCell(viewCellClone, newGlyphURI);
 
-        if(selectedCell.isCircuitContainer()){
-          const glyphZoomed = this.selectionStack[this.selectionStack.length-1];
+        if (selectedCell.isCircuitContainer()) {
+          const glyphZoomed = this.selectionStack[this.selectionStack.length - 1];
           this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
           this.graph.getModel().setValue(glyphZoomed, newGlyphURI);
           this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
-        }else{
+        } else {
           // update the selected cell's glyphURI
           this.graph.getModel().setValue(selectedCell, newGlyphURI);
         }
@@ -1506,18 +1516,18 @@ export class GraphService {
     });
   }
 
-  private getCoupledCells(glyphURI: string): mxCell[]{
+  private getCoupledCells(glyphURI: string): mxCell[] {
     const coupledCells = [];
-    for(let key in this.graph.getModel().cells){
+    for (let key in this.graph.getModel().cells) {
       const cell = this.graph.getModel().cells[key];
-      if(cell.value === glyphURI){
+      if (cell.value === glyphURI) {
         coupledCells.push(cell);
       }
     }
     return coupledCells;
   }
 
-  private updateViewCell(cell: mxCell, newGlyphURI: string){
+  private updateViewCell(cell: mxCell, newGlyphURI: string) {
     const newViewCell = this.graph.getModel().cloneCell(cell);
     this.graph.getModel().remove(cell);
     // clone it because the previous remove will keep the id change if we don't
@@ -1525,54 +1535,60 @@ export class GraphService {
     this.graph.getModel().add(this.graph.getModel().getCell(1), newViewCell);
   }
 
-  private removeViewCell(viewCell: mxCell){
+  private removeViewCell(viewCell: mxCell) {
     // remove the cell
     this.graph.getModel().remove(viewCell);
 
     // check if any of the children's viewcells have other parents
     let viewChildren = viewCell.children[0].children;
-    for(let i = 0; i < viewChildren.length; i++){
-      if(viewChildren[i].isSequenceFeatureGlyph()){
+    for (let i = 0; i < viewChildren.length; i++) {
+      if (viewChildren[i].isSequenceFeatureGlyph()) {
         let otherRefs = [];
-        for(let key in this.graph.getModel().cells){
+        for (let key in this.graph.getModel().cells) {
           const cell = this.graph.getModel().cells[key];
-          if(cell.value === viewChildren[i].value){
+          if (cell.value === viewChildren[i].value) {
             otherRefs.push(cell);
           }
         }
-        if(otherRefs.length == 0){
+        if (otherRefs.length == 0) {
           this.removeViewCell(this.graph.getModel().getCell(viewChildren[i].value));
         }
       }
     }
   }
 
-  private checkCycleUp(cell: mxCell, glyphURI: string){
+  /**
+   * URI's must not form a circular reference. This method checks for any cycles 
+   * that would be created if the cell's parents have the same glyphURI that's passed in.
+   * @param cell The cell to check upward from.
+   * @param glyphURI The URI you would like to set the current cell to.
+   */
+  private checkCycleUp(cell: mxCell, glyphURI: string) {
     let checked = new Set<string>();
     let toCheck = new Set<string>();
     // check upward
-    if(cell.isCircuitContainer()){
-      toCheck.add(this.selectionStack[this.selectionStack.length-1].getParent().getParent().getId());
-    }else{
+    if (cell.isCircuitContainer()) {
+      toCheck.add(this.selectionStack[this.selectionStack.length - 1].getParent().getParent().getId());
+    } else {
       toCheck.add(cell.getParent().getParent().getId());
     }
-    while(toCheck.size > 0){
+    while (toCheck.size > 0) {
       let checking: string = toCheck.values().next().value;
       checked.add(checking);
       toCheck.delete(checking);
-      if(checking === glyphURI){
+      if (checking === glyphURI) {
         return true;
       }
       let toAddCells = [];
-      for(let key in this.graph.getModel().cells){
+      for (let key in this.graph.getModel().cells) {
         const cell = this.graph.getModel().cells[key];
-        if(cell.value === checking){
+        if (cell.value === checking) {
           toAddCells.push(cell);
         }
       }
-      for (let i = 0; i < toAddCells.length; i++){
+      for (let i = 0; i < toAddCells.length; i++) {
         let toAdd = toAddCells[i].getParent().getParent().getId();
-        if(toAdd != "rootView" && !checked.has(toAdd)){ // TODO replace with a check if the cell is a module view
+        if (toAdd != "rootView" && !checked.has(toAdd)) { // TODO replace with a check if the cell is a module view
           toCheck.add(toAdd);
         }
       }
@@ -1580,38 +1596,44 @@ export class GraphService {
     return false;
   }
 
-  private checkCycleDown(cell: mxCell, glyphURI: string){
+  /**
+   * URI's must not form a circular reference. This method checks for any cycles 
+   * that would be created if the cell's children have the same glyphURI that's passed in.
+   * @param cell The cell to check downward from.
+   * @param glyphURI The URI you would like to set the current cell to.
+   */
+  private checkCycleDown(cell: mxCell, glyphURI: string) {
     let checked = new Set<string>();
     let toCheck = new Set<string>();
     // check downward
-    if(cell.isCircuitContainer()){
-      for(let i = 0; i < cell.children.length; i++){
-        if(cell.children[i].isSequenceFeatureGlyph()){
+    if (cell.isCircuitContainer()) {
+      for (let i = 0; i < cell.children.length; i++) {
+        if (cell.children[i].isSequenceFeatureGlyph()) {
           toCheck.add(cell.children[i].value);
         }
       }
-    }else{
+    } else {
       let viewCell = this.graph.getModel().getCell(cell.value);
       let viewChildren = viewCell.children[0].children;
-      for(let i = 0; i < viewChildren.length; i++){
-        if(viewChildren[i].isSequenceFeatureGlyph()){
+      for (let i = 0; i < viewChildren.length; i++) {
+        if (viewChildren[i].isSequenceFeatureGlyph()) {
           toCheck.add(viewChildren[i].value);
         }
       }
     }
 
-    while(toCheck.size > 0){
+    while (toCheck.size > 0) {
       let checking: string = toCheck.values().next().value;
       checked.add(checking);
       toCheck.delete(checking);
-      if(checking === glyphURI){
+      if (checking === glyphURI) {
         return true;
       }
 
       let viewCell = this.graph.getModel().getCell(checking);
       let viewChildren = viewCell.children[0].children;
-      for(let i = 0; i < viewChildren.length; i++){
-        if(viewChildren[i].isSequenceFeatureGlyph() && !checked.has(viewChildren[i].value)){
+      for (let i = 0; i < viewChildren.length; i++) {
+        if (viewChildren[i].isSequenceFeatureGlyph() && !checked.has(viewChildren[i].value)) {
           toCheck.add(viewChildren[i].value);
         }
       }
@@ -1620,38 +1642,101 @@ export class GraphService {
     return false;
   }
 
-  exportSVG(filename: string){
-    var background = '#ffffff';
-		var scale = 1;
-		var border = 1;
+  /**
+   * Changes the uriPrefix of the currently selected's glyph info, and any of it's parents.
+   * @param cell The cell to change ownership for.
+   */
+  private changeOwnership(cell: mxCell) {
+    let glyphInfo = null;
+    if(cell.isCircuitContainer()){
+      glyphInfo = this.getFromGlyphDict(cell.getParent().getId());
+    }else{
+      glyphInfo = this.getFromGlyphDict(cell.getValue());
+    }
 
-		var imgExport = new mx.mxImageExport();
-		var bounds = this.graph.getGraphBounds();
-		var vs = this.graph.view.scale;
+    // if we already own it, we don't need to do anything
+    if(!glyphInfo.uriPrefix || glyphInfo.uriPrefix === GlyphInfo.baseURI){
+      return;
+    }
+
+    // parent propogation
+    let toCheck = new Set<string>();
+    let checked = new Set<string>();
+
+    if (cell.isCircuitContainer()) {
+      toCheck.add(cell.getParent().getId());
+    } else {
+      toCheck.add(cell.getValue());
+    }
+
+    while (toCheck.size > 0) {
+      let checking: string = toCheck.values().next().value;
+      checked.add(checking);
+      toCheck.delete(checking);
+      if(checking.startsWith(GlyphInfo.baseURI)){
+        continue;
+      }
+
+      // change the glyphInfo's uriPrefix
+      let glyphInfo = this.getFromGlyphDict(checking);
+      glyphInfo.uriPrefix = GlyphInfo.baseURI;
+      this.removeFromGlyphDict(checking);
+      this.addToGlyphDict(glyphInfo);
+
+      // update the viewCell
+      let viewCell = this.graph.getModel().getCell(checking);
+      this.updateViewCell(viewCell, glyphInfo.getFullURI());
+
+      // update any cells that referenced the viewCell and add their parents to be checked
+      for(let key in this.graph.getModel().cells){
+        const cell = this.graph.getModel().cells[key];
+        if(cell.value === checking){
+          this.graph.getModel().setValue(cell, glyphInfo.getFullURI());
+          let toAdd = cell.getParent().getParent().getId();
+          if(toAdd != "rootView" && !checked.has(toAdd)){
+            toCheck.add(toAdd);
+          }
+        }
+      }
+    }
+
+    // TODO: re zoom to fix the view
+    // this.graph.execute(new GraphService.zoomEdit(this.graph.getView(), this.selectionStack[this.selectionStack.length-1]))
+
+  }
+
+  exportSVG(filename: string) {
+    var background = '#ffffff';
+    var scale = 1;
+    var border = 1;
+
+    var imgExport = new mx.mxImageExport();
+    var bounds = this.graph.getGraphBounds();
+    var vs = this.graph.view.scale;
 
     // Prepares SVG document that holds the output
-		var svgDoc = mx.mxUtils.createXmlDocument();
-		var root = (svgDoc.createElementNS != null) ?
-		svgDoc.createElementNS(mx.mxConstants.NS_SVG, 'svg') : svgDoc.createElement('svg');
+    var svgDoc = mx.mxUtils.createXmlDocument();
+    var root = (svgDoc.createElementNS != null) ?
+      svgDoc.createElementNS(mx.mxConstants.NS_SVG, 'svg') : svgDoc.createElement('svg');
 
-    if(background != null){
-      if(root.style != null){
+    if (background != null) {
+      if (root.style != null) {
         root.style.backgroundColor = background;
-      }else{
+      } else {
         root.setAttribute('style', 'background-color:' + background);
       }
     }
 
-    if(svgDoc.createElementNS == null){
+    if (svgDoc.createElementNS == null) {
       root.setAttribute('xmlns', mx.mxConstants.NS_SVG);
       root.setAttribute('xmlns:xlink', mx.mxConstants.NS_XLINK);
-    }else{
+    } else {
       // KNOWN: Ignored in IE9-11, adds namespace for each image element instead. No workaround.
       root.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', mx.mxConstants.NS_XLINK);
     }
 
     root.setAttribute('width', (Math.ceil(bounds.width * scale / vs) + 2 * border) + 'px');
-		root.setAttribute('height', (Math.ceil(bounds.height * scale / vs) + 2 * border) + 'px');
+    root.setAttribute('height', (Math.ceil(bounds.height * scale / vs) + 2 * border) + 'px');
     root.setAttribute('version', '1.1');
 
     // Adds group for anti-aliasing via transform
@@ -1670,10 +1755,10 @@ export class GraphService {
     imgExport.drawState(this.graph.getView().getState(this.graph.model.root), svgCanvas);
 
     var xml = encodeURIComponent(mx.mxUtils.getXml(root));
-    new mx.mxXmlRequest(environment.backendURL+'/echo', 'filename='+filename+'.svg&format=svg' + '&xml=' + xml).simulate(document, '_blank');
+    new mx.mxXmlRequest(environment.backendURL + '/echo', 'filename=' + filename + '.svg&format=svg' + '&xml=' + xml).simulate(document, '_blank');
   }
 
-  exportImage(filename: string, format:string) {
+  exportImage(filename: string, format: string) {
     let bg = '#ffffff';
     let scale = 1;
     let b = 1;
@@ -1701,7 +1786,7 @@ export class GraphService {
       bg = '&bg=' + bg;
     }
 
-    new mx.mxXmlRequest(environment.backendURL+'/export', 'filename='+filename+'.' + format + '&format=' + format + bg + '&w=' + w + '&h=' + h + '&xml=' + encodeURIComponent(xml)).simulate(document, '_blank');
+    new mx.mxXmlRequest(environment.backendURL + '/export', 'filename=' + filename + '.' + format + '&format=' + format + bg + '&w=' + w + '&h=' + h + '&xml=' + encodeURIComponent(xml)).simulate(document, '_blank');
   }
 
   /**
@@ -1734,18 +1819,18 @@ export class GraphService {
 
     let children = this.graph.getModel().getChildren(this.graph.getDefaultParent());
     children.forEach(element => {
-      if(element.isCircuitContainer())
-      element.refreshCircuitContainer(this.graph);
+      if (element.isCircuitContainer())
+        element.refreshCircuitContainer(this.graph);
     });
-    
-    if(anyForeignCellsFound){
+
+    if (anyForeignCellsFound) {
       console.log("FORMATTING !!!!!!!!!!!!!!!!");
       this.autoFormat();
       anyForeignCellsFound = false;
     }
 
     this.fitCamera();
-    
+
     this.editor.undoManager.clear();
   }
 
@@ -1776,10 +1861,10 @@ export class GraphService {
       try {
 
         // remove the old cell's view cell if it doesn't have any references
-        if(this.getCoupledCells(selectedCell.value).length < 2){
+        if (this.getCoupledCells(selectedCell.value).length < 2) {
           this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
         }
-        
+
         // remove the old cell
         this.graph.getModel().remove(selectedCell);
 
@@ -1815,7 +1900,7 @@ export class GraphService {
         let viewCells = subGraph.getModel().getCell("1").children;
         let subGlyphDict = subGraph.getModel().getCell("0").getValue();
         let cell1 = this.graph.getModel().getCell("1");
-        for(let i = 1; i < viewCells.length; i++) { // start at cell 1 because the glyph is at 0
+        for (let i = 1; i < viewCells.length; i++) { // start at cell 1 because the glyph is at 0
           // clone the cell otherwise viewCells get's messed up
           let viewClone = subGraph.getModel().cloneCell(viewCells[i]);
           // cloning doesn't keep the id for some reason
@@ -1898,37 +1983,37 @@ export class GraphService {
     const defaultDecodeCell = mx.mxCodec.prototype.decodeCell;
     mx.mxCodec.prototype.decodeCell = function (node, restoreStructures) {
       const cell = defaultDecodeCell.apply(this, arguments);
-      
+
       // find cell 0 for the glyph dict
       let cell0 = cell;
-      while(cell0.getId() != "0"){
+      while (cell0.getId() != "0") {
         cell0 = cell0.parent;
       }
       let glyphDict = cell0.value;
 
       // reconstruct the cell style
-      if(cell && cell.id > 1 && (cell.style == null || cell.style.length == 0)){
+      if (cell && cell.id > 1 && (cell.style == null || cell.style.length == 0)) {
         anyForeignCellsFound = true;
-        if(glyphDict[cell.value] != null){
-          if(glyphDict[cell.value].partType === 'DNA region'){
+        if (glyphDict[cell.value] != null) {
+          if (glyphDict[cell.value].partType === 'DNA region') {
             // sequence feature
-            cell.style = sequenceFeatureGlyphBaseStyleName+glyphDict[cell.value].partRole;
+            cell.style = sequenceFeatureGlyphBaseStyleName + glyphDict[cell.value].partRole;
             cell.geometry.width = sequenceFeatureGlyphWidth;
             cell.geometry.height = sequenceFeatureGlyphHeight;
             cell.setCollapsed(true);
-          }else{
+          } else {
             // molecular species
-            cell.style = molecularSpeciesGlyphBaseStyleName+"macromolecule";
+            cell.style = molecularSpeciesGlyphBaseStyleName + "macromolecule";
             cell.geometry.width = molecularSpeciesGlyphWidth;
             cell.geometry.height = molecularSpeciesGlyphHeight;
           }
-        }else if(cell.value instanceof InteractionInfo){
+        } else if (cell.value instanceof InteractionInfo) {
           // interaction
           let name = cell.value.interactionType;
           if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
             name = "Process";
           }
-          cell.style = interactionGlyphBaseStyleName+name;
+          cell.style = interactionGlyphBaseStyleName + name;
         }
       }
 
