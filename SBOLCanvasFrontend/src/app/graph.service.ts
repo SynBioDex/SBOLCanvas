@@ -1775,12 +1775,6 @@ export class GraphService {
       this.graph.getModel().beginUpdate();
       try {
 
-        // remove the old cell
-        this.graph.getModel().remove(selectedCell);
-
-        // remove the old cell's view cell
-        this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
-
         // get the new cell
         let newCell = subGraph.getModel().cloneCell(subGraph.getModel().getCell("1").children[0]);
 
@@ -1790,7 +1784,12 @@ export class GraphService {
 
         // add new cell to the graph
         this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
-        console.log(newCell);
+
+        // remove the old cell
+        this.graph.getModel().remove(selectedCell);
+
+        // remove the old cell's view cell
+        this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
 
         // move any edges from selectedCell to newCell
         if (selectedCell.edges != null) {
