@@ -1643,7 +1643,7 @@ export class GraphService {
   }
 
   /**
-   * Changes the uriPrefix of the currently selected's glyph info, and any of it's parents.
+   * Changes the uriPrefix of the passed in cell's glyph info, and any of it's parents.
    * @param cell The cell to change ownership for.
    */
   private changeOwnership(cell: mxCell) {
@@ -1700,8 +1700,10 @@ export class GraphService {
       }
     }
 
-    // TODO: re zoom to fix the view
-    // this.graph.execute(new GraphService.zoomEdit(this.graph.getView(), this.selectionStack[this.selectionStack.length-1]))
+    // re zoom to fix the view
+    let zoomedCell = this.selectionStack[this.selectionStack.length-1];
+    this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+    this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), zoomedCell, this));
 
   }
 
