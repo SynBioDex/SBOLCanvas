@@ -321,6 +321,9 @@ export class GraphService {
       }
     }
 
+    console.debug("Graph Model: ");
+    console.debug(this.graph.getModel());
+
     // Don't just use the new cells though, use all currently selected ones.
     this.updateAngularMetadata(this.graph.getSelectionCells());
   }
@@ -486,6 +489,10 @@ export class GraphService {
             this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 0, [cell]);
             console.debug("rotating to 0")
           }
+
+          if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
+            this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
+          }
         } finally {
           this.graph.getModel().endUpdate();
         }
@@ -609,7 +616,7 @@ export class GraphService {
       // If we are not at the top level, we need to check
       // for a corner case where we can't allow the backbone
       // to be deleted
-      if (this.graph.getCurrentRoot() != null) {
+      if (this.graph.getCurrentRoot() != null && this.graph.getCurrentRoot().getId() != "rootView") {
         let newSelection = [];
         for (let cell of selectedCells) {
           // Anything other than the backbone gets added to
@@ -622,6 +629,10 @@ export class GraphService {
       }
 
       this.editor.execute('delete');
+
+      if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
+        this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
+      }
 
       for (let cell of circuitContainers) {
         cell.refreshCircuitContainer(this.graph);
@@ -638,6 +649,8 @@ export class GraphService {
     // (un/re)doing is managed by the editor; it only works
     // if all changes are encapsulated by graphModel.(begin/end)Update
     this.editor.execute('undo');
+
+    //console.log(this.editor.undoManager);
 
     // If the undo caused scars to become visible, we should update
     this.showingScars = this.getScarsVisible();
@@ -841,6 +854,10 @@ export class GraphService {
       // The new glyph should be selected
       this.graph.clearSelection();
       this.graph.setSelectionCell(sequenceFeatureCell);
+
+      if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
+        this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
+      }
     } finally {
       this.graph.getModel().endUpdate();
     }
@@ -1230,7 +1247,7 @@ export class GraphService {
   /**
    * Get the GlyphInfo with the given glyphURI from the dictionary
    */
-  getFromGlyphDict(glyphURI: string) : GlyphInfo {
+  getFromGlyphDict(glyphURI: string): GlyphInfo {
     const cell0 = this.graph.getModel().getCell(0);
     return cell0.value[glyphURI];
   }
@@ -1310,7 +1327,11 @@ export class GraphService {
             }
 
             // update the ownership
-            this.changeOwnership(selectedCell);
+            if (selectedCell.isCircuitContainer()) {
+              this.changeOwnership(selectedCell.getParent().getId())
+            } else {
+              this.changeOwnership(selectedCell.getValue());
+            }
 
             // update the view
             this.updateAngularMetadata(this.graph.getSelectionCells());
@@ -1329,7 +1350,11 @@ export class GraphService {
           }
 
           // change the ownership
-          this.changeOwnership(selectedCell);
+          if (selectedCell.isCircuitContainer()) {
+            this.changeOwnership(selectedCell.getParent().getId());
+          } else {
+            this.changeOwnership(selectedCell.getValue());
+          }
 
           // update the view
           this.updateAngularMetadata(this.graph.getSelectionCells());
@@ -1646,64 +1671,68 @@ export class GraphService {
    * Changes the uriPrefix of the passed in cell's glyph info, and any of it's parents.
    * @param cell The cell to change ownership for.
    */
-  private changeOwnership(cell: mxCell) {
-    let glyphInfo = null;
-    if(cell.isCircuitContainer()){
-      glyphInfo = this.getFromGlyphDict(cell.getParent().getId());
-    }else{
-      glyphInfo = this.getFromGlyphDict(cell.getValue());
-    }
+  private changeOwnership(glyphURI: string) {
 
-    // if we already own it, we don't need to do anything
-    if(!glyphInfo.uriPrefix || glyphInfo.uriPrefix === GlyphInfo.baseURI){
-      return;
-    }
+    this.graph.getModel().beginUpdate();
+    try {
+      let glyphInfo = this.getFromGlyphDict(glyphURI);
 
-    // parent propogation
-    let toCheck = new Set<string>();
-    let checked = new Set<string>();
-
-    if (cell.isCircuitContainer()) {
-      toCheck.add(cell.getParent().getId());
-    } else {
-      toCheck.add(cell.getValue());
-    }
-
-    while (toCheck.size > 0) {
-      let checking: string = toCheck.values().next().value;
-      checked.add(checking);
-      toCheck.delete(checking);
-      if(checking.startsWith(GlyphInfo.baseURI)){
-        continue;
+      // if we already own it, we don't need to do anything
+      if (!glyphInfo.uriPrefix || glyphInfo.uriPrefix === GlyphInfo.baseURI) {
+        return;
       }
 
-      // change the glyphInfo's uriPrefix
-      let glyphInfo = this.getFromGlyphDict(checking);
-      glyphInfo.uriPrefix = GlyphInfo.baseURI;
-      this.removeFromGlyphDict(checking);
-      this.addToGlyphDict(glyphInfo);
+      // parent propogation
+      let toCheck = new Set<string>();
+      let checked = new Set<string>();
 
-      // update the viewCell
-      let viewCell = this.graph.getModel().getCell(checking);
-      this.updateViewCell(viewCell, glyphInfo.getFullURI());
+      toCheck.add(glyphURI);
 
-      // update any cells that referenced the viewCell and add their parents to be checked
-      for(let key in this.graph.getModel().cells){
-        const cell = this.graph.getModel().cells[key];
-        if(cell.value === checking){
-          this.graph.getModel().setValue(cell, glyphInfo.getFullURI());
-          let toAdd = cell.getParent().getParent().getId();
-          if(toAdd != "rootView" && !checked.has(toAdd)){
-            toCheck.add(toAdd);
+      // zoom out because the current view cell may be deleted and re added with a different URI
+      // more than the direct parent's view cell may have been changed, so it's easiest to zoom all the way out (trust me, It had problems when it wasn't zooming out)
+      let zoomedCells = this.selectionStack.slice();
+      for (let i = 0; i < zoomedCells.length; i++) {
+        this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+      }
+
+      while (toCheck.size > 0) {
+        let checking: string = toCheck.values().next().value;
+        checked.add(checking);
+        toCheck.delete(checking);
+        if (checking.startsWith(GlyphInfo.baseURI)) {
+          continue;
+        }
+
+        // change the glyphInfo's uriPrefix
+        let glyphInfo = this.getFromGlyphDict(checking).makeCopy();
+        glyphInfo.uriPrefix = GlyphInfo.baseURI;
+        this.removeFromGlyphDict(checking);
+        this.addToGlyphDict(glyphInfo);
+
+        // update the viewCell
+        let viewCell = this.graph.getModel().getCell(checking);
+        this.updateViewCell(viewCell, glyphInfo.getFullURI());
+
+        // update any cells that referenced the viewCell and add their parents to be checked
+        for (let key in this.graph.getModel().cells) {
+          const cell = this.graph.getModel().cells[key];
+          if (cell.value === checking) {
+            this.graph.getModel().setValue(cell, glyphInfo.getFullURI());
+            let toAdd = cell.getParent().getParent().getId();
+            if (toAdd != "rootView" && !checked.has(toAdd)) {
+              toCheck.add(toAdd);
+            }
           }
         }
       }
-    }
 
-    // re zoom to fix the view
-    let zoomedCell = this.selectionStack[this.selectionStack.length-1];
-    this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
-    this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), zoomedCell, this));
+      // re zoom to fix the view
+      for (let i = 0; i < zoomedCells.length; i++) {
+        this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), zoomedCells[i], this));
+      }
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
 
   }
 
@@ -1857,10 +1886,17 @@ export class GraphService {
       codec.decode(doc.documentElement, subGraph.getModel());
 
       // store old cell's parent
-      const origParent = selectedCell.getParent();
+      let origParent = selectedCell.getParent();
 
       this.graph.getModel().beginUpdate();
       try {
+
+        if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
+          let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
+          this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
+          selectedCell = this.viewStack[this.viewStack.length - 1].getChildAt(0).getChildAt(selectedCellIndex);
+          origParent = selectedCell.getParent();
+        }
 
         // remove the old cell's view cell if it doesn't have any references
         if (this.getCoupledCells(selectedCell.value).length < 2) {
@@ -1912,6 +1948,9 @@ export class GraphService {
           this.graph.addCell(viewClone, cell1);
 
           // add the info to the dictionary
+          if(this.getFromGlyphDict(viewCells[i].getId()) != null){
+            this.removeFromGlyphDict(viewCells[i].getId());
+          }
           this.addToGlyphDict(subGlyphDict[viewCells[i].getId()]);
         }
 
@@ -2121,7 +2160,7 @@ export class GraphService {
      */
     mx.mxCell.prototype.refreshBackbone = function (graph) {
       if (this.isBackbone()) {
-        this.getCircuitContainer().refreshBackbone(graph);
+        this.getCircuitContainer(graph).refreshBackbone(graph);
         return;
       } else if (!this.isCircuitContainer()) {
         console.error("refreshBackbone: called on an invalid cell!");
@@ -2519,8 +2558,8 @@ export class GraphService {
         } else {
           // cells are in the same circuitContainer:
           // must be in sequence order
-          let aIndex = cellA.getCircuitContainer().getIndex(cellA);
-          let bIndex = cellB.getCircuitContainer().getIndex(cellB);
+          let aIndex = cellA.getCircuitContainer(sender).getIndex(cellA);
+          let bIndex = cellB.getCircuitContainer(sender).getIndex(cellB);
 
           return aIndex - bIndex;
         }
@@ -2530,6 +2569,7 @@ export class GraphService {
       // This loop finds all such sets of glyphs (relying on the sorted order) and sets them to
       // have the same x position so there is no chance of outside glyphs sneaking in between
       let streak;
+      let ownershipChange = false;
       for (let i = 0; i < movedCells.length; i += streak) {
         streak = 1;
         if (!movedCells[i].isSequenceFeatureGlyph()) {
@@ -2555,6 +2595,9 @@ export class GraphService {
             break;
           }
         }
+
+        // should only happen if a sequence feature gets moved
+        ownershipChange = true;
       }
 
       // now all sequence feature glyphs are sorted by x position in the order
@@ -2573,6 +2616,10 @@ export class GraphService {
           const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
           cell.getParent().replaceGeometry(x, y, 'auto', 'auto', sender);
         }
+      }
+
+      if (ownershipChange && this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
+        this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
       }
 
       evt.consume();
