@@ -5,7 +5,9 @@ export class GlyphInfo {
   static counter: number = 0;
   static baseURI: string = "https://sbolcanvas.org";
   partType: string;
+  otherTypes: string[];
   partRole: string;
+  otherRoles: string[];
   partRefine: string;
   displayID: string;
   name: string;
@@ -61,8 +63,18 @@ export class GlyphInfo {
     let node = enc.document.createElement('GlyphInfo');
     if (this.partType)
       node.setAttribute("partType", this.partType);
+    if(this.otherTypes){
+      let otherTypesNode = enc.encode(this.otherTypes);
+      otherTypesNode.setAttribute("as", "otherTypes");
+      node.appendChild(otherTypesNode);
+    }
     if (this.partRole)
       node.setAttribute("partRole", this.partRole);
+    if(this.otherRoles){
+      let otherRolesNode = enc.encode(this.otherRoles);
+      otherRolesNode.setAttribute("as", "otherRoles");
+      node.appendChild(otherRolesNode);
+    }
     if (this.partRefine)
       node.setAttribute("partRefine", this.partRefine);
     if (this.displayID)
@@ -77,6 +89,7 @@ export class GlyphInfo {
       node.setAttribute("sequence", this.sequence);
     if (this.uriPrefix)
       node.setAttribute("uriPrefix", this.uriPrefix);
+    
 
     return node;
   }

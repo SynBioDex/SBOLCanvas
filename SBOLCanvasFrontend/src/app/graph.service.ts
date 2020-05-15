@@ -2055,6 +2055,14 @@ export class GraphService {
             glyphData[attrib.name] = attrib.value;
           }
         }
+        for(let i = 0; i < meta.children.length; i++){
+          const childNode = meta.children[i];
+          if(childNode.getAttribute("as") === "otherTypes"){
+            glyphData.otherTypes = dec.decode(childNode);
+          }else if(childNode.getAttribute("as") === "otherRoles"){
+            glyphData.otherRoles = dec.decode(childNode);
+          }
+        }
       }
       return glyphData;
     }

@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -241,7 +242,7 @@ public class SynBioHub extends HttpServlet {
 			}
 
 		} catch (SynBioHubException | SAXException | IOException | ParserConfigurationException
-				| SBOLValidationException | SBOLConversionException | TransformerFactoryConfigurationError | TransformerException e) {
+				| SBOLValidationException | SBOLConversionException | TransformerFactoryConfigurationError | TransformerException | URISyntaxException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
 			IOUtils.copy(inputStream, outputStream);

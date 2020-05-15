@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -125,7 +127,7 @@ public class Converter {
 	@SuppressWarnings("unchecked")
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename)
 			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
-			SBOLConversionException, TransformerFactoryConfigurationError, TransformerException {
+			SBOLConversionException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
@@ -329,7 +331,7 @@ public class Converter {
 	}
 
 	private void createComponentDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
-			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
+			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
 		// get the glyph info associated with this view cell
 		GlyphInfo glyphInfo = glyphInfoDict.get(viewCell.getId());
 
@@ -339,6 +341,11 @@ public class Converter {
 
 		ComponentDefinition compDef = document.createComponentDefinition(glyphInfo.getUriPrefix(),
 				glyphInfo.getDisplayID(), glyphInfo.getVersion(), SBOLData.types.getValue(glyphInfo.getPartType()));
+		if(glyphInfo.getOtherTypes() != null) {
+			for(String type : glyphInfo.getOtherTypes()) {
+				compDef.addType(new URI(type));
+			}
+		}
 
 		if (glyphInfo.getPartRefine() == null || glyphInfo.getPartRefine().equals("")) {
 			// if there isn't a part refine set the role
@@ -346,6 +353,11 @@ public class Converter {
 		} else {
 			// otherwise set the part refinement
 			compDef.addRole(SBOLData.refinements.getValue(glyphInfo.getPartRefine()));
+		}
+		if(glyphInfo.getOtherRoles() != null) {
+			for(String role : glyphInfo.getOtherRoles()) {
+				compDef.addRole(new URI(role));
+			}
 		}
 
 		compDef.setName(glyphInfo.getName());
@@ -456,7 +468,7 @@ public class Converter {
 							sourceComponent.getIdentity());
 				}
 				interaction.createParticipation(sourceInfo.getDisplayID(), sourceFC.getIdentity(),
-						getParticipantType(true, interaction.getTypes().iterator().next()));
+						getParticipantType(true, interaction.getTypes()));
 			}
 
 			// target participant
@@ -478,7 +490,7 @@ public class Converter {
 							targetComponent.getIdentity());
 				}
 				interaction.createParticipation(targetInfo.getDisplayID(), targetFC.getIdentity(),
-						getParticipantType(false, interaction.getTypes().iterator().next()));
+						getParticipantType(false, interaction.getTypes()));
 			}
 
 		}
@@ -572,7 +584,7 @@ public class Converter {
 			ComponentDefinition compDef = funcComp.getDefinition();
 
 			// proteins
-			if (!compDef.getTypes().iterator().next().equals(ComponentDefinition.DNA_REGION)) {
+			if (!compDef.getTypes().contains(ComponentDefinition.DNA_REGION)) {
 				// proteins don't have a mapping, but we need it for interactions
 				Annotation protienAnn = compDef.getAnnotation(new QName(uriPrefix, "protein", annPrefix));
 				mxCell protien = null;
@@ -638,19 +650,19 @@ public class Converter {
 			}
 			edge.setValue(genInteractionInfo(interaction));
 
-			URI targetType = getParticipantType(false, interaction.getTypes().iterator().next());
-			URI sourceType = getParticipantType(true, interaction.getTypes().iterator().next());
+			URI targetType = getParticipantType(false, interaction.getTypes());
+			URI sourceType = getParticipantType(true, interaction.getTypes());
 
 			Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
 			for (int i = 0; i < participations.length; i++) {
 				// theoretically more than 2, but we currently only support 2
-				if (participations[i].getRoles().iterator().next().equals(sourceType)) {
+				if (participations[i].getRoles().contains(sourceType)) {
 					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
 					if (mappedURI == null)
 						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
 					mxCell source = compToCell.get(mappedURI);
 					edge.setSource(source);
-				} else if (participations[i].getRoles().iterator().next().equals(targetType)) {
+				} else if (participations[i].getRoles().contains(targetType)) {
 					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
 					if (mappedURI == null)
 						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
@@ -749,15 +761,32 @@ public class Converter {
 		glyphInfo.setDescription(glyphCD.getDescription());
 		glyphInfo.setDisplayID(glyphCD.getDisplayId());
 		glyphInfo.setName(glyphCD.getName());
-		URI glyphRole = glyphCD.getRoles().toArray(new URI[0])[0];
-		if (SBOLData.roles.containsValue(glyphRole)) {
-			glyphInfo.setPartRole(SBOLData.roles.getKey(glyphRole));
-		} else {
-			glyphInfo.setPartRole(SBOLData.roles.getKey(SBOLData.parents.get(glyphRole)));
-			glyphInfo.setPartRefine(SBOLData.refinements.getKey(glyphRole));
+		
+		// There will only be one visual related role
+		ArrayList<String> otherRoles = new ArrayList<String>();
+		for(URI glyphRole : glyphCD.getRoles()) {
+			if(SBOLData.roles.containsValue(glyphRole)) {
+				glyphInfo.setPartRole(SBOLData.roles.getKey(glyphRole));
+			} else if(SBOLData.refinements.containsValue(glyphRole)) {
+				glyphInfo.setPartRole(SBOLData.roles.getKey(SBOLData.parents.get(glyphRole)));
+				glyphInfo.setPartRefine(SBOLData.refinements.getKey(glyphRole));
+			} else {
+				otherRoles.add(glyphRole.toString());
+			}
 		}
-		URI glyphType = glyphCD.getTypes().toArray(new URI[0])[0];
-		glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
+		glyphInfo.setOtherRoles(otherRoles.toArray(new String[0]));
+		
+		// There will only be one important type
+		ArrayList<String> otherTypes = new ArrayList<String>();
+		for(URI glyphType : glyphCD.getTypes()) {
+			if(SBOLData.types.containsValue(glyphType)) {
+				glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
+			}else {
+				otherTypes.add(glyphType.toString());
+			}
+		}
+		glyphInfo.setOtherTypes(otherTypes.toArray(new String[0]));
+		
 		if (glyphCD.getSequences().size() > 0)
 			glyphInfo.setSequence(glyphCD.getSequences().iterator().next().getElements());
 		glyphInfo.setVersion(glyphCD.getVersion());
@@ -779,20 +808,20 @@ public class Converter {
 		return info;
 	}
 
-	private URI getParticipantType(boolean source, URI interactionType) {
-		if (interactionType.equals(SystemsBiologyOntology.BIOCHEMICAL_REACTION)) {
+	private URI getParticipantType(boolean source, Set<URI> interactionTypes) {
+		if (interactionTypes.contains(SystemsBiologyOntology.BIOCHEMICAL_REACTION)) {
 			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;
-		} else if (interactionType.equals(SystemsBiologyOntology.CONTROL)) {
+		} else if (interactionTypes.contains(SystemsBiologyOntology.CONTROL)) {
 			return source ? SystemsBiologyOntology.MODIFIER : SystemsBiologyOntology.MODIFIED;
-		} else if (interactionType.equals(SystemsBiologyOntology.DEGRADATION)) {
+		} else if (interactionTypes.contains(SystemsBiologyOntology.DEGRADATION)) {
 			return SystemsBiologyOntology.REACTANT;
-		} else if (interactionType.equals(SystemsBiologyOntology.GENETIC_PRODUCTION)) {
+		} else if (interactionTypes.contains(SystemsBiologyOntology.GENETIC_PRODUCTION)) {
 			return source ? SystemsBiologyOntology.TEMPLATE : SystemsBiologyOntology.PRODUCT;
-		} else if (interactionType.equals(SystemsBiologyOntology.INHIBITION)) {
+		} else if (interactionTypes.contains(SystemsBiologyOntology.INHIBITION)) {
 			return source ? SystemsBiologyOntology.INHIBITOR : SystemsBiologyOntology.INHIBITED;
-		} else if (interactionType.equals(SystemsBiologyOntology.NON_COVALENT_BINDING)) {
+		} else if (interactionTypes.contains(SystemsBiologyOntology.NON_COVALENT_BINDING)) {
 			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;
-		} else if (interactionType.equals(SystemsBiologyOntology.STIMULATION)) {
+		} else if (interactionTypes.contains(SystemsBiologyOntology.STIMULATION)) {
 			return source ? SystemsBiologyOntology.STIMULATOR : SystemsBiologyOntology.STIMULATED;
 		}
 		return null;

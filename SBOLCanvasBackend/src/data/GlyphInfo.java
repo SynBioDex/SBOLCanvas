@@ -6,7 +6,9 @@ import org.w3c.dom.Element;
 public class GlyphInfo extends Info {
 
 	private String partType;
+	private String[] otherTypes;
 	private String partRole;
+	private String[] otherRoles;
 	private String partRefine;
 	private String displayID;
 	private String name;
@@ -31,6 +33,14 @@ public class GlyphInfo extends Info {
 		this.partType = partType;
 	}
 
+	public String[] getOtherTypes() {
+		return otherTypes;
+	}
+	
+	public void setOtherTypes(String[] otherTypes) {
+		this.otherTypes = otherTypes;
+	}
+	
 	public String getPartRole() {
 		return partRole;
 	}
@@ -39,6 +49,14 @@ public class GlyphInfo extends Info {
 		this.partRole = partRole;
 	}
 
+	public String[] getOtherRoles() {
+		return otherRoles;
+	}
+	
+	public void setOtherRoles(String[] otherRoles) {
+		this.otherRoles = otherRoles;
+	}
+	
 	public String getPartRefine() {
 		return partRefine;
 	}
