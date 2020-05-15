@@ -1009,6 +1009,8 @@ export class GraphService {
     } finally {
       this.graph.getModel().endUpdate();
     }
+
+    console.log(this.graph.getModel().cells);
   }
 
   /**
@@ -2028,7 +2030,7 @@ export class GraphService {
         this.graph.getModel().endUpdate();
       }
     }
-
+    console.log(this.graph.getModel().cells);
   }
 
   /**

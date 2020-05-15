@@ -404,9 +404,9 @@ public class Converter {
 			for (mxCell glyph : glyphs) {
 
 				GlyphInfo info = glyphInfoDict.get(glyph.getValue());
-				ComponentDefinition glyphCD = document.getComponentDefinition((String) glyph.getValue(), null);
+				ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
 				Component component = compDef.createComponent(info.getDisplayID() + "_" + glyph.getId(),
-						AccessType.PUBLIC, glyphCD.getDisplayId(), info.getVersion());
+						AccessType.PUBLIC, URI.create(info.getFullURI()));
 
 				// cell annotation
 				component.createAnnotation(new QName(uriPrefix, "glyphCell", annPrefix), encodeMxGraphObject(glyph));
@@ -453,7 +453,7 @@ public class Converter {
 			if (sourceInfo != null) {
 				FunctionalComponent sourceFC = modDef.getFunctionalComponent(sourceInfo.getDisplayID());
 				if (sourceFC == null) {
-					ComponentDefinition sourceCD = document.getComponentDefinition(sourceInfo.getDisplayID(), null);
+					ComponentDefinition sourceCD = document.getComponentDefinition(URI.create(sourceInfo.getFullURI()));
 					sourceFC = modDef.createFunctionalComponent(sourceInfo.getDisplayID(), AccessType.PUBLIC,
 							sourceCD.getIdentity(), DirectionType.INOUT);
 
@@ -462,7 +462,7 @@ public class Converter {
 					FunctionalComponent parentFC = modDef
 							.getFunctionalComponent("cd" + edge.getSource().getParent().getId());
 					ComponentDefinition parentCD = parentFC.getDefinition();
-					String componentID = edge.getSource().getValue() + "_" + edge.getSource().getId();
+					String componentID = sourceInfo.getDisplayID() + "_" + edge.getSource().getId();
 					Component sourceComponent = parentCD.getComponent(componentID);
 					parentFC.createMapsTo("mapsTo_" + componentID, RefinementType.USEREMOTE, sourceFC.getIdentity(),
 							sourceComponent.getIdentity());
@@ -475,7 +475,7 @@ public class Converter {
 			if (targetInfo != null) {
 				FunctionalComponent targetFC = modDef.getFunctionalComponent(targetInfo.getDisplayID());
 				if (targetFC == null) {
-					ComponentDefinition targetCD = document.getComponentDefinition(targetInfo.getDisplayID(), null);
+					ComponentDefinition targetCD = document.getComponentDefinition(URI.create(targetInfo.getFullURI()));
 					targetFC = modDef.createFunctionalComponent(targetInfo.getDisplayID(), AccessType.PUBLIC,
 							targetCD.getIdentity(), DirectionType.INOUT);
 
@@ -484,7 +484,7 @@ public class Converter {
 					FunctionalComponent parentFC = modDef
 							.getFunctionalComponent("cd" + edge.getTarget().getParent().getId());
 					ComponentDefinition parentCD = parentFC.getDefinition();
-					String componentID = edge.getTarget().getValue() + "_" + edge.getTarget().getId();
+					String componentID = targetInfo.getDisplayID() + "_" + edge.getTarget().getId();
 					Component targetComponent = parentCD.getComponent(componentID);
 					parentFC.createMapsTo("mapsTo_" + componentID, RefinementType.USEREMOTE, targetFC.getIdentity(),
 							targetComponent.getIdentity());
@@ -503,7 +503,7 @@ public class Converter {
 				.toArray(mxCell[]::new);
 		mxCell circuitContainer = (mxCell) mxGraphModel.filterCells(viewChildren, containerFilter)[0];
 
-		ComponentDefinition compDef = document.getComponentDefinition((String) viewCell.getId(), null);
+		ComponentDefinition compDef = document.getComponentDefinition(URI.create((String) viewCell.getId()));
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
 				.toArray(mxCell[]::new);
@@ -512,9 +512,9 @@ public class Converter {
 		for (mxCell glyph : glyphs) {
 
 			GlyphInfo info = glyphInfoDict.get(glyph.getValue());
-			ComponentDefinition glyphCD = document.getComponentDefinition((String) glyph.getValue(), null);
+			ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
 			Component component = compDef.createComponent(info.getDisplayID(), AccessType.PUBLIC,
-					glyphCD.getDisplayId());// , info.getVersion());
+					URI.create(info.getFullURI()));// , info.getVersion());
 
 			// cell annotation
 			component.createAnnotation(new QName(uriPrefix, "glyphCell", annPrefix), encodeMxGraphObject(glyph));
@@ -626,6 +626,7 @@ public class Converter {
 				if (glyphAnn != null) {
 					glyphCell = (mxCell) decodeMxGraphObject(glyphAnn.getStringValue());
 					maxX = glyphCell.getGeometry().getX();
+					glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
 					model.add(container, glyphCell, glyphIndex);
 				} else {
 					glyphCell = (mxCell) graph.insertVertex(container, null,
@@ -722,6 +723,7 @@ public class Converter {
 			if (glyphAnn != null) {
 				glyphCell = (mxCell) decodeMxGraphObject(glyphAnn.getStringValue());
 				maxX = glyphCell.getGeometry().getX();
+				glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
 				model.add(container, glyphCell, glyphIndex);
 			} else {
 				graph.insertVertex(container, null, glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0);
