@@ -1958,20 +1958,13 @@ export class GraphService {
       this.graph.getModel().beginUpdate();
       try {
 
+        // ownership check
         if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
           let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
           this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
           selectedCell = this.viewStack[this.viewStack.length - 1].getChildAt(0).getChildAt(selectedCellIndex);
           origParent = selectedCell.getParent();
         }
-
-        // remove the old cell's view cell if it doesn't have any references
-        if (this.getCoupledCells(selectedCell.value).length < 2) {
-          this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
-        }
-
-        // remove the old cell
-        this.graph.getModel().remove(selectedCell);
 
         // get the new cell
         let newCell = subGraph.getModel().cloneCell(subGraph.getModel().getCell("1").children[0]);
@@ -1982,7 +1975,14 @@ export class GraphService {
 
         // add new cell to the graph
         this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
-        console.log(newCell);
+
+        // remove the old cell's view cell if it doesn't have any references
+        if (this.getCoupledCells(selectedCell.value).length < 2) {
+          this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
+        }
+
+        // remove the old cell
+        this.graph.getModel().remove(selectedCell);
 
         // move any edges from selectedCell to newCell
         if (selectedCell.edges != null) {
