@@ -466,12 +466,19 @@ export class GraphService {
    * sequence feature glyph.
    * It rotates any selected sequenceFeatureGlyphs by 180 degrees.
    */
-  flipSequenceFeatureGlyph() {
+  async flipSequenceFeatureGlyph() {
     let selectionCells = this.graph.getSelectionCells();
 
     // flip any selected glyphs
     for (let cell of selectionCells) {
       if (cell.isSequenceFeatureGlyph()) {
+
+        // check if we own this item
+        let glyphInfo = this.getFromGlyphDict(cell.getValue());
+        if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+          return;
+        }
+
         // Make the cell do a 180 degree turn with the center point as the axis of rotation.
         this.graph.getModel().beginUpdate();
 
@@ -600,11 +607,27 @@ export class GraphService {
   /**
    * Deletes the currently selected cell
    */
-  delete() {
+  async delete() {
     const selectedCells = this.graph.getSelectionCells();
     if (selectedCells == null) {
       return;
     }
+
+    // check for ownership prompt
+    if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
+      let ownershipPrompt = false;
+      for (let cell of selectedCells) {
+        if (cell.isSequenceFeatureGlyph()) {
+          ownershipPrompt = true;
+          break;
+        }
+      }
+      let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+      if (ownershipPrompt && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+        return;
+      }
+    }
+
     this.graph.getModel().beginUpdate();
     try {
       let circuitContainers = [];
@@ -804,7 +827,16 @@ export class GraphService {
    * x,y are also used to determine where on the strand the new
    * glyph is added (first, second, etc)
    */
-  addSequenceFeatureAt(name, x, y, circuitContainer?) {
+  async addSequenceFeatureAt(name, x, y, circuitContainer?) {
+
+    // ownership change check
+    if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
+      let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+      if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+        return;
+      }
+    }
+
     this.graph.getModel().beginUpdate();
     try {
       // Make sure scars are/become visible if we're adding one
@@ -855,8 +887,11 @@ export class GraphService {
       this.graph.clearSelection();
       this.graph.setSelectionCell(sequenceFeatureCell);
 
-      if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
-        this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
+      if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
+        let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+        if (glyphInfo.uriPrefix != GlyphInfo.baseURI) {
+          this.changeOwnership(this.graph.getCurrentRoot.getId());
+        }
       }
     } finally {
       this.graph.getModel().endUpdate();
@@ -1257,7 +1292,7 @@ export class GraphService {
    */
   setSelectedCellInfo(glyphInfo: GlyphInfo);
   setSelectedCellInfo(interactionInfo: InteractionInfo);
-  setSelectedCellInfo(info: any) {
+  async setSelectedCellInfo(info: any) {
     const selectedCell = this.graph.getSelectionCell();
     if (!selectedCell) {
       return;
@@ -1279,7 +1314,15 @@ export class GraphService {
           } else {
             oldGlyphURI = selectedCell.value;
           }
-          const newGlyphURI = info.getFullURI();
+          info.uriPrefix = GlyphInfo.baseURI;
+          let newGlyphURI = info.getFullURI();
+
+          // check for ownership prompt
+          let oldGlyphInfo = this.getFromGlyphDict(oldGlyphURI);
+          if (oldGlyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
+            return;
+          }
+
           if (oldGlyphURI != newGlyphURI) {
             if (this.checkCycleUp(selectedCell, newGlyphURI)) {
               // Tell the user a cycle isn't allowed
@@ -1374,6 +1417,7 @@ export class GraphService {
   private promptCouple(conflictViewCell: mxCell, selectedCells: mxCell[], info: GlyphInfo, newGlyphURI: string, oldGlyphURI: string) {
     // start a new begin so that when the dialog closes, all changes are in one edit
     this.graph.getModel().beginUpdate();
+
     // a cell with this display ID already exists prompt user if they want to couple them
     const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: "A component with this URI already exists. Would you like to couple them and keep the current substructure, or update it?", options: ["Keep", "Update", "Cancel"] } });
     confirmRef.afterClosed().subscribe(result => {
@@ -1428,6 +1472,7 @@ export class GraphService {
 
           // update the conflicting cells graphics
           this.mutateSequenceFeatureGlyph(info.partRole, this.getCoupledCells(newGlyphURI));
+          this.changeOwnership(newGlyphURI, true);
         } else if (result === "Update") {
 
           // update the selected cells glyphURI
@@ -1465,6 +1510,7 @@ export class GraphService {
           } else {
             this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newGlyphURI).partRole, selectedCells);
           }
+          this.changeOwnership(newGlyphURI, true);
         }
       } finally {
         this.graph.getModel().endUpdate();
@@ -1510,9 +1556,11 @@ export class GraphService {
           coupledCells.forEach(function (cell) {
             graph.getModel().setValue(cell, newGlyphURI);
           });
+
         }
 
         this.mutateSequenceFeatureGlyph(info.partRole, coupledCells, this.graph);
+        this.changeOwnership(newGlyphURI);
       } else if (result === "No") {
         // don't use update, as it will remove the old one
         this.addToGlyphDict(info);
@@ -1534,11 +1582,21 @@ export class GraphService {
           this.graph.getModel().setValue(selectedCell, newGlyphURI);
         }
         this.mutateSequenceFeatureGlyph(info.partRole);
+        this.changeOwnership(newGlyphURI);
       }
       this.graph.getModel().endUpdate();
       // update the view
       this.updateAngularMetadata(this.graph.getSelectionCells());
     });
+  }
+
+  /**
+   * 
+   */
+  private async promptMakeEditableCopy(partName: string): Promise<boolean> {
+    const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: "The part '" + partName + "' is not owned by you and cannot be edited.\n Do you want to create an editable copy of this part and save your changes?", options: ["OK", "Cancel"] } });
+    let result = await confirmRef.afterClosed().toPromise();
+    return result === "OK";
   }
 
   private getCoupledCells(glyphURI: string): mxCell[] {
@@ -1670,15 +1728,16 @@ export class GraphService {
   /**
    * Changes the uriPrefix of the passed in cell's glyph info, and any of it's parents.
    * @param cell The cell to change ownership for.
+   * @param fullCheck Stops at currently owned objects if false, continues until the root if true.
    */
-  private changeOwnership(glyphURI: string) {
+  private changeOwnership(glyphURI: string, fullCheck: boolean = false) {
 
     this.graph.getModel().beginUpdate();
     try {
       let glyphInfo = this.getFromGlyphDict(glyphURI);
 
       // if we already own it, we don't need to do anything
-      if (!glyphInfo.uriPrefix || glyphInfo.uriPrefix === GlyphInfo.baseURI) {
+      if (!glyphInfo.uriPrefix || (glyphInfo.uriPrefix === GlyphInfo.baseURI && !fullCheck)) {
         return;
       }
 
@@ -1699,7 +1758,7 @@ export class GraphService {
         let checking: string = toCheck.values().next().value;
         checked.add(checking);
         toCheck.delete(checking);
-        if (checking.startsWith(GlyphInfo.baseURI)) {
+        if (checking.startsWith(GlyphInfo.baseURI) && !fullCheck) {
           continue;
         }
 
@@ -1735,6 +1794,8 @@ export class GraphService {
     }
 
   }
+
+  
 
   exportSVG(filename: string) {
     var background = '#ffffff';
@@ -1870,12 +1931,18 @@ export class GraphService {
    * and uses it ot replace the currently selected cell
    * @param cellString
    */
-  setSelectedToXML(cellString: string) {
+  async setSelectedToXML(cellString: string) {
     const selectionCells = this.graph.getSelectionCells();
 
     if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
       // We're making a new cell to replace the selected one
       let selectedCell = selectionCells[0];
+
+      // prompt ownership change
+      let glyphInfo = this.getFromGlyphDict(selectedCell.getValue());
+      if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+        return;
+      }
 
       // setup the decoding info
       const doc = mx.mxUtils.parseXml(cellString);
@@ -1948,7 +2015,7 @@ export class GraphService {
           this.graph.addCell(viewClone, cell1);
 
           // add the info to the dictionary
-          if(this.getFromGlyphDict(viewCells[i].getId()) != null){
+          if (this.getFromGlyphDict(viewCells[i].getId()) != null) {
             this.removeFromGlyphDict(viewCells[i].getId());
           }
           this.addToGlyphDict(subGlyphDict[viewCells[i].getId()]);
@@ -2565,11 +2632,36 @@ export class GraphService {
         }
       });
 
+      // ownership change check
+      let ownershipChange = false;
+      let glyphInfo;
+      if (sender.getCurrentRoot() && sender.getCurrentRoot().getId() != "rootView") {
+        glyphInfo = this.getFromGlyphDict(sender.getCurrentRoot().getId());
+        for (let i = 0; i < movedCells.length; i++) {
+          if (!movedCells[i].isSequenceFeatureGlyph()) {
+            continue;
+          }
+          if (glyphInfo.uriPreifx != GlyphInfo.baseURI) {
+            ownershipChange = true;
+            break;
+          }
+        }
+      }
+      if (ownershipChange){
+        // I tried to find a way to do this synchronously, but it kept breaking the update level
+        // For now just undo the change after it happend if they cancel
+        this.promptMakeEditableCopy(glyphInfo.displayID).then(result => {
+          if(!result){
+            this.editor.undoManager.undo();
+            this.editor.undoManager.trim();
+          }
+        });
+      }
+
       // If two adjacent sequenceFeatureGlyphs were moved, they should be adjacent after the move.
       // This loop finds all such sets of glyphs (relying on the sorted order) and sets them to
       // have the same x position so there is no chance of outside glyphs sneaking in between
       let streak;
-      let ownershipChange = false;
       for (let i = 0; i < movedCells.length; i += streak) {
         streak = 1;
         if (!movedCells[i].isSequenceFeatureGlyph()) {
