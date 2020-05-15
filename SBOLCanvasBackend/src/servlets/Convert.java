@@ -3,6 +3,7 @@ package servlets;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
@@ -11,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
@@ -44,7 +46,7 @@ public class Convert extends HttpServlet {
 
 			response.setStatus(HttpStatus.SC_OK);
 		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException
-				| TransformerException | SAXException e) {
+				| TransformerException | SAXException | TransformerFactoryConfigurationError | URISyntaxException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
 			IOUtils.copy(inputStream, outputStream);

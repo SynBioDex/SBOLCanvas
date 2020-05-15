@@ -55,14 +55,6 @@ export class InfoEditorComponent implements OnInit {
     this.metadataService.loadInteractions().subscribe(interactions => this.interactionTypes = interactions);
   }
 
-  generateURI(): string {
-    let uri: string = this.glyphInfo.uriPrefix + '/' + this.glyphInfo.displayID;
-    if (this.glyphInfo.version && this.glyphInfo.version.length > 0) {
-      uri += '/' + this.glyphInfo.version;
-    }
-    return uri;
-  }
-
   dropDownChange(event: MatSelectChange) {
     const id = event.source.id;
 
