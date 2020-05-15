@@ -87,6 +87,14 @@ public class GlyphInfo extends Info {
 		this.sequence = sequence;
 	}
 	
+	public String getFullURI() {
+		String fullURI = this.uriPrefix + '/' + this.displayID;
+		if(this.version != null && this.version.length() > 0) {
+			fullURI += '/' + this.version;
+		}
+		return fullURI;
+	}
+	
 	@Override
 	public Element encode(Document doc) {
 		Element glyphInfo = doc.createElement("GlyphInfo");

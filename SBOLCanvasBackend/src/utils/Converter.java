@@ -217,7 +217,8 @@ public class Converter {
 	}
 
 	public void toSubGraph(InputStream sbolStream, OutputStream graphStream)
-			throws SBOLValidationException, IOException, SBOLConversionException, SAXException, ParserConfigurationException, TransformerFactoryConfigurationError, TransformerException {
+			throws SBOLValidationException, IOException, SBOLConversionException, SAXException,
+			ParserConfigurationException, TransformerFactoryConfigurationError, TransformerException {
 		SBOLDocument document = SBOLReader.read(sbolStream);
 		toSubGraph(document, graphStream);
 	}
@@ -234,7 +235,7 @@ public class Converter {
 		// top level component definition
 		ComponentDefinition rootCompDef = document.getRootComponentDefinitions().iterator().next();
 
-		graph.insertVertex((mxCell) model.getCell("1"), null, rootCompDef.getDisplayId(), 0, 0, 0, 0);
+		graph.insertVertex((mxCell) model.getCell("1"), null, rootCompDef.getIdentity().toString(), 0, 0, 0, 0);
 
 		Set<ComponentDefinition> compDefs = document.getComponentDefinitions();
 
@@ -584,7 +585,7 @@ public class Converter {
 				}
 				compToCell.put(compDef.getIdentity(), protien);
 				GlyphInfo info = genGlyphInfo(compDef);
-				glyphInfoDict.put(info.getDisplayID(), info);
+				glyphInfoDict.put(info.getFullURI(), info);
 				continue;
 			}
 
@@ -616,7 +617,7 @@ public class Converter {
 					model.add(container, glyphCell, glyphIndex);
 				} else {
 					glyphCell = (mxCell) graph.insertVertex(container, null,
-							glyphComponent.getDefinition().getDisplayId(), maxX++, 0, 0, 0, "sequenceFeatureGlyph");
+							glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0, "sequenceFeatureGlyph");
 				}
 				// store the cell so we can use it in interactions
 				compToCell.put(glyphComponent.getIdentity(), glyphCell);
@@ -669,10 +670,10 @@ public class Converter {
 
 		// create the glyphInfo and store it in the dictionary
 		GlyphInfo info = genGlyphInfo(compDef);
-		glyphInfoDict.put(info.getDisplayID(), info);
+		glyphInfoDict.put(info.getFullURI(), info);
 
 		// create the top view cell
-		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getDisplayId(), null, 0, 0, 0, 0);
+		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0);
 
 		// if there are text boxes add them
 		Annotation textBoxAnn = compDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
@@ -711,7 +712,7 @@ public class Converter {
 				maxX = glyphCell.getGeometry().getX();
 				model.add(container, glyphCell, glyphIndex);
 			} else {
-				graph.insertVertex(container, null, glyphComponent.getDefinition().getDisplayId(), maxX++, 0, 0, 0);
+				graph.insertVertex(container, null, glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0);
 			}
 		}
 	}
@@ -760,15 +761,14 @@ public class Converter {
 		if (glyphCD.getSequences().size() > 0)
 			glyphInfo.setSequence(glyphCD.getSequences().iterator().next().getElements());
 		glyphInfo.setVersion(glyphCD.getVersion());
-		// String identity = glyphCD.getIdentity().toString();
-		// int lastIndex = 0;
-		// if (glyphInfo.getVersion() != null)
-		// lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID() + "/" +
-		// glyphInfo.getVersion());
-		// else
-		// lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
-		// glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
-		glyphInfo.setUriPrefix(uriPrefix.substring(0, uriPrefix.length() - 1));
+		String identity = glyphCD.getIdentity().toString();
+		int lastIndex = 0;
+		if (glyphInfo.getVersion() != null)
+			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID() + "/" + glyphInfo.getVersion());
+		else
+			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
+		glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
+		// glyphInfo.setUriPrefix(uriPrefix.substring(0, uriPrefix.length() - 1));
 		return glyphInfo;
 	}
 

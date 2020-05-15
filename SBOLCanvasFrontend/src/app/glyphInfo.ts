@@ -49,6 +49,14 @@ export class GlyphInfo {
     this.uriPrefix = other.uriPrefix;
   }
 
+  getFullURI(): string {
+    let fullURI = this.uriPrefix + '/' + this.displayID;
+    if(this.version && this.version.length > 0){
+      fullURI += '/' + this.version;
+    }
+    return fullURI;
+  }
+
   encode(enc: any) {
     let node = enc.document.createElement('GlyphInfo');
     if (this.partType)
