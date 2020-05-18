@@ -656,6 +656,8 @@ export class GraphService {
 
       this.editor.execute('delete');
 
+      this.trimUnreferencedCells();
+
       if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
         this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
       }
@@ -1602,6 +1604,52 @@ export class GraphService {
     const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: "The part '" + partName + "' is not owned by you and cannot be edited.\n Do you want to create an editable copy of this part and save your changes?", options: ["OK", "Cancel"] } });
     let result = await confirmRef.afterClosed().toPromise();
     return result === "OK";
+  }
+
+  /**
+   * Goes through all the cells (starting at the root) and removes any cells that can't be reached.
+   */
+  private trimUnreferencedCells(){
+    let reached = new Set<string>();
+    let toExpand = new Set<string>();
+    toExpand.add("rootView");
+
+    // populate the reached set
+    while(toExpand.size > 0){
+      let viewID = toExpand.values().next().value;
+      let viewCell = this.graph.getModel().getCell(viewID);
+      toExpand.delete(viewID);
+      reached.add(viewCell.getId());
+
+      // get the children of the viewCell
+      let viewChildren = this.graph.getModel().getChildren(viewCell);
+      for(let child of viewChildren){
+        // If the child isn't a circuit container, it can't lead to another viewCell
+        if(!child.isCircuitContainer())
+          continue;
+        let glyphs = this.graph.getModel().getChildren(child);
+        for(let glyph of glyphs){
+          if(!glyph.isSequenceFeatureGlyph() || reached.has(glyph.value))
+            continue;
+          toExpand.add(glyph.value);
+        }
+      }
+    }
+
+    let toRemove = [];
+    for (let key in this.graph.getModel().cells) {
+      const cell = this.graph.getModel().cells[key];
+      if(!cell.isViewCell())
+        continue;
+      if (!reached.has(cell.getId())) {
+        toRemove.push(cell);
+      }
+    }
+
+    for(let cell of toRemove){
+      this.graph.getModel().remove(cell);
+    }
+    
   }
 
   private getCoupledCells(glyphURI: string): mxCell[] {
