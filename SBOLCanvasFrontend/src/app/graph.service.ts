@@ -2008,6 +2008,11 @@ export class GraphService {
         let subGlyphDict = subGraph.getModel().getCell("0").getValue();
         let cell1 = this.graph.getModel().getCell("1");
         for (let i = 1; i < viewCells.length; i++) { // start at cell 1 because the glyph is at 0
+          // If we already have it skip it
+          if(this.graph.getModel().getCell(viewCells[i].getId())){
+            continue;
+          }
+
           // clone the cell otherwise viewCells get's messed up
           let viewClone = subGraph.getModel().cloneCell(viewCells[i]);
           // cloning doesn't keep the id for some reason
