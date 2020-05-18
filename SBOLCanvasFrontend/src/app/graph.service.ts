@@ -475,7 +475,7 @@ export class GraphService {
       if (cell.isSequenceFeatureGlyph()) {
 
         // check if we own this item
-        if(this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView"){
+        if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
           let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
           if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
             return;
@@ -1800,7 +1800,7 @@ export class GraphService {
 
   }
 
-  
+
 
   exportSVG(filename: string) {
     var background = '#ffffff';
@@ -1944,7 +1944,7 @@ export class GraphService {
       let selectedCell = selectionCells[0];
 
       // prompt ownership change
-      if(this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView"){
+      if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
         let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
         if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
           return;
@@ -2014,7 +2014,7 @@ export class GraphService {
         let cell1 = this.graph.getModel().getCell("1");
         for (let i = 1; i < viewCells.length; i++) { // start at cell 1 because the glyph is at 0
           // If we already have it skip it
-          if(this.graph.getModel().getCell(viewCells[i].getId())){
+          if (this.graph.getModel().getCell(viewCells[i].getId())) {
             continue;
           }
 
@@ -2067,11 +2067,11 @@ export class GraphService {
             glyphData[attrib.name] = attrib.value;
           }
         }
-        for(let i = 0; i < meta.children.length; i++){
+        for (let i = 0; i < meta.children.length; i++) {
           const childNode = meta.children[i];
-          if(childNode.getAttribute("as") === "otherTypes"){
+          if (childNode.getAttribute("as") === "otherTypes") {
             glyphData.otherTypes = dec.decode(childNode);
-          }else if(childNode.getAttribute("as") === "otherRoles"){
+          } else if (childNode.getAttribute("as") === "otherRoles") {
             glyphData.otherRoles = dec.decode(childNode);
           }
         }
@@ -2120,12 +2120,16 @@ export class GraphService {
       let glyphDict = cell0.value;
 
       // reconstruct the cell style
-      if (cell && cell.id > 1 && (cell.style == null || cell.style.length == 0)) {
+      if (cell && cell.id > 1 && (cell.style == null || cell.style.length == 0 || (!cell.isViewCell() && cell.getGeometry().height == 0))) {
         anyForeignCellsFound = true;
         if (glyphDict[cell.value] != null) {
           if (glyphDict[cell.value].partType === 'DNA region') {
             // sequence feature
-            cell.style = sequenceFeatureGlyphBaseStyleName + glyphDict[cell.value].partRole;
+            if (!cell.style) {
+              cell.style = sequenceFeatureGlyphBaseStyleName + glyphDict[cell.value].partRole;
+            } else {
+              cell.style = cell.style.replace(sequenceFeatureGlyphBaseStyleName, sequenceFeatureGlyphBaseStyleName + glyphDict[cell.value].partRole);
+            }
             cell.geometry.width = sequenceFeatureGlyphWidth;
             cell.geometry.height = sequenceFeatureGlyphHeight;
             cell.setCollapsed(true);
@@ -2187,6 +2191,10 @@ export class GraphService {
 
     mx.mxCell.prototype.isInteraction = function () {
       return this.isStyle(interactionGlyphBaseStyleName);
+    }
+
+    mx.mxCell.prototype.isViewCell = function () {
+      return this.isStyle(viewCellStyleName);
     }
 
     /**
@@ -2667,11 +2675,11 @@ export class GraphService {
           }
         }
       }
-      if (ownershipChange){
+      if (ownershipChange) {
         // I tried to find a way to do this synchronously, but it kept breaking the update level
         // For now just undo the change after it happend if they cancel
         this.promptMakeEditableCopy(glyphInfo.displayID).then(result => {
-          if(!result){
+          if (!result) {
             this.editor.undoManager.undo();
             this.editor.undoManager.trim();
           }
