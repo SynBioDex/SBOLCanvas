@@ -474,9 +474,11 @@ export class GraphService {
       if (cell.isSequenceFeatureGlyph()) {
 
         // check if we own this item
-        let glyphInfo = this.getFromGlyphDict(cell.getValue());
-        if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
-          return;
+        if(this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView"){
+          let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+          if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+            return;
+          }
         }
 
         // Make the cell do a 180 degree turn with the center point as the axis of rotation.
@@ -1941,9 +1943,11 @@ export class GraphService {
       let selectedCell = selectionCells[0];
 
       // prompt ownership change
-      let glyphInfo = this.getFromGlyphDict(selectedCell.getValue());
-      if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
-        return;
+      if(this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView"){
+        let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+        if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+          return;
+        }
       }
 
       // setup the decoding info
