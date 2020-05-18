@@ -45,7 +45,9 @@
       <textarea matInput id="version" placeholder="Version" value="{{ glyphInfo.version }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Recomended style is numbers and qualifiers that are separated by '.' and '-'."></textarea>
   </mat-form-field>
 
-  <mat-label>URI: {{glyphInfo.getFullURI()}}</mat-label>
+  <mat-label *ngIf="localDesign()" matTooltipShowDelay="1000" matTooltip="{{ glyphInfo.getFullURI() }}">URI: Local Design</mat-label>
+  <mat-label *ngIf="synBioHubDesign()" matTooltipShowDelay="1000" matTooltip="{{ glyphInfo.getFullURI() }}">URI: <a href="{{ glyphInfo.getFullURI() }}" target="_blank">SynBioHub Record</a></mat-label>
+  <mat-label *ngIf="importedDesign()" matTooltipShowDelay="1000" matTooltip="{{ glyphInfo.getFullURI() }}">URI: Imported Design</mat-label>
 
 <!--    <mat-form-field>-->
 <!--      <mat-label>Sequence encoding</mat-label>-->
