@@ -47,6 +47,7 @@ const noGlyphAssignedName = 'NGA (No Glyph Assigned)';
 const molecularSpeciesGlyphBaseStyleName = 'molecularSpeciesGlyph';
 const sequenceFeatureGlyphBaseStyleName = 'sequenceFeatureGlyph';
 const interactionGlyphBaseStyleName = 'interactionGlyph';
+const viewCellStyleName = "viewCell";
 
 const interactionControlName = 'Control';
 const interactionInhibitionName = 'Inhibition';
@@ -268,7 +269,7 @@ export class GraphService {
 
     // initalize the root view cell of the graph
     const cell1 = this.graph.getModel().getCell(1);
-    const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, null);
+    const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, viewCellStyleName);
     this.graph.enterGroup(rootViewCell);
     this.viewStack = [];
     this.viewStack.push(rootViewCell);
@@ -870,7 +871,7 @@ export class GraphService {
 
       // construct the view cell for it's children
       const cell1 = this.graph.getModel().getCell(1);
-      const childViewCell = this.graph.insertVertex(cell1, glyphInfo.getFullURI(), '', 0, 0, 0, 0, null);
+      const childViewCell = this.graph.insertVertex(cell1, glyphInfo.getFullURI(), '', 0, 0, 0, 0, viewCellStyleName);
 
       // add the backbone to the child view cell
       const childCircuitContainer = this.graph.insertVertex(childViewCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
