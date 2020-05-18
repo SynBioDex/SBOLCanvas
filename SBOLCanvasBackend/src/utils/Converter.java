@@ -550,7 +550,7 @@ public class Converter {
 
 		// create the root view cell
 		// TODO pull the the module id when multiple modules are supported.
-		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0);
+		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0, "viewCell");
 
 		// text boxes
 		Annotation textBoxAnn = modDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
@@ -590,6 +590,7 @@ public class Converter {
 				mxCell protien = null;
 				if (protienAnn != null) {
 					protien = (mxCell) decodeMxGraphObject(protienAnn.getStringValue());
+					protien.setValue(compDef.getIdentity().toString());
 					model.add(rootViewCell, protien, 0);
 				} else {
 					protien = (mxCell) graph.insertVertex(rootViewCell, null, null, 0, 0, 0, 0,
@@ -686,7 +687,7 @@ public class Converter {
 		glyphInfoDict.put(info.getFullURI(), info);
 
 		// create the top view cell
-		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0);
+		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0, "viewCell");
 
 		// if there are text boxes add them
 		Annotation textBoxAnn = compDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
