@@ -1,8 +1,9 @@
-import {Component, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo } from '../interactionInfo';
-import {MetadataService} from '../metadata.service';
-import {GraphService} from '../graph.service';
+import { MetadataService } from '../metadata.service';
+import { GraphService } from '../graph.service';
+import { FilesService } from '../files.service';
 import { MatSelectChange, MatDialog } from '@angular/material';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 
@@ -15,7 +16,7 @@ import { DownloadGraphComponent } from '../download-graph/download-graph.compone
 
 export class InfoEditorComponent implements OnInit {
 
-  baseURI = 'https://sbolcanvas.org/';
+  registries: string[];
 
   // placeholders that get generated from http calls
   partTypes: string[];
@@ -29,11 +30,12 @@ export class InfoEditorComponent implements OnInit {
   glyphInfo: GlyphInfo;
   interactionInfo: InteractionInfo;
 
-  constructor(private graphService: GraphService, private metadataService: MetadataService, public dialog: MatDialog) { }
+  constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog) { }
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
     this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo));
+    this.filesService.getRegistries().subscribe(result => this.registries = result);
     this.getTypes();
     this.getRoles();
     this.getInteractions();
@@ -82,7 +84,7 @@ export class InfoEditorComponent implements OnInit {
       case 'interactionType': {
         this.interactionInfo.interactionType = event.value;
         break;
-      }default: {
+      } default: {
         console.log('Unexpected id encountered in info menu dropdown = ' + id);
         break;
       }
@@ -92,7 +94,7 @@ export class InfoEditorComponent implements OnInit {
       this.graphService.setSelectedCellInfo(this.glyphInfo);
     } else if (this.interactionInfo != null) {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
-         }
+    }
   }
 
   inputChange(event: any) {
@@ -105,7 +107,7 @@ export class InfoEditorComponent implements OnInit {
           this.glyphInfo.displayID = replaced;
         } else if (this.interactionInfo != null) {
           this.interactionInfo.displayID = replaced;
-              }
+        }
         break;
       }
       case 'name': {
@@ -133,7 +135,7 @@ export class InfoEditorComponent implements OnInit {
       this.graphService.setSelectedCellInfo(this.glyphInfo);
     } else if (this.interactionInfo != null) {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
-         }
+    }
   }
 
   openDownloadDialog() {
@@ -165,6 +167,22 @@ export class InfoEditorComponent implements OnInit {
    */
   interactionInfoUpdated(interactionInfo: InteractionInfo) {
     this.interactionInfo = interactionInfo;
+  }
+
+  localDesign(): boolean {
+    return this.glyphInfo.uriPrefix === GlyphInfo.baseURI;
+  }
+
+  synBioHubDesign(): boolean {
+    for (let registry of this.registries) {
+      if (this.glyphInfo.uriPrefix.startsWith(registry))
+        return true;
+    }
+    return false;
+  }
+
+  importedDesign(): boolean {
+    return !this.localDesign() && !this.synBioHubDesign();
   }
 
 }
