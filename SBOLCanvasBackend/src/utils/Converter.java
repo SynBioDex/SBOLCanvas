@@ -31,6 +31,7 @@ import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.DirectionType;
 import org.sbolstandard.core2.FunctionalComponent;
 import org.sbolstandard.core2.Interaction;
+import org.sbolstandard.core2.Location;
 import org.sbolstandard.core2.MapsTo;
 import org.sbolstandard.core2.ModuleDefinition;
 import org.sbolstandard.core2.OrientationType;
@@ -55,6 +56,7 @@ import com.mxgraph.io.mxCodecRegistry;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGraphModel;
 import com.mxgraph.model.mxGraphModel.Filter;
+import com.mxgraph.util.mxConstants;
 import com.mxgraph.util.mxUtils;
 import com.mxgraph.util.mxXmlUtils;
 import com.mxgraph.view.mxGraph;
@@ -171,10 +173,10 @@ public class Converter {
 					.toArray(mxCell[]::new);
 			if (viewCell.getId().equals(filename) || circuitContainers.length > 1 || proteins.length > 0) {
 				// module definitions
-				linkModuleDefinition(document, model, viewCell);
+				linkModuleDefinition(document, graph, model, viewCell);
 			} else {
 				// component definitions
-				linkComponentDefinition(document, model, viewCell);
+				linkComponentDefinition(document, graph, model, viewCell);
 			}
 		}
 
@@ -331,7 +333,8 @@ public class Converter {
 	}
 
 	private void createComponentDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
-			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
+			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
+			URISyntaxException {
 		// get the glyph info associated with this view cell
 		GlyphInfo glyphInfo = glyphInfoDict.get(viewCell.getId());
 
@@ -341,8 +344,8 @@ public class Converter {
 
 		ComponentDefinition compDef = document.createComponentDefinition(glyphInfo.getUriPrefix(),
 				glyphInfo.getDisplayID(), glyphInfo.getVersion(), SBOLData.types.getValue(glyphInfo.getPartType()));
-		if(glyphInfo.getOtherTypes() != null) {
-			for(String type : glyphInfo.getOtherTypes()) {
+		if (glyphInfo.getOtherTypes() != null) {
+			for (String type : glyphInfo.getOtherTypes()) {
 				compDef.addType(new URI(type));
 			}
 		}
@@ -354,8 +357,8 @@ public class Converter {
 			// otherwise set the part refinement
 			compDef.addRole(SBOLData.refinements.getValue(glyphInfo.getPartRefine()));
 		}
-		if(glyphInfo.getOtherRoles() != null) {
-			for(String role : glyphInfo.getOtherRoles()) {
+		if (glyphInfo.getOtherRoles() != null) {
+			for (String role : glyphInfo.getOtherRoles()) {
 				compDef.addRole(new URI(role));
 			}
 		}
@@ -383,7 +386,7 @@ public class Converter {
 		compDef.createAnnotation(new QName(uriPrefix, "backboneCell", annPrefix), encodeMxGraphObject(backboneCell));
 	}
 
-	private void linkModuleDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
+	private void linkModuleDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
 		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
 				.toArray(mxCell[]::new);
@@ -418,13 +421,21 @@ public class Converter {
 				}
 
 				// container sequence annotation
+				OrientationType orientation = OrientationType.INLINE;
+				String rotation = (String) graph.getCellStyle(glyph).get(mxConstants.STYLE_ROTATION);
+				if (rotation != null && !rotation.equals("0")) {
+					orientation = OrientationType.REVERSECOMPLEMENT;
+				}
 				int length = getSequenceLength(document, glyphCD);
 				if (length > 0) {
 					start = end + 1;
 					end = start + length - 1;
 					SequenceAnnotation annotation = compDef.createSequenceAnnotation(
-							compDef.getDisplayId() + "Annotation" + count, "location" + count, start, end,
-							OrientationType.INLINE);
+							compDef.getDisplayId() + "Annotation" + count, "location" + count, start, end, orientation);
+					annotation.setComponent(component.getIdentity());
+				} else {
+					SequenceAnnotation annotation = compDef.createSequenceAnnotation(
+							compDef.getDisplayId() + "Annotation" + count, "location" + count, orientation);
 					annotation.setComponent(component.getIdentity());
 				}
 
@@ -497,7 +508,7 @@ public class Converter {
 
 	}
 
-	private void linkComponentDefinition(SBOLDocument document, mxGraphModel model, mxCell viewCell)
+	private void linkComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
 		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
 				.toArray(mxCell[]::new);
@@ -526,13 +537,21 @@ public class Converter {
 			}
 
 			// container sequence annotation
+			OrientationType orientation = OrientationType.INLINE;
+			String rotation = (String) graph.getCellStyle(glyph).get(mxConstants.STYLE_ROTATION);
+			if (rotation != null && !rotation.equals("0")) {
+				orientation = OrientationType.REVERSECOMPLEMENT;
+			}
 			int length = getSequenceLength(document, glyphCD);
 			if (length > 0) {
 				start = end + 1;
 				end = start + length - 1;
 				SequenceAnnotation annotation = compDef.createSequenceAnnotation(
-						compDef.getDisplayId() + "Annotation" + count, "location" + count, start, end,
-						OrientationType.INLINE);
+						compDef.getDisplayId() + "Annotation" + count, "location" + count, start, end, orientation);
+				annotation.setComponent(component.getIdentity());
+			} else {
+				SequenceAnnotation annotation = compDef.createSequenceAnnotation(
+						compDef.getDisplayId() + "Annotation" + count, "location" + count, orientation);
 				annotation.setComponent(component.getIdentity());
 			}
 
@@ -631,8 +650,19 @@ public class Converter {
 					model.add(container, glyphCell, glyphIndex);
 				} else {
 					glyphCell = (mxCell) graph.insertVertex(container, null,
-							glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0, "sequenceFeatureGlyph");
+							glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0,
+							"sequenceFeatureGlyph");
 				}
+
+				// style filp
+				SequenceAnnotation seqAnn = compDef.getSequenceAnnotation(glyphComponent);
+				if (seqAnn != null) {
+					Location loc = seqAnn.getLocations().iterator().next();
+					if (loc.getOrientation() == OrientationType.REVERSECOMPLEMENT) {
+						graph.setCellStyles(mxConstants.STYLE_ROTATION, "180", new Object[] { glyphCell });
+					}
+				}
+
 				// store the cell so we can use it in interactions
 				compToCell.put(glyphComponent.getIdentity(), glyphCell);
 			}
@@ -687,7 +717,8 @@ public class Converter {
 		glyphInfoDict.put(info.getFullURI(), info);
 
 		// create the top view cell
-		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0, "viewCell");
+		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0,
+				"viewCell");
 
 		// if there are text boxes add them
 		Annotation textBoxAnn = compDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
@@ -727,8 +758,20 @@ public class Converter {
 				glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
 				model.add(container, glyphCell, glyphIndex);
 			} else {
-				graph.insertVertex(container, null, glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0);
+				glyphCell = (mxCell) graph.insertVertex(container, null,
+						glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0,
+						"sequenceFeatureGlyph");
 			}
+
+			// style flip
+			SequenceAnnotation seqAnn = compDef.getSequenceAnnotation(glyphComponent);
+			if (seqAnn != null) {
+				Location loc = seqAnn.getLocations().iterator().next();
+				if (loc.getOrientation() == OrientationType.REVERSECOMPLEMENT) {
+					graph.setCellStyles(mxConstants.STYLE_ROTATION, "180", new Object[] { glyphCell });
+				}
+			}
+
 		}
 	}
 
@@ -764,13 +807,13 @@ public class Converter {
 		glyphInfo.setDescription(glyphCD.getDescription());
 		glyphInfo.setDisplayID(glyphCD.getDisplayId());
 		glyphInfo.setName(glyphCD.getName());
-		
+
 		// There will only be one visual related role
 		ArrayList<String> otherRoles = new ArrayList<String>();
-		for(URI glyphRole : glyphCD.getRoles()) {
-			if(SBOLData.roles.containsValue(glyphRole)) {
+		for (URI glyphRole : glyphCD.getRoles()) {
+			if (SBOLData.roles.containsValue(glyphRole)) {
 				glyphInfo.setPartRole(SBOLData.roles.getKey(glyphRole));
-			} else if(SBOLData.refinements.containsValue(glyphRole)) {
+			} else if (SBOLData.refinements.containsValue(glyphRole)) {
 				glyphInfo.setPartRole(SBOLData.roles.getKey(SBOLData.parents.get(glyphRole)));
 				glyphInfo.setPartRefine(SBOLData.refinements.getKey(glyphRole));
 			} else {
@@ -778,18 +821,18 @@ public class Converter {
 			}
 		}
 		glyphInfo.setOtherRoles(otherRoles.toArray(new String[0]));
-		
+
 		// There will only be one important type
 		ArrayList<String> otherTypes = new ArrayList<String>();
-		for(URI glyphType : glyphCD.getTypes()) {
-			if(SBOLData.types.containsValue(glyphType)) {
+		for (URI glyphType : glyphCD.getTypes()) {
+			if (SBOLData.types.containsValue(glyphType)) {
 				glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
-			}else {
+			} else {
 				otherTypes.add(glyphType.toString());
 			}
 		}
 		glyphInfo.setOtherTypes(otherTypes.toArray(new String[0]));
-		
+
 		if (glyphCD.getSequences().size() > 0)
 			glyphInfo.setSequence(glyphCD.getSequences().iterator().next().getElements());
 		glyphInfo.setVersion(glyphCD.getVersion());
