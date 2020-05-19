@@ -9,7 +9,7 @@
     </mat-select>
   </mat-form-field>
 
-  <mat-form-field>
+  <mat-form-field *ngIf="glyphInfo.partType.startsWith('DNA')">
     <mat-label>Part role</mat-label>
     <mat-select id="partRole" value="{{glyphInfo.partRole}}" (selectionChange)="dropDownChange($event)" matTooltipShowDelay="1000" matTooltip="Clarifies the potential function of the entity.">
       <mat-option value="">IDK (Unspecified)</mat-option>
@@ -19,7 +19,7 @@
     </mat-select>
   </mat-form-field>
 
-  <mat-form-field>
+  <mat-form-field *ngIf="glyphInfo.partType.startsWith('DNA')">
     <mat-label>Role refinement</mat-label>
     <mat-select id="partRefinement" value="{{glyphInfo.partRefine}}" (selectionChange)="dropDownChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. More specific version of the part role.">
       <mat-option value="">None</mat-option>
