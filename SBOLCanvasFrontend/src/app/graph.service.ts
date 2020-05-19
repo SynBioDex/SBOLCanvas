@@ -2167,9 +2167,13 @@ export class GraphService {
       }
       let glyphDict = cell0.value;
 
+      // check for format conditions
+      if((cell.isCircuitContainer() && cell.getParent().getId() === "rootView" || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0 ){
+        anyForeignCellsFound = true;
+      }
+
       // reconstruct the cell style
       if (cell && cell.id > 1 && (cell.style == null || cell.style.length == 0 || (!cell.isViewCell() && cell.getGeometry().height == 0))) {
-        anyForeignCellsFound = true;
         if (glyphDict[cell.value] != null) {
           if (glyphDict[cell.value].partType === 'DNA region') {
             // sequence feature
@@ -2250,9 +2254,9 @@ export class GraphService {
      * (or the cell's own id if it has no parent)
      */
     mx.mxCell.prototype.getRootId = function () {
-      if (this.parent.parent.parent) {
-        return this.parent.getRootId();
-      } else {
+      if(this.isSequenceFeatureGlyph()){
+        return this.parent.getId();
+      }else{
         return this.getId();
       }
     }
@@ -2717,7 +2721,7 @@ export class GraphService {
           if (!movedCells[i].isSequenceFeatureGlyph()) {
             continue;
           }
-          if (glyphInfo.uriPreifx != GlyphInfo.baseURI) {
+          if (glyphInfo.uriPrefix != GlyphInfo.baseURI) {
             ownershipChange = true;
             break;
           }
