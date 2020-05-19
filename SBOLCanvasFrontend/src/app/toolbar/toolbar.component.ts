@@ -46,17 +46,17 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.filesService.loadLocal(file, this.graphService);
   }
 
-  openSaveDialog(): void {
+  openUploadDialog(): void {
     this.dialog.open(UploadGraphComponent, {});
   }
 
-  openLoadDialog(): void{
+  openDownloadDialog(): void{
     this.dialog.open(DownloadGraphComponent, {
       data: null
     });
   }
 
-  openDownloadDialog(): void {
+  openSaveDialog(): void {
     const dialogRef = this.dialog.open(SaveGraphComponent, {
       data: { filename: this.filename }
     });
@@ -70,7 +70,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     });
   }
 
-  openUploadDialog(): void {
+  openLoadDialog(): void {
     const dialogRef = this.dialog.open(LoadGraphComponent, {
       data: { file: null }
     });
