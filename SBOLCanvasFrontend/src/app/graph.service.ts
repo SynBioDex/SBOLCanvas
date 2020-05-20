@@ -183,7 +183,7 @@ export class GraphService {
       } else {
         // Zoom out of the glyph
         // remove the last items on the stack
-        this.graphService.viewStack.pop();
+        let previousView = this.graphService.viewStack.pop();
         const newSelectedCell = this.graphService.selectionStack.pop();
 
         // change the view
@@ -200,7 +200,11 @@ export class GraphService {
           this.graphService.metadataService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
         }
 
-        this.glyphCell = newSelectedCell;
+        if(newSelectedCell){
+          this.glyphCell = newSelectedCell;
+        }else{
+          this.glyphCell = previousView
+        }
       }
     }
   }
@@ -1627,7 +1631,15 @@ export class GraphService {
   private trimUnreferencedCells() {
     let reached = new Set<string>();
     let toExpand = new Set<string>();
-    toExpand.add("rootView");
+
+    // get the main root of what we can see
+    let root = this.graph.getCurrentRoot();
+    let coupledCells = this.getCoupledCells(root.getId());
+    while(coupledCells.length > 0){
+      root = coupledCells[0].getParent().getParent();
+      coupledCells = this.getCoupledCells(root.getId());
+    }
+    toExpand.add(root.getId());
 
     // populate the reached set
     while (toExpand.size > 0) {
@@ -2138,18 +2150,29 @@ export class GraphService {
     this.viewStack = [];
     this.selectionStack = [];
 
-    if (moduleMode) {
-      // initalize the root view cell of the graph
-      const cell1 = this.graph.getModel().getCell(1);
-      const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, viewCellStyleName);
-      this.graph.enterGroup(rootViewCell);
-      this.viewStack.push(rootViewCell);
-      this.metadataService.setComponentDefinitionMode(!moduleMode);
-    }
     // initalize the GlyphInfoDictionary
     const cell0 = this.graph.getModel().getCell(0);
     const glyphDict = [];
     this.graph.getModel().setValue(cell0, glyphDict);
+
+    const cell1 = this.graph.getModel().getCell(1);
+    let rootViewCell;
+    
+    // initalize the root view cell of the graph
+    if (moduleMode) {
+      rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, moduleViewCellStyleName);
+      this.graph.enterGroup(rootViewCell);
+      this.viewStack.push(rootViewCell);
+    }else{
+      let info = new GlyphInfo();
+      this.addToGlyphDict(info);
+      rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, componentViewCellStyleName);
+      this.graph.enterGroup(rootViewCell);
+      this.viewStack.push(rootViewCell);
+      this.addBackbone();
+    }
+
+    this.metadataService.setComponentDefinitionMode(!moduleMode);
 
     this.editor.undoManager.clear();
   }
