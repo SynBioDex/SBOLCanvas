@@ -7,6 +7,7 @@ import { LoadGraphComponent } from '../load-graph/load-graph.component';
 import { UploadGraphComponent } from '../upload-graph/upload-graph.component';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { ExportComponent } from '../export/export.component';
+import { ConfirmComponent } from '../confirm/confirm.component';
 
 export interface SaveDialogData {
   filename: string;
@@ -103,5 +104,13 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     let percent = this.graphService.getZoom() * 100;
     let string = percent.toFixed(0);
     return string.toString() + '%';
+  }
+
+  async newModuleDesign(){
+    const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: "Are you sure you want a new module design? You will lose all your current changes.", options: ["Yes", "Cancel"] } });
+    let result = await confirmRef.afterClosed().toPromise();
+    if(result === "Yes"){
+      this.graphService.resetGraph(true);
+    }
   }
 }
