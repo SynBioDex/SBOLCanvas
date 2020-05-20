@@ -400,6 +400,12 @@ export class GraphService {
   }
 
   getScarsVisible() {
+    // empty graph case
+    if(!this.graph.getDefaultParent().children){
+      return true;
+    }
+
+    // normal case
     let allGraphCells = this.graph.getDefaultParent().children;
     for (let i = 0; i < allGraphCells.length; i++) {
       for (let j = 0; j < allGraphCells[i].children.length; j++) {
@@ -1609,13 +1615,13 @@ export class GraphService {
   /**
    * Goes through all the cells (starting at the root) and removes any cells that can't be reached.
    */
-  private trimUnreferencedCells(){
+  private trimUnreferencedCells() {
     let reached = new Set<string>();
     let toExpand = new Set<string>();
     toExpand.add("rootView");
 
     // populate the reached set
-    while(toExpand.size > 0){
+    while (toExpand.size > 0) {
       let viewID = toExpand.values().next().value;
       let viewCell = this.graph.getModel().getCell(viewID);
       toExpand.delete(viewID);
@@ -1623,13 +1629,13 @@ export class GraphService {
 
       // get the children of the viewCell
       let viewChildren = this.graph.getModel().getChildren(viewCell);
-      for(let child of viewChildren){
+      for (let child of viewChildren) {
         // If the child isn't a circuit container, it can't lead to another viewCell
-        if(!child.isCircuitContainer())
+        if (!child.isCircuitContainer())
           continue;
         let glyphs = this.graph.getModel().getChildren(child);
-        for(let glyph of glyphs){
-          if(!glyph.isSequenceFeatureGlyph() || reached.has(glyph.value))
+        for (let glyph of glyphs) {
+          if (!glyph.isSequenceFeatureGlyph() || reached.has(glyph.value))
             continue;
           toExpand.add(glyph.value);
         }
@@ -1639,17 +1645,17 @@ export class GraphService {
     let toRemove = [];
     for (let key in this.graph.getModel().cells) {
       const cell = this.graph.getModel().cells[key];
-      if(!cell.isViewCell())
+      if (!cell.isViewCell())
         continue;
       if (!reached.has(cell.getId())) {
         toRemove.push(cell);
       }
     }
 
-    for(let cell of toRemove){
+    for (let cell of toRemove) {
       this.graph.getModel().remove(cell);
     }
-    
+
   }
 
   private getCoupledCells(glyphURI: string): mxCell[] {
@@ -2089,6 +2095,29 @@ export class GraphService {
       }
     }
     console.log(this.graph.getModel().cells);
+  }
+
+  resetGraph(moduleMode: boolean = true) {
+    this.graph.home();
+    this.graph.getModel().clear();
+
+    this.viewStack = [];
+    this.selectionStack = [];
+
+    if (moduleMode) {
+      // initalize the root view cell of the graph
+      const cell1 = this.graph.getModel().getCell(1);
+      const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, viewCellStyleName);
+      this.graph.enterGroup(rootViewCell);
+      this.viewStack.push(rootViewCell);
+      this.metadataService.setComponentDefinitionMode(!moduleMode);
+    }
+    // initalize the GlyphInfoDictionary
+    const cell0 = this.graph.getModel().getCell(0);
+    const glyphDict = [];
+    this.graph.getModel().setValue(cell0, glyphDict);
+
+    this.editor.undoManager.clear();
   }
 
   /**
