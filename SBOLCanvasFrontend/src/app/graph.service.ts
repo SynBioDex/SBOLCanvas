@@ -409,6 +409,12 @@ export class GraphService {
   }
 
   getScarsVisible() {
+    // empty graph case
+    if(!this.graph.getDefaultParent().children){
+      return true;
+    }
+
+    // normal case
     let allGraphCells = this.graph.getDefaultParent().children;
     for (let i = 0; i < allGraphCells.length; i++) {
       for (let j = 0; j < allGraphCells[i].children.length; j++) {
@@ -2125,6 +2131,29 @@ export class GraphService {
     console.log(this.graph.getModel().cells);
   }
 
+  resetGraph(moduleMode: boolean = true) {
+    this.graph.home();
+    this.graph.getModel().clear();
+
+    this.viewStack = [];
+    this.selectionStack = [];
+
+    if (moduleMode) {
+      // initalize the root view cell of the graph
+      const cell1 = this.graph.getModel().getCell(1);
+      const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, viewCellStyleName);
+      this.graph.enterGroup(rootViewCell);
+      this.viewStack.push(rootViewCell);
+      this.metadataService.setComponentDefinitionMode(!moduleMode);
+    }
+    // initalize the GlyphInfoDictionary
+    const cell0 = this.graph.getModel().getCell(0);
+    const glyphDict = [];
+    this.graph.getModel().setValue(cell0, glyphDict);
+
+    this.editor.undoManager.clear();
+  }
+
   /**
    * Sets up environment variables to make decoding new graph models from xml into memory
    */
@@ -2201,9 +2230,13 @@ export class GraphService {
       }
       let glyphDict = cell0.value;
 
+      // check for format conditions
+      if((cell.isCircuitContainer() && cell.getParent().getId() === "rootView" || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0 ){
+        anyForeignCellsFound = true;
+      }
+
       // reconstruct the cell style
       if (cell && cell.id > 1 && (cell.style == null || cell.style.length == 0 || (!cell.isViewCell() && cell.getGeometry().height == 0))) {
-        anyForeignCellsFound = true;
         if (glyphDict[cell.value] != null) {
           if (glyphDict[cell.value].partType === 'DNA region') {
             // sequence feature
@@ -2292,9 +2325,9 @@ export class GraphService {
      * (or the cell's own id if it has no parent)
      */
     mx.mxCell.prototype.getRootId = function () {
-      if (this.parent.parent.parent) {
-        return this.parent.getRootId();
-      } else {
+      if(this.isSequenceFeatureGlyph()){
+        return this.parent.getId();
+      }else{
         return this.getId();
       }
     }
@@ -2759,7 +2792,7 @@ export class GraphService {
           if (!movedCells[i].isSequenceFeatureGlyph()) {
             continue;
           }
-          if (glyphInfo.uriPreifx != GlyphInfo.baseURI) {
+          if (glyphInfo.uriPrefix != GlyphInfo.baseURI) {
             ownershipChange = true;
             break;
           }

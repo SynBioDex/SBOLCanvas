@@ -615,12 +615,13 @@ public class Converter {
 					protien.setValue(compDef.getIdentity().toString());
 					model.add(rootViewCell, protien, 0);
 				} else {
-					protien = (mxCell) graph.insertVertex(rootViewCell, null, null, 0, 0, 0, 0,
+					protien = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0, 0,
 							"molecularSpeciesGlyph");
 				}
 				compToCell.put(compDef.getIdentity(), protien);
 				GlyphInfo info = genGlyphInfo(compDef);
 				glyphInfoDict.put(info.getFullURI(), info);
+				handledCompDefs.add(compDef);
 				continue;
 			}
 
@@ -641,11 +642,11 @@ public class Converter {
 
 			// glyphs
 			Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
+			double maxX = 0;
 			for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 				Component glyphComponent = glyphArray[glyphIndex];
 				Annotation glyphAnn = glyphComponent.getAnnotation(new QName(uriPrefix, "glyphCell", annPrefix));
 				mxCell glyphCell = null;
-				double maxX = 0;
 				if (glyphAnn != null) {
 					glyphCell = (mxCell) decodeMxGraphObject(glyphAnn.getStringValue());
 					maxX = glyphCell.getGeometry().getX();
