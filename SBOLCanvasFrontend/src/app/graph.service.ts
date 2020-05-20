@@ -47,7 +47,8 @@ const noGlyphAssignedName = 'NGA (No Glyph Assigned)';
 const molecularSpeciesGlyphBaseStyleName = 'molecularSpeciesGlyph';
 const sequenceFeatureGlyphBaseStyleName = 'sequenceFeatureGlyph';
 const interactionGlyphBaseStyleName = 'interactionGlyph';
-const viewCellStyleName = "viewCell";
+const moduleViewCellStyleName = "moduleViewCell";
+const componentViewCellStyleName = "componentViewCell";
 
 const interactionControlName = 'Control';
 const interactionInhibitionName = 'Inhibition';
@@ -156,7 +157,12 @@ export class GraphService {
       if (this.glyphCell != null) {
         // Zoom into the glyph
         // get the view cell for the selected cell
-        const childViewCell = this.graphService.graph.getModel().getCell(this.glyphCell.value);
+        let childViewCell;
+        if(!this.glyphCell.value){
+          childViewCell = this.glyphCell;
+        }else{
+          childViewCell = this.graphService.graph.getModel().getCell(this.glyphCell.value);
+        }
 
         // add the necessary info to the viewstack and selectionstack
         this.graphService.viewStack.push(childViewCell);
@@ -171,7 +177,7 @@ export class GraphService {
         this.graphService.fitCamera();
 
         // make sure we can't add new strands/interactions/molecules
-        this.graphService.metadataService.setComponentDefinitionMode(true);
+        this.graphService.metadataService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
 
         this.glyphCell = null;
       } else {
@@ -190,8 +196,8 @@ export class GraphService {
         this.graphService.fitCamera();
 
         // make sure we can add new strands/interactions/molecules on the top level
-        if (this.graphService.viewStack.length == 1) {
-          this.graphService.metadataService.setComponentDefinitionMode(false);
+        if(this.graphService.graph.getCurrentRoot()){
+          this.graphService.metadataService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
         }
 
         this.glyphCell = newSelectedCell;
@@ -269,7 +275,7 @@ export class GraphService {
 
     // initalize the root view cell of the graph
     const cell1 = this.graph.getModel().getCell(1);
-    const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, viewCellStyleName);
+    const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, moduleViewCellStyleName);
     this.graph.enterGroup(rootViewCell);
     this.viewStack = [];
     this.viewStack.push(rootViewCell);
@@ -321,6 +327,9 @@ export class GraphService {
         console.debug(cellsAdded[i]);
       }
     }
+
+    console.debug("Current Root: ");
+    console.debug(this.graph.getCurrentRoot());
 
     console.debug("Graph Model: ");
     console.debug(this.graph.getModel());
@@ -642,7 +651,7 @@ export class GraphService {
       // If we are not at the top level, we need to check
       // for a corner case where we can't allow the backbone
       // to be deleted
-      if (this.graph.getCurrentRoot() != null && this.graph.getCurrentRoot().getId() != "rootView") {
+      if (this.graph.getCurrentRoot() != null && this.graph.getCurrentRoot().isComponentView()) {
         let newSelection = [];
         for (let cell of selectedCells) {
           // Anything other than the backbone gets added to
@@ -873,7 +882,7 @@ export class GraphService {
 
       // construct the view cell for it's children
       const cell1 = this.graph.getModel().getCell(1);
-      const childViewCell = this.graph.insertVertex(cell1, glyphInfo.getFullURI(), '', 0, 0, 0, 0, viewCellStyleName);
+      const childViewCell = this.graph.insertVertex(cell1, glyphInfo.getFullURI(), '', 0, 0, 0, 0, componentViewCellStyleName);
 
       // add the backbone to the child view cell
       const childCircuitContainer = this.graph.insertVertex(childViewCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
@@ -895,7 +904,7 @@ export class GraphService {
       if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
         let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
         if (glyphInfo.uriPrefix != GlyphInfo.baseURI) {
-          this.changeOwnership(this.graph.getCurrentRoot.getId());
+          this.changeOwnership(this.graph.getCurrentRoot().getId());
         }
       }
     } finally {
@@ -1609,13 +1618,13 @@ export class GraphService {
   /**
    * Goes through all the cells (starting at the root) and removes any cells that can't be reached.
    */
-  private trimUnreferencedCells(){
+  private trimUnreferencedCells() {
     let reached = new Set<string>();
     let toExpand = new Set<string>();
     toExpand.add("rootView");
 
     // populate the reached set
-    while(toExpand.size > 0){
+    while (toExpand.size > 0) {
       let viewID = toExpand.values().next().value;
       let viewCell = this.graph.getModel().getCell(viewID);
       toExpand.delete(viewID);
@@ -1623,13 +1632,13 @@ export class GraphService {
 
       // get the children of the viewCell
       let viewChildren = this.graph.getModel().getChildren(viewCell);
-      for(let child of viewChildren){
+      for (let child of viewChildren) {
         // If the child isn't a circuit container, it can't lead to another viewCell
-        if(!child.isCircuitContainer())
+        if (!child.isCircuitContainer())
           continue;
         let glyphs = this.graph.getModel().getChildren(child);
-        for(let glyph of glyphs){
-          if(!glyph.isSequenceFeatureGlyph() || reached.has(glyph.value))
+        for (let glyph of glyphs) {
+          if (!glyph.isSequenceFeatureGlyph() || reached.has(glyph.value))
             continue;
           toExpand.add(glyph.value);
         }
@@ -1639,17 +1648,17 @@ export class GraphService {
     let toRemove = [];
     for (let key in this.graph.getModel().cells) {
       const cell = this.graph.getModel().cells[key];
-      if(!cell.isViewCell())
+      if (!cell.isViewCell())
         continue;
       if (!reached.has(cell.getId())) {
         toRemove.push(cell);
       }
     }
 
-    for(let cell of toRemove){
+    for (let cell of toRemove) {
       this.graph.getModel().remove(cell);
     }
-    
+
   }
 
   private getCoupledCells(glyphURI: string): mxCell[] {
@@ -1807,6 +1816,13 @@ export class GraphService {
         this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
       }
 
+      // zoom out of the rootView TODO come back to me when recursive modules is a thing
+      let rootViewId = this.graph.getCurrentRoot().getId();
+      let rootViewInfo = this.getFromGlyphDict(rootViewId);
+      if(rootViewInfo){
+        this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+      }
+
       while (toCheck.size > 0) {
         let checking: string = toCheck.values().next().value;
         checked.add(checking);
@@ -1838,6 +1854,13 @@ export class GraphService {
         }
       }
 
+      // zoom back into the rootView
+      if(rootViewInfo){
+        rootViewInfo = rootViewInfo.makeCopy();
+        rootViewInfo.uriPrefix = GlyphInfo.baseURI;
+        let newRootViewCell = this.graph.getModel().getCell(rootViewInfo.getFullURI());
+        this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), newRootViewCell, this));
+      }
       // re zoom to fix the view
       for (let i = 0; i < zoomedCells.length; i++) {
         this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), zoomedCells[i], this));
@@ -1956,7 +1979,16 @@ export class GraphService {
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
 
-    const rootViewCell = this.graph.getModel().getCell("rootView");
+    // get the viewCell that has no references
+    const cell1 = this.graph.getModel().getCell("1");
+    let viewCells = this.graph.getModel().getChildren(cell1);
+    let rootViewCell = viewCells[0];
+    for(let viewCell of viewCells){
+      if(this.getCoupledCells(viewCell.getId()).length > 0)
+        continue;
+      rootViewCell = viewCell;
+      break;
+    }
     this.graph.enterGroup(rootViewCell);
     this.viewStack = [];
     this.viewStack.push(rootViewCell);
@@ -1975,6 +2007,8 @@ export class GraphService {
     }
 
     this.fitCamera();
+
+    this.metadataService.setComponentDefinitionMode(this.graph.getCurrentRoot().isComponentView());
 
     this.editor.undoManager.clear();
   }
@@ -2242,7 +2276,15 @@ export class GraphService {
     }
 
     mx.mxCell.prototype.isViewCell = function () {
-      return this.isStyle(viewCellStyleName);
+      return this.isStyle(moduleViewCellStyleName) || this.isStyle(componentViewCellStyleName);
+    }
+
+    mx.mxCell.prototype.isModuleView = function () {
+      return this.isStyle(moduleViewCellStyleName);
+    }
+
+    mx.mxCell.prototype.isComponentView = function () {
+      return this.isStyle(componentViewCellStyleName);
     }
 
     /**

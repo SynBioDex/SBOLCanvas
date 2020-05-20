@@ -207,7 +207,10 @@ public class Converter {
 
 		// top level component definitions
 		Set<ComponentDefinition> compDefs = document.getComponentDefinitions();
-		Set<ComponentDefinition> handledCompDefs = createModuleView(document, graph, modDef);
+		Set<ComponentDefinition> handledCompDefs = new HashSet<ComponentDefinition>();
+		if(modDef != null) {
+			handledCompDefs = createModuleView(document, graph, modDef);
+		}
 
 		// we don't want to create views for componentDefinitions handled in the module
 		// definition (top level strands/proteins)
@@ -569,7 +572,7 @@ public class Converter {
 
 		// create the root view cell
 		// TODO pull the the module id when multiple modules are supported.
-		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0, "viewCell");
+		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0, "moduleViewCell");
 
 		// text boxes
 		Annotation textBoxAnn = modDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
@@ -718,7 +721,7 @@ public class Converter {
 
 		// create the top view cell
 		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0,
-				"viewCell");
+				"componentViewCell");
 
 		// if there are text boxes add them
 		Annotation textBoxAnn = compDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
