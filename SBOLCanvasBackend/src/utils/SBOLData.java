@@ -27,7 +27,6 @@ public class SBOLData {
 		types.put("Complex", ComponentDefinition.COMPLEX);
 		types.put("DNA molecule", ComponentDefinition.DNA_MOLECULE);
 		types.put("DNA region", ComponentDefinition.DNA_REGION);
-		types.put("Effector", ComponentDefinition.EFFECTOR);
 		types.put("Protein", ComponentDefinition.PROTEIN);
 		types.put("RNA molecule", ComponentDefinition.RNA_MOLECULE);
 		types.put("RNA region", ComponentDefinition.RNA_REGION);
