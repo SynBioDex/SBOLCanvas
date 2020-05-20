@@ -252,21 +252,6 @@ export class GraphService {
     this.initCustomShapes();
     this.initSequenceFeatureGlyphMovement();
 
-    // setup how names should be displayed
-    let graphService = this;
-    this.graph.convertValueToString = function (cell) {
-      if (cell.isSequenceFeatureGlyph()) {
-        let info = graphService.getFromGlyphDict(cell.value);
-        if (info.name != null && info.name != '') {
-          return info.name;
-        } else {
-          return info.displayID;
-        }
-      } else {
-        return '';
-      }
-    }
-
     // initalize the root view cell of the graph
     const cell1 = this.graph.getModel().getCell(1);
     const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, viewCellStyleName);
@@ -401,7 +386,7 @@ export class GraphService {
 
   getScarsVisible() {
     // empty graph case
-    if(!this.graph.getDefaultParent().children){
+    if (!this.graph.getDefaultParent().children) {
       return true;
     }
 
@@ -471,7 +456,7 @@ export class GraphService {
   /**
    * This method is called by the UI when the user asks to flip a
    * sequence feature glyph.
-   * It rotates any selected sequenceFeatureGlyphs by 180 degrees.
+   * It swaps direction east/west.
    */
   async flipSequenceFeatureGlyph() {
     let selectionCells = this.graph.getSelectionCells();
@@ -488,22 +473,22 @@ export class GraphService {
           }
         }
 
-        // Make the cell do a 180 degree turn with the center point as the axis of rotation.
+        // Make the cell face east/west.
         this.graph.getModel().beginUpdate();
 
         try {
-          let rotation = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_ROTATION];
-          console.debug("current glyph rotation setting = " + rotation);
+          let direction = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_DIRECTION];
+          console.debug("current glyph direction setting = " + direction);
 
-          if (rotation == undefined) {
-            console.warn("rotation style undefined. Assuming 0, and rotating to 180");
-            this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
-          } else if (rotation == 0) {
-            this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 180, [cell]);
-            console.debug("rotating to 180")
-          } else if (rotation == 180) {
-            this.graph.setCellStyles(mx.mxConstants.STYLE_ROTATION, 0, [cell]);
-            console.debug("rotating to 0")
+          if (direction == undefined) {
+            console.warn("direction style undefined. Assuming east, and turning to west");
+            this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "west");
+          } else if (direction === "east") {
+            this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "west");
+            console.debug("turning west")
+          } else if (direction == "west") {
+            this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "east");
+            console.debug("turning east")
           }
 
           if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
@@ -689,6 +674,11 @@ export class GraphService {
     // If the undo caused scars to become visible, we should update
     this.showingScars = this.getScarsVisible();
 
+    // refresh to update cell labels
+    if (this.graph.getCurrentRoot()) {
+      this.graph.refresh(this.graph.getCurrentRoot());
+    }
+
     // selections after an undo break things if annother undo/redo happens
     this.filterSelectionCells();
   }
@@ -703,6 +693,11 @@ export class GraphService {
 
     // If the undo caused scars to become visible, we should update
     this.showingScars = this.getScarsVisible();
+
+    // refresh to update cell labels
+    if (this.graph.getCurrentRoot()) {
+      this.graph.refresh(this.graph.getCurrentRoot());
+    }
 
     // selections after an undo break things if annother undo/redo happens
     this.filterSelectionCells();
@@ -1422,6 +1417,7 @@ export class GraphService {
         }
       } finally {
         this.graph.getModel().endUpdate();
+        this.graph.refresh(selectedCell);
         this.updateAngularMetadata(this.graph.getSelectionCells());
       }
     }
@@ -1903,7 +1899,7 @@ export class GraphService {
 
     // Displayed if a viewer does not support foreignObjects (which is needed to HTML output)
     svgCanvas.foAltText = '[Not supported by viewer]';
-    imgExport.drawState(this.graph.getView().getState(this.graph.model.root), svgCanvas);
+    imgExport.drawState(this.graph.getView().getState(this.graph.getCurrentRoot()), svgCanvas);
 
     var xml = encodeURIComponent(mx.mxUtils.getXml(root));
     new mx.mxXmlRequest(environment.backendURL + '/echo', 'filename=' + filename + '.svg&format=svg' + '&xml=' + xml).simulate(document, '_blank');
@@ -1926,7 +1922,7 @@ export class GraphService {
     xmlCanvas.translate(Math.floor((b / scale - bounds.x) / vs), Math.floor((b / scale - bounds.y) / vs));
     xmlCanvas.scale(1 / vs);
 
-    imgExport.drawState(this.graph.getView().getState(this.graph.model.root), xmlCanvas);
+    imgExport.drawState(this.graph.getView().getState(this.graph.getCurrentRoot()), xmlCanvas);
 
     let w = Math.ceil(bounds.width * scale / vs + 2 * b);
     let h = Math.ceil(bounds.height * scale / vs + 2 * b);
@@ -2197,7 +2193,7 @@ export class GraphService {
       let glyphDict = cell0.value;
 
       // check for format conditions
-      if((cell.isCircuitContainer() && cell.getParent().getId() === "rootView" || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0 ){
+      if ((cell.isCircuitContainer() && cell.getParent().getId() === "rootView" || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0) {
         anyForeignCellsFound = true;
       }
 
@@ -2283,9 +2279,9 @@ export class GraphService {
      * (or the cell's own id if it has no parent)
      */
     mx.mxCell.prototype.getRootId = function () {
-      if(this.isSequenceFeatureGlyph()){
+      if (this.isSequenceFeatureGlyph()) {
         return this.parent.getId();
-      }else{
+      } else {
         return this.getId();
       }
     }
@@ -2523,14 +2519,15 @@ export class GraphService {
     this.baseMolecularSpeciesGlyphStyle = {};
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
-    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = true;
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_NOLABEL] = false;
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_VERTICAL_ALIGN] = 'top';
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_VERTICAL_LABEL_POSITION] = 'bottom';
-    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_FONT_COLOR] = '#ffffff';
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_EDITABLE] = false;
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
-    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_ROTATION] = 0;
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_DIRECTION] = "east";
     this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
+    this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_FONTSIZE] = 14;
     //this.baseGlyphStyle[mx.mxConstants.DEFAULT_HOTSPOT] = 0;
 
     // Sequence features need almost the same styling as molecularSpecies
@@ -2713,6 +2710,54 @@ export class GraphService {
     };
     mx.mxMarker.addMarker(interactionDegradationName, degradationMarkerDrawFunction);
 
+    // label drawing
+    let graphService = this;
+    this.graph.convertValueToString = function (cell) {
+      if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
+        let info = graphService.getFromGlyphDict(cell.value);
+        if (info.name != null && info.name != '') {
+          return info.name;
+        } else {
+          return info.displayID;
+        }
+      } else {
+        return cell.value;
+      }
+    }
+
+    // label truncation
+    this.graph.getLabel = function (cell) {
+      let label = this.convertValueToString(cell);
+      if (label) {
+        let geometry = graphService.graph.getModel().getGeometry(cell);
+        let fontSize = graphService.graph.getCellStyle(cell)[mx.mxConstants.STYLE_FONTSIZE];
+        let max = geometry.width / (fontSize * 0.7);
+
+        if (max < label.length) {
+          return label.substring(0, max) + '...';
+        }
+      }
+      return label;
+    }
+
+    let mxGraphViewGetPerimeterPoint = mx.mxGraphView.prototype.getPerimeterPoint;
+    mx.mxGraphView.prototype.getPerimeterPoint = function (terminal, next, orthogonal, border) {
+      let point = mxGraphViewGetPerimeterPoint.apply(this, arguments);
+      if (point != null) {
+        let perimeter = this.getPerimeterFunction(terminal);
+
+        if (terminal.text != null && terminal.text.boundingBox != null) {
+          let b = terminal.text.boundingBox.clone();
+          b.grow(3);
+
+          if (mx.mxUtils.rectangleIntersectsSegment(b, point, next)) {
+            point = perimeter(b, terminal, next, orthogonal);
+          }
+        }
+      }
+
+      return point;
+    }
   }
 
   /**

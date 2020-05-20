@@ -422,8 +422,8 @@ public class Converter {
 
 				// container sequence annotation
 				OrientationType orientation = OrientationType.INLINE;
-				String rotation = (String) graph.getCellStyle(glyph).get(mxConstants.STYLE_ROTATION);
-				if (rotation != null && !rotation.equals("0")) {
+				String direction = (String) graph.getCellStyle(glyph).get(mxConstants.STYLE_DIRECTION);
+				if (direction != null && !direction.equals("east")) {
 					orientation = OrientationType.REVERSECOMPLEMENT;
 				}
 				int length = getSequenceLength(document, glyphCD);
@@ -538,8 +538,8 @@ public class Converter {
 
 			// container sequence annotation
 			OrientationType orientation = OrientationType.INLINE;
-			String rotation = (String) graph.getCellStyle(glyph).get(mxConstants.STYLE_ROTATION);
-			if (rotation != null && !rotation.equals("0")) {
+			String direction = (String) graph.getCellStyle(glyph).get(mxConstants.STYLE_DIRECTION);
+			if (direction != null && !direction.equals("east")) {
 				orientation = OrientationType.REVERSECOMPLEMENT;
 			}
 			int length = getSequenceLength(document, glyphCD);
@@ -660,7 +660,7 @@ public class Converter {
 				if (seqAnn != null) {
 					Location loc = seqAnn.getLocations().iterator().next();
 					if (loc.getOrientation() == OrientationType.REVERSECOMPLEMENT) {
-						graph.setCellStyles(mxConstants.STYLE_ROTATION, "180", new Object[] { glyphCell });
+						graph.setCellStyles(mxConstants.STYLE_DIRECTION, "west", new Object[] { glyphCell });
 					}
 				}
 
@@ -769,7 +769,7 @@ public class Converter {
 			if (seqAnn != null) {
 				Location loc = seqAnn.getLocations().iterator().next();
 				if (loc.getOrientation() == OrientationType.REVERSECOMPLEMENT) {
-					graph.setCellStyles(mxConstants.STYLE_ROTATION, "180", new Object[] { glyphCell });
+					graph.setCellStyles(mxConstants.STYLE_DIRECTION, "west", new Object[] { glyphCell });
 				}
 			}
 
