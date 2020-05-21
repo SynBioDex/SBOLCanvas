@@ -152,8 +152,7 @@ public class Converter {
 					.toArray(mxCell[]::new);
 			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
 					.toArray(mxCell[]::new);
-			// TODO remove rootView when modDefs are supported
-			if (viewCell.getId().equals("rootView") || circuitContainers.length > 1 || proteins.length > 0) {
+			if (viewCell.getStyle().equals("moduleViewCell") || circuitContainers.length > 1 || proteins.length > 0) {
 				// TODO when moddefs are supported the id should already be correct
 				// module definitions
 				((mxCell) viewCell).setId(filename);
@@ -171,7 +170,7 @@ public class Converter {
 					.toArray(mxCell[]::new);
 			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
 					.toArray(mxCell[]::new);
-			if (viewCell.getId().equals(filename) || circuitContainers.length > 1 || proteins.length > 0) {
+			if (viewCell.getStyle().equals("moduleViewCell") || circuitContainers.length > 1 || proteins.length > 0) {
 				// module definitions
 				linkModuleDefinition(document, graph, model, viewCell);
 			} else {
@@ -355,6 +354,9 @@ public class Converter {
 
 		if (glyphInfo.getPartRefine() == null || glyphInfo.getPartRefine().equals("")) {
 			// if there isn't a part refine set the role
+			if(glyphInfo.getPartRole() == null || glyphInfo.getPartRole().equals("")) {
+				glyphInfo.setPartRole("NGA (No Glyph Assigned)");
+			}
 			compDef.addRole(SBOLData.roles.getValue(glyphInfo.getPartRole()));
 		} else {
 			// otherwise set the part refinement
