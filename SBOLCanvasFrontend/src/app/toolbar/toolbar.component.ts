@@ -48,7 +48,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   openUploadDialog(): void {
-    this.dialog.open(UploadGraphComponent, {});
+    this.dialog.open(UploadGraphComponent, {
+      data: {componentMode: this.graphService.isRootAComponentView()}
+    });
   }
 
   openDownloadDialog(): void{

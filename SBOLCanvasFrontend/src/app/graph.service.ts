@@ -280,6 +280,10 @@ export class GraphService {
     this.editor.undoManager.clear();
   }
 
+  isRootAComponentView(): boolean {
+    return this.viewStack[0].isComponentView();
+  }
+
   /**
    * Attempts some auto formatting on the graph.
    * Only affects the current "drill level," ie children cells are not affected.
