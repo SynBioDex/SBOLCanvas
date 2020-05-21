@@ -1846,7 +1846,7 @@ export class GraphService {
         if (rootViewInfo) {
           this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
         }
-      }else{
+      } else {
         // special case of the root getting changed before changeOwnership is called
         rootViewId = glyphURI;
         rootViewInfo = this.getFromGlyphDict(rootViewId);
@@ -2050,15 +2050,26 @@ export class GraphService {
   async setSelectedToXML(cellString: string) {
     const selectionCells = this.graph.getSelectionCells();
 
-    if (selectionCells.length == 1 && selectionCells[0].isSequenceFeatureGlyph()) {
+    if (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer())) {
       // We're making a new cell to replace the selected one
       let selectedCell = selectionCells[0];
 
-      // prompt ownership change
-      if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
-        let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
-        if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
-          return;
+      if (selectedCell.isCircuitContainer()) {
+        // prompt ownership change
+        // for circuit containers we want to check the root of selected cell we're zoomed into.
+        if (this.viewStack.length > 1 && this.viewStack[this.viewStack.length - 2].isComponentView()) {
+          let glyphInfo = this.getFromGlyphDict(this.viewStack[this.viewStack.length - 2].getId());
+          if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+            return;
+          }
+        }
+      } else {
+        // prompt ownership change
+        if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
+          let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+          if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+            return;
+          }
         }
       }
 
