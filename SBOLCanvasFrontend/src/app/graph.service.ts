@@ -158,15 +158,16 @@ export class GraphService {
         // Zoom into the glyph
         // get the view cell for the selected cell
         let childViewCell;
-        if(!this.glyphCell.value){
+        if (!this.glyphCell.value) {
           childViewCell = this.glyphCell;
-        }else{
+        } else {
           childViewCell = this.graphService.graph.getModel().getCell(this.glyphCell.value);
+          // add info to the selectionstack
+          this.graphService.selectionStack.push(this.glyphCell);
         }
 
-        // add the necessary info to the viewstack and selectionstack
+        // add the info to the view stack
         this.graphService.viewStack.push(childViewCell);
-        this.graphService.selectionStack.push(this.glyphCell);
 
         // change the view
         this.view.clear(this.view.currentRoot, true);
@@ -196,13 +197,13 @@ export class GraphService {
         this.graphService.fitCamera();
 
         // make sure we can add new strands/interactions/molecules on the top level
-        if(this.graphService.graph.getCurrentRoot()){
+        if (this.graphService.graph.getCurrentRoot()) {
           this.graphService.metadataService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
         }
 
-        if(newSelectedCell){
+        if (newSelectedCell) {
           this.glyphCell = newSelectedCell;
-        }else{
+        } else {
           this.glyphCell = previousView
         }
       }
@@ -319,6 +320,8 @@ export class GraphService {
 
     console.debug("Current Root: ");
     console.debug(this.graph.getCurrentRoot());
+    console.debug(this.viewStack);
+    console.debug(this.selectionStack);
 
     console.debug("Graph Model: ");
     console.debug(this.graph.getModel());
@@ -1392,9 +1395,9 @@ export class GraphService {
 
             // update the ownership
             if (selectedCell.isCircuitContainer()) {
-              this.changeOwnership(selectedCell.getParent().getId())
+              this.changeOwnership(newGlyphURI, true)
             } else {
-              this.changeOwnership(selectedCell.getValue());
+              this.changeOwnership(selectedCell.getValue(), true);
             }
 
             // update the view
@@ -1631,7 +1634,7 @@ export class GraphService {
     // get the main root of what we can see
     let root = this.graph.getCurrentRoot();
     let coupledCells = this.getCoupledCells(root.getId());
-    while(coupledCells.length > 0){
+    while (coupledCells.length > 0) {
       root = coupledCells[0].getParent().getParent();
       coupledCells = this.getCoupledCells(root.getId());
     }
@@ -1726,7 +1729,7 @@ export class GraphService {
     let checked = new Set<string>();
     let toCheck = new Set<string>();
     // check upward
-    if (cell.isCircuitContainer()) {
+    if (cell.isCircuitContainer() && this.selectionStack.length > 1) {
       toCheck.add(this.selectionStack[this.selectionStack.length - 1].getParent().getParent().getId());
     } else {
       toCheck.add(cell.getParent().getParent().getId());
@@ -1831,10 +1834,18 @@ export class GraphService {
       }
 
       // zoom out of the rootView TODO come back to me when recursive modules is a thing
-      let rootViewId = this.graph.getCurrentRoot().getId();
-      let rootViewInfo = this.getFromGlyphDict(rootViewId);
-      if(rootViewInfo){
-        this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+      let rootViewId;
+      let rootViewInfo;
+      if (this.graph.getCurrentRoot()) {
+        rootViewId = this.graph.getCurrentRoot().getId();
+        rootViewInfo = this.getFromGlyphDict(rootViewId);
+        if (rootViewInfo) {
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+        }
+      }else{
+        // special case of the root getting changed before changeOwnership is called
+        rootViewId = glyphURI;
+        rootViewInfo = this.getFromGlyphDict(rootViewId);
       }
 
       while (toCheck.size > 0) {
@@ -1869,7 +1880,7 @@ export class GraphService {
       }
 
       // zoom back into the rootView
-      if(rootViewInfo){
+      if (rootViewInfo) {
         rootViewInfo = rootViewInfo.makeCopy();
         rootViewInfo.uriPrefix = GlyphInfo.baseURI;
         let newRootViewCell = this.graph.getModel().getCell(rootViewInfo.getFullURI());
@@ -1997,8 +2008,8 @@ export class GraphService {
     const cell1 = this.graph.getModel().getCell("1");
     let viewCells = this.graph.getModel().getChildren(cell1);
     let rootViewCell = viewCells[0];
-    for(let viewCell of viewCells){
-      if(this.getCoupledCells(viewCell.getId()).length > 0)
+    for (let viewCell of viewCells) {
+      if (this.getCoupledCells(viewCell.getId()).length > 0)
         continue;
       rootViewCell = viewCell;
       break;
@@ -2153,13 +2164,13 @@ export class GraphService {
 
     const cell1 = this.graph.getModel().getCell(1);
     let rootViewCell;
-    
+
     // initalize the root view cell of the graph
     if (moduleMode) {
       rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, moduleViewCellStyleName);
       this.graph.enterGroup(rootViewCell);
       this.viewStack.push(rootViewCell);
-    }else{
+    } else {
       let info = new GlyphInfo();
       this.addToGlyphDict(info);
       rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, componentViewCellStyleName);
@@ -2780,7 +2791,9 @@ export class GraphService {
     this.graph.convertValueToString = function (cell) {
       if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
         let info = graphService.getFromGlyphDict(cell.value);
-        if (info.name != null && info.name != '') {
+        if (!info) {
+          return cell.value;
+        } else if (info.name != null && info.name != '') {
           return info.name;
         } else {
           return info.displayID;
