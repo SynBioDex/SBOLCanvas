@@ -476,8 +476,15 @@ export class GraphService {
       if (cell.isSequenceFeatureGlyph()) {
 
         // check if we own this item
-        if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
-          let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+        if (this.graph.getCurrentRoot()) {
+          let glyphInfo;
+          if (this.graph.getCurrentRoot().isComponentView()) {
+            // normal case
+            glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+          } else {
+            // edge case of a module view
+            glyphInfo = this.getFromGlyphDict(cell.getParent().getValue());
+          }
           if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
             return;
           }
@@ -501,8 +508,17 @@ export class GraphService {
             console.debug("turning east")
           }
 
-          if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
-            this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
+          // change the owner
+          if (this.graph.getCurrentRoot()) {
+            let glyphInfo;
+            if (this.graph.getCurrentRoot().isComponentView()) {
+              // normal case
+              glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+            } else {
+              // edge case of a module view
+              glyphInfo = this.getFromGlyphDict(cell.getParent().getValue());
+            }
+            this.changeOwnership(glyphInfo.getFullURI());
           }
         } finally {
           this.graph.getModel().endUpdate();
@@ -625,17 +641,25 @@ export class GraphService {
     }
 
     // check for ownership prompt
-    if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
+    let containers = new Set<string>();
+    if (this.graph.getCurrentRoot()) {
       let ownershipPrompt = false;
       for (let cell of selectedCells) {
         if (cell.isSequenceFeatureGlyph()) {
           ownershipPrompt = true;
-          break;
+          containers.add(cell.getParent().getValue());
         }
       }
-      let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
-      if (ownershipPrompt && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
-        return;
+      for(let container of Array.from(containers.values())){
+        let glyphInfo;
+        if(this.graph.getCurrentRoot().isComponentView()){
+          glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+        }else{
+          glyphInfo = this.getFromGlyphDict(container);
+        }
+        if (ownershipPrompt && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+          return;
+        }
       }
     }
 
@@ -666,8 +690,8 @@ export class GraphService {
 
       this.trimUnreferencedCells();
 
-      if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
-        this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
+      for(let container of Array.from(containers)){
+        this.changeOwnership(container);
       }
 
       for (let cell of circuitContainers) {
@@ -853,9 +877,19 @@ export class GraphService {
   async addSequenceFeatureAt(name, x, y, circuitContainer?) {
 
     // ownership change check
-    if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
-      let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
-      if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+    if (this.graph.getCurrentRoot()) {
+      let glyphInfo;
+      if (this.graph.getCurrentRoot().isComponentView()) {
+        // normal case
+        glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+      } else if (this.atLeastOneCircuitContainerInGraph()) {
+        // edge case that we're adding to a container in a module view
+        if (!circuitContainer) {
+          circuitContainer = this.getClosestCircuitContainerToPoint(x, y);
+        }
+        glyphInfo = this.getFromGlyphDict(circuitContainer.getValue());
+      }
+      if (glyphInfo && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
         return;
       }
     }
@@ -869,7 +903,6 @@ export class GraphService {
 
       if (!this.atLeastOneCircuitContainerInGraph()) {
         // if there is no strand, quietly make one
-        // stupid user
         this.addBackboneAt(x, y);
       }
 
@@ -910,10 +943,18 @@ export class GraphService {
       this.graph.clearSelection();
       this.graph.setSelectionCell(sequenceFeatureCell);
 
-      if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
-        let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+      // perform the ownership change
+      if (this.graph.getCurrentRoot()) {
+        let glyphInfo;
+        if (this.graph.getCurrentRoot().isComponentView()) {
+          // normal case
+          glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+        } else {
+          // edge case that we're adding to a container in a module view
+          glyphInfo = this.getFromGlyphDict(circuitContainer.getValue());
+        }
         if (glyphInfo.uriPrefix != GlyphInfo.baseURI) {
-          this.changeOwnership(this.graph.getCurrentRoot().getId());
+          this.changeOwnership(glyphInfo.getFullURI());
         }
       }
     } finally {
