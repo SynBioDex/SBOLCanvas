@@ -54,7 +54,7 @@ export class DownloadGraphComponent implements OnInit {
       }
       if (this.data.info != null) {
         this.partType = this.data.info.partType;
-        this.partRole = this.data.info.partRole;
+        this.partRole = this.data.info.partRole ? this.data.info.partRole : "";
         this.partRefine = this.data.info.partRefine;
 
         forkJoin(

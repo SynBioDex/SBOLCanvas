@@ -356,20 +356,10 @@ export class GraphService {
     }
 
     const cell = cells[0];
-    if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
+    if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()) {
       const glyphInfo = this.getFromGlyphDict(cell.value);
       if (glyphInfo) {
         this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
-      }
-    }
-    else if (cell.isCircuitContainer()) {
-      // If the cell is a circuit container, and we are zoomed into a component
-      // definition, then we can display the info of the parent component definition.
-      if (cell.parent.id != "rootView") {
-        const glyphInfo = this.getFromGlyphDict(cell.parent.id);
-        if (glyphInfo) {
-          this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
-        }
       }
     }
     else if (cell.isInteraction()) {
@@ -595,7 +585,14 @@ export class GraphService {
   addBackboneAt(x, y) {
     this.graph.getModel().beginUpdate();
     try {
-      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, '', x, y, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, circuitContainerStyleName);
+      let glyphInfo;
+      if (this.graph.getCurrentRoot().isModuleView()) {
+        glyphInfo = new GlyphInfo();
+        this.addToGlyphDict(glyphInfo);
+      } else {
+        glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+      }
+      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, glyphInfo.getFullURI(), x, y, sequenceFeatureGlyphWidth, sequenceFeatureGlyphHeight, circuitContainerStyleName);
       const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, sequenceFeatureGlyphHeight / 2, sequenceFeatureGlyphWidth, 1, backboneStyleName);
 
       backbone.refreshBackbone(this.graph);
@@ -897,7 +894,7 @@ export class GraphService {
       const childViewCell = this.graph.insertVertex(cell1, glyphInfo.getFullURI(), '', 0, 0, 0, 0, componentViewCellStyleName);
 
       // add the backbone to the child view cell
-      const childCircuitContainer = this.graph.insertVertex(childViewCell, null, '', 0, 0, 0, 0, circuitContainerStyleName);
+      const childCircuitContainer = this.graph.insertVertex(childViewCell, null, glyphInfo.getFullURI(), 0, 0, 0, 0, circuitContainerStyleName);
       const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
 
       //sequenceFeatureCell.setCollapsed(true);
@@ -1336,12 +1333,7 @@ export class GraphService {
         if (info instanceof GlyphInfo) {
 
           let oldGlyphURI = "";
-          // The selected cell might be a circuit container, in which case we need the id of the parent.
-          if (selectedCell.isCircuitContainer()) {
-            oldGlyphURI = selectedCell.parent.id;
-          } else {
-            oldGlyphURI = selectedCell.value;
-          }
+          oldGlyphURI = selectedCell.value;
           info.uriPrefix = GlyphInfo.baseURI;
           let newGlyphURI = info.getFullURI();
 
@@ -1375,18 +1367,24 @@ export class GraphService {
             this.addToGlyphDict(info);
 
             if (selectedCell.isCircuitContainer()) {
-              const glyphZoomed = this.selectionStack[this.selectionStack.length - 1];
-              this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
+              if (this.graph.getCurrentRoot().isComponentView()) {
+                // default case (we're zoomed into a component view)
+                const glyphZoomed = this.selectionStack[this.selectionStack.length - 1];
+                this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
 
-              // default case
-              // update the viewcell ID
-              const viewCell = this.graph.getModel().getCell(oldGlyphURI);
-              this.updateViewCell(viewCell, newGlyphURI);
+                // default case
+                // update the viewcell ID
+                const viewCell = this.graph.getModel().getCell(oldGlyphURI);
+                this.updateViewCell(viewCell, newGlyphURI);
 
-              // update the selected cell id
-              this.graph.getModel().setValue(glyphZoomed, newGlyphURI);
+                // update the selected cell id
+                this.graph.getModel().setValue(glyphZoomed, newGlyphURI);
 
-              this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
+                this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), glyphZoomed, this));
+              } else {
+                // edge case (we're in a module view, and there is no view cell to update)
+                this.graph.getModel().setValue(selectedCell, newGlyphURI);
+              }
             } else {
               // default case
               // update the viewcell ID
@@ -1414,18 +1412,10 @@ export class GraphService {
 
           // there may be coupled cells that need to also be mutated
           // the glyphInfo may be different than info, so use getFromGlyphDict
-          if (selectedCell.isCircuitContainer()) {
-            this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.parent.id).partRole, this.getCoupledCells(selectedCell.parent.id));
-          } else {
-            this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.value).partRole, this.getCoupledCells(selectedCell.value));
-          }
+          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.value).partRole, this.getCoupledCells(selectedCell.value));
 
           // change the ownership
-          if (selectedCell.isCircuitContainer()) {
-            this.changeOwnership(selectedCell.getParent().getId());
-          } else {
-            this.changeOwnership(selectedCell.getValue());
-          }
+          this.changeOwnership(selectedCell.getValue());
 
           // update the view
           this.updateAngularMetadata(this.graph.getSelectionCells());
@@ -1589,7 +1579,7 @@ export class GraphService {
         }
 
         this.mutateSequenceFeatureGlyph(info.partRole, coupledCells, this.graph);
-        this.changeOwnership(newGlyphURI);
+        this.changeOwnership(newGlyphURI, true);
       } else if (result === "No") {
         // don't use update, as it will remove the old one
         this.addToGlyphDict(info);
@@ -1611,7 +1601,7 @@ export class GraphService {
           this.graph.getModel().setValue(selectedCell, newGlyphURI);
         }
         this.mutateSequenceFeatureGlyph(info.partRole);
-        this.changeOwnership(newGlyphURI);
+        this.changeOwnership(newGlyphURI, true);
       }
       this.graph.getModel().endUpdate();
       // update the view
@@ -1686,14 +1676,24 @@ export class GraphService {
     const coupledCells = [];
     for (let key in this.graph.getModel().cells) {
       const cell = this.graph.getModel().cells[key];
-      if (cell.value === glyphURI) {
+      if (cell.value === glyphURI && cell.isSequenceFeatureGlyph()) {
         coupledCells.push(cell);
       }
     }
     return coupledCells;
   }
 
+  /**
+   * Updates the id of the view cell. Also updates the circuit container value if it's a component view cell
+   * @param cell 
+   * @param newGlyphURI 
+   */
   private updateViewCell(cell: mxCell, newGlyphURI: string) {
+    // update the circuit container value if the view is a component view
+    if (cell.isComponentView()) {
+      let circuitContainer = cell.children.filter(cell => cell.isCircuitContainer())[0];
+      this.graph.getModel().setValue(circuitContainer, newGlyphURI);
+    }
     const newViewCell = this.graph.getModel().cloneCell(cell);
     this.graph.getModel().remove(cell);
     // clone it because the previous remove will keep the id change if we don't
@@ -1868,16 +1868,24 @@ export class GraphService {
 
         // update the viewCell
         let viewCell = this.graph.getModel().getCell(checking);
-        this.updateViewCell(viewCell, glyphInfo.getFullURI());
+        if (viewCell) {
+          this.updateViewCell(viewCell, glyphInfo.getFullURI());
+        }
 
         // update any cells that referenced the viewCell and add their parents to be checked
         for (let key in this.graph.getModel().cells) {
           const cell = this.graph.getModel().cells[key];
           if (cell.value === checking) {
             this.graph.getModel().setValue(cell, glyphInfo.getFullURI());
-            let toAdd = cell.getParent().getParent().getId();
-            if (toAdd != "rootView" && !checked.has(toAdd)) {
-              toCheck.add(toAdd);
+            if (cell.isSequenceFeatureGlyph()) {
+              let toAdd = cell.getParent().getParent();
+              if (toAdd.isComponentView() && !checked.has(toAdd.getId())) {
+                // normal case
+                toCheck.add(toAdd.getId());
+              } else if (toAdd.isModuleView() && !checked.has(cell.getParent().getValue())) {
+                // edge case, module view, need to check parent circuit container
+                toCheck.add(cell.getParent().getValue());
+              }
             }
           }
         }
@@ -2054,110 +2062,121 @@ export class GraphService {
       // We're making a new cell to replace the selected one
       let selectedCell = selectionCells[0];
 
-      if (selectedCell.isCircuitContainer()) {
-        // prompt ownership change
-        // for circuit containers we want to check the root of selected cell we're zoomed into.
-        if (this.viewStack.length > 1 && this.viewStack[this.viewStack.length - 2].isComponentView()) {
-          let glyphInfo = this.getFromGlyphDict(this.viewStack[this.viewStack.length - 2].getId());
-          if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
-            return;
-          }
-        }
-      } else {
-        // prompt ownership change
-        if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
-          let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
-          if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
-            return;
-          }
-        }
-      }
-
-      // setup the decoding info
-      const doc = mx.mxUtils.parseXml(cellString);
-      const codec = new mx.mxCodec(doc);
-
-      // store the information in a fake graph for easy access
-      const subGraph = new mx.mxGraph();
-      codec.decode(doc.documentElement, subGraph.getModel());
-
-      // store old cell's parent
-      let origParent = selectedCell.getParent();
-
       this.graph.getModel().beginUpdate();
       try {
+        if (selectedCell.isCircuitContainer() && false) {
+          // edge case where the circuit container is the root, or part of a module
 
-        // ownership check
-        if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
-          let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
-          this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
-          selectedCell = this.viewStack[this.viewStack.length - 1].getChildAt(0).getChildAt(selectedCellIndex);
-          origParent = selectedCell.getParent();
-        }
 
-        // get the new cell
-        let newCell = subGraph.getModel().cloneCell(subGraph.getModel().getCell("1").children[0]);
+        } else {
+          // default case
 
-        // generated cells don't have a proper geometry
-        newCell.setStyle(selectedCell.getStyle());
-        this.graph.getModel().setGeometry(newCell, selectedCell.geometry);
-
-        // add new cell to the graph
-        this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
-
-        // remove the old cell's view cell if it doesn't have any references
-        if (this.getCoupledCells(selectedCell.value).length < 2) {
-          this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
-        }
-
-        // remove the old cell
-        this.graph.getModel().remove(selectedCell);
-
-        // move any edges from selectedCell to newCell
-        if (selectedCell.edges != null) {
-          let edgeCache = [];
-          selectedCell.edges.forEach(edge => {
-            edgeCache.push(edge);
-          });
-
-          edgeCache.forEach(edge => {
-            if (edge.source == selectedCell) {
-              this.graph.getModel().setTerminal(edge, newCell, true);
-            }
-            if (edge.target == selectedCell) {
-              this.graph.getModel().setTerminal(edge, newCell, false);
-            }
-          });
-        }
-
-        // Now create all children of the new cell
-        let viewCells = subGraph.getModel().getCell("1").children;
-        let subGlyphDict = subGraph.getModel().getCell("0").getValue();
-        let cell1 = this.graph.getModel().getCell("1");
-        for (let i = 1; i < viewCells.length; i++) { // start at cell 1 because the glyph is at 0
-          // If we already have it skip it
-          if (this.graph.getModel().getCell(viewCells[i].getId())) {
-            continue;
+          let fromCircuitContainer = false;
+          if (selectedCell.isCircuitContainer()) {
+            // zoom out to make things so much easier
+            fromCircuitContainer = true;
+            selectedCell = this.selectionStack[this.selectionStack.length - 1];
+            this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
           }
 
-          // clone the cell otherwise viewCells get's messed up
-          let viewClone = subGraph.getModel().cloneCell(viewCells[i]);
-          // cloning doesn't keep the id for some reason
-          viewClone.id = viewCells[i].id;
-
-          // add the cell to the graph
-          this.graph.addCell(viewClone, cell1);
-
-          // add the info to the dictionary
-          if (this.getFromGlyphDict(viewCells[i].getId()) != null) {
-            this.removeFromGlyphDict(viewCells[i].getId());
+          // prompt ownership change
+          if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
+            let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+            if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+              return;
+            }
           }
-          this.addToGlyphDict(subGlyphDict[viewCells[i].getId()]);
-        }
 
-        origParent.refreshCircuitContainer(this.graph);
-        this.graph.setSelectionCell(newCell);
-        this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newCell.value).partRole);
+          // setup the decoding info
+          const doc = mx.mxUtils.parseXml(cellString);
+          const codec = new mx.mxCodec(doc);
+
+          // store the information in a temp graph for easy access
+          const subGraph = new mx.mxGraph();
+          codec.decode(doc.documentElement, subGraph.getModel());
+
+          // store old cell's parent
+          let origParent = selectedCell.getParent();
+
+
+
+          // ownership check
+          if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
+            let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
+            this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
+            selectedCell = this.viewStack[this.viewStack.length - 1].getChildAt(0).getChildAt(selectedCellIndex);
+            origParent = selectedCell.getParent();
+          }
+
+          // get the new cell
+          let newCell = subGraph.getModel().cloneCell(subGraph.getModel().getCell("1").children[0]);
+
+          // generated cells don't have a proper geometry
+          newCell.setStyle(selectedCell.getStyle());
+          this.graph.getModel().setGeometry(newCell, selectedCell.geometry);
+
+          // add new cell to the graph
+          this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+
+          // remove the old cell's view cell if it doesn't have any references
+          if (this.getCoupledCells(selectedCell.value).length < 2) {
+            this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
+          }
+
+          // remove the old cell
+          this.graph.getModel().remove(selectedCell);
+
+          // move any edges from selectedCell to newCell
+          if (selectedCell.edges != null) {
+            let edgeCache = [];
+            selectedCell.edges.forEach(edge => {
+              edgeCache.push(edge);
+            });
+
+            edgeCache.forEach(edge => {
+              if (edge.source == selectedCell) {
+                this.graph.getModel().setTerminal(edge, newCell, true);
+              }
+              if (edge.target == selectedCell) {
+                this.graph.getModel().setTerminal(edge, newCell, false);
+              }
+            });
+          }
+
+          // Now create all children of the new cell
+          let viewCells = subGraph.getModel().getCell("1").children;
+          let subGlyphDict = subGraph.getModel().getCell("0").getValue();
+          let cell1 = this.graph.getModel().getCell("1");
+          for (let i = 1; i < viewCells.length; i++) { // start at cell 1 because the glyph is at 0
+            // If we already have it skip it
+            if (this.graph.getModel().getCell(viewCells[i].getId())) {
+              continue;
+            }
+
+            // clone the cell otherwise viewCells get's messed up
+            let viewClone = subGraph.getModel().cloneCell(viewCells[i]);
+            // cloning doesn't keep the id for some reason
+            viewClone.id = viewCells[i].id;
+
+            // add the cell to the graph
+            this.graph.addCell(viewClone, cell1);
+
+            // add the info to the dictionary
+            if (this.getFromGlyphDict(viewCells[i].getId()) != null) {
+              this.removeFromGlyphDict(viewCells[i].getId());
+            }
+            this.addToGlyphDict(subGlyphDict[viewCells[i].getId()]);
+          }
+
+          origParent.refreshCircuitContainer(this.graph);
+          this.graph.setSelectionCell(newCell);
+          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newCell.value).partRole);
+
+          // if we came from a circuit container, zoom back into it
+          if (fromCircuitContainer) {
+            this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), newCell, this));
+          }
+        }
       } finally {
         this.graph.getModel().endUpdate();
       }
@@ -2813,6 +2832,8 @@ export class GraphService {
         } else {
           return info.displayID;
         }
+      } else if (cell.isCircuitContainer()) {
+        return '';
       } else {
         return cell.value;
       }

@@ -633,14 +633,17 @@ public class Converter {
 			mxCell backbone = null;
 			if (containerAnn != null) {
 				container = (mxCell) decodeMxGraphObject(containerAnn.getStringValue());
+				container.setValue(compDef.getIdentity().toString());
 				model.add(rootViewCell, container, 0);
 				Annotation backboneAnn = compDef.getAnnotation(new QName(uriPrefix, "backboneCell", annPrefix));
 				backbone = (mxCell) decodeMxGraphObject(backboneAnn.getStringValue());
 				model.add(container, backbone, 0);
 			} else {
-				container = (mxCell) graph.insertVertex(rootViewCell, null, null, 0, 0, 0, 0, "circuitContainer");
+				container = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0, 0, "circuitContainer");
 				backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, "backbone");
 			}
+			GlyphInfo info = genGlyphInfo(compDef);
+			glyphInfoDict.put(info.getFullURI(), info);
 
 			// glyphs
 			Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
@@ -742,12 +745,13 @@ public class Converter {
 		mxCell backbone = null;
 		if (containerAnn != null) {
 			container = (mxCell) decodeMxGraphObject(containerAnn.getStringValue());
+			container.setValue(compDef.getIdentity().toString());
 			model.add(viewCell, container, 0);
 			Annotation backboneAnn = compDef.getAnnotation(new QName(uriPrefix, "backboneCell", annPrefix));
 			backbone = (mxCell) decodeMxGraphObject(backboneAnn.getStringValue());
 			model.add(container, backbone, 0);
 		} else {
-			container = (mxCell) graph.insertVertex(viewCell, null, null, 0, 0, 0, 0, "circuitContainer");
+			container = (mxCell) graph.insertVertex(viewCell, null, compDef.getIdentity().toString(), 0, 0, 0, 0, "circuitContainer");
 			backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, "backbone");
 		}
 
