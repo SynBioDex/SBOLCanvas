@@ -322,10 +322,8 @@ export class GraphService {
       }
     }
 
-    console.debug("Current Root: ");
+    console.debug("Current root: ");
     console.debug(this.graph.getCurrentRoot());
-    console.debug(this.viewStack);
-    console.debug(this.selectionStack);
 
     console.debug("Graph Model: ");
     console.debug(this.graph.getModel());
@@ -650,11 +648,11 @@ export class GraphService {
           containers.add(cell.getParent().getValue());
         }
       }
-      for(let container of Array.from(containers.values())){
+      for (let container of Array.from(containers.values())) {
         let glyphInfo;
-        if(this.graph.getCurrentRoot().isComponentView()){
+        if (this.graph.getCurrentRoot().isComponentView()) {
           glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
-        }else{
+        } else {
           glyphInfo = this.getFromGlyphDict(container);
         }
         if (ownershipPrompt && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
@@ -690,7 +688,7 @@ export class GraphService {
 
       this.trimUnreferencedCells();
 
-      for(let container of Array.from(containers)){
+      for (let container of Array.from(containers)) {
         this.changeOwnership(container);
       }
 
@@ -2105,52 +2103,51 @@ export class GraphService {
 
       this.graph.getModel().beginUpdate();
       try {
-        if (selectedCell.isCircuitContainer() && false) {
-          // edge case where the circuit container is the root, or part of a module
 
+        let fromCircuitContainer = selectedCell.isCircuitContainer();
+        let inModuleView = this.graph.getCurrentRoot().isModuleView();
 
-        } else {
-          // default case
+        // prompt ownership change
+        if (this.graph.getCurrentRoot()) {
+          let glyphInfo;
+          if (fromCircuitContainer) {
+            if (this.viewStack.length > 1) {
+              // has a parent that might need to change
+              glyphInfo = this.getFromGlyphDict(this.selectionStack[this.selectionStack.length - 1].getParent().getValue());
+            }
+            //TODO come back to me when module definitions will need to be updated
+          } else {
+            glyphInfo = this.getFromGlyphDict(selectedCell.getParent().getValue());
+          }
+          if (glyphInfo && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+            return;
+          }
+        }
 
-          let fromCircuitContainer = false;
-          if (selectedCell.isCircuitContainer()) {
-            // zoom out to make things so much easier
-            fromCircuitContainer = true;
+        // zoom out to make things easier
+        if (fromCircuitContainer){
+          if(!inModuleView){
             selectedCell = this.selectionStack[this.selectionStack.length - 1];
             this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
           }
+        }
 
-          // prompt ownership change
-          if (this.graph.getCurrentRoot() && this.graph.getCurrentRoot().getId() != "rootView") {
-            let glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
-            if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
-              return;
-            }
-          }
+        // setup the decoding info
+        const doc = mx.mxUtils.parseXml(cellString);
+        const codec = new mx.mxCodec(doc);
 
-          // setup the decoding info
-          const doc = mx.mxUtils.parseXml(cellString);
-          const codec = new mx.mxCodec(doc);
+        // store the information in a temp graph for easy access
+        const subGraph = new mx.mxGraph();
+        codec.decode(doc.documentElement, subGraph.getModel());
 
-          // store the information in a temp graph for easy access
-          const subGraph = new mx.mxGraph();
-          codec.decode(doc.documentElement, subGraph.getModel());
-
+        // get the new cell
+        let newCell = subGraph.getModel().cloneCell(subGraph.getModel().getCell("1").children[0]);
+        
+        // not part of a module or a top level component definition
+        let origParent;
+        if (selectedCell.isSequenceFeatureGlyph()) {
           // store old cell's parent
-          let origParent = selectedCell.getParent();
-
-
-
-          // ownership check
-          if (this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
-            let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
-            this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
-            selectedCell = this.viewStack[this.viewStack.length - 1].getChildAt(0).getChildAt(selectedCellIndex);
-            origParent = selectedCell.getParent();
-          }
-
-          // get the new cell
-          let newCell = subGraph.getModel().cloneCell(subGraph.getModel().getCell("1").children[0]);
+          origParent = selectedCell.getParent();
 
           // generated cells don't have a proper geometry
           newCell.setStyle(selectedCell.getStyle());
@@ -2183,39 +2180,59 @@ export class GraphService {
               }
             });
           }
+        }
 
-          // Now create all children of the new cell
-          let viewCells = subGraph.getModel().getCell("1").children;
-          let subGlyphDict = subGraph.getModel().getCell("0").getValue();
-          let cell1 = this.graph.getModel().getCell("1");
-          for (let i = 1; i < viewCells.length; i++) { // start at cell 1 because the glyph is at 0
-            // If we already have it skip it
-            if (this.graph.getModel().getCell(viewCells[i].getId())) {
-              continue;
-            }
-
-            // clone the cell otherwise viewCells get's messed up
-            let viewClone = subGraph.getModel().cloneCell(viewCells[i]);
-            // cloning doesn't keep the id for some reason
-            viewClone.id = viewCells[i].id;
-
-            // add the cell to the graph
-            this.graph.addCell(viewClone, cell1);
-
-            // add the info to the dictionary
-            if (this.getFromGlyphDict(viewCells[i].getId()) != null) {
-              this.removeFromGlyphDict(viewCells[i].getId());
-            }
-            this.addToGlyphDict(subGlyphDict[viewCells[i].getId()]);
+        // Now create all children of the new cell
+        let viewCells = subGraph.getModel().getCell("1").children;
+        let subGlyphDict = subGraph.getModel().getCell("0").getValue();
+        let cell1 = this.graph.getModel().getCell("1");
+        for (let i = 1; i < viewCells.length; i++) { // start at cell 1 because the glyph is at 0
+          // If we already have it skip it
+          if (this.graph.getModel().getCell(viewCells[i].getId())) {
+            continue;
           }
 
+          // clone the cell otherwise viewCells get's messed up
+          let viewClone = subGraph.getModel().cloneCell(viewCells[i]);
+          // cloning doesn't keep the id for some reason
+          viewClone.id = viewCells[i].id;
+
+          // add the cell to the graph
+          this.graph.addCell(viewClone, cell1);
+
+          // add the info to the dictionary
+          if (this.getFromGlyphDict(viewCells[i].getId()) != null) {
+            this.removeFromGlyphDict(viewCells[i].getId());
+          }
+          this.addToGlyphDict(subGlyphDict[viewCells[i].getId()]);
+        }
+
+        if(selectedCell.isSequenceFeatureGlyph()){
           origParent.refreshCircuitContainer(this.graph);
           this.graph.setSelectionCell(newCell);
           this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newCell.value).partRole);
+        }
 
-          // if we came from a circuit container, zoom back into it
-          if (fromCircuitContainer) {
+        // if we came from a circuit container, zoom back into it
+        if (fromCircuitContainer) {
+          if(selectedCell.isSequenceFeatureGlyph()){
+            // if the selected cell is a sequenceFeature that means we came from a sub view
             this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), newCell, this));
+          }else{
+            // if it isn't, that means we are in a module, or at the root
+            let newRootView = this.graph.getModel().getCell(newCell.getValue());
+            if(inModuleView){
+              // get the circuit container so we can replace our current one
+              let circuitContainer = this.graph.getModel().filterCells(newRootView.children, cell => cell.isCircuitContainer())[0];
+              this.graph.getModel().setGeometry(circuitContainer, selectedCell.geometry);
+              this.graph.getModel().remove(newRootView);
+              circuitContainer = this.graph.getModel().add(selectedCell.getParent(), circuitContainer);
+              this.graph.getModel().remove(selectedCell);
+              circuitContainer.refreshCircuitContainer(this.graph);
+            }else{
+              // at the root, just zoom back in
+              this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), newRootView, this));
+            }
           }
         }
       } finally {
@@ -2919,111 +2936,118 @@ export class GraphService {
    * Sets up logic for handling sequenceFeatureGlyph movement
    */
   initSequenceFeatureGlyphMovement() {
-    this.graph.addListener(mx.mxEvent.MOVE_CELLS, mx.mxUtils.bind(this, function (sender, evt) {
+    this.graph.addListener(mx.mxEvent.MOVE_CELLS, mx.mxUtils.bind(this, async function (sender, evt) {
       // sender is the graph
 
-      let movedCells = evt.getProperty("cells");
-      // important note: if a parent cell is moving, none of its children
-      // can appear here (even if they were also selected)
+      sender.getModel().beginUpdate();
+      let cancelled = false;
+      try {
+        let movedCells = evt.getProperty("cells");
+        // important note: if a parent cell is moving, none of its children
+        // can appear here (even if they were also selected)
 
-      // sort cells: processing order is important
-      movedCells = movedCells.sort(function (cellA, cellB) {
-        if (cellA.getRootId() !== cellB.getRootId()) {
-          // cells are not related: choose arbitrary order (but still group by root)
-          return cellA.getRootId() < cellB.getRootId() ? -1 : 1;
-        } else {
-          // cells are in the same circuitContainer:
-          // must be in sequence order
-          let aIndex = cellA.getCircuitContainer(sender).getIndex(cellA);
-          let bIndex = cellB.getCircuitContainer(sender).getIndex(cellB);
+        // sort cells: processing order is important
+        movedCells = movedCells.sort(function (cellA, cellB) {
+          if (cellA.getRootId() !== cellB.getRootId()) {
+            // cells are not related: choose arbitrary order (but still group by root)
+            return cellA.getRootId() < cellB.getRootId() ? -1 : 1;
+          } else {
+            // cells are in the same circuitContainer:
+            // must be in sequence order
+            let aIndex = cellA.getCircuitContainer(sender).getIndex(cellA);
+            let bIndex = cellB.getCircuitContainer(sender).getIndex(cellB);
 
-          return aIndex - bIndex;
+            return aIndex - bIndex;
+          }
+        });
+
+        // ownership change check
+        let containers = new Set<string>();
+        if (sender.getCurrentRoot()) {
+          let ownershipChange = false;
+          for (let cell of movedCells) {
+            if (cell.isSequenceFeatureGlyph()) {
+              ownershipChange = true;
+              containers.add(cell.getParent().getValue());
+            }
+          }
+          for (let container of Array.from(containers.values())) {
+            let glyphInfo;
+            if (sender.getCurrentRoot().isComponentView()) {
+              glyphInfo = this.getFromGlyphDict(sender.getCurrentRoot().getId());
+            } else {
+              glyphInfo = this.getFromGlyphDict(container);
+            }
+            if (ownershipChange && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+              cancelled = true;
+              // go check the finally block because I couldn't undo until after the end update
+              return;
+            }
+          }
         }
-      });
 
-      // ownership change check
-      let ownershipChange = false;
-      let glyphInfo;
-      if (sender.getCurrentRoot() && sender.getCurrentRoot().getId() != "rootView") {
-        glyphInfo = this.getFromGlyphDict(sender.getCurrentRoot().getId());
-        for (let i = 0; i < movedCells.length; i++) {
+        // If two adjacent sequenceFeatureGlyphs were moved, they should be adjacent after the move.
+        // This loop finds all such sets of glyphs (relying on the sorted order) and sets them to
+        // have the same x position so there is no chance of outside glyphs sneaking in between
+        let streak;
+        for (let i = 0; i < movedCells.length; i += streak) {
+          streak = 1;
           if (!movedCells[i].isSequenceFeatureGlyph()) {
             continue;
           }
-          if (glyphInfo.uriPrefix != GlyphInfo.baseURI) {
-            ownershipChange = true;
-            break;
-          }
-        }
-      }
-      if (ownershipChange) {
-        // I tried to find a way to do this synchronously, but it kept breaking the update level
-        // For now just undo the change after it happend if they cancel
-        this.promptMakeEditableCopy(glyphInfo.displayID).then(result => {
-          if (!result) {
-            this.editor.undoManager.undo();
-            this.editor.undoManager.trim();
-          }
-        });
-      }
+          // found a sequenceFeature glyph. A streak might be starting...
+          const baseX = movedCells[i].getGeometry().x;
+          const rootId = movedCells[i].getRootId();
+          let streakWidth = movedCells[i].getGeometry().width;
 
-      // If two adjacent sequenceFeatureGlyphs were moved, they should be adjacent after the move.
-      // This loop finds all such sets of glyphs (relying on the sorted order) and sets them to
-      // have the same x position so there is no chance of outside glyphs sneaking in between
-      let streak;
-      for (let i = 0; i < movedCells.length; i += streak) {
-        streak = 1;
-        if (!movedCells[i].isSequenceFeatureGlyph()) {
-          continue;
-        }
-        // found a sequenceFeature glyph. A streak might be starting...
-        const baseX = movedCells[i].getGeometry().x;
-        const rootId = movedCells[i].getRootId();
-        let streakWidth = movedCells[i].getGeometry().width;
+          while (i + streak < movedCells.length
+            && movedCells[i + streak].isSequenceFeatureGlyph()
+            && rootId === movedCells[i + streak].getRootId()) {
+            let xToContinueStreak = baseX + streakWidth;
+            if (xToContinueStreak === movedCells[i + streak].getGeometry().x) {
+              // The next cell continues the streak
+              movedCells[i + streak].replaceGeometry(baseX, 'auto', 'auto', 'auto', sender);
 
-        while (i + streak < movedCells.length
-          && movedCells[i + streak].isSequenceFeatureGlyph()
-          && rootId === movedCells[i + streak].getRootId()) {
-          let xToContinueStreak = baseX + streakWidth;
-          if (xToContinueStreak === movedCells[i + streak].getGeometry().x) {
-            // The next cell continues the streak
-            movedCells[i + streak].replaceGeometry(baseX, 'auto', 'auto', 'auto', sender);
-
-            streakWidth += movedCells[i + streak].getGeometry().width;
-            streak++;
-          } else {
-            // the next cell breaks the streak
-            break;
+              streakWidth += movedCells[i + streak].getGeometry().width;
+              streak++;
+            } else {
+              // the next cell breaks the streak
+              break;
+            }
           }
         }
 
-        // should only happen if a sequence feature gets moved
-        ownershipChange = true;
-      }
+        // now all sequence feature glyphs are sorted by x position in the order
+        // they should be when the move finishes.
+        // (equal x position means they should stay in the order they were previously in)
+        let cells = sender.getChildVertices(sender.getDefaultParent());
+        for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
+          this.horizontalSortBasedOnPosition(circuitContainer);
+        }
 
-      // now all sequence feature glyphs are sorted by x position in the order
-      // they should be when the move finishes.
-      // (equal x position means they should stay in the order they were previously in)
-      let cells = sender.getChildVertices(sender.getDefaultParent());
-      for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
-        this.horizontalSortBasedOnPosition(circuitContainer);
-      }
+        // finallly, another special case: if a circuitContainer only has one sequenceFeatureGlyph,
+        // moving the glyph should move the circuitContainer
+        for (const cell of movedCells) {
+          if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {
+            const x = cell.getParent().getGeometry().x + evt.getProperty("dx");
+            const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
+            cell.getParent().replaceGeometry(x, y, 'auto', 'auto', sender);
+          }
+        }
 
-      // finallly, another special case: if a circuitContainer only has one sequenceFeatureGlyph,
-      // moving the glyph should move the circuitContainer
-      for (const cell of movedCells) {
-        if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {
-          const x = cell.getParent().getGeometry().x + evt.getProperty("dx");
-          const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
-          cell.getParent().replaceGeometry(x, y, 'auto', 'auto', sender);
+        for (let container of Array.from(containers)) {
+          this.changeOwnership(container);
+        }
+
+        evt.consume();
+      } finally {
+        sender.getModel().endUpdate();
+        // undo has to happen after end update
+        if (cancelled) {
+          this.editor.undoManager.undo();
+          this.editor.undoManager.trim();
         }
       }
-
-      if (ownershipChange && this.viewStack[this.viewStack.length - 1].getId() != "rootView") {
-        this.changeOwnership(this.viewStack[this.viewStack.length - 1].getId());
-      }
-
-      evt.consume();
     }));
   }
 
