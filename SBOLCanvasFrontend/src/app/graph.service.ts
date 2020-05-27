@@ -173,6 +173,9 @@ export class GraphService {
         this.view.clear(this.view.currentRoot, true);
         this.view.currentRoot = childViewCell;
 
+        // fix any layout problems
+        childViewCell.refreshViewCell(this.graphService.graph);
+
         // set the selection to the circuit container
         this.graphService.graph.setSelectionCell(childViewCell.children[0]);
         this.graphService.fitCamera();
@@ -197,8 +200,11 @@ export class GraphService {
         this.graphService.fitCamera();
 
         // make sure we can add new strands/interactions/molecules on the top level
-        if (this.graphService.graph.getCurrentRoot()) {
+        if (this.graphService.graph.getCurrentRoot().isViewCell()) {
           this.graphService.metadataService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
+
+          // refresh the circuit containers
+          this.graphService.graph.getCurrentRoot().refreshViewCell(this.graphService.graph);
         }
 
         if (newSelectedCell) {
@@ -927,8 +933,6 @@ export class GraphService {
       // add the backbone to the child view cell
       const childCircuitContainer = this.graph.insertVertex(childViewCell, null, glyphInfo.getFullURI(), 0, 0, 0, 0, circuitContainerStyleName);
       const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, backboneStyleName);
-
-      //sequenceFeatureCell.setCollapsed(true);
 
       childCircuitContainerBackbone.setConnectable(false);
       childCircuitContainer.setConnectable(false);
@@ -2125,11 +2129,9 @@ export class GraphService {
         }
 
         // zoom out to make things easier
-        if (fromCircuitContainer){
-          if(!inModuleView){
-            selectedCell = this.selectionStack[this.selectionStack.length - 1];
-            this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
-          }
+        if (fromCircuitContainer && this.viewStack.length > 1) {
+          selectedCell = this.selectionStack[this.selectionStack.length - 1];
+          this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), null, this));
         }
 
         // setup the decoding info
@@ -2142,7 +2144,7 @@ export class GraphService {
 
         // get the new cell
         let newCell = subGraph.getModel().cloneCell(subGraph.getModel().getCell("1").children[0]);
-        
+
         // not part of a module or a top level component definition
         let origParent;
         if (selectedCell.isSequenceFeatureGlyph()) {
@@ -2207,7 +2209,7 @@ export class GraphService {
           this.addToGlyphDict(subGlyphDict[viewCells[i].getId()]);
         }
 
-        if(selectedCell.isSequenceFeatureGlyph()){
+        if (selectedCell.isSequenceFeatureGlyph()) {
           origParent.refreshCircuitContainer(this.graph);
           this.graph.setSelectionCell(newCell);
           this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newCell.value).partRole);
@@ -2215,23 +2217,27 @@ export class GraphService {
 
         // if we came from a circuit container, zoom back into it
         if (fromCircuitContainer) {
-          if(selectedCell.isSequenceFeatureGlyph()){
+          if (selectedCell.isSequenceFeatureGlyph()) {
             // if the selected cell is a sequenceFeature that means we came from a sub view
             this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), newCell, this));
-          }else{
+          } else {
             // if it isn't, that means we are in a module, or at the root
             let newRootView = this.graph.getModel().getCell(newCell.getValue());
-            if(inModuleView){
+            let circuitContainer = this.graph.getModel().filterCells(newRootView.children, cell => cell.isCircuitContainer())[0];
+            if (inModuleView) {
               // get the circuit container so we can replace our current one
-              let circuitContainer = this.graph.getModel().filterCells(newRootView.children, cell => cell.isCircuitContainer())[0];
               this.graph.getModel().setGeometry(circuitContainer, selectedCell.geometry);
-              this.graph.getModel().remove(newRootView);
+              if (this.getCoupledCells(newRootView.getId()).length < 1)
+                // we don't need the root view if nothing references it, we only need it's circuit container
+                this.graph.getModel().remove(newRootView);
               circuitContainer = this.graph.getModel().add(selectedCell.getParent(), circuitContainer);
               this.graph.getModel().remove(selectedCell);
               circuitContainer.refreshCircuitContainer(this.graph);
-            }else{
+              //circuitContainer.setCollapsed(false); 
+            } else {
               // at the root, just zoom back in
               this.graph.getModel().execute(new GraphService.zoomEdit(this.graph.getView(), newRootView, this));
+              circuitContainer.refreshCircuitContainer(this.graph);
             }
           }
         }
@@ -2369,7 +2375,6 @@ export class GraphService {
             }
             cell.geometry.width = sequenceFeatureGlyphWidth;
             cell.geometry.height = sequenceFeatureGlyphHeight;
-            cell.setCollapsed(true);
           } else {
             // molecular species
             cell.style = molecularSpeciesGlyphBaseStyleName + "macromolecule";
@@ -2526,16 +2531,6 @@ export class GraphService {
       this.getBackbone().replaceGeometry('auto', sequenceFeatureGlyphHeight / 2, width, height, graph);
     };
 
-    mx.mxCell.prototype.refreshSequenceFeature = function (graph) {
-      if (!this.isSequenceFeatureGlyph()) {
-        console.error("refreshSequenceFeature: called on an invalid cell!");
-        return;
-      }
-
-      // format our child circuitContainer (width, height, subcomponents)
-      this.getCircuitContainer(graph).refreshCircuitContainer(graph);
-    };
-
     /**
      * (Re)positions the glyphs inside the circuitContainer and
      * also refreshes the backbone.
@@ -2544,13 +2539,6 @@ export class GraphService {
       if (!this.isCircuitContainer()) {
         console.error("refreshCircuitContainer: called on an invalid cell!");
         return;
-      }
-
-      // Refresh all children sequence features
-      for (let child of this.children) {
-        if (child.isSequenceFeatureGlyph()) {
-          child.refreshSequenceFeature(graph);
-        }
       }
 
       // refresh backbone (width, height)
@@ -2572,6 +2560,20 @@ export class GraphService {
         return vertex.isBackbone()
       };
       layout.execute(this);
+    };
+
+    mx.mxCell.prototype.refreshViewCell = function (graph) {
+      if (!this.isViewCell()) {
+        console.error("refreshViewCell: called on an invalid cell!");
+        return;
+      }
+
+      // refresh all circuit containers
+      for (let child of this.children) {
+        if (child.isCircuitContainer()) {
+          child.refreshCircuitContainer(graph);
+        }
+      }
     };
 
     /**
