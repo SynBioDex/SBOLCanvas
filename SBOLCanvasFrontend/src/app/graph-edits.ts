@@ -164,7 +164,7 @@ export class GraphEdits {
                 this.graphService.fitCamera();
 
                 // make sure we can add new strands/interactions/molecules on the top level
-                if (this.graphService.graph.getCurrentRoot().isViewCell()) {
+                if (this.graphService.graph.getCurrentRoot() && this.graphService.graph.getCurrentRoot().isViewCell()) {
                     this.graphService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
 
                     // refresh the circuit containers

@@ -73,7 +73,7 @@ export class GraphBase {
     // We can import non native designs. This will be set to true if ceratin annotations weren't found
     anyForeignCellsFound = false;
 
-    constructor(private glyphService: GlyphService) {
+    constructor(protected glyphService: GlyphService) {
         // constructor code is divided into helper methods for organization,
         // but these methods aren't entirely modular; order of some of
         // these calls is important
