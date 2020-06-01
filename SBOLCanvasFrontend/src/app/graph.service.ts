@@ -151,7 +151,7 @@ export class GraphService extends GraphHelpers {
         }
       }
 
-      for(let parentInfo of Array.from(parentInfos.values())){
+      for (let parentInfo of Array.from(parentInfos.values())) {
         // change the owner
         this.changeOwnership(parentInfo.getFullURI());
       }
@@ -1012,6 +1012,11 @@ export class GraphService extends GraphHelpers {
         let parentInfo = this.getParentInfo(selectedCell);
         if (parentInfo && parentInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
           return;
+        } else if (parentInfo) {
+          let parentIndex = this.graph.getCurrentRoot().getIndex(selectedCell.getParent());
+          let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
+          this.changeOwnership(parentInfo.getFullURI());
+          selectedCell = this.graph.getCurrentRoot().children[parentIndex].children[selectedCellIndex];
         }
 
         // zoom out to make things easier
@@ -1174,22 +1179,5 @@ export class GraphService extends GraphHelpers {
    */
   public setComponentDefinitionMode(componentMode: boolean) {
     this.metadataService.setComponentDefinitionMode(componentMode);
-  }
-
-
-
-  horizontalSortBasedOnPosition(circuitContainer) {
-    // sort the children
-    let childrenCopy = circuitContainer.children.slice();
-    childrenCopy.sort(function (cellA, cellB) {
-      return cellA.getGeometry().x - cellB.getGeometry().x;
-    });
-    // and have the model reflect the sort in an undoable way
-    for (let i = 0; i < childrenCopy.length; i++) {
-      const child = childrenCopy[i];
-      this.graph.getModel().add(circuitContainer, child, i);
-    }
-
-    circuitContainer.refreshCircuitContainer(this.graph);
   }
 }

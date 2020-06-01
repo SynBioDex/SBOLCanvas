@@ -936,4 +936,19 @@ export class GraphHelpers extends GraphBase {
             return point;
         }
     }
+
+    horizontalSortBasedOnPosition(circuitContainer) {
+        // sort the children
+        let childrenCopy = circuitContainer.children.slice();
+        childrenCopy.sort(function (cellA, cellB) {
+          return cellA.getGeometry().x - cellB.getGeometry().x;
+        });
+        // and have the model reflect the sort in an undoable way
+        for (let i = 0; i < childrenCopy.length; i++) {
+          const child = childrenCopy[i];
+          this.graph.getModel().add(circuitContainer, child, i);
+        }
+    
+        circuitContainer.refreshCircuitContainer(this.graph);
+      }
 }
