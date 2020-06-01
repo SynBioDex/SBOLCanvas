@@ -111,33 +111,26 @@ export class GraphService extends GraphHelpers {
     let selectionCells = this.graph.getSelectionCells();
 
     // flip any selected glyphs
+    let parentInfos = new Set<GlyphInfo>();
     for (let cell of selectionCells) {
       if (cell.isSequenceFeatureGlyph()) {
-
-        // check if we own this item
-        if (this.graph.getCurrentRoot()) {
-          let glyphInfo;
-          if (this.graph.getCurrentRoot().isComponentView()) {
-            // normal case
-            glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
-          } else {
-            // edge case of a module view
-            glyphInfo = this.getFromGlyphDict(cell.getParent().getValue());
-          }
-          if (glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
-            return;
-          }
-        }
+        // add the item to check ownership
+        parentInfos.add(this.getParentInfo(cell));
+      }
+    }
+    for (let parentInfo of Array.from(parentInfos.values())) {
+      if (parentInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
+        return;
       }
     }
 
-    for(let cell of selectionCells){
-      if(cell.isSequenceFeatureGlyph()){
+    try {
+      this.graph.getModel().beginUpdate();
 
-        // Make the cell face east/west.
-        this.graph.getModel().beginUpdate();
+      for (let cell of selectionCells) {
+        if (cell.isSequenceFeatureGlyph()) {
 
-        try {
+          // Make the cell face east/west
           let direction = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_DIRECTION];
           console.debug("current glyph direction setting = " + direction);
 
@@ -151,32 +144,19 @@ export class GraphService extends GraphHelpers {
             this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "east", [cell]);
             console.debug("turning east")
           }
-
-          // change the owner
-          if (this.graph.getCurrentRoot()) {
-            let glyphInfo;
-            if (this.graph.getCurrentRoot().isComponentView()) {
-              // normal case
-              glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
-            } else {
-              // edge case of a module view
-              glyphInfo = this.getFromGlyphDict(cell.getParent().getValue());
-            }
-            this.changeOwnership(glyphInfo.getFullURI());
-          }
-        } finally {
-          this.graph.getModel().endUpdate();
-        }
-      } else if (cell.isInteraction()) {
-        this.graph.getModel().beginUpdate();
-        try {
+        } else if (cell.isInteraction()) {
           const src = cell.source;
           const dest = cell.target;
           this.graph.addEdge(cell, null, dest, src);
-        } finally {
-          this.graph.getModel().endUpdate();
         }
       }
+
+      for(let parentInfo of Array.from(parentInfos.values())){
+        // change the owner
+        this.changeOwnership(parentInfo.getFullURI());
+      }
+    } finally {
+      this.graph.getModel().endUpdate();
     }
   }
 
@@ -415,7 +395,7 @@ export class GraphService extends GraphHelpers {
     this.graph.center();
   }
 
- 
+
 
   /**
    * Turns the given element into a dragsource for creating
