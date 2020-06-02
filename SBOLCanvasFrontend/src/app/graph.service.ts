@@ -151,10 +151,21 @@ export class GraphService extends GraphHelpers {
         }
       }
 
+      // sync circuit containers
+      for(let parentInfo of Array.from(parentInfos.values())){
+        let viewCell = this.graph.getModel().getCell(parentInfo.getFullURI());
+        for (let circuitContainer of viewCell.children) {
+          if (!circuitContainer.isCircuitContainer())
+            continue;
+          this.syncCircuitContainer(circuitContainer);
+        }
+      }
+
       for (let parentInfo of Array.from(parentInfos.values())) {
         // change the owner
         this.changeOwnership(parentInfo.getFullURI());
       }
+
     } finally {
       this.graph.getModel().endUpdate();
     }
@@ -304,6 +315,17 @@ export class GraphService extends GraphHelpers {
 
       this.trimUnreferencedCells();
 
+      // sync circuit containers
+      for (let container of Array.from(containers)) {
+        let viewCell = this.graph.getModel().getCell(container);
+        for (let circuitContainer of viewCell.children) {
+          if (!circuitContainer.isCircuitContainer())
+            continue;
+          this.syncCircuitContainer(circuitContainer);
+        }
+      }
+
+      // obtain ownership
       for (let container of Array.from(containers)) {
         this.changeOwnership(container);
       }
@@ -541,6 +563,9 @@ export class GraphService extends GraphHelpers {
           this.changeOwnership(glyphInfo.getFullURI());
         }
       }
+
+      // synchronize circuit containers
+      this.syncCircuitContainer(circuitContainer);
     } finally {
       this.graph.getModel().endUpdate();
     }
