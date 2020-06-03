@@ -47,7 +47,7 @@ export class GraphHelpers extends GraphBase {
         try {
             let selectedCells = this.graph.getSelectionCells();
             if (selectedCells.length > 1 || selectedCells.length == 0) {
-                console.debug("Trying to change info on too many or too few cells!");
+                console.error("Trying to change info on too many or too few cells!");
                 return;
             }
             let selectedCell = selectedCells[0];
@@ -72,8 +72,9 @@ export class GraphHelpers extends GraphBase {
                 }
 
                 let shouldDecouple = false;
-                const coupledCells = this.getCoupledCells(oldGlyphURI);
-                if (coupledCells.length > 1) {
+                const coupledCells = this.getCoupledGlyphs(oldGlyphURI);
+                const coupledContainers = this.getCoupledCircuitContainers(oldGlyphURI, true);
+                if ((coupledCells.length > 0 && coupledCells[0] != selectedCell) || (coupledContainers.length > 0 && coupledContainers[0] != selectedCell)) {
                     // decoupleResult will be "Yes" if they should still be coupled, "No" if not
                     let decoupleResult = await this.promptDeCouple();
                     if (decoupleResult === "Yes") {
@@ -88,7 +89,8 @@ export class GraphHelpers extends GraphBase {
                 let shouldCouple = false;
                 let keepSubstructure = false;
                 const conflictViewCell = this.graph.getModel().getCell(newGlyphURI);
-                if (conflictViewCell != null) {
+                const conflictContainers = this.getCoupledCircuitContainers(newGlyphURI, true);
+                if (conflictViewCell != null || conflictContainers.length > 0) {
                     // CoupleResult will be "Keep" if the current substructure should be kept, "Update" if the new substructure should be inherited
                     let coupleResult = await this.promptCouple();
                     shouldCouple = true;
@@ -160,6 +162,9 @@ export class GraphHelpers extends GraphBase {
                     coupledCells.forEach(function (cell) {
                         graph.getModel().setValue(cell, newGlyphURI);
                     });
+                    coupledContainers.forEach(function(cell) {
+                        graph.getModel().setValue(cell, newGlyphURI);
+                    });
                     if (glyphZoomed) {
                         this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), glyphZoomed, this));
                     }
@@ -173,7 +178,7 @@ export class GraphHelpers extends GraphBase {
                 }
 
                 // update the glyph graphics
-                let newCoupledCells = this.getCoupledCells(newGlyphURI);
+                let newCoupledCells = this.getCoupledGlyphs(newGlyphURI);
                 info = this.getFromGlyphDict(newGlyphURI);
                 this.mutateSequenceFeatureGlyph(info.partRole, newCoupledCells, this.graph);
 
@@ -194,7 +199,7 @@ export class GraphHelpers extends GraphBase {
 
             // there may be coupled cells that need to also be mutated
             // the glyphInfo may be different than info, so use getFromGlyphDict
-            this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.value).partRole, this.getCoupledCells(selectedCell.value));
+            this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.value).partRole, this.getCoupledGlyphs(selectedCell.value));
 
             // change the ownership
             this.changeOwnership(selectedCell.getValue());
@@ -581,10 +586,10 @@ export class GraphHelpers extends GraphBase {
 
         // get the main root of what we can see
         let root = this.graph.getCurrentRoot();
-        let coupledCells = this.getCoupledCells(root.getId());
+        let coupledCells = this.getCoupledGlyphs(root.getId());
         while (coupledCells.length > 0) {
             root = coupledCells[0].getParent().getParent();
-            coupledCells = this.getCoupledCells(root.getId());
+            coupledCells = this.getCoupledGlyphs(root.getId());
         }
         toExpand.add(root.getId());
 
@@ -626,12 +631,28 @@ export class GraphHelpers extends GraphBase {
 
     }
 
-    protected getCoupledCells(glyphURI: string): mxCell[] {
+    protected getCoupledGlyphs(glyphURI: string): mxCell[] {
         const coupledCells = [];
         for (let key in this.graph.getModel().cells) {
             const cell = this.graph.getModel().cells[key];
             if (cell.value === glyphURI && cell.isSequenceFeatureGlyph()) {
                 coupledCells.push(cell);
+            }
+        }
+        return coupledCells;
+    }
+
+    protected getCoupledCircuitContainers(glyphURI: string, onlyModuleContainers: boolean = false): mxCell[] {
+        const coupledCells = [];
+        const cell1 = this.graph.getModel().getCell("1");
+        for(let viewCell of cell1.children){
+            if(onlyModuleContainers && viewCell.isComponentView())
+                continue;
+            for(let circuitContainer of viewCell.children){
+                if(!circuitContainer.isCircuitContainer())
+                    continue;
+                if(circuitContainer.value === glyphURI)
+                    coupledCells.push(circuitContainer);
             }
         }
         return coupledCells;
@@ -643,6 +664,10 @@ export class GraphHelpers extends GraphBase {
      * @param newGlyphURI 
      */
     protected updateViewCell(cell: mxCell, newGlyphURI: string) {
+        if(!cell || !cell.isViewCell()){
+            console.error("updateViewCell called on a non viewCell!");
+            return;
+        }
         // update the circuit container value if the view is a component view
         if (cell.isComponentView()) {
             let circuitContainer = cell.children.filter(cell => cell.isCircuitContainer())[0];

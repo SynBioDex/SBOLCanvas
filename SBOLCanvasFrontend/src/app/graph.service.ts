@@ -897,7 +897,7 @@ export class GraphService extends GraphHelpers {
     let viewCells = this.graph.getModel().getChildren(cell1);
     let rootViewCell = viewCells[0];
     for (let viewCell of viewCells) {
-      if (this.getCoupledCells(viewCell.getId()).length > 0)
+      if (this.getCoupledGlyphs(viewCell.getId()).length > 0)
         continue;
       rootViewCell = viewCell;
       break;
@@ -986,7 +986,7 @@ export class GraphService extends GraphHelpers {
           this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
 
           // remove the old cell's view cell if it doesn't have any references
-          if (this.getCoupledCells(selectedCell.value).length < 2) {
+          if (this.getCoupledGlyphs(selectedCell.value).length < 2) {
             this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
           }
 
@@ -1054,7 +1054,7 @@ export class GraphService extends GraphHelpers {
             if (inModuleView) {
               // get the circuit container so we can replace our current one
               this.graph.getModel().setGeometry(circuitContainer, selectedCell.geometry);
-              if (this.getCoupledCells(newRootView.getId()).length < 1)
+              if (this.getCoupledGlyphs(newRootView.getId()).length < 1)
                 // we don't need the root view if nothing references it, we only need it's circuit container
                 this.graph.getModel().remove(newRootView);
               circuitContainer = this.graph.getModel().add(selectedCell.getParent(), circuitContainer);

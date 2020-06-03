@@ -851,7 +851,6 @@ export class GraphBase {
                         circuitContainers.add(movedCell.getParent());
                     }
                 }
-                
                 for(let circuitContainer of Array.from(circuitContainers.values())){
                     this.syncCircuitContainer(circuitContainer);
                 }
