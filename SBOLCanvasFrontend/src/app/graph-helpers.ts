@@ -144,8 +144,11 @@ export class GraphHelpers extends GraphBase {
                 if (shouldCouple) {
                     if (keepSubstructure) {
                         // if we're coupling and keeping substructure, remove the conflict
-                        this.graph.getModel().remove(conflictViewCell);
-                        this.updateViewCell(viewCell, newGlyphURI);
+                        // if we're in a module, the viewcell might not exist
+                        if (viewCell){
+                            this.graph.getModel().remove(conflictViewCell);
+                            this.updateViewCell(viewCell, newGlyphURI);
+                        }
                     } else {
                         // if we're coupling and updating, remove the current substructure
                         this.graph.getModel().remove(viewCell);
@@ -181,6 +184,33 @@ export class GraphHelpers extends GraphBase {
                 let newCoupledCells = this.getCoupledGlyphs(newGlyphURI);
                 info = this.getFromGlyphDict(newGlyphURI);
                 this.mutateSequenceFeatureGlyph(info.partRole, newCoupledCells, this.graph);
+
+                // sync the circuitcontainers
+                if (selectedCell.isCircuitContainer()) {
+                    if(!shouldCouple || keepSubstructure){
+                        this.syncCircuitContainer(selectedCell);
+                    }else{
+                        // we need to sync the conflicting container
+                        if(conflictViewCell){
+                            // pull the circuit container out of the view cell
+                            for(let circuitContainer of conflictViewCell.children){
+                                if(!circuitContainer.isCircuitContainer())
+                                    continue;
+                                this.syncCircuitContainer(circuitContainer);
+                            }
+                        }else{
+                            // there was no view cell, so just take it from the list
+                            this.syncCircuitContainer(conflictContainers[0]);
+                        }
+                    }
+                } else {
+                    viewCell = this.graph.getModel().getCell(newGlyphURI);
+                    for (let circuitContainer of viewCell.children) {
+                        if (!circuitContainer.circuitContainer())
+                            continue;
+                        this.syncCircuitContainer(circuitContainer);
+                    }
+                }
 
                 // update the ownership
                 if (selectedCell.isCircuitContainer()) {
