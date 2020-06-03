@@ -844,6 +844,19 @@ export class GraphBase {
                     }
                 }
 
+                // sync circuit containers
+                let circuitContainers = new Set<mxCell>();
+                for(let movedCell of movedCells){
+                    if(movedCell.isSequenceFeatureGlyph()){
+                        circuitContainers.add(movedCell.getParent());
+                    }
+                }
+                
+                for(let circuitContainer of Array.from(circuitContainers.values())){
+                    this.syncCircuitContainer(circuitContainer);
+                }
+
+                // change ownership
                 for (let container of Array.from(containers)) {
                     this.changeOwnership(container);
                 }
