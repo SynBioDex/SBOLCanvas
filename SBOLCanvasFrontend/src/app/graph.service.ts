@@ -134,10 +134,10 @@ export class GraphService extends GraphHelpers {
             this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "west", [cell]);
           } else if (direction === "east") {
             this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "west", [cell]);
-            console.debug("turning west")
+            console.debug("turning west");
           } else if (direction == "west") {
             this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "east", [cell]);
-            console.debug("turning east")
+            console.debug("turning east");
           }
         } else if (cell.isInteraction()) {
           const src = cell.source;
@@ -342,6 +342,9 @@ export class GraphService extends GraphHelpers {
   undo() {
     // (un/re)doing is managed by the editor; it only works
     // if all changes are encapsulated by graphModel.(begin/end)Update
+
+    // clearing the selection avoids a lot of exceptions from mxgraph code for some reason.
+    this.graph.clearSelection();
     this.editor.execute('undo');
 
     //console.log(this.editor.undoManager);
@@ -364,6 +367,7 @@ export class GraphService extends GraphHelpers {
   redo() {
     //console.log(this.editor.undoManager);
 
+    this.graph.clearSelection();
     this.editor.execute('redo');
 
     // If the undo caused scars to become visible, we should update

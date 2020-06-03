@@ -74,7 +74,7 @@ export class GraphHelpers extends GraphBase {
                 let shouldDecouple = false;
                 const coupledCells = this.getCoupledGlyphs(oldGlyphURI);
                 const coupledContainers = this.getCoupledCircuitContainers(oldGlyphURI, true);
-                if ((coupledCells.length > 0 && coupledCells[0] != selectedCell) || (coupledContainers.length > 0 && coupledContainers[0] != selectedCell)) {
+                if (coupledCells.length > 1 || coupledContainers.length > 1 || (coupledCells.length == 1 && coupledCells[0] != selectedCell) || (coupledContainers.length == 1 && coupledContainers[0] != selectedCell)) {
                     // decoupleResult will be "Yes" if they should still be coupled, "No" if not
                     let decoupleResult = await this.promptDeCouple();
                     if (decoupleResult === "Yes") {
@@ -162,7 +162,7 @@ export class GraphHelpers extends GraphBase {
                     coupledCells.forEach(function (cell) {
                         graph.getModel().setValue(cell, newGlyphURI);
                     });
-                    coupledContainers.forEach(function(cell) {
+                    coupledContainers.forEach(function (cell) {
                         graph.getModel().setValue(cell, newGlyphURI);
                     });
                     if (glyphZoomed) {
@@ -237,7 +237,7 @@ export class GraphHelpers extends GraphBase {
 
             // move the edges
             for (let glyph of circuitContainer.children) {
-                if(!glyph.edges){
+                if (!glyph.edges) {
                     continue;
                 }
                 let glyphIndex = circuitContainer.getIndex(glyph);
@@ -645,13 +645,13 @@ export class GraphHelpers extends GraphBase {
     protected getCoupledCircuitContainers(glyphURI: string, onlyModuleContainers: boolean = false): mxCell[] {
         const coupledCells = [];
         const cell1 = this.graph.getModel().getCell("1");
-        for(let viewCell of cell1.children){
-            if(onlyModuleContainers && viewCell.isComponentView())
+        for (let viewCell of cell1.children) {
+            if (onlyModuleContainers && viewCell.isComponentView())
                 continue;
-            for(let circuitContainer of viewCell.children){
-                if(!circuitContainer.isCircuitContainer())
+            for (let circuitContainer of viewCell.children) {
+                if (!circuitContainer.isCircuitContainer())
                     continue;
-                if(circuitContainer.value === glyphURI)
+                if (circuitContainer.value === glyphURI)
                     coupledCells.push(circuitContainer);
             }
         }
@@ -664,7 +664,7 @@ export class GraphHelpers extends GraphBase {
      * @param newGlyphURI 
      */
     protected updateViewCell(cell: mxCell, newGlyphURI: string) {
-        if(!cell || !cell.isViewCell()){
+        if (!cell || !cell.isViewCell()) {
             console.error("updateViewCell called on a non viewCell!");
             return;
         }
