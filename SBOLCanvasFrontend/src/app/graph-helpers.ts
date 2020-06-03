@@ -442,6 +442,9 @@ export class GraphHelpers extends GraphBase {
         console.debug("Current root: ");
         console.debug(this.graph.getCurrentRoot());
 
+        console.debug("Undo manager: ");
+        console.debug(this.editor.undoManager);
+
         console.debug("Graph Model: ");
         console.debug(this.graph.getModel());
 

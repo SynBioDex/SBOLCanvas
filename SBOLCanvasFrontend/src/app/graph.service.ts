@@ -60,19 +60,18 @@ export class GraphService extends GraphHelpers {
     this.graph.getModel().beginUpdate();
     try {
       let allGraphCells = this.graph.getDefaultParent().children;
-      for (let i = 0; i < allGraphCells.length; i++) {
-        if (allGraphCells[i].isCircuitContainer()) {
-          this.setScars(allGraphCells[i], this.showingScars);
+        for(let i = 0; i < allGraphCells.length; i++){
+            if(allGraphCells[i].isCircuitContainer()){
+                this.setScars(allGraphCells[i], this.showingScars);
+            }
         }
-      }
     } finally {
       this.graph.getModel().endUpdate();
     }
   }
 
   /**
-   * Recursively changes all scars in a circuit container and
-   * children circuit containers.
+   * Changes all scars in a circuit container.
    * @param circuitContainer
    * @param isCollapsed
    */
@@ -93,10 +92,6 @@ export class GraphService extends GraphHelpers {
           geo.width = 0;
         }
         this.graph.getModel().setGeometry(child, geo);
-      }
-
-      if (children[i].isSequenceFeatureGlyph()) {
-        this.setScars(children[i].getCircuitContainer(this.graph), isCollapsed);
       }
     }
     circuitContainer.refreshCircuitContainer(this.graph)
@@ -152,12 +147,10 @@ export class GraphService extends GraphHelpers {
       }
 
       // sync circuit containers
-      for(let parentInfo of Array.from(parentInfos.values())){
-        let viewCell = this.graph.getModel().getCell(parentInfo.getFullURI());
-        for (let circuitContainer of viewCell.children) {
-          if (!circuitContainer.isCircuitContainer())
-            continue;
-          this.syncCircuitContainer(circuitContainer);
+      let circuitContainers = [];
+      for(let cell of selectionCells){
+        if(cell.isSequenceFeatureGlyph()){
+          this.syncCircuitContainer(cell.getParent());
         }
       }
 
@@ -184,8 +177,13 @@ export class GraphService extends GraphHelpers {
       return;
     }
 
-    let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
-    this.graph.getModel().execute(zoomEdit);
+    this.graph.getModel().beginUpdate();
+    try{
+      let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
+      this.graph.getModel().execute(zoomEdit);
+    }finally{
+      this.graph.getModel().endUpdate();
+    }
   }
 
   /**
