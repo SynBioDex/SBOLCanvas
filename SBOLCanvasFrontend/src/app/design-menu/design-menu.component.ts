@@ -4,6 +4,7 @@ import {GraphService} from '../graph.service';
 import {MatDialog} from '@angular/material/dialog';
 import {ColorPickerComponent} from '../color-picker/color-picker.component';
 import {StyleInfo} from '../style-info';
+import { MatSelectChange } from '@angular/material';
 
 declare var require: any;
 const mx = require('mxgraph')({
@@ -48,6 +49,7 @@ export class DesignMenuComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result != null) {
         this.styleInfo.setStrokeColor(result);
+        this.graphService.setSelectedCellStyle(this.styleInfo);
       }
     });
   }
@@ -60,6 +62,7 @@ export class DesignMenuComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result != null) {
         this.styleInfo.setFillColor(result);
+        this.graphService.setSelectedCellStyle(this.styleInfo);
       }
     });
   }
@@ -72,8 +75,68 @@ export class DesignMenuComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result != null) {
         this.styleInfo.setFontColor(result);
+        this.graphService.setSelectedCellStyle(this.styleInfo);
       }
     });
+  }
+
+  inputChange(event: any){
+    const id = event.target.id;
+
+    switch(id){
+      case 'strokeOpacity': {
+        this.styleInfo.setStrokeOpacity(event.target.value);
+        break;
+      }
+      case 'strokeWidth': {
+        this.styleInfo.setStrokeWidth(event.target.value);
+        break;
+      }
+      case 'fillOpacity': {
+        this.styleInfo.setFillOpacity(event.target.value);
+        break;
+      }
+      case 'endSize' : {
+        this.styleInfo.setEndSize(event.target.value);
+        break;
+      }
+      case 'sourceSpacing' : {
+        this.styleInfo.setSourceSpacing(event.target.value);
+        break;
+      }
+      case 'targetSpacing' : {
+        this.styleInfo.setTargetSpacing(event.target.value);
+        break;
+      }
+      case 'fontOpacity' : {
+        this.styleInfo.setFontOpacity(event.target.value);
+        break;
+      }
+      case 'fontSize' : {
+        this.styleInfo.setFontSize(event.target.value);
+        break;
+      }
+    }
+
+    this.graphService.setSelectedCellStyle(this.styleInfo);
+  }
+
+  dropDownChange(event: MatSelectChange){
+    const id = event.source.id;
+
+    switch(id){
+      case 'edgeStyle' : {
+        this.styleInfo.setEdgeStyle(event.value);
+        break;
+      }
+      case 'bendStyle' : {
+        this.styleInfo.setBendStyle(event.value);
+        break;
+      }
+
+    }
+
+    this.graphService.setSelectedCellStyle(this.styleInfo);
   }
 
 }

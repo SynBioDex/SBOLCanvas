@@ -24,8 +24,8 @@
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
               <mat-form-field appearance="outline" class="number-input">
-                <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
-                       (change)="styleInfo.setStrokeOpacity($event.target.value)" [value]="styleInfo.currentStrokeOpacity()">
+                <input id="strokeOpacity" #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentStrokeOpacity()">
               </mat-form-field>
             </div>
           </mat-grid-tile>
@@ -39,8 +39,8 @@
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
               <mat-form-field appearance="outline" class="number-input">
-                <input #endSizeInput matInput type="number" min="1" step="0.1" oninput="validity.valid||(value='');"
-                       (change)="styleInfo.setStrokeWidth($event.target.value)" [value]="styleInfo.currentStrokeWidth()">
+                <input id="strokeWidth" #endSizeInput matInput type="number" min="1" step="0.1" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentStrokeWidth()">
               </mat-form-field>
             </div>
           </mat-grid-tile>
@@ -75,8 +75,8 @@
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
               <mat-form-field appearance="outline" class="number-input">
-                <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
-                       (change)="styleInfo.setFillOpacity($event.target.value)" [value]="styleInfo.currentFillOpacity()">
+                <input id="fillOpacity" #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentFillOpacity()">
               </mat-form-field>
             </div>
           </mat-grid-tile>
@@ -100,7 +100,7 @@
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
               <mat-form-field appearance="outline" style="max-width:85px;">
-                <mat-select value="{{styleInfo.currentEdgeStyle()}}" (selectionChange)="styleInfo.setEdgeStyle($event.value)">
+                <mat-select id="edgeStyle" value="{{styleInfo.currentEdgeStyle()}}" (selectionChange)="dropDownChange($event)">
                   <mat-select-trigger>
                     <img src="assets/icons/{{styleInfo.currentEdgeStyle()}}.png"/>
                   </mat-select-trigger>
@@ -136,7 +136,7 @@
           </mat-grid-tile>
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
-              <mat-select style="max-width: 90px;" class="auto-width" value="{{styleInfo.currentBendStyle()}}" (selectionChange)="styleInfo.setBendStyle($event.value)">
+              <mat-select id="bendStyle" style="max-width: 90px;" class="auto-width" value="{{styleInfo.currentBendStyle()}}" (selectionChange)="dropDownChange($event)">
                 <mat-option value="sharp">Sharp</mat-option>
                 <mat-option value="rounded">Rounded</mat-option>
                 <mat-option value="curved">Curved</mat-option>
@@ -153,8 +153,8 @@
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
               <mat-form-field appearance="outline" class="number-input">
-                <input #endSizeInput matInput type="number" min="0" oninput="validity.valid||(value='');"
-                       (change)="styleInfo.setEndSize($event.target.value)" [value]="styleInfo.currentEndSize()">
+                <input id="endSize" #endSizeInput matInput type="number" min="0" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentEndSize()">
               </mat-form-field>
             </div>
           </mat-grid-tile>
@@ -168,8 +168,8 @@
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
               <mat-form-field appearance="outline" class="number-input">
-                <input #endSizeInput matInput type="number"
-                       (change)="styleInfo.setSourceSpacing($event.target.value)" [value]="styleInfo.currentSourceSpacing()">
+                <input id="sourceSpacing" #endSizeInput matInput type="number"
+                       (change)="inputChange($event)" [value]="styleInfo.currentSourceSpacing()">
               </mat-form-field>
             </div>
           </mat-grid-tile>
@@ -184,8 +184,8 @@
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
               <mat-form-field appearance="outline" class="number-input">
-                <input #endSizeInput matInput type="number"
-                       (change)="styleInfo.setTargetSpacing($event.target.value)" [value]="styleInfo.currentTargetSpacing()">
+                <input id="targetSpacing" #endSizeInput matInput type="number"
+                       (change)="inputChange($event)" [value]="styleInfo.currentTargetSpacing()">
               </mat-form-field>
             </div>
           </mat-grid-tile>
@@ -221,8 +221,8 @@
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
               <mat-form-field appearance="outline" class="number-input">
-                <input #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
-                       (change)="styleInfo.setFontOpacity($event.target.value)" [value]="styleInfo.currentFontOpacity()">
+                <input id="fontOpacity" #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentFontOpacity()">
               </mat-form-field>
             </div>
           </mat-grid-tile>
@@ -236,8 +236,8 @@
           <mat-grid-tile>
             <div fxFlex fxLayoutAlign="end">
               <mat-form-field appearance="outline" class="number-input">
-                <input #endSizeInput matInput type="number" min="1" oninput="validity.valid||(value='');"
-                       (change)="styleInfo.setFontSize($event.target.value)" [value]="styleInfo.currentFontSize()">
+                <input id="fontSize" #endSizeInput matInput type="number" min="1" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentFontSize()">
               </mat-form-field>
             </div>
           </mat-grid-tile>

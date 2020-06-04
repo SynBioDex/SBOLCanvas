@@ -21,6 +21,7 @@ import { ConfirmComponent } from './confirm/confirm.component';
 import { GraphEdits } from './graph-edits';
 import { GraphBase, mx } from './graph-base';
 import { GraphHelpers } from './graph-helpers';
+import { StyleInfo } from './style-info';
 
 @Injectable({
   providedIn: 'root'
@@ -60,11 +61,11 @@ export class GraphService extends GraphHelpers {
     this.graph.getModel().beginUpdate();
     try {
       let allGraphCells = this.graph.getDefaultParent().children;
-        for(let i = 0; i < allGraphCells.length; i++){
-            if(allGraphCells[i].isCircuitContainer()){
-                this.setScars(allGraphCells[i], this.showingScars);
-            }
+      for (let i = 0; i < allGraphCells.length; i++) {
+        if (allGraphCells[i].isCircuitContainer()) {
+          this.setScars(allGraphCells[i], this.showingScars);
         }
+      }
     } finally {
       this.graph.getModel().endUpdate();
     }
@@ -148,8 +149,8 @@ export class GraphService extends GraphHelpers {
 
       // sync circuit containers
       let circuitContainers = [];
-      for(let cell of selectionCells){
-        if(cell.isSequenceFeatureGlyph()){
+      for (let cell of selectionCells) {
+        if (cell.isSequenceFeatureGlyph()) {
           this.syncCircuitContainer(cell.getParent());
         }
       }
@@ -178,10 +179,10 @@ export class GraphService extends GraphHelpers {
     }
 
     this.graph.getModel().beginUpdate();
-    try{
+    try {
       let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
       this.graph.getModel().execute(zoomEdit);
-    }finally{
+    } finally {
       this.graph.getModel().endUpdate();
     }
   }
@@ -787,6 +788,24 @@ export class GraphService extends GraphHelpers {
         this.graph.refresh(selectedCell);
         this.updateAngularMetadata(this.graph.getSelectionCells());
       }
+    }
+  }
+
+  setSelectedCellStyle(styleInfo: StyleInfo) {
+    this.graph.getModel().beginUpdate();
+    try {
+      let selectedCells = this.graph.getSelectionCells();
+      // filter out the circuit containers
+      for(let i = 0; i < selectedCells.length; i++){
+        if(selectedCells[i].isCircuitContainer()){
+          selectedCells[i] = selectedCells[i].getBackbone();
+        }
+      }
+      for (let key in styleInfo.styles) {
+        this.graph.setCellStyles(key, styleInfo.styles[key], selectedCells);
+      }
+    } finally {
+      this.graph.getModel().endUpdate();
     }
   }
 
