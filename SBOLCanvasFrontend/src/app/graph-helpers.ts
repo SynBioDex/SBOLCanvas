@@ -282,7 +282,8 @@ export class GraphHelpers extends GraphBase {
                 }
             }
             this.graph.getModel().remove(circuitContainer);
-            this.graph.getModel().add(originalParent, cellClone);
+            let cellAdded = this.graph.getModel().add(originalParent, cellClone);
+            cellAdded.refreshCircuitContainer(this.graph);
         }
     }
 

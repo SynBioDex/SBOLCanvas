@@ -796,8 +796,8 @@ export class GraphService extends GraphHelpers {
     try {
       let selectedCells = this.graph.getSelectionCells().slice();
       // filter out the circuit containers
-      for(let i = 0; i < selectedCells.length; i++){
-        if(selectedCells[i].isCircuitContainer()){
+      for (let i = 0; i < selectedCells.length; i++) {
+        if (selectedCells[i].isCircuitContainer()) {
           selectedCells[i] = selectedCells[i].getBackbone();
         }
       }
@@ -807,12 +807,12 @@ export class GraphService extends GraphHelpers {
 
       // sync circuit containers
       let circuitContainers = new Set<mxCell>();
-      for(let cell of selectedCells){
-        if(cell.isSequenceFeatureGlyph() || cell.isBackbone()){
+      for (let cell of selectedCells) {
+        if (cell.isSequenceFeatureGlyph() || cell.isBackbone()) {
           circuitContainers.add(cell.getParent());
         }
       }
-      for(let circuitContainer of Array.from(circuitContainers.values())){
+      for (let circuitContainer of Array.from(circuitContainers.values())) {
         this.syncCircuitContainer(circuitContainer);
       }
 
@@ -957,6 +957,9 @@ export class GraphService extends GraphHelpers {
     this.fitCamera();
 
     this.metadataService.setComponentDefinitionMode(this.graph.getCurrentRoot().isComponentView());
+
+    // top level compDefs may not have cells referencing them, but they still end up with view cells for other reasons
+    this.trimUnreferencedCells();
 
     this.editor.undoManager.clear();
   }
@@ -1107,7 +1110,7 @@ export class GraphService extends GraphHelpers {
         }
 
         // sync circuit containers
-        if(origParent){
+        if (origParent) {
           this.syncCircuitContainer(origParent);
         }
       } finally {
