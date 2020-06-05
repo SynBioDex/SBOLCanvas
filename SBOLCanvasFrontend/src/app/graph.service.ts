@@ -983,17 +983,20 @@ export class GraphService extends GraphHelpers {
         let parentInfo = this.getParentInfo(selectedCell);
         if (parentInfo && parentInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
           return;
-        } else if (parentInfo) {
-          let parentIndex = this.graph.getCurrentRoot().getIndex(selectedCell.getParent());
-          let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
-          this.changeOwnership(parentInfo.getFullURI());
-          selectedCell = this.graph.getCurrentRoot().children[parentIndex].children[selectedCellIndex];
         }
 
         // zoom out to make things easier
         if (fromCircuitContainer && this.viewStack.length > 1) {
           selectedCell = this.selectionStack[this.selectionStack.length - 1];
           this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
+        }
+
+        // change ownership
+        if (parentInfo) {
+          let parentIndex = this.graph.getCurrentRoot().getIndex(selectedCell.getParent());
+          let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
+          this.changeOwnership(parentInfo.getFullURI());
+          selectedCell = this.graph.getCurrentRoot().children[parentIndex].children[selectedCellIndex];
         }
 
         // setup the decoding info
@@ -1095,13 +1098,17 @@ export class GraphService extends GraphHelpers {
               circuitContainer = this.graph.getModel().add(selectedCell.getParent(), circuitContainer);
               this.graph.getModel().remove(selectedCell);
               circuitContainer.refreshCircuitContainer(this.graph);
-              //circuitContainer.setCollapsed(false); 
             } else {
               // at the root, just zoom back in
               this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newRootView, this));
               circuitContainer.refreshCircuitContainer(this.graph);
             }
           }
+        }
+
+        // sync circuit containers
+        if(origParent){
+          this.syncCircuitContainer(origParent);
         }
       } finally {
         this.graph.getModel().endUpdate();
