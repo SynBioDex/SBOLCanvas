@@ -32,6 +32,8 @@ export class StyleInfo {
     this.styles = {};
 
     // filter out the circuit containers
+    // have to make a copy, as the selection array given will affect other calls to graph.getSelectionCells
+    selection = selection.slice();
     for(let i = 0; i < selection.length; i++){
       if(selection[i].isCircuitContainer()){
         selection[i] = selection[i].getBackbone();

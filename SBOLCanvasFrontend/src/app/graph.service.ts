@@ -794,7 +794,7 @@ export class GraphService extends GraphHelpers {
   setSelectedCellStyle(styleInfo: StyleInfo) {
     this.graph.getModel().beginUpdate();
     try {
-      let selectedCells = this.graph.getSelectionCells();
+      let selectedCells = this.graph.getSelectionCells().slice();
       // filter out the circuit containers
       for(let i = 0; i < selectedCells.length; i++){
         if(selectedCells[i].isCircuitContainer()){
@@ -804,6 +804,18 @@ export class GraphService extends GraphHelpers {
       for (let key in styleInfo.styles) {
         this.graph.setCellStyles(key, styleInfo.styles[key], selectedCells);
       }
+
+      // sync circuit containers
+      let circuitContainers = new Set<mxCell>();
+      for(let cell of selectedCells){
+        if(cell.isSequenceFeatureGlyph() || cell.isBackbone()){
+          circuitContainers.add(cell.getParent());
+        }
+      }
+      for(let circuitContainer of Array.from(circuitContainers.values())){
+        this.syncCircuitContainer(circuitContainer);
+      }
+
     } finally {
       this.graph.getModel().endUpdate();
     }
