@@ -149,7 +149,8 @@ public class Converter {
 		for (mxCell viewCell : viewCells) {
 			mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
 					.toArray(mxCell[]::new);
-			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren,  containerFilter)).toArray(mxCell[]::new);
+			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+					.toArray(mxCell[]::new);
 			for (mxCell circuitContainer : circuitContainers) {
 				// avoid duplicates from aliases in modules
 				if (document.getComponentDefinition(new URI((String) circuitContainer.getValue())) != null)
@@ -179,17 +180,18 @@ public class Converter {
 
 		// link the component definitions (create components and set up references)
 		Set<String> handledContainers = new HashSet<String>();
-		for(mxCell viewCell : viewCells) {
-			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCells, true, false);
-			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter)).toArray(mxCell[]::new);
-			for(mxCell circuitContainer : circuitContainers) {
-				if(handledContainers.contains((String) circuitContainer.getValue()))
+		for (mxCell viewCell : viewCells) {
+			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
+			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+					.toArray(mxCell[]::new);
+			for (mxCell circuitContainer : circuitContainers) {
+				if (handledContainers.contains((String) circuitContainer.getValue()))
 					continue;
 				linkComponentDefinition(document, graph, model, circuitContainer);
 				handledContainers.add((String) circuitContainer.getValue());
 			}
 		}
-		
+
 		// link the module definitions
 		for (mxCell viewCell : viewCells) {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, true);
@@ -351,8 +353,9 @@ public class Converter {
 			ComponentDefinition containerCD = document
 					.getComponentDefinition(new URI((String) circuitContainer.getValue()));
 
-			FunctionalComponent funcComp = modDef.createFunctionalComponent(containerCD.getDisplayId(),
-					AccessType.PUBLIC, containerCD.getIdentity(), DirectionType.INOUT);
+			FunctionalComponent funcComp = modDef.createFunctionalComponent(
+					containerCD.getDisplayId() + "_" + circuitContainer.getId(), AccessType.PUBLIC,
+					containerCD.getIdentity(), DirectionType.INOUT);
 
 			// store extra graph information
 			funcComp.createAnnotation(new QName(uriPrefix, "containerCell", annPrefix),
@@ -424,11 +427,8 @@ public class Converter {
 	}
 
 	private void linkModuleDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
-			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
-		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
-				.toArray(mxCell[]::new);
-		mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
-				.toArray(mxCell[]::new);
+			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
+			URISyntaxException {
 		mxCell[] edges = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, false, true)).toArray(mxCell[]::new);
 
 		ModuleDefinition modDef = document.getModuleDefinition(viewCell.getId(), null);
@@ -442,54 +442,26 @@ public class Converter {
 			interaction.createAnnotation(new QName(uriPrefix, "edge", annPrefix), encodeMxGraphObject(edge));
 
 			// participants
+			mxCell source = (mxCell) edge.getSource();
+			mxCell target = (mxCell) edge.getTarget();
 			GlyphInfo sourceInfo = null;
 			GlyphInfo targetInfo = null;
-			if (edge.getSource() != null)
-				sourceInfo = glyphInfoDict.get(edge.getSource().getValue());
-			if (edge.getTarget() != null)
-				targetInfo = glyphInfoDict.get(edge.getTarget().getValue());
+			if (source != null)
+				sourceInfo = glyphInfoDict.get(source.getValue());
+			if (target != null)
+				targetInfo = glyphInfoDict.get(source.getValue());
 
 			// source participant
-			if (sourceInfo != null) {
-				FunctionalComponent sourceFC = modDef.getFunctionalComponent(sourceInfo.getDisplayID());
-				if (sourceFC == null) {
-					ComponentDefinition sourceCD = document.getComponentDefinition(URI.create(sourceInfo.getFullURI()));
-					sourceFC = modDef.createFunctionalComponent(sourceInfo.getDisplayID(), AccessType.PUBLIC,
-							sourceCD.getIdentity(), DirectionType.INOUT);
-
-					// the functional component doesn't represent a top level componentDefinition,
-					// so create a mapsTo
-					FunctionalComponent parentFC = modDef
-							.getFunctionalComponent("cd" + edge.getSource().getParent().getId());
-					ComponentDefinition parentCD = parentFC.getDefinition();
-					String componentID = sourceInfo.getDisplayID() + "_" + edge.getSource().getId();
-					Component sourceComponent = parentCD.getComponent(componentID);
-					parentFC.createMapsTo("mapsTo_" + componentID, RefinementType.USEREMOTE, sourceFC.getIdentity(),
-							sourceComponent.getIdentity());
-				}
-				interaction.createParticipation(sourceInfo.getDisplayID(), sourceFC.getIdentity(),
+			if (source != null) {
+				FunctionalComponent sourceFC = getOrCreateParticipant(document, modDef, sourceInfo, source);
+				interaction.createParticipation(sourceInfo.getDisplayID()+"_"+source.getId(), sourceFC.getIdentity(),
 						getParticipantType(true, interaction.getTypes()));
 			}
 
 			// target participant
-			if (targetInfo != null) {
-				FunctionalComponent targetFC = modDef.getFunctionalComponent(targetInfo.getDisplayID());
-				if (targetFC == null) {
-					ComponentDefinition targetCD = document.getComponentDefinition(URI.create(targetInfo.getFullURI()));
-					targetFC = modDef.createFunctionalComponent(targetInfo.getDisplayID(), AccessType.PUBLIC,
-							targetCD.getIdentity(), DirectionType.INOUT);
-
-					// the functional component doesn't represent a top level componentDefinition,
-					// so create a mapsTo
-					FunctionalComponent parentFC = modDef
-							.getFunctionalComponent("cd" + edge.getTarget().getParent().getId());
-					ComponentDefinition parentCD = parentFC.getDefinition();
-					String componentID = targetInfo.getDisplayID() + "_" + edge.getTarget().getId();
-					Component targetComponent = parentCD.getComponent(componentID);
-					parentFC.createMapsTo("mapsTo_" + componentID, RefinementType.USEREMOTE, targetFC.getIdentity(),
-							targetComponent.getIdentity());
-				}
-				interaction.createParticipation(targetInfo.getDisplayID(), targetFC.getIdentity(),
+			if (target != null) {
+				FunctionalComponent targetFC = getOrCreateParticipant(document, modDef, targetInfo, target);
+				interaction.createParticipation(targetInfo.getDisplayID()+"_"+target.getId(), targetFC.getIdentity(),
 						getParticipantType(false, interaction.getTypes()));
 			}
 
@@ -497,7 +469,30 @@ public class Converter {
 
 	}
 
-	private void linkComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell circuitContainer)
+	private FunctionalComponent getOrCreateParticipant(SBOLDocument document, ModuleDefinition modDef, GlyphInfo partInfo, mxCell part) throws SBOLValidationException {
+		FunctionalComponent sourceFC = modDef.getFunctionalComponent(partInfo.getDisplayID() + "_" + part.getId());
+		if (sourceFC == null) {
+			ComponentDefinition sourceCD = document
+					.getComponentDefinition(URI.create((String) part.getValue()));
+			sourceFC = modDef.createFunctionalComponent(partInfo.getDisplayID() + "_" + part.getId(),
+					AccessType.PUBLIC, sourceCD.getIdentity(), DirectionType.INOUT);
+
+			// the functional component doesn't represent a top level componentDefinition,
+			// so create a mapsTo
+			GlyphInfo parentInfo = glyphInfoDict.get(part.getParent().getValue());
+			FunctionalComponent parentFC = modDef
+					.getFunctionalComponent(parentInfo.getDisplayID() + "_" + part.getParent().getId());
+			ComponentDefinition parentCD = parentFC.getDefinition();
+			String componentID = partInfo.getDisplayID()+"_"+part.getParent().getIndex(part);
+			Component sourceComponent = parentCD.getComponent(componentID);
+			parentFC.createMapsTo("mapsTo_" + componentID, RefinementType.USEREMOTE, sourceFC.getIdentity(),
+					sourceComponent.getIdentity());
+		}
+		return sourceFC;
+	}
+	
+	private void linkComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
+			mxCell circuitContainer)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
 
 		ComponentDefinition compDef = document.getComponentDefinition(URI.create((String) circuitContainer.getValue()));
@@ -510,8 +505,8 @@ public class Converter {
 
 			GlyphInfo info = glyphInfoDict.get(glyph.getValue());
 			ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
-			Component component = compDef.createComponent(info.getDisplayID(), AccessType.PUBLIC,
-					URI.create(info.getFullURI()));// , info.getVersion());
+			Component component = compDef.createComponent(info.getDisplayID()+"_"+glyph.getParent().getIndex(glyph), AccessType.PUBLIC,
+					URI.create((String) glyph.getValue()));
 
 			// cell annotation
 			component.createAnnotation(new QName(uriPrefix, "glyphCell", annPrefix), encodeMxGraphObject(glyph));
@@ -621,11 +616,11 @@ public class Converter {
 			}
 			Annotation backboneAnn = compDef.getAnnotation(new QName(uriPrefix, "backboneCell", annPrefix));
 			mxCell backbone = null;
-			if(backboneAnn != null) {				
+			if (backboneAnn != null) {
 				backbone = (mxCell) decodeMxGraphObject(backboneAnn.getStringValue());
 				model.add(container, backbone, 0);
-			}else {
-				backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, "backbone");				
+			} else {
+				backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, "backbone");
 			}
 			GlyphInfo info = genGlyphInfo(compDef);
 			glyphInfoDict.put(info.getFullURI(), info);
