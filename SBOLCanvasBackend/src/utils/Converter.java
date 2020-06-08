@@ -449,7 +449,7 @@ public class Converter {
 			if (source != null)
 				sourceInfo = glyphInfoDict.get(source.getValue());
 			if (target != null)
-				targetInfo = glyphInfoDict.get(source.getValue());
+				targetInfo = glyphInfoDict.get(target.getValue());
 
 			// source participant
 			if (source != null) {
