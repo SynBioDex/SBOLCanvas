@@ -74,7 +74,21 @@ export class GraphHelpers extends GraphBase {
                 let shouldDecouple = false;
                 const coupledCells = this.getCoupledGlyphs(oldGlyphURI);
                 const coupledContainers = this.getCoupledCircuitContainers(oldGlyphURI, true);
-                if (coupledCells.length > 1 || coupledContainers.length > 1 || (coupledCells.length == 1 && coupledCells[0] != selectedCell) || (coupledContainers.length == 1 && coupledContainers[0] != selectedCell)) {
+                // lots of cases to deal with
+                let promptDecouple = false;
+                for (let coupledCell of coupledCells) {
+                    if (coupledCell != selectedCell && this.getParentInfo(coupledCell) && this.getParentInfo(selectedCell) &&
+                        this.getParentInfo(coupledCell).getFullURI() != this.getParentInfo(selectedCell).getFullURI()) {
+                        promptDecouple = true;
+                    }
+                }
+                for (let coupledContainer of coupledContainers) {
+                    if (coupledContainer != selectedCell && this.getParentInfo(coupledContainer) && this.getParentInfo(selectedCell) &&
+                        this.getParentInfo(coupledContainer).getFullURI() != this.getParentInfo(selectedCell).getFullURI()) {
+                        promptDecouple = true;
+                    }
+                }
+                if (promptDecouple) {
                     // decoupleResult will be "Yes" if they should still be coupled, "No" if not
                     let decoupleResult = await this.promptDeCouple();
                     if (decoupleResult === "Yes") {
@@ -145,7 +159,7 @@ export class GraphHelpers extends GraphBase {
                     if (keepSubstructure) {
                         // if we're coupling and keeping substructure, remove the conflict
                         // if we're in a module, the viewcell might not exist
-                        if (viewCell){
+                        if (viewCell) {
                             this.graph.getModel().remove(conflictViewCell);
                             this.updateViewCell(viewCell, newGlyphURI);
                         }
@@ -187,18 +201,18 @@ export class GraphHelpers extends GraphBase {
 
                 // sync the circuitcontainers
                 if (selectedCell.isCircuitContainer()) {
-                    if(!shouldCouple || keepSubstructure){
+                    if (!shouldCouple || keepSubstructure) {
                         this.syncCircuitContainer(selectedCell);
-                    }else{
+                    } else {
                         // we need to sync the conflicting container
-                        if(conflictViewCell){
+                        if (conflictViewCell) {
                             // pull the circuit container out of the view cell
-                            for(let circuitContainer of conflictViewCell.children){
-                                if(!circuitContainer.isCircuitContainer())
+                            for (let circuitContainer of conflictViewCell.children) {
+                                if (!circuitContainer.isCircuitContainer())
                                     continue;
                                 this.syncCircuitContainer(circuitContainer);
                             }
-                        }else{
+                        } else {
                             // there was no view cell, so just take it from the list
                             this.syncCircuitContainer(conflictContainers[0]);
                         }
@@ -206,7 +220,7 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     viewCell = this.graph.getModel().getCell(newGlyphURI);
                     for (let circuitContainer of viewCell.children) {
-                        if (!circuitContainer.circuitContainer())
+                        if (!circuitContainer.isCircuitContainer())
                             continue;
                         this.syncCircuitContainer(circuitContainer);
                     }
