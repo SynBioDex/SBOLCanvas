@@ -335,15 +335,19 @@ public class Converter {
 		for (mxCell protein : proteins) {
 			// proteins also have glyphInfos
 			GlyphInfo proteinInfo = (GlyphInfo) glyphInfoDict.get(protein.getValue());
-			ComponentDefinition proteinCD = document.createComponentDefinition(proteinInfo.getDisplayID(),
-					proteinInfo.getVersion(), SBOLData.types.getValue(proteinInfo.getPartType()));
-			proteinCD.setDescription(proteinInfo.getDescription());
-			proteinCD.setName(proteinInfo.getName());
-			proteinCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
-			modDef.createFunctionalComponent(proteinCD.getDisplayId(), AccessType.PUBLIC, proteinCD.getIdentity(),
+			ComponentDefinition proteinCD = document.getComponentDefinition(new URI((String) protein.getValue()));
+			if (proteinCD == null) {
+				proteinCD = document.createComponentDefinition(proteinInfo.getDisplayID(), proteinInfo.getVersion(),
+						SBOLData.types.getValue(proteinInfo.getPartType()));
+				proteinCD.setDescription(proteinInfo.getDescription());
+				proteinCD.setName(proteinInfo.getName());
+				proteinCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
+			}
+			FunctionalComponent proteinFuncComp = modDef.createFunctionalComponent(
+					proteinCD.getDisplayId() + "_" + protein.getId(), AccessType.PUBLIC, proteinCD.getIdentity(),
 					DirectionType.INOUT);
 			// the layout information in the component definition
-			proteinCD.createAnnotation(new QName(uriPrefix, "protein", annPrefix), encodeMxGraphObject(protein));
+			proteinFuncComp.createAnnotation(new QName(uriPrefix, "protein", annPrefix), encodeMxGraphObject(protein));
 		}
 
 		// component definitions (should already have been created, just need to link
@@ -454,28 +458,28 @@ public class Converter {
 			// source participant
 			if (source != null) {
 				FunctionalComponent sourceFC = getOrCreateParticipant(document, modDef, sourceInfo, source);
-				interaction.createParticipation(sourceInfo.getDisplayID()+"_"+source.getId(), sourceFC.getIdentity(),
-						getParticipantType(true, interaction.getTypes()));
+				interaction.createParticipation(sourceInfo.getDisplayID() + "_" + source.getId(),
+						sourceFC.getIdentity(), getParticipantType(true, interaction.getTypes()));
 			}
 
 			// target participant
 			if (target != null) {
 				FunctionalComponent targetFC = getOrCreateParticipant(document, modDef, targetInfo, target);
-				interaction.createParticipation(targetInfo.getDisplayID()+"_"+target.getId(), targetFC.getIdentity(),
-						getParticipantType(false, interaction.getTypes()));
+				interaction.createParticipation(targetInfo.getDisplayID() + "_" + target.getId(),
+						targetFC.getIdentity(), getParticipantType(false, interaction.getTypes()));
 			}
 
 		}
 
 	}
 
-	private FunctionalComponent getOrCreateParticipant(SBOLDocument document, ModuleDefinition modDef, GlyphInfo partInfo, mxCell part) throws SBOLValidationException {
+	private FunctionalComponent getOrCreateParticipant(SBOLDocument document, ModuleDefinition modDef,
+			GlyphInfo partInfo, mxCell part) throws SBOLValidationException {
 		FunctionalComponent sourceFC = modDef.getFunctionalComponent(partInfo.getDisplayID() + "_" + part.getId());
 		if (sourceFC == null) {
-			ComponentDefinition sourceCD = document
-					.getComponentDefinition(URI.create((String) part.getValue()));
-			sourceFC = modDef.createFunctionalComponent(partInfo.getDisplayID() + "_" + part.getId(),
-					AccessType.PUBLIC, sourceCD.getIdentity(), DirectionType.INOUT);
+			ComponentDefinition sourceCD = document.getComponentDefinition(URI.create((String) part.getValue()));
+			sourceFC = modDef.createFunctionalComponent(partInfo.getDisplayID() + "_" + part.getId(), AccessType.PUBLIC,
+					sourceCD.getIdentity(), DirectionType.INOUT);
 
 			// the functional component doesn't represent a top level componentDefinition,
 			// so create a mapsTo
@@ -483,14 +487,14 @@ public class Converter {
 			FunctionalComponent parentFC = modDef
 					.getFunctionalComponent(parentInfo.getDisplayID() + "_" + part.getParent().getId());
 			ComponentDefinition parentCD = parentFC.getDefinition();
-			String componentID = partInfo.getDisplayID()+"_"+part.getParent().getIndex(part);
+			String componentID = partInfo.getDisplayID() + "_" + part.getParent().getIndex(part);
 			Component sourceComponent = parentCD.getComponent(componentID);
 			parentFC.createMapsTo("mapsTo_" + componentID, RefinementType.USEREMOTE, sourceFC.getIdentity(),
 					sourceComponent.getIdentity());
 		}
 		return sourceFC;
 	}
-	
+
 	private void linkComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
 			mxCell circuitContainer)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
@@ -505,8 +509,8 @@ public class Converter {
 
 			GlyphInfo info = glyphInfoDict.get(glyph.getValue());
 			ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
-			Component component = compDef.createComponent(info.getDisplayID()+"_"+glyph.getParent().getIndex(glyph), AccessType.PUBLIC,
-					URI.create((String) glyph.getValue()));
+			Component component = compDef.createComponent(info.getDisplayID() + "_" + glyph.getParent().getIndex(glyph),
+					AccessType.PUBLIC, URI.create((String) glyph.getValue()));
 
 			// cell annotation
 			component.createAnnotation(new QName(uriPrefix, "glyphCell", annPrefix), encodeMxGraphObject(glyph));
@@ -586,7 +590,7 @@ public class Converter {
 			// proteins
 			if (!compDef.getTypes().contains(ComponentDefinition.DNA_REGION)) {
 				// proteins don't have a mapping, but we need it for interactions
-				Annotation protienAnn = compDef.getAnnotation(new QName(uriPrefix, "protein", annPrefix));
+				Annotation protienAnn = funcComp.getAnnotation(new QName(uriPrefix, "protein", annPrefix));
 				mxCell protien = null;
 				if (protienAnn != null) {
 					protien = (mxCell) decodeMxGraphObject(protienAnn.getStringValue());
@@ -596,7 +600,7 @@ public class Converter {
 					protien = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 							0, "molecularSpeciesGlyph");
 				}
-				compToCell.put(funcComp.getIdentity()+"_"+compDef.getIdentity(), protien);
+				compToCell.put(funcComp.getIdentity() + "_" + compDef.getIdentity(), protien);
 				GlyphInfo info = genGlyphInfo(compDef);
 				glyphInfoDict.put(info.getFullURI(), info);
 				handledCompDefs.add(compDef);
@@ -653,9 +657,9 @@ public class Converter {
 				}
 
 				// store the cell so we can use it in interactions
-				for(MapsTo mapsTo : funcComp.getMapsTos()) {
-					if(mapsTo.getLocalDefinition().equals(glyphComponent.getDefinition())){
-						compToCell.put(mapsTo.getLocalIdentity()+"_"+glyphComponent.getIdentity(), glyphCell);
+				for (MapsTo mapsTo : funcComp.getMapsTos()) {
+					if (mapsTo.getLocalDefinition().equals(glyphComponent.getDefinition())) {
+						compToCell.put(mapsTo.getLocalIdentity() + "_" + glyphComponent.getIdentity(), glyphCell);
 						break;
 					}
 				}
@@ -685,13 +689,13 @@ public class Converter {
 					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
 					if (mappedURI == null)
 						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
-					mxCell source = compToCell.get(participations[i].getParticipant().getIdentity()+"_"+mappedURI);
+					mxCell source = compToCell.get(participations[i].getParticipant().getIdentity() + "_" + mappedURI);
 					edge.setSource(source);
 				} else if (participations[i].getRoles().contains(targetType)) {
 					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
 					if (mappedURI == null)
 						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
-					mxCell target = compToCell.get(participations[i].getParticipant().getIdentity()+"_"+mappedURI);
+					mxCell target = compToCell.get(participations[i].getParticipant().getIdentity() + "_" + mappedURI);
 					edge.setTarget(target);
 				}
 			}

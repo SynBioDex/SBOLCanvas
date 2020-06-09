@@ -279,6 +279,86 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    protected async updateSelectedMolecularSpecies(this: GraphService, info: GlyphInfo){
+        this.graph.getModel().beginUpdate();
+        try {
+            let selectedCells = this.graph.getSelectionCells();
+            if (selectedCells.length > 1 || selectedCells.length == 0) {
+                console.error("Trying to change info on too many or too few cells!");
+                return;
+            }
+            let selectedCell = selectedCells[0];
+
+            let oldGlyphURI = "";
+            oldGlyphURI = selectedCell.value;
+            info.uriPrefix = GlyphInfo.baseURI;
+            let newGlyphURI = info.getFullURI();
+
+            // check for ownership prompt
+            let oldGlyphInfo = this.getFromGlyphDict(oldGlyphURI);
+            if (oldGlyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
+                return;
+            }
+
+            let shouldDecouple = false;
+            if (oldGlyphURI != newGlyphURI) {
+                let coupledMolecSpec = this.getCoupledMolecularSpecies(selectedCell.getValue());
+                if(coupledMolecSpec.length > 1){
+                    // decoupleResult will be "Yes" if they should still be coupled, "No" if not
+                    let decoupleResult = await this.promptDeCouple();
+                    if (decoupleResult === "Yes") {
+                        shouldDecouple = false;
+                    } else if (decoupleResult === "No") {
+                        shouldDecouple = true;
+                    } else {
+                        return;
+                    }
+                }
+
+                let shouldCouple = false;
+                let keepSubstructure = false;
+                let conflictMolecSpec = this.getCoupledMolecularSpecies(newGlyphURI);
+                if (conflictMolecSpec.length > 0) {
+                    // CoupleResult will be "Keep" if the current substructure should be kept, "Update" if the new substructure should be inherited
+                    let coupleResult = await this.promptCouple();
+                    shouldCouple = true;
+                    if (coupleResult === "Keep") {
+                        keepSubstructure = true;
+                    } else if (coupleResult === "Update") {
+                        keepSubstructure = false;
+                    } else {
+                        return;
+                    }
+                }
+
+                if(!shouldDecouple){
+                    this.removeFromGlyphDict(oldGlyphURI);
+                }
+                if(shouldCouple && keepSubstructure){
+                        this.removeFromGlyphDict(newGlyphURI);
+                        this.addToGlyphDict(info);
+                }
+                if (!shouldCouple || keepSubstructure) {
+                    // we only don't want to add if we are updating substructure
+                    this.addToGlyphDict(info);
+                }
+
+                if(shouldDecouple){
+                    this.graph.getModel().setValue(selectedCell, newGlyphURI);
+                }else{
+                    for(let cell of coupledMolecSpec){
+                        this.graph.getModel().setValue(cell, newGlyphURI);
+                    }
+                }
+
+            }else{
+                this.updateGlyphDict(info);
+            }
+        }finally{
+            this.graph.getModel().endUpdate();
+        }
+    }
+
     /**
      * Call after any change to a circuit container to make sure module level strands are synced with their view cells.
      * I had hoped to avoid this with view cells, but because module containers can be aliased, a change in one should update the other.
@@ -722,6 +802,22 @@ export class GraphHelpers extends GraphBase {
                     continue;
                 if (circuitContainer.value === glyphURI)
                     coupledCells.push(circuitContainer);
+            }
+        }
+        return coupledCells;
+    }
+
+    protected getCoupledMolecularSpecies(glyphURI: string){
+        const coupledCells = [];
+        const cell1 = this.graph.getModel().getCell("1");
+        for(let viewCell of cell1.children){
+            if(viewCell.isComponentView())
+                continue;
+            for(let viewChild of viewCell.children){
+                if(!viewChild.isMolecularSpeciesGlyph())
+                    continue;
+                if(viewChild.value === glyphURI)
+                    coupledCells.push(viewChild);
             }
         }
         return coupledCells;

@@ -762,8 +762,12 @@ export class GraphService extends GraphHelpers {
       this.graph.getModel().beginUpdate();
       try {
         if (info instanceof GlyphInfo) {
-          // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
-          this.updateSelectedGlyphInfo(info);
+          if(!selectedCell.isMolecularSpeciesGlyph()){
+            // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
+            this.updateSelectedGlyphInfo(info);
+          }else{
+            this.updateSelectedMolecularSpecies(info);
+          }
         } else {
           let interactionEdit = new GraphEdits.interactionEdit(selectedCell, info);
           this.mutateInteractionGlyph(info.interactionType);
