@@ -579,7 +579,7 @@ public class Converter {
 		}
 
 		// create the top level component definitions and proteins
-		HashMap<URI, mxCell> compToCell = new HashMap<URI, mxCell>();
+		HashMap<String, mxCell> compToCell = new HashMap<String, mxCell>();
 		for (FunctionalComponent funcComp : notMappedFCs) {
 			ComponentDefinition compDef = funcComp.getDefinition();
 
@@ -596,7 +596,7 @@ public class Converter {
 					protien = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 							0, "molecularSpeciesGlyph");
 				}
-				compToCell.put(compDef.getIdentity(), protien);
+				compToCell.put(funcComp.getIdentity()+"_"+compDef.getIdentity(), protien);
 				GlyphInfo info = genGlyphInfo(compDef);
 				glyphInfoDict.put(info.getFullURI(), info);
 				handledCompDefs.add(compDef);
@@ -653,7 +653,12 @@ public class Converter {
 				}
 
 				// store the cell so we can use it in interactions
-				compToCell.put(glyphComponent.getIdentity(), glyphCell);
+				for(MapsTo mapsTo : funcComp.getMapsTos()) {
+					if(mapsTo.getLocalDefinition().equals(glyphComponent.getDefinition())){
+						compToCell.put(mapsTo.getLocalIdentity()+"_"+glyphComponent.getIdentity(), glyphCell);
+						break;
+					}
+				}
 			}
 		}
 
@@ -680,13 +685,13 @@ public class Converter {
 					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
 					if (mappedURI == null)
 						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
-					mxCell source = compToCell.get(mappedURI);
+					mxCell source = compToCell.get(participations[i].getParticipant().getIdentity()+"_"+mappedURI);
 					edge.setSource(source);
 				} else if (participations[i].getRoles().contains(targetType)) {
 					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
 					if (mappedURI == null)
 						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
-					mxCell target = compToCell.get(mappedURI);
+					mxCell target = compToCell.get(participations[i].getParticipant().getIdentity()+"_"+mappedURI);
 					edge.setTarget(target);
 				}
 			}
