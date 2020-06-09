@@ -315,13 +315,8 @@ export class GraphService extends GraphHelpers {
       this.trimUnreferencedCells();
 
       // sync circuit containers
-      for (let container of Array.from(containers)) {
-        let viewCell = this.graph.getModel().getCell(container);
-        for (let circuitContainer of viewCell.children) {
-          if (!circuitContainer.isCircuitContainer())
-            continue;
-          this.syncCircuitContainer(circuitContainer);
-        }
+      for (let circuitContainer of circuitContainers) {
+        this.syncCircuitContainer(circuitContainer);
       }
 
       // obtain ownership
