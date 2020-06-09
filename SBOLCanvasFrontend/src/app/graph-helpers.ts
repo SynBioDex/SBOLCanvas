@@ -219,9 +219,33 @@ export class GraphHelpers extends GraphBase {
                     }
                 } else {
                     viewCell = this.graph.getModel().getCell(newGlyphURI);
-                    for (let circuitContainer of viewCell.children) {
-                        if (!circuitContainer.isCircuitContainer())
-                            continue;
+                    if (!viewCell)
+                        viewCell = this.createViewCell(newGlyphURI);
+                    if (!shouldCouple || keepSubstructure) {
+                        // keeping substructure
+                        for (let circuitContainer of viewCell.children) {
+                            if (!circuitContainer.isCircuitContainer())
+                                continue;
+                            this.syncCircuitContainer(circuitContainer);
+                        }
+                    } else {
+                        // replacing it, we need to find a circuit container that isn't from it's view cell
+                        const cell1 = this.graph.getModel().getCell("1");
+                        let circuitContainer = null;
+                        for (let viewCell of cell1.children) {
+                            if (viewCell.getId() != newGlyphURI) {
+                                for (let viewChild of viewCell.children) {
+                                    if (!viewChild.isCircuitContainer())
+                                        continue;
+                                    if (viewChild.getValue() === newGlyphURI) {
+                                        circuitContainer = viewChild;
+                                        break;
+                                    }
+                                }
+                                if (circuitContainer)
+                                    break;
+                            }
+                        }
                         this.syncCircuitContainer(circuitContainer);
                     }
                 }
@@ -1068,5 +1092,20 @@ export class GraphHelpers extends GraphBase {
         }
 
         circuitContainer.refreshCircuitContainer(this.graph);
+    }
+
+    protected createViewCell(uri: string): mxCell {
+        // construct the view cell
+        const cell1 = this.graph.getModel().getCell(1);
+        const childViewCell = this.graph.insertVertex(cell1, uri, '', 0, 0, 0, 0, GraphBase.componentViewCellStyleName);
+
+        // add the backbone to the view cell
+        const childCircuitContainer = this.graph.insertVertex(childViewCell, null, uri, 0, 0, 0, 0, GraphBase.circuitContainerStyleName);
+        const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, GraphBase.backboneStyleName);
+
+        childCircuitContainerBackbone.setConnectable(false);
+        childCircuitContainer.setConnectable(false);
+
+        return childViewCell;
     }
 }

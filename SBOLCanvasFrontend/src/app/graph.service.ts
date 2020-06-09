@@ -528,16 +528,7 @@ export class GraphService extends GraphHelpers {
       // Insert new glyph and its components
       const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.sequenceFeatureGlyphBaseStyleName + name);
 
-      // construct the view cell for it's children
-      const cell1 = this.graph.getModel().getCell(1);
-      const childViewCell = this.graph.insertVertex(cell1, glyphInfo.getFullURI(), '', 0, 0, 0, 0, GraphBase.componentViewCellStyleName);
-
-      // add the backbone to the child view cell
-      const childCircuitContainer = this.graph.insertVertex(childViewCell, null, glyphInfo.getFullURI(), 0, 0, 0, 0, GraphBase.circuitContainerStyleName);
-      const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, GraphBase.backboneStyleName);
-
-      childCircuitContainerBackbone.setConnectable(false);
-      childCircuitContainer.setConnectable(false);
+      this.createViewCell(glyphInfo.getFullURI());
       sequenceFeatureCell.setConnectable(true);
 
       // Sorts the new SequenceFeature into the correct position in parent's array
