@@ -18,9 +18,9 @@ export class GlyphInfo {
 
   constructor(partType?: string) {
     this.displayID = 'id' + (GlyphInfo.counter++);
-    if(partType){
+    if (partType) {
       this.partType = partType;
-    }else{
+    } else {
       this.partType = 'DNA region';
     }
   }
@@ -53,7 +53,7 @@ export class GlyphInfo {
 
   getFullURI(): string {
     let fullURI = this.uriPrefix + '/' + this.displayID;
-    if(this.version && this.version.length > 0){
+    if (this.version && this.version.length > 0) {
       fullURI += '/' + this.version;
     }
     return fullURI;
@@ -63,14 +63,14 @@ export class GlyphInfo {
     let node = enc.document.createElement('GlyphInfo');
     if (this.partType)
       node.setAttribute("partType", this.partType);
-    if(this.otherTypes){
+    if (this.otherTypes) {
       let otherTypesNode = enc.encode(this.otherTypes);
       otherTypesNode.setAttribute("as", "otherTypes");
       node.appendChild(otherTypesNode);
     }
     if (this.partRole)
       node.setAttribute("partRole", this.partRole);
-    if(this.otherRoles){
+    if (this.otherRoles) {
       let otherRolesNode = enc.encode(this.otherRoles);
       otherRolesNode.setAttribute("as", "otherRoles");
       node.appendChild(otherRolesNode);
@@ -89,7 +89,7 @@ export class GlyphInfo {
       node.setAttribute("sequence", this.sequence);
     if (this.uriPrefix)
       node.setAttribute("uriPrefix", this.uriPrefix);
-    
+
 
     return node;
   }

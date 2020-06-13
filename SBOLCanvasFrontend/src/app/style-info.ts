@@ -9,7 +9,7 @@ const mx = require('mxgraph')({
 
 // object used as an enum to identify glyph types
 const elementTypes = {
-  CIRCUIT_CONTAINER: "0",
+  BACKBONE: "0",
   TEXT_BOX: "1",
   SEQUENCE_FEATURE: "2",
   MOLECULAR_SPECIES: "3",
@@ -21,19 +21,24 @@ const elementTypes = {
  */
 export class StyleInfo {
 
-  // a reference to the graph
-  graph: any;
-
-  // An array of all the cells this style info represents
-  selection: any[];
+  // dictionary to store the styles that can be changed, and stored back (think of it like a mask)
+  styles: {};
 
   // A set identifying which types of cells are present in this.selection
   selectionTypes: Set<string>;
 
   constructor(selection: any[], graph?: any) {
-    this.selection = selection;
-    this.graph = graph ? graph : null;
     this.selectionTypes = new Set<string>();
+    this.styles = {};
+
+    // filter out the circuit containers
+    // have to make a copy, as the selection array given will affect other calls to graph.getSelectionCells
+    selection = selection.slice();
+    for(let i = 0; i < selection.length; i++){
+      if(selection[i].isCircuitContainer()){
+        selection[i] = selection[i].getBackbone();
+      }
+    }
 
     for (const cell of selection) {
       if (cell.isSequenceFeatureGlyph()) {
@@ -42,138 +47,120 @@ export class StyleInfo {
         this.selectionTypes.add(elementTypes.MOLECULAR_SPECIES);
       } else if (cell.isInteraction()) {
         this.selectionTypes.add(elementTypes.INTERACTION);
-      } else if (cell.isCircuitContainer()) {
-        this.selectionTypes.add(elementTypes.CIRCUIT_CONTAINER);
       } else if (cell.isBackbone()) {
-        console.error("Error: backbone was selected (detected in StyleInfo constructor)");
-      }
-      else {
+        this.selectionTypes.add(elementTypes.BACKBONE);
+      } else {
         // otherwise assume textbox
         this.selectionTypes.add(elementTypes.TEXT_BOX);
+      }
+    }
+
+    // load the current cell style mask
+    if(selection.length > 0){
+      let currentStyle = graph.getCellStyle(selection[0]);
+      if(this.hasBendStyle()){
+        this.styles[mx.mxConstants.STYLE_ROUNDED] = currentStyle[mx.mxConstants.STYLE_ROUNDED];
+        this.styles[mx.mxConstants.STYLE_CURVED] = currentStyle[mx.mxConstants.STYLE_CURVED];
+      }
+      if(this.hasEdgeStyle()){
+        let currentEdgeStyle = currentStyle[mx.mxConstants.STYLE_EDGE];
+        this.styles[mx.mxConstants.STYLE_EDGE] = currentEdgeStyle ? currentEdgeStyle : 'diagonal';
+      }
+      if(this.hasEndSize()){
+        this.styles[mx.mxConstants.STYLE_ENDSIZE] = currentStyle[mx.mxConstants.STYLE_ENDSIZE];
+      }
+      if(this.hasFillColor()){
+        this.styles[mx.mxConstants.STYLE_FILLCOLOR] = currentStyle[mx.mxConstants.STYLE_FILLCOLOR];
+      }
+      if(this.hasFillOpacity()){
+        let currentFillOpacity = currentStyle[mx.mxConstants.STYLE_FILL_OPACITY];
+        this.styles[mx.mxConstants.STYLE_FILL_OPACITY] = currentFillOpacity ? currentFillOpacity : 100;
+      }
+      if(this.hasFontColor()){
+        this.styles[mx.mxConstants.STYLE_FONTCOLOR] = currentStyle[mx.mxConstants.STYLE_FONTCOLOR];
+      }
+      if(this.hasFontOpacity()){
+        let currentFontOpacity = currentStyle[mx.mxConstants.STYLE_TEXT_OPACITY];
+        this.styles[mx.mxConstants.STYLE_TEXT_OPACITY] = currentFontOpacity ? currentFontOpacity : 100;
+      }
+      if(this.hasFontSize()){
+        let currentFontSize = currentStyle[mx.mxConstants.STYLE_FONTSIZE];
+        this.styles[mx.mxConstants.STYLE_FONTSIZE] = currentFontSize ? currentFontSize : 11;
+      }
+      if(this.hasSourceSpacing()){
+        let currentSourceSpacing = currentStyle[mx.mxConstants.STYLE_SOURCE_PERIMETER_SPACING];
+        this.styles[mx.mxConstants.STYLE_SOURCE_PERIMETER_SPACING] = currentSourceSpacing ? currentSourceSpacing : 0;
+      }
+      if(this.hasStrokeColor()){
+        this.styles[mx.mxConstants.STYLE_STROKECOLOR] = currentStyle[mx.mxConstants.STYLE_STROKECOLOR];
+      }
+      if(this.hasStrokeOpacity()){
+        let currentStrokeOpacity = currentStyle[mx.mxConstants.STYLE_STROKE_OPACITY];
+        this.styles[mx.mxConstants.STYLE_STROKE_OPACITY] = currentStrokeOpacity ? currentStrokeOpacity : 100;
+      }
+      if(this.hasStrokeWidth()){
+        let currentStrokeWidth = currentStyle[mx.mxConstants.STYLE_STROKEWIDTH];
+        this.styles[mx.mxConstants.STYLE_STROKEWIDTH] = currentStrokeWidth ? currentStrokeWidth : 1;
+      }
+      if(this.hasTargetSpacing()){
+        this.styles[mx.mxConstants.STYLE_TARGET_PERIMETER_SPACING] = currentStyle[mx.mxConstants.STYLE_TARGET_PERIMETER_SPACING];
       }
     }
   }
 
   hasStrokeColor() : boolean {
     // all cell types have a strokeColor
-    return this.selection.length > 0;
+    return this.selectionTypes.size > 0;
   }
   currentStrokeColor() : string {
-    const cell = this.selection[0];
-    // strokeColor goes to circuitContainers' backbones
-    if (cell.isCircuitContainer()) {
-      return this.graph.getCellStyle(cell.getBackbone())[mx.mxConstants.STYLE_STROKECOLOR];
-    } else {
-      return this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_STROKECOLOR];
-    }
+    return this.styles[mx.mxConstants.STYLE_STROKECOLOR];
   }
   setStrokeColor(newValue: string) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      for (const cell of this.selection) {
-        // strokeColor goes to circuitContainers' backbones
-        if (cell.isCircuitContainer()) {
-          this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, newValue, [cell.getBackbone()]);
-        } else {
-          this.graph.setCellStyles(mx.mxConstants.STYLE_STROKECOLOR, newValue, [cell]);
-        }
-      }
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_STROKECOLOR] = newValue;
   }
 
   hasStrokeOpacity() : boolean {
-    return this.selection.length > 0;
+    return this.selectionTypes.size > 0;
   }
   currentStrokeOpacity() : number {
-    const cell = this.selection[0];
-    let val;
-    if (cell.isCircuitContainer()) {
-      val = this.graph.getCellStyle(cell.getBackbone())[mx.mxConstants.STYLE_STROKE_OPACITY];
-    } else {
-      val = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_STROKE_OPACITY];
-    }
-    return (typeof val === 'undefined') ? 100 : val;
+    return this.styles[mx.mxConstants.STYLE_STROKE_OPACITY];
   }
   setStrokeOpacity(newValue: number) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      for (const cell of this.selection) {
-        if (cell.isCircuitContainer()) {
-          this.graph.setCellStyles(mx.mxConstants.STYLE_STROKE_OPACITY, newValue, [cell.getBackbone()]);
-        } else {
-          this.graph.setCellStyles(mx.mxConstants.STYLE_STROKE_OPACITY, newValue, [cell]);
-        }
-      }
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_STROKE_OPACITY] = newValue;
   }
 
   hasStrokeWidth() : boolean {
-    return this.selection.length > 0
+    return this.selectionTypes.size > 0
       && !this.selectionTypes.has(elementTypes.SEQUENCE_FEATURE)
       && !this.selectionTypes.has(elementTypes.MOLECULAR_SPECIES);
   }
   currentStrokeWidth() : number {
-    const cell = this.selection[0];
-    let val;
-    if (cell.isCircuitContainer()) {
-      val = this.graph.getCellStyle(cell.getBackbone())[mx.mxConstants.STYLE_STROKEWIDTH];
-    } else {
-      val = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_STROKEWIDTH];
-    }
-    return (typeof val === 'undefined') ? 1 : val;
+    return this.styles[mx.mxConstants.STYLE_STROKEWIDTH];
   }
   setStrokeWidth(newValue: number) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      for (const cell of this.selection) {
-        if (cell.isCircuitContainer()) {
-          this.graph.setCellStyles(mx.mxConstants.STYLE_STROKEWIDTH, newValue, [cell.getBackbone()]);
-        } else {
-          this.graph.setCellStyles(mx.mxConstants.STYLE_STROKEWIDTH, newValue, [cell]);
-        }
-      }
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_STROKEWIDTH] = newValue;
   }
 
   hasFillColor() : boolean {
     // no interactions allowed
     // (even ones that look filled should use the same color as their stroke)
-    return this.selection.length > 0 && !this.selectionTypes.has(elementTypes.INTERACTION);
+    return this.selectionTypes.size > 0 && !this.selectionTypes.has(elementTypes.INTERACTION);
   }
   currentFillColor() : string {
-    const cell = this.selection[0];
-    return this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_FILLCOLOR];
+    return this.styles[mx.mxConstants.STYLE_FILLCOLOR];
   }
   setFillColor(newValue: string) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      this.graph.setCellStyles(mx.mxConstants.STYLE_FILLCOLOR, newValue, this.selection);
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_FILLCOLOR] = newValue;
   }
 
   hasFillOpacity() : boolean {
-    return this.selection.length > 0 && !this.selectionTypes.has(elementTypes.INTERACTION);
+    return this.selectionTypes.size > 0 && !this.selectionTypes.has(elementTypes.INTERACTION);
   }
   currentFillOpacity() : number {
-    const cell = this.selection[0];
-    let val = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_FILL_OPACITY];
-    return (typeof val === 'undefined') ? 100 : val;
+    return this.styles[mx.mxConstants.STYLE_FILL_OPACITY];
   }
   setFillOpacity(newValue: number) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      this.graph.setCellStyles(mx.mxConstants.STYLE_FILL_OPACITY, newValue, this.selection);
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_FILL_OPACITY] = newValue;
   }
 
   hasBendStyle() : boolean {
@@ -181,9 +168,8 @@ export class StyleInfo {
     return this.selectionTypes.has(elementTypes.INTERACTION) && this.selectionTypes.size === 1;
   }
   currentBendStyle() : string {
-    const cell = this.selection[0];
-    let rounded = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_ROUNDED];
-    let curved = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_CURVED];
+    let rounded = this.styles[mx.mxConstants.STYLE_ROUNDED];
+    let curved = this.styles[mx.mxConstants.STYLE_CURVED];
 
     if (curved) {
       return "curved";
@@ -192,25 +178,20 @@ export class StyleInfo {
     }
   }
   setBendStyle(newValue: string) : void {
-    this.graph.getModel().beginUpdate();
-    try {
       switch (newValue) {
         case "sharp":
-          this.graph.setCellStyles(mx.mxConstants.STYLE_ROUNDED, 0, this.selection);
-          this.graph.setCellStyles(mx.mxConstants.STYLE_CURVED, 0, this.selection);
+          this.styles[mx.mxConstants.STYLE_ROUNDED] = 0;
+          this.styles[mx.mxConstants.STYLE_CURVED] = 0;
           break;
         case "rounded":
-          this.graph.setCellStyles(mx.mxConstants.STYLE_ROUNDED, 1, this.selection);
-          this.graph.setCellStyles(mx.mxConstants.STYLE_CURVED, 0, this.selection);
+          this.styles[mx.mxConstants.STYLE_ROUNDED] = 1;
+          this.styles[mx.mxConstants.STYLE_CURVED] = 0;
           break;
         case "curved":
-          this.graph.setCellStyles(mx.mxConstants.STYLE_ROUNDED, 0, this.selection);
-          this.graph.setCellStyles(mx.mxConstants.STYLE_CURVED, 1, this.selection);
+          this.styles[mx.mxConstants.STYLE_ROUNDED] = 0;
+          this.styles[mx.mxConstants.STYLE_CURVED] = 1;
           break;
       }
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
   }
 
   hasEndSize() : boolean {
@@ -218,16 +199,10 @@ export class StyleInfo {
     return this.selectionTypes.has(elementTypes.INTERACTION) && this.selectionTypes.size === 1;
   }
   currentEndSize() : string {
-    const cell = this.selection[0];
-    return this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_ENDSIZE];
+    return this.styles[mx.mxConstants.STYLE_ENDSIZE];
   }
   setEndSize(newValue: string) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      this.graph.setCellStyles(mx.mxConstants.STYLE_ENDSIZE, newValue, this.selection);
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_ENDSIZE] = newValue;
   }
 
   hasEdgeStyle() : boolean {
@@ -235,21 +210,10 @@ export class StyleInfo {
     return this.selectionTypes.has(elementTypes.INTERACTION) && this.selectionTypes.size === 1;
   }
   currentEdgeStyle() : string {
-    const cell = this.selection[0];
-    let style = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_EDGE];
-    if (!style) {
-      // undefined style means mxGraph's default, which is diagonal
-      style = 'diagonal';
-    }
-    return style;
+    return this.styles[mx.mxConstants.STYLE_EDGE];
   }
   setEdgeStyle(newValue: string) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      this.graph.setCellStyles(mx.mxConstants.STYLE_EDGE, newValue, this.selection);
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_EDGE] = newValue;
   }
 
   hasSourceSpacing() : boolean {
@@ -257,17 +221,10 @@ export class StyleInfo {
     return this.selectionTypes.has(elementTypes.INTERACTION) && this.selectionTypes.size === 1;
   }
   currentSourceSpacing() : string {
-    const cell = this.selection[0];
-    let value = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_SOURCE_PERIMETER_SPACING];;
-    return value ? value : 0;
+    return this.styles[mx.mxConstants.STYLE_SOURCE_PERIMETER_SPACING];
   }
   setSourceSpacing(newValue: number) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      this.graph.setCellStyles(mx.mxConstants.STYLE_SOURCE_PERIMETER_SPACING, newValue, this.selection);
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_SOURCE_PERIMETER_SPACING] = newValue;
   }
 
   hasTargetSpacing() : boolean {
@@ -275,68 +232,41 @@ export class StyleInfo {
     return this.selectionTypes.has(elementTypes.INTERACTION) && this.selectionTypes.size === 1;
   }
   currentTargetSpacing() : string {
-    const cell = this.selection[0];
-    let value = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_TARGET_PERIMETER_SPACING];;
-    return value ? value : 0;
+    return this.styles[mx.mxConstants.STYLE_TARGET_PERIMETER_SPACING];
   }
   setTargetSpacing(newValue: number) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      this.graph.setCellStyles(mx.mxConstants.STYLE_TARGET_PERIMETER_SPACING, newValue, this.selection);
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_TARGET_PERIMETER_SPACING] = newValue;
   }
 
   hasFontColor() : boolean {
-    // must have only text boxes
-    return this.selectionTypes.has(elementTypes.TEXT_BOX) && this.selectionTypes.size === 1;
+    // can only have text boxes, glyphs, and molecular species
+    return this.selectionTypes.size > 0 && !this.selectionTypes.has(elementTypes.BACKBONE) && !this.selectionTypes.has(elementTypes.INTERACTION);
   }
   currentFontColor() : string {
-    const cell = this.selection[0];
-    return this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_FONTCOLOR];
+    return this.styles[mx.mxConstants.STYLE_FONTCOLOR];
   }
   setFontColor(newValue: string) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      this.graph.setCellStyles(mx.mxConstants.STYLE_FONTCOLOR, newValue, this.selection);
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_FONTCOLOR] = newValue;
   }
 
   hasFontOpacity() : boolean {
-    return this.selectionTypes.has(elementTypes.TEXT_BOX) && this.selectionTypes.size === 1;
+    return this.selectionTypes.size > 0 && !this.selectionTypes.has(elementTypes.BACKBONE) && !this.selectionTypes.has(elementTypes.INTERACTION);
   }
   currentFontOpacity() : number {
-    const cell = this.selection[0];
-    let val = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_TEXT_OPACITY];
-    return (typeof val === 'undefined') ? 100 : val;
+    return this.styles[mx.mxConstants.STYLE_TEXT_OPACITY];
   }
   setFontOpacity(newValue: number) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      this.graph.setCellStyles(mx.mxConstants.STYLE_TEXT_OPACITY, newValue, this.selection);
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_TEXT_OPACITY] = newValue;
   }
 
   hasFontSize() : boolean {
-    return this.selectionTypes.has(elementTypes.TEXT_BOX) && this.selectionTypes.size === 1;
+    return this.selectionTypes.size > 0 && !this.selectionTypes.has(elementTypes.BACKBONE) && !this.selectionTypes.has(elementTypes.INTERACTION);
   }
   currentFontSize() : number {
-    const cell = this.selection[0];
-    let val = this.graph.getCellStyle(cell)[mx.mxConstants.STYLE_FONTSIZE];
-    return (typeof val === 'undefined') ? 11 : val;
+    return this.styles[mx.mxConstants.STYLE_FONTSIZE];
   }
   setFontSize(newValue: number) : void {
-    this.graph.getModel().beginUpdate();
-    try {
-      this.graph.setCellStyles(mx.mxConstants.STYLE_FONTSIZE, newValue, this.selection);
-    } finally {
-      this.graph.getModel().endUpdate();
-    }
+    this.styles[mx.mxConstants.STYLE_FONTSIZE] = newValue;
   }
 
 }

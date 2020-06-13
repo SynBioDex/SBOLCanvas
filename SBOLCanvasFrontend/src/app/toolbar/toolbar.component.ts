@@ -48,7 +48,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   openUploadDialog(): void {
-    this.dialog.open(UploadGraphComponent, {});
+    this.dialog.open(UploadGraphComponent, {
+      data: {componentMode: this.graphService.isRootAComponentView()}
+    });
   }
 
   openDownloadDialog(): void{
@@ -111,6 +113,14 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     let result = await confirmRef.afterClosed().toPromise();
     if(result === "Yes"){
       this.graphService.resetGraph(true);
+    }
+  }
+
+  async newComponentDesign(){
+    const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: "Are you sure you want a new component design? You will lose all your current changes.", options: ["Yes", "Cancel"] } });
+    let result = await confirmRef.afterClosed().toPromise();
+    if(result === "Yes"){
+      this.graphService.resetGraph(false);
     }
   }
 }

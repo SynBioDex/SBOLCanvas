@@ -52,6 +52,7 @@ public class Convert extends HttpServlet {
 			IOUtils.copy(inputStream, outputStream);
 
 			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+			e.printStackTrace();
 		}
 	}
 

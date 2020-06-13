@@ -102,6 +102,9 @@ public class SBOLData {
 	}
 	
 	public static String[] getRefinement(String parentName){
+		if(parentName == null || parentName.equals("")) {
+			parentName = "NGA (No Glyph Assigned)";
+		}
 		TreeSet<String> refinementNames = new TreeSet<String>();
 		Set<URI> descendants = so.getDescendantURIsOf(roles.getValue(parentName));
 		for(URI uri : descendants) {
