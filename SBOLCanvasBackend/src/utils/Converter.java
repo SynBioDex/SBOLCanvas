@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
@@ -30,6 +31,7 @@ import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.DirectionType;
 import org.sbolstandard.core2.FunctionalComponent;
+import org.sbolstandard.core2.GenericTopLevel;
 import org.sbolstandard.core2.Interaction;
 import org.sbolstandard.core2.Location;
 import org.sbolstandard.core2.MapsTo;
@@ -45,7 +47,6 @@ import org.sbolstandard.core2.SBOLValidationException;
 import org.sbolstandard.core2.SBOLWriter;
 import org.sbolstandard.core2.Sequence;
 import org.sbolstandard.core2.SequenceAnnotation;
-import org.sbolstandard.core2.SequenceOntology;
 import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -54,9 +55,11 @@ import org.xml.sax.SAXException;
 import com.mxgraph.io.mxCodec;
 import com.mxgraph.io.mxCodecRegistry;
 import com.mxgraph.model.mxCell;
+import com.mxgraph.model.mxGeometry;
 import com.mxgraph.model.mxGraphModel;
 import com.mxgraph.model.mxGraphModel.Filter;
 import com.mxgraph.util.mxConstants;
+import com.mxgraph.util.mxPoint;
 import com.mxgraph.util.mxUtils;
 import com.mxgraph.util.mxXmlUtils;
 import com.mxgraph.view.mxGraph;
@@ -69,13 +72,24 @@ public class Converter {
 	static String uriPrefix = "https://sbolcanvas.org/";
 	static String annPrefix = "SBOLCanvas";
 
+	static final String STYLE_CIRCUIT_CONTAINER = "circuitContainer";
+	static final String STYLE_BACKBONE = "backbone";
+	static final String STYLE_TEXTBOX = "textBox";
+	static final String STYLE_SCAR = "Scar (Assembly Scar)";
+	static final String STYLE_NGA = "NGA (No Glyph Assigned)";
+	static final String STYLE_MOLECULAR_SPECIES = "molecularSpeciesGlyph";
+	static final String STYLE_SEQUENCE_FEATURE = "sequenceFeatureGlyph";
+	static final String STYLE_INTERACTION = "interactionGlyph";
+	static final String STYLE_MODULE_VIEW = "moduleViewCell";
+	static final String STYLE_COMPONENT_VIEW = "componentViewCell";
+
 	/**
 	 * Filters mxCells that contain "textBox" in the style string
 	 */
 	static Filter textBoxFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("textBox");
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_TEXTBOX);
 		}
 	};
 
@@ -85,7 +99,7 @@ public class Converter {
 	static Filter proteinFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("molecularSpeciesGlyph");
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_MOLECULAR_SPECIES);
 		}
 	};
 
@@ -95,7 +109,7 @@ public class Converter {
 	static Filter containerFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("circuitContainer");
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER);
 		}
 	};
 
@@ -105,7 +119,7 @@ public class Converter {
 	static Filter backboneFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("backbone");
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_BACKBONE);
 		}
 	};
 
@@ -115,7 +129,7 @@ public class Converter {
 	static Filter sequenceFeatureFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains("sequenceFeatureGlyph");
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE);
 		}
 	};
 
@@ -125,6 +139,7 @@ public class Converter {
 	};
 
 	private Hashtable<String, GlyphInfo> glyphInfoDict = new Hashtable<String, GlyphInfo>();
+	private GenericTopLevel layout;
 
 	@SuppressWarnings("unchecked")
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename)
@@ -140,6 +155,7 @@ public class Converter {
 		document.setDefaultURIprefix(uriPrefix);
 		document.setComplete(true);
 		document.setCreateDefaults(true);
+		layout = document.createGenericTopLevel("Layout", new QName(uriPrefix, "Layout", annPrefix));
 
 		// Arrays.stream is the java 8 way to cast Object[] to some other array
 		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
@@ -167,7 +183,7 @@ public class Converter {
 					.toArray(mxCell[]::new);
 			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
 					.toArray(mxCell[]::new);
-			if (viewCell.getStyle().equals("moduleViewCell") || circuitContainers.length > 1 || proteins.length > 0) {
+			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || proteins.length > 0) {
 				// TODO when moddefs are supported the id should already be correct
 				// module definitions
 				((mxCell) viewCell).setId(filename);
@@ -199,7 +215,7 @@ public class Converter {
 					.toArray(mxCell[]::new);
 			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
 					.toArray(mxCell[]::new);
-			if (viewCell.getStyle().equals("moduleViewCell") || circuitContainers.length > 1 || proteins.length > 0) {
+			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || proteins.length > 0) {
 				// module definitions
 				linkModuleDefinition(document, graph, model, viewCell);
 			}
@@ -219,11 +235,16 @@ public class Converter {
 
 	public void toGraph(SBOLDocument document, OutputStream graphStream) throws IOException,
 			ParserConfigurationException, TransformerException, SBOLValidationException, SAXException {
+
+		document.setDefaultURIprefix(uriPrefix);
+
 		// set up the graph and glyphdict
 		mxGraph graph = new mxGraph();
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		mxCell cell0 = (mxCell) model.getCell("0");
 		cell0.setValue(glyphInfoDict);
+
+		layout = document.getGenericTopLevel("Layout", null);
 
 		ModuleDefinition modDef = null;
 		if (document.getRootModuleDefinitions().size() > 0) {
@@ -401,7 +422,7 @@ public class Converter {
 		if (glyphInfo.getPartRefine() == null || glyphInfo.getPartRefine().equals("")) {
 			// if there isn't a part refine set the role
 			if (glyphInfo.getPartRole() == null || glyphInfo.getPartRole().equals("")) {
-				glyphInfo.setPartRole("NGA (No Glyph Assigned)");
+				glyphInfo.setPartRole(STYLE_NGA);
 			}
 			compDef.addRole(SBOLData.roles.getValue(glyphInfo.getPartRole()));
 		} else {
@@ -439,11 +460,12 @@ public class Converter {
 
 		// edges to interactions
 		for (mxCell edge : edges) {
+
 			// interaction
 			InteractionInfo intInfo = (InteractionInfo) edge.getValue();
 			Interaction interaction = modDef.createInteraction(intInfo.getDisplayID(),
 					SBOLData.interactions.getValue(intInfo.getInteractionType()));
-			interaction.createAnnotation(new QName(uriPrefix, "edge", annPrefix), encodeMxGraphObject(edge));
+			this.createGraphicalLayout(graph, edge, interaction.getIdentity());
 
 			// participants
 			mxCell source = (mxCell) edge.getSource();
@@ -496,8 +518,8 @@ public class Converter {
 	}
 
 	private void linkComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
-			mxCell circuitContainer)
-			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException {
+			mxCell circuitContainer) throws SBOLValidationException, TransformerFactoryConfigurationError,
+			TransformerException, URISyntaxException {
 
 		ComponentDefinition compDef = document.getComponentDefinition(URI.create((String) circuitContainer.getValue()));
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
@@ -506,15 +528,15 @@ public class Converter {
 		Component previous = null;
 		int count = 0, start = 0, end = 0;
 		for (mxCell glyph : glyphs) {
-
 			GlyphInfo info = glyphInfoDict.get(glyph.getValue());
 			ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
 			Component component = compDef.createComponent(info.getDisplayID() + "_" + glyph.getParent().getIndex(glyph),
 					AccessType.PUBLIC, URI.create((String) glyph.getValue()));
 
 			// cell annotation
-			component.createAnnotation(new QName(uriPrefix, "glyphCell", annPrefix), encodeMxGraphObject(glyph));
+			this.createGraphicalLayout(graph, glyph, component.getIdentity());
 
+			// layout.addGraphicalObject(this.createGraphicalLayout(graph, glyph));
 			// sequence constraints
 			if (previous != null) {
 				compDef.createSequenceConstraint(compDef.getDisplayId() + "Constraint" + count,
@@ -554,7 +576,7 @@ public class Converter {
 
 		// create the root view cell
 		// TODO pull the the module id when multiple modules are supported.
-		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0, "moduleViewCell");
+		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0, STYLE_MODULE_VIEW);
 
 		// text boxes
 		Annotation textBoxAnn = modDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
@@ -598,7 +620,7 @@ public class Converter {
 					model.add(rootViewCell, protien, 0);
 				} else {
 					protien = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
-							0, "molecularSpeciesGlyph");
+							0, STYLE_MOLECULAR_SPECIES);
 				}
 				compToCell.put(funcComp.getIdentity() + "_" + compDef.getIdentity(), protien);
 				GlyphInfo info = genGlyphInfo(compDef);
@@ -616,7 +638,7 @@ public class Converter {
 				model.add(rootViewCell, container, 0);
 			} else {
 				container = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
-						0, "circuitContainer");
+						0, STYLE_CIRCUIT_CONTAINER);
 			}
 			Annotation backboneAnn = compDef.getAnnotation(new QName(uriPrefix, "backboneCell", annPrefix));
 			mxCell backbone = null;
@@ -624,7 +646,7 @@ public class Converter {
 				backbone = (mxCell) decodeMxGraphObject(backboneAnn.getStringValue());
 				model.add(container, backbone, 0);
 			} else {
-				backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, "backbone");
+				backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, STYLE_BACKBONE);
 			}
 			GlyphInfo info = genGlyphInfo(compDef);
 			glyphInfoDict.put(info.getFullURI(), info);
@@ -634,17 +656,16 @@ public class Converter {
 			double maxX = 0;
 			for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 				Component glyphComponent = glyphArray[glyphIndex];
-				Annotation glyphAnn = glyphComponent.getAnnotation(new QName(uriPrefix, "glyphCell", annPrefix));
-				mxCell glyphCell = null;
-				if (glyphAnn != null) {
-					glyphCell = (mxCell) decodeMxGraphObject(glyphAnn.getStringValue());
-					maxX = glyphCell.getGeometry().getX();
+				mxCell glyphCell = this.getGraphicalLayout(graph, glyphArray[glyphIndex].getIdentity());
+				if (glyphCell != null) {
 					glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
+					//TODO fix the base style name
+					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE);
 					model.add(container, glyphCell, glyphIndex);
 				} else {
 					glyphCell = (mxCell) graph.insertVertex(container, null,
 							glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0,
-							"sequenceFeatureGlyph");
+							STYLE_SEQUENCE_FEATURE);
 				}
 
 				// style filp
@@ -715,7 +736,7 @@ public class Converter {
 
 		// create the top view cell
 		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0,
-				"componentViewCell");
+				STYLE_COMPONENT_VIEW);
 
 		// if there are text boxes add them
 		Annotation textBoxAnn = compDef.getAnnotation(new QName(uriPrefix, "textBoxes", annPrefix));
@@ -740,8 +761,8 @@ public class Converter {
 			model.add(container, backbone, 0);
 		} else {
 			container = (mxCell) graph.insertVertex(viewCell, null, compDef.getIdentity().toString(), 0, 0, 0, 0,
-					"circuitContainer");
-			backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, "backbone");
+					STYLE_CIRCUIT_CONTAINER);
+			backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, STYLE_BACKBONE);
 		}
 
 		// glyphs
@@ -759,7 +780,7 @@ public class Converter {
 			} else {
 				glyphCell = (mxCell) graph.insertVertex(container, null,
 						glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0,
-						"sequenceFeatureGlyph");
+						STYLE_SEQUENCE_FEATURE);
 			}
 
 			// style flip
@@ -870,6 +891,259 @@ public class Converter {
 			return source ? SystemsBiologyOntology.STIMULATOR : SystemsBiologyOntology.STIMULATED;
 		}
 		return null;
+	}
+
+	private void createGraphicalLayout(mxGraph graph, mxCell cell, URI reference)
+			throws SBOLValidationException, URISyntaxException {
+		Map<String, Object> styles = graph.getCellStyle(cell);
+
+		if (cell.isVertex()) {
+
+			List<Annotation> annList = new ArrayList<Annotation>();
+
+			// positional
+			mxGeometry cellGeometry = cell.getGeometry();
+			annList.add(new Annotation(new QName(uriPrefix, "x", annPrefix), cellGeometry.getX()));
+			annList.add(new Annotation(new QName(uriPrefix, "y", annPrefix), cell.getGeometry().getY()));
+			annList.add(new Annotation(new QName(uriPrefix, "width", annPrefix), cellGeometry.getWidth()));
+			annList.add(new Annotation(new QName(uriPrefix, "height", annPrefix), cellGeometry.getHeight()));
+
+			// styling
+			String strokeColor = (String) styles.get(mxConstants.STYLE_STROKECOLOR);
+			if (strokeColor != null)
+				annList.add(
+						new Annotation(new QName(uriPrefix, "strokeColor", annPrefix), strokeColor));
+
+			String strokeOpacity = (String) styles.get(mxConstants.STYLE_STROKE_OPACITY);
+			if (strokeOpacity != null)
+				annList.add(new Annotation(new QName(uriPrefix, "strokeOpacity", annPrefix),
+						strokeOpacity));
+
+			String strokeWidth = (String) styles.get(mxConstants.STYLE_STROKEWIDTH);
+			if (strokeWidth != null)
+				annList.add(
+						new Annotation(new QName(uriPrefix, "strokeWidth", annPrefix), strokeWidth));
+
+			String fillColor = (String) styles.get(mxConstants.STYLE_FILLCOLOR);
+			if (fillColor != null)
+				annList.add(new Annotation(new QName(uriPrefix, "fillColor", annPrefix), fillColor));
+
+			String fillOpacity = (String) styles.get(mxConstants.STYLE_FILL_OPACITY);
+			if (fillOpacity != null)
+				annList.add(
+						new Annotation(new QName(uriPrefix, "fillOpacity", annPrefix), fillOpacity));
+
+			String fontColor = (String) styles.get(mxConstants.STYLE_FONTCOLOR);
+			if (fontColor != null)
+				annList.add(new Annotation(new QName(uriPrefix, "fontColor", annPrefix), fontColor));
+
+			String fontSize = (String) styles.get(mxConstants.STYLE_FONTSIZE);
+			if (fontSize != null)
+				annList.add(new Annotation(new QName(uriPrefix, "fontSize", annPrefix), fontSize));
+
+			if (cell.getStyle().contains(STYLE_TEXTBOX))
+				annList.add(new Annotation(new QName(uriPrefix, "text", annPrefix), (String) cell.getValue()));
+
+			// annList.add(new Annotation(new QName(uriPrefix, "reference", annPrefix),
+			// reference));
+
+			Annotation nodeGlyph = layout.createAnnotation(new QName(uriPrefix, "NodeGlyph", annPrefix),
+					new QName(uriPrefix, "attributes", annPrefix), "attributes", annList);
+			nodeGlyph.setNestedIdentity(reference);
+
+		} else if (cell.isEdge()) {
+
+			List<Annotation> annList = new ArrayList<Annotation>();
+
+			// styling
+			String strokeColor = (String) styles.get(mxConstants.STYLE_STROKECOLOR);
+			if (strokeColor != null)
+				annList.add(
+						new Annotation(new QName(uriPrefix, "strokeColor", annPrefix), strokeColor));
+
+			String strokeOpacity = (String) styles.get(mxConstants.STYLE_STROKE_OPACITY);
+			if (strokeOpacity != null)
+				annList.add(new Annotation(new QName(uriPrefix, "strokeOpacity", annPrefix),
+						strokeOpacity));
+
+			String strokeWidth = (String) styles.get(mxConstants.STYLE_STROKEWIDTH);
+			if (strokeWidth != null)
+				annList.add(
+						new Annotation(new QName(uriPrefix, "strokeWidth", annPrefix), strokeWidth));
+
+			String arrowSize = (String) styles.get(mxConstants.STYLE_ENDSIZE);
+			if (arrowSize != null)
+				annList.add(new Annotation(new QName(uriPrefix, "endSize", annPrefix), arrowSize));
+
+			String sourceMargin = (String) styles.get(mxConstants.STYLE_SOURCE_PERIMETER_SPACING);
+			if (sourceMargin != null)
+				annList.add(new Annotation(new QName(uriPrefix, "sourceSpacing", annPrefix),
+						sourceMargin));
+
+			String targetMargin = (String) styles.get(mxConstants.STYLE_TARGET_PERIMETER_SPACING);
+			if (targetMargin != null)
+				annList.add(new Annotation(new QName(uriPrefix, "targetSpacing", annPrefix),
+						targetMargin));
+
+			String edgeStyle = (String) styles.get(mxConstants.STYLE_EDGE);
+			if (edgeStyle != null)
+				annList.add(new Annotation(new QName(uriPrefix, "edge", annPrefix), edgeStyle));
+
+			String rounded = (String) styles.get(mxConstants.STYLE_ROUNDED);
+			if (rounded != null)
+				annList.add(new Annotation(new QName(uriPrefix, "rounded", annPrefix),
+						Integer.parseInt(rounded) == 1));
+
+			String curved = (String) styles.get("curved");
+			if (curved != null)
+				annList.add(new Annotation(new QName(uriPrefix, "curved", annPrefix), Integer.parseInt(curved) == 1));
+
+			// annList.add(new Annotation(new QName(uriPrefix, "reference", annPrefix),
+			// reference));
+
+			Annotation edgeGlyphAnn = layout.createAnnotation(new QName(uriPrefix, "EdgeGlyph", annPrefix),
+					new QName(uriPrefix, "attributes", annPrefix), "attributes", annList);
+			edgeGlyphAnn.setNestedIdentity(reference);
+
+			// positional
+			mxGeometry geometry = cell.getGeometry();
+			if (geometry.getSourcePoint() != null) {
+				List<Annotation> sourcePointAnns = new ArrayList<Annotation>();
+				sourcePointAnns
+						.add(new Annotation(new QName(uriPrefix, "x", annPrefix), geometry.getSourcePoint().getX()));
+				sourcePointAnns
+						.add(new Annotation(new QName(uriPrefix, "y", annPrefix), geometry.getSourcePoint().getY()));
+				edgeGlyphAnn.createAnnotation(new QName(uriPrefix, "sourcePoint", annPrefix),
+						new QName(uriPrefix, "attributes", annPrefix), "attributes", sourcePointAnns);
+			}
+			if (geometry.getTargetPoint() != null) {
+				List<Annotation> targetPointAnns = new ArrayList<Annotation>();
+				targetPointAnns
+						.add(new Annotation(new QName(uriPrefix, "x", annPrefix), geometry.getTargetPoint().getX()));
+				targetPointAnns
+						.add(new Annotation(new QName(uriPrefix, "y", annPrefix), geometry.getTargetPoint().getY()));
+				edgeGlyphAnn.createAnnotation(new QName(uriPrefix, "targetPoint", annPrefix),
+						new QName(uriPrefix, "attributes", annPrefix), "attributes", targetPointAnns);
+			}
+			if (geometry.getPoints() != null && geometry.getPoints().size() > 0) {
+				for (mxPoint point : geometry.getPoints()) {
+					List<Annotation> pointAnns = new ArrayList<Annotation>();
+					pointAnns.add(new Annotation(new QName(uriPrefix, "x", annPrefix), point.getX()));
+					pointAnns.add(new Annotation(new QName(uriPrefix, "y", annPrefix), point.getY()));
+					edgeGlyphAnn.createAnnotation(new QName(uriPrefix, "point", annPrefix),
+							new QName(uriPrefix, "attributes", annPrefix), "attributes", pointAnns);
+				}
+			}
+		}
+	}
+
+	private mxCell getGraphicalLayout(mxGraph graph, URI refference) {
+		mxCell cell = new mxCell();
+		List<Annotation> annotations = layout.getAnnotations();
+		Annotation ann = null;
+		for (Annotation annotation : annotations) {
+			if (annotation.getNestedIdentity().equals(refference)) {
+				ann = annotation;
+				break;
+			}
+		}
+		if(ann == null)
+			return null;
+
+		mxCell[] cellArr = {cell};
+		cell.setGeometry(new mxGeometry());
+		if (ann.getQName().getLocalPart().equals("NodeGlyph")) {			
+			for (Annotation attributeAnn : ann.getAnnotations()) {
+				String value = attributeAnn.getStringValue();
+				switch (attributeAnn.getQName().getLocalPart()) {
+				case "x":
+					cell.getGeometry().setX(Double.parseDouble(value)); break;
+				case "y":
+					cell.getGeometry().setY(Double.parseDouble(value)); break;
+				case "width":
+					cell.getGeometry().setWidth(Double.parseDouble(value)); break;
+				case "height":
+					cell.getGeometry().setHeight(Double.parseDouble(value)); break;
+				case "strokeColor":
+					graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr); break;
+				case "strokeOpacity":
+					graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr); break;
+				case "strokeWidth":
+					graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr); break;
+				case "fillColor":
+					graph.setCellStyles(mxConstants.STYLE_FILLCOLOR, value, cellArr); break;
+				case "fillOpacity":
+					graph.setCellStyles(mxConstants.STYLE_FILL_OPACITY, value, cellArr); break;
+				case "fontColor":
+					graph.setCellStyles(mxConstants.STYLE_FONTCOLOR, value, cellArr); break;
+				case "fontSize":
+					graph.setCellStyles(mxConstants.STYLE_FONTSIZE, value, cellArr); break;
+				case "text":
+					cell.setValue(value); break;
+				}
+			}
+		} else if (ann.getQName().getLocalPart().equals("EdgeGlyph")) {
+			for(Annotation attributeAnn : ann.getAnnotations()) {
+				String value = attributeAnn.getStringValue();
+				switch(attributeAnn.getQName().getLocalPart()) {
+				case "strokeColor":
+					graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr); break;
+				case "strokeOpacity":
+					graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr); break;
+				case "strokeWidth":
+					graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr); break;
+				case "endSize":
+					graph.setCellStyles(mxConstants.STYLE_ENDSIZE, value, cellArr); break;
+				case "sourceSpacing":
+					graph.setCellStyles(mxConstants.STYLE_SOURCE_PERIMETER_SPACING,  value, cellArr); break;
+				case "targetSpacing":
+					graph.setCellStyles(mxConstants.STYLE_TARGET_PERIMETER_SPACING, value, cellArr); break;
+				case "edge":
+					graph.setCellStyles(mxConstants.STYLE_EDGE, value, cellArr); break;
+				case "rounded":
+					graph.setCellStyles(mxConstants.STYLE_ROUNDED, value, cellArr); break;
+				case "curved":
+					graph.setCellStyles("curved", value, cellArr); break;
+				case "sourcePoint":
+					mxPoint sourcePoint = new mxPoint();
+					for(Annotation sourceAnn: attributeAnn.getAnnotations()) {
+						switch(sourceAnn.getQName().getLocalPart()) {
+						case "x":
+							sourcePoint.setX(Double.parseDouble(sourceAnn.getStringValue())); break;
+						case "y":
+							sourcePoint.setY(Double.parseDouble(sourceAnn.getStringValue())); break;
+						}
+					}
+					cell.getGeometry().setSourcePoint(sourcePoint);
+					break;
+				case "targetPoint":
+					mxPoint targetPoint = new mxPoint();
+					for(Annotation sourceAnn: attributeAnn.getAnnotations()) {
+						switch(sourceAnn.getQName().getLocalPart()) {
+						case "x":
+							targetPoint.setX(Double.parseDouble(sourceAnn.getStringValue())); break;
+						case "y":
+							targetPoint.setY(Double.parseDouble(sourceAnn.getStringValue())); break;
+						}
+					}
+					cell.getGeometry().setSourcePoint(targetPoint);
+					break;
+				case "point":
+					mxPoint point = new mxPoint();
+					for(Annotation sourceAnn: attributeAnn.getAnnotations()) {
+						switch(sourceAnn.getQName().getLocalPart()) {
+						case "x":
+							point.setX(Double.parseDouble(sourceAnn.getStringValue())); break;
+						case "y":
+							point.setY(Double.parseDouble(sourceAnn.getStringValue())); break;
+						}
+					}
+					cell.getGeometry().getPoints().add(point);
+					break;
+				}
+			}
+		}
+		return cell;
 	}
 
 }
