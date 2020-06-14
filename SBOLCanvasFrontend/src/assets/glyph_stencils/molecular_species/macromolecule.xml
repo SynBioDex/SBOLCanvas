@@ -1,24 +1,13 @@
 <shapes>
-<shape aspect="variable" centered="False" h="48" name="macromolecule" strokewidth="inherit" w="48">
+<shape aspect="variable" centered="True" h="48" name="macromolecule" strokewidth="inherit" w="48">
     <connections />
     <foreground>
-        <strokewidth width="2.88" />
+        <strokewidth width="2.25" />
         <linejoin join="miter" />
         <linecap cap="butt" />
         <miterlimit limit="4" />
         <alpha alpha="1" />
-        <path>
-            <move x="24.79445843828715" y="6.707304785894209" />
-            <arc large-arc-flag="0.0" rx="23.205541561712845" ry="24.912846347607054" sweep-flag="0.0" x="6.56977329974811" x-axis-rotation="5.0" y="24.912846347607054" />
-            <arc large-arc-flag="0.0" rx="23.205541561712845" ry="24.912846347607054" sweep-flag="0.0" x="9.556171284634761" x-axis-rotation="5.0" y="34.886649874055415" />
-            <arc large-arc-flag="0.0" rx="11.738539042821158" ry="13.445843828715367" sweep-flag="0.0" x="5.0" x-axis-rotation="5.0" y="41.26146095717884" />
-            <arc large-arc-flag="0.0" rx="11.738539042821158" ry="13.445843828715367" sweep-flag="0.0" x="11.738539042821158" x-axis-rotation="5.0" y="48.0" />
-            <arc large-arc-flag="0.0" rx="11.738539042821158" ry="13.445843828715367" sweep-flag="0.0" x="18.43879093198992" x-axis-rotation="5.0" y="41.96977329974811" />
-            <arc large-arc-flag="0.0" rx="23.205541561712845" ry="24.912846347607054" sweep-flag="0.0" x="24.79445843828715" x-axis-rotation="5.0" y="43.137531486146095" />
-            <arc large-arc-flag="0.0" rx="23.205541561712845" ry="24.912846347607054" sweep-flag="0.0" x="43.0" x-axis-rotation="5.0" y="24.912846347607054" />
-            <arc large-arc-flag="0.0" rx="23.205541561712845" ry="24.912846347607054" sweep-flag="0.0" x="24.79445843828715" x-axis-rotation="5.0" y="6.707304785894209" />
-            <close />
-        </path>
+        <roundrect arcsize="50" h="13.86" w="31.76" x="8.12" y="17.07" />
         <fillstroke />
     </foreground>
 </shape>
