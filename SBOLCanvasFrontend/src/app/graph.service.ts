@@ -677,17 +677,17 @@ export class GraphService extends GraphHelpers {
         const selectedCell = this.graph.getSelectionCell();
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
-        this.graph.addEdge(cell, null, selectedCell, null);
+        this.graph.addEdge(cell, this.graph.getCurrentRoot(), selectedCell, null);
       } else if (selectionCells.length == 2) {
         const sourceCell = selectionCells[0];
         const destCell = selectionCells[1];
         cell.edge = true;
-        this.graph.addEdge(cell, null, sourceCell, destCell);
+        this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);
       } else {
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y + GraphBase.defaultInteractionSize), true);
         cell.geometry.setTerminalPoint(new mx.mxPoint(x + GraphBase.defaultInteractionSize, y), false);
         cell.edge = true;
-        this.graph.addEdge(cell, null, null, null);
+        this.graph.addEdge(cell, this.graph.getCurrentRoot(), null, null);
       }
 
 

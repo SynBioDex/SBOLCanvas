@@ -96,6 +96,8 @@ export class GraphBase {
         // it's used mainly for 'actions', which for now means delete, later will mean undoing
         this.editor = new mx.mxEditor();
         this.graph = this.editor.graph;
+        // edges shouldn't find the nearest common ancestor
+        this.graph.getModel().maintainEdgeParent = false;
         this.editor.setGraphContainer(this.graphContainer);
 
         this.graph.setCellsCloneable(false);
@@ -222,8 +224,18 @@ export class GraphBase {
                 this.anyForeignCellsFound = true;
             }
 
+            let reconstructCellStyle = false;
+            if (cell && cell.id > 1 && !cell.isViewCell()) {
+                if (!cell.style || cell.style.length == 0)
+                    reconstructCellStyle = true;
+                else if (cell.getGeometry().height == 0)
+                    reconstructCellStyle = true;
+                else if (cell.style.includes(GraphBase.STYLE_SEQUENCE_FEATURE) && !cell.style.includes(glyphDict[cell.value].partRole))
+                    reconstructCellStyle = true;
+            }
+
             // reconstruct the cell style
-            if (cell && cell.id > 1 && (cell.style == null || cell.style.length == 0 || (!cell.isViewCell() && cell.getGeometry().height == 0))) {
+            if (reconstructCellStyle) {
                 if (glyphDict[cell.value] != null) {
                     if (glyphDict[cell.value].partType === 'DNA region') {
                         // sequence feature
@@ -232,8 +244,10 @@ export class GraphBase {
                         } else {
                             cell.style = cell.style.replace(GraphBase.STYLE_SEQUENCE_FEATURE, GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole);
                         }
-                        cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth;
-                        cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
+                        if (cell.geometry.width == 0)
+                            cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth;
+                        if (cell.geometry.height == 0)
+                            cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
                     } else {
                         // molecular species
                         cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
@@ -246,7 +260,11 @@ export class GraphBase {
                     if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
                         name = "Process";
                     }
-                    cell.style = GraphBase.STYLE_INTERACTION + name;
+                    if(!cell.style){
+                        cell.style = GraphBase.STYLE_INTERACTION + name;
+                    }else{
+                        cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION, GraphBase.STYLE_INTERACTION+name);
+                    }
                 }
             }
 
@@ -544,7 +562,7 @@ export class GraphBase {
      * Can only be called before this.graph is initialized
      */
     initStyles() {
-        
+
         // Main glyph settings. These are applied to sequence feature glyphs and molecular species glyphs
         this.baseMolecularSpeciesGlyphStyle = {};
         this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
@@ -846,12 +864,12 @@ export class GraphBase {
 
                 // sync circuit containers
                 let circuitContainers = new Set<mxCell>();
-                for(let movedCell of movedCells){
-                    if(movedCell.isSequenceFeatureGlyph()){
+                for (let movedCell of movedCells) {
+                    if (movedCell.isSequenceFeatureGlyph()) {
                         circuitContainers.add(movedCell.getParent());
                     }
                 }
-                for(let circuitContainer of Array.from(circuitContainers.values())){
+                for (let circuitContainer of Array.from(circuitContainers.values())) {
                     this.syncCircuitContainer(circuitContainer);
                 }
 

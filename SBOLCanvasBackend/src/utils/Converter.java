@@ -659,8 +659,7 @@ public class Converter {
 				mxCell glyphCell = this.getGraphicalLayout(graph, glyphArray[glyphIndex].getIdentity());
 				if (glyphCell != null) {
 					glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
-					//TODO fix the base style name
-					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE);
+					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE + ";" + glyphCell.getStyle());
 					model.add(container, glyphCell, glyphIndex);
 				} else {
 					glyphCell = (mxCell) graph.insertVertex(container, null,
@@ -691,9 +690,9 @@ public class Converter {
 		Set<Interaction> interactions = modDef.getInteractions();
 		for (Interaction interaction : interactions) {
 			Annotation interactionAnn = interaction.getAnnotation(new QName(uriPrefix, "edge", annPrefix));
-			mxCell edge = null;
-			if (interactionAnn != null) {
-				edge = (mxCell) decodeMxGraphObject(interactionAnn.getStringValue());
+			mxCell edge = this.getGraphicalLayout(graph, interaction.getIdentity());
+			if (edge != null) {
+				edge.setStyle(STYLE_INTERACTION + ";"+edge.getStyle());
 				edge = (mxCell) model.add(rootViewCell, edge, 0);
 			} else {
 				edge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
@@ -797,6 +796,7 @@ public class Converter {
 
 	private mxGraph parseGraph(InputStream graphStream) throws IOException {
 		mxGraph graph = new mxGraph();
+		((mxGraphModel) graph.getModel()).setMaintainEdgeParent(false);
 		Document document = mxXmlUtils.parseXml(mxUtils.readInputStream(graphStream));
 		mxCodec codec = new mxCodec(document);
 		codec.decode(document.getDocumentElement(), graph.getModel());
@@ -909,43 +909,36 @@ public class Converter {
 			annList.add(new Annotation(new QName(uriPrefix, "height", annPrefix), cellGeometry.getHeight()));
 
 			// styling
-			String strokeColor = (String) styles.get(mxConstants.STYLE_STROKECOLOR);
-			if (strokeColor != null)
-				annList.add(
-						new Annotation(new QName(uriPrefix, "strokeColor", annPrefix), strokeColor));
+			if (cell.getStyle().contains(mxConstants.STYLE_STROKECOLOR))
+				annList.add(new Annotation(new QName(uriPrefix, "strokeColor", annPrefix),
+						(String) styles.get(mxConstants.STYLE_STROKECOLOR)));
 
-			String strokeOpacity = (String) styles.get(mxConstants.STYLE_STROKE_OPACITY);
-			if (strokeOpacity != null)
+			if (cell.getStyle().contains(mxConstants.STYLE_STROKE_OPACITY))
 				annList.add(new Annotation(new QName(uriPrefix, "strokeOpacity", annPrefix),
-						strokeOpacity));
+						(String) styles.get(mxConstants.STYLE_STROKE_OPACITY)));
 
-			String strokeWidth = (String) styles.get(mxConstants.STYLE_STROKEWIDTH);
-			if (strokeWidth != null)
-				annList.add(
-						new Annotation(new QName(uriPrefix, "strokeWidth", annPrefix), strokeWidth));
+			if (cell.getStyle().contains(mxConstants.STYLE_STROKEWIDTH))
+				annList.add(new Annotation(new QName(uriPrefix, "strokeWidth", annPrefix),
+						(String) styles.get(mxConstants.STYLE_STROKEWIDTH)));
 
-			String fillColor = (String) styles.get(mxConstants.STYLE_FILLCOLOR);
-			if (fillColor != null)
-				annList.add(new Annotation(new QName(uriPrefix, "fillColor", annPrefix), fillColor));
+			if (cell.getStyle().contains(mxConstants.STYLE_FILLCOLOR))
+				annList.add(new Annotation(new QName(uriPrefix, "fillColor", annPrefix),
+						(String) styles.get(mxConstants.STYLE_FILLCOLOR)));
 
-			String fillOpacity = (String) styles.get(mxConstants.STYLE_FILL_OPACITY);
-			if (fillOpacity != null)
-				annList.add(
-						new Annotation(new QName(uriPrefix, "fillOpacity", annPrefix), fillOpacity));
+			if (cell.getStyle().contains(mxConstants.STYLE_FILL_OPACITY))
+				annList.add(new Annotation(new QName(uriPrefix, "fillOpacity", annPrefix),
+						(String) styles.get(mxConstants.STYLE_FILL_OPACITY)));
 
-			String fontColor = (String) styles.get(mxConstants.STYLE_FONTCOLOR);
-			if (fontColor != null)
-				annList.add(new Annotation(new QName(uriPrefix, "fontColor", annPrefix), fontColor));
+			if (cell.getStyle().contains(mxConstants.STYLE_FONTCOLOR))
+				annList.add(new Annotation(new QName(uriPrefix, "fontColor", annPrefix),
+						(String) styles.get(mxConstants.STYLE_FONTCOLOR)));
 
-			String fontSize = (String) styles.get(mxConstants.STYLE_FONTSIZE);
-			if (fontSize != null)
-				annList.add(new Annotation(new QName(uriPrefix, "fontSize", annPrefix), fontSize));
+			if (cell.getStyle().contains(mxConstants.STYLE_FONTSIZE))
+				annList.add(new Annotation(new QName(uriPrefix, "fontSize", annPrefix),
+						(String) styles.get(mxConstants.STYLE_FONTSIZE)));
 
 			if (cell.getStyle().contains(STYLE_TEXTBOX))
 				annList.add(new Annotation(new QName(uriPrefix, "text", annPrefix), (String) cell.getValue()));
-
-			// annList.add(new Annotation(new QName(uriPrefix, "reference", annPrefix),
-			// reference));
 
 			Annotation nodeGlyph = layout.createAnnotation(new QName(uriPrefix, "NodeGlyph", annPrefix),
 					new QName(uriPrefix, "attributes", annPrefix), "attributes", annList);
@@ -956,50 +949,41 @@ public class Converter {
 			List<Annotation> annList = new ArrayList<Annotation>();
 
 			// styling
-			String strokeColor = (String) styles.get(mxConstants.STYLE_STROKECOLOR);
-			if (strokeColor != null)
-				annList.add(
-						new Annotation(new QName(uriPrefix, "strokeColor", annPrefix), strokeColor));
+			if (cell.getStyle().contains(mxConstants.STYLE_STROKECOLOR))
+				annList.add(new Annotation(new QName(uriPrefix, "strokeColor", annPrefix),
+						(String) styles.get(mxConstants.STYLE_STROKECOLOR)));
 
-			String strokeOpacity = (String) styles.get(mxConstants.STYLE_STROKE_OPACITY);
-			if (strokeOpacity != null)
+			if (cell.getStyle().contains(mxConstants.STYLE_STROKE_OPACITY))
 				annList.add(new Annotation(new QName(uriPrefix, "strokeOpacity", annPrefix),
-						strokeOpacity));
+						(String) styles.get(mxConstants.STYLE_STROKE_OPACITY)));
 
-			String strokeWidth = (String) styles.get(mxConstants.STYLE_STROKEWIDTH);
-			if (strokeWidth != null)
-				annList.add(
-						new Annotation(new QName(uriPrefix, "strokeWidth", annPrefix), strokeWidth));
+			if (cell.getStyle().contains(mxConstants.STYLE_STROKEWIDTH))
+				annList.add(new Annotation(new QName(uriPrefix, "strokeWidth", annPrefix),
+						(String) styles.get(mxConstants.STYLE_STROKEWIDTH)));
 
-			String arrowSize = (String) styles.get(mxConstants.STYLE_ENDSIZE);
-			if (arrowSize != null)
-				annList.add(new Annotation(new QName(uriPrefix, "endSize", annPrefix), arrowSize));
+			if (cell.getStyle().contains(mxConstants.STYLE_ENDSIZE))
+				annList.add(new Annotation(new QName(uriPrefix, "endSize", annPrefix),
+						(String) styles.get(mxConstants.STYLE_ENDSIZE)));
 
-			String sourceMargin = (String) styles.get(mxConstants.STYLE_SOURCE_PERIMETER_SPACING);
-			if (sourceMargin != null)
+			if (cell.getStyle().contains(mxConstants.STYLE_SOURCE_PERIMETER_SPACING))
 				annList.add(new Annotation(new QName(uriPrefix, "sourceSpacing", annPrefix),
-						sourceMargin));
+						(String) styles.get(mxConstants.STYLE_SOURCE_PERIMETER_SPACING)));
 
-			String targetMargin = (String) styles.get(mxConstants.STYLE_TARGET_PERIMETER_SPACING);
-			if (targetMargin != null)
+			if (cell.getStyle().contains(mxConstants.STYLE_TARGET_PERIMETER_SPACING))
 				annList.add(new Annotation(new QName(uriPrefix, "targetSpacing", annPrefix),
-						targetMargin));
+						(String) styles.get(mxConstants.STYLE_TARGET_PERIMETER_SPACING)));
 
-			String edgeStyle = (String) styles.get(mxConstants.STYLE_EDGE);
-			if (edgeStyle != null)
-				annList.add(new Annotation(new QName(uriPrefix, "edge", annPrefix), edgeStyle));
+			if (cell.getStyle().contains(mxConstants.STYLE_EDGE))
+				annList.add(new Annotation(new QName(uriPrefix, "edge", annPrefix),
+						(String) styles.get(mxConstants.STYLE_EDGE)));
 
-			String rounded = (String) styles.get(mxConstants.STYLE_ROUNDED);
-			if (rounded != null)
+			if (cell.getStyle().contains(mxConstants.STYLE_ROUNDED))
 				annList.add(new Annotation(new QName(uriPrefix, "rounded", annPrefix),
-						Integer.parseInt(rounded) == 1));
+						Integer.parseInt((String) styles.get(mxConstants.STYLE_ROUNDED)) == 1));
 
-			String curved = (String) styles.get("curved");
-			if (curved != null)
-				annList.add(new Annotation(new QName(uriPrefix, "curved", annPrefix), Integer.parseInt(curved) == 1));
-
-			// annList.add(new Annotation(new QName(uriPrefix, "reference", annPrefix),
-			// reference));
+			if (cell.getStyle().contains("curved"))
+				annList.add(new Annotation(new QName(uriPrefix, "curved", annPrefix),
+						Integer.parseInt((String) styles.get("curved")) == 1));
 
 			Annotation edgeGlyphAnn = layout.createAnnotation(new QName(uriPrefix, "EdgeGlyph", annPrefix),
 					new QName(uriPrefix, "attributes", annPrefix), "attributes", annList);
@@ -1047,95 +1031,128 @@ public class Converter {
 				break;
 			}
 		}
-		if(ann == null)
+		if (ann == null)
 			return null;
 
-		mxCell[] cellArr = {cell};
+		mxCell[] cellArr = { cell };
 		cell.setGeometry(new mxGeometry());
-		if (ann.getQName().getLocalPart().equals("NodeGlyph")) {			
+		if (ann.getQName().getLocalPart().equals("NodeGlyph")) {
+			cell.setVertex(true);
 			for (Annotation attributeAnn : ann.getAnnotations()) {
 				String value = attributeAnn.getStringValue();
 				switch (attributeAnn.getQName().getLocalPart()) {
 				case "x":
-					cell.getGeometry().setX(Double.parseDouble(value)); break;
+					cell.getGeometry().setX(Double.parseDouble(value));
+					break;
 				case "y":
-					cell.getGeometry().setY(Double.parseDouble(value)); break;
+					cell.getGeometry().setY(Double.parseDouble(value));
+					break;
 				case "width":
-					cell.getGeometry().setWidth(Double.parseDouble(value)); break;
+					cell.getGeometry().setWidth(Double.parseDouble(value));
+					break;
 				case "height":
-					cell.getGeometry().setHeight(Double.parseDouble(value)); break;
+					cell.getGeometry().setHeight(Double.parseDouble(value));
+					break;
 				case "strokeColor":
-					graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr);
+					break;
 				case "strokeOpacity":
-					graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr);
+					break;
 				case "strokeWidth":
-					graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr);
+					break;
 				case "fillColor":
-					graph.setCellStyles(mxConstants.STYLE_FILLCOLOR, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_FILLCOLOR, value, cellArr);
+					break;
 				case "fillOpacity":
-					graph.setCellStyles(mxConstants.STYLE_FILL_OPACITY, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_FILL_OPACITY, value, cellArr);
+					break;
 				case "fontColor":
-					graph.setCellStyles(mxConstants.STYLE_FONTCOLOR, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_FONTCOLOR, value, cellArr);
+					break;
 				case "fontSize":
-					graph.setCellStyles(mxConstants.STYLE_FONTSIZE, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_FONTSIZE, value, cellArr);
+					break;
 				case "text":
-					cell.setValue(value); break;
+					cell.setValue(value);
+					break;
 				}
 			}
 		} else if (ann.getQName().getLocalPart().equals("EdgeGlyph")) {
-			for(Annotation attributeAnn : ann.getAnnotations()) {
+			cell.setEdge(true);
+			for (Annotation attributeAnn : ann.getAnnotations()) {
 				String value = attributeAnn.getStringValue();
-				switch(attributeAnn.getQName().getLocalPart()) {
+				switch (attributeAnn.getQName().getLocalPart()) {
 				case "strokeColor":
-					graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr);
+					break;
 				case "strokeOpacity":
-					graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr);
+					break;
 				case "strokeWidth":
-					graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr);
+					break;
 				case "endSize":
-					graph.setCellStyles(mxConstants.STYLE_ENDSIZE, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_ENDSIZE, value, cellArr);
+					break;
 				case "sourceSpacing":
-					graph.setCellStyles(mxConstants.STYLE_SOURCE_PERIMETER_SPACING,  value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_SOURCE_PERIMETER_SPACING, value, cellArr);
+					break;
 				case "targetSpacing":
-					graph.setCellStyles(mxConstants.STYLE_TARGET_PERIMETER_SPACING, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_TARGET_PERIMETER_SPACING, value, cellArr);
+					break;
 				case "edge":
-					graph.setCellStyles(mxConstants.STYLE_EDGE, value, cellArr); break;
+					graph.setCellStyles(mxConstants.STYLE_EDGE, value, cellArr);
+					break;
 				case "rounded":
-					graph.setCellStyles(mxConstants.STYLE_ROUNDED, value, cellArr); break;
+					if(value.equals("true")) {
+						graph.setCellStyles(mxConstants.STYLE_ROUNDED, "1", cellArr);
+					}
+					break;
 				case "curved":
-					graph.setCellStyles("curved", value, cellArr); break;
+					if(value.equals("true")) {
+						graph.setCellStyles("curved", "1", cellArr);
+					}
+					break;
 				case "sourcePoint":
 					mxPoint sourcePoint = new mxPoint();
-					for(Annotation sourceAnn: attributeAnn.getAnnotations()) {
-						switch(sourceAnn.getQName().getLocalPart()) {
+					for (Annotation sourceAnn : attributeAnn.getAnnotations()) {
+						switch (sourceAnn.getQName().getLocalPart()) {
 						case "x":
-							sourcePoint.setX(Double.parseDouble(sourceAnn.getStringValue())); break;
+							sourcePoint.setX(Double.parseDouble(sourceAnn.getStringValue()));
+							break;
 						case "y":
-							sourcePoint.setY(Double.parseDouble(sourceAnn.getStringValue())); break;
+							sourcePoint.setY(Double.parseDouble(sourceAnn.getStringValue()));
+							break;
 						}
 					}
 					cell.getGeometry().setSourcePoint(sourcePoint);
 					break;
 				case "targetPoint":
 					mxPoint targetPoint = new mxPoint();
-					for(Annotation sourceAnn: attributeAnn.getAnnotations()) {
-						switch(sourceAnn.getQName().getLocalPart()) {
+					for (Annotation sourceAnn : attributeAnn.getAnnotations()) {
+						switch (sourceAnn.getQName().getLocalPart()) {
 						case "x":
-							targetPoint.setX(Double.parseDouble(sourceAnn.getStringValue())); break;
+							targetPoint.setX(Double.parseDouble(sourceAnn.getStringValue()));
+							break;
 						case "y":
-							targetPoint.setY(Double.parseDouble(sourceAnn.getStringValue())); break;
+							targetPoint.setY(Double.parseDouble(sourceAnn.getStringValue()));
+							break;
 						}
 					}
 					cell.getGeometry().setSourcePoint(targetPoint);
 					break;
 				case "point":
 					mxPoint point = new mxPoint();
-					for(Annotation sourceAnn: attributeAnn.getAnnotations()) {
-						switch(sourceAnn.getQName().getLocalPart()) {
+					for (Annotation sourceAnn : attributeAnn.getAnnotations()) {
+						switch (sourceAnn.getQName().getLocalPart()) {
 						case "x":
-							point.setX(Double.parseDouble(sourceAnn.getStringValue())); break;
+							point.setX(Double.parseDouble(sourceAnn.getStringValue()));
+							break;
 						case "y":
-							point.setY(Double.parseDouble(sourceAnn.getStringValue())); break;
+							point.setY(Double.parseDouble(sourceAnn.getStringValue()));
+							break;
 						}
 					}
 					cell.getGeometry().getPoints().add(point);
