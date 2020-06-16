@@ -171,7 +171,7 @@ public class Converter {
 				// avoid duplicates from aliases in modules
 				if (document.getComponentDefinition(new URI((String) circuitContainer.getValue())) != null)
 					continue;
-				createComponentDefinition(document, model, circuitContainer);
+				createComponentDefinition(document, graph, model, circuitContainer);
 			}
 		}
 
@@ -369,7 +369,7 @@ public class Converter {
 					proteinCD.getDisplayId() + "_" + protein.getId(), AccessType.PUBLIC, proteinCD.getIdentity(),
 					DirectionType.INOUT);
 			// the layout information in the component definition
-			proteinFuncComp.createAnnotation(new QName(uriPrefix, "protein", annPrefix), encodeMxGraphObject(protein));
+			this.createGraphicalLayout(graph, protein, proteinFuncComp.getIdentity());
 		}
 
 		// component definitions (should already have been created, just need to link
@@ -384,8 +384,7 @@ public class Converter {
 					containerCD.getIdentity(), DirectionType.INOUT);
 
 			// store extra graph information
-			funcComp.createAnnotation(new QName(uriPrefix, "containerCell", annPrefix),
-					encodeMxGraphObject(circuitContainer));
+			this.createGraphicalLayout(graph, circuitContainer, funcComp.getIdentity());
 		}
 	}
 
@@ -403,7 +402,7 @@ public class Converter {
 		}
 	}
 
-	private void createComponentDefinition(SBOLDocument document, mxGraphModel model, mxCell circuitContainer)
+	private void createComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell circuitContainer)
 			throws URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError,
 			TransformerException {
 		// get the glyph info associated with this view cell
@@ -450,7 +449,7 @@ public class Converter {
 		// store extra mxGraph information
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 		mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
-		compDef.createAnnotation(new QName(uriPrefix, "backboneCell", annPrefix), encodeMxGraphObject(backboneCell));
+		this.createGraphicalLayout(graph, backboneCell, compDef.getIdentity());
 	}
 
 	private void linkModuleDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
@@ -584,7 +583,10 @@ public class Converter {
 		mxCell[] textBoxes = this.getGraphicalLayouts(graph, new URI(modDef.getIdentity()+"/textBox"));
 		if (textBoxes != null) {
 			for (mxCell textBox : textBoxes) {
-				textBox.setStyle(STYLE_TEXTBOX+";"+textBox.getStyle());
+				if(textBox.getStyle() != null)
+					textBox.setStyle(STYLE_TEXTBOX+";"+textBox.getStyle());
+				else
+					textBox.setStyle(STYLE_TEXTBOX);
 				model.add(rootViewCell, textBox, 0);
 			}
 		}
@@ -613,10 +615,13 @@ public class Converter {
 			// proteins
 			if (!compDef.getTypes().contains(ComponentDefinition.DNA_REGION)) {
 				// proteins don't have a mapping, but we need it for interactions
-				Annotation protienAnn = funcComp.getAnnotation(new QName(uriPrefix, "protein", annPrefix));
-				mxCell protien = null;
-				if (protienAnn != null) {
-					protien = (mxCell) decodeMxGraphObject(protienAnn.getStringValue());
+				
+				mxCell protien = this.getGraphicalLayout(graph, funcComp.getIdentity());
+				if (protien != null) {
+					if(protien.getStyle() != null)
+						protien.setStyle(STYLE_MOLECULAR_SPECIES + ";"+protien.getStyle());
+					else
+						protien.setStyle(STYLE_MOLECULAR_SPECIES);
 					protien.setValue(compDef.getIdentity().toString());
 					model.add(rootViewCell, protien, 0);
 				} else {
@@ -631,20 +636,24 @@ public class Converter {
 			}
 
 			// add the container cell and backbone
-			Annotation containerAnn = funcComp.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix));
-			mxCell container = null;
-			if (containerAnn != null) {
-				container = (mxCell) decodeMxGraphObject(containerAnn.getStringValue());
+			mxCell container = this.getGraphicalLayout(graph, funcComp.getIdentity());
+			if (container != null) {
+				if(container.getStyle() != null)
+					container.setStyle(STYLE_CIRCUIT_CONTAINER+";"+container.getStyle());
+				else
+					container.setStyle(STYLE_CIRCUIT_CONTAINER);
 				container.setValue(compDef.getIdentity().toString());
 				model.add(rootViewCell, container, 0);
 			} else {
 				container = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 						0, STYLE_CIRCUIT_CONTAINER);
 			}
-			Annotation backboneAnn = compDef.getAnnotation(new QName(uriPrefix, "backboneCell", annPrefix));
-			mxCell backbone = null;
-			if (backboneAnn != null) {
-				backbone = (mxCell) decodeMxGraphObject(backboneAnn.getStringValue());
+			mxCell backbone = this.getGraphicalLayout(graph, compDef.getIdentity());
+			if (backbone != null) {
+				if(backbone.getStyle() != null)
+					backbone.setStyle(STYLE_BACKBONE+";"+backbone.getStyle());
+				else
+					backbone.setStyle(STYLE_BACKBONE);
 				model.add(container, backbone, 0);
 			} else {
 				backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, STYLE_BACKBONE);
@@ -660,7 +669,10 @@ public class Converter {
 				mxCell glyphCell = this.getGraphicalLayout(graph, glyphArray[glyphIndex].getIdentity());
 				if (glyphCell != null) {
 					glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
-					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE + ";" + glyphCell.getStyle());
+					if(glyphCell.getStyle() != null)
+						glyphCell.setStyle(STYLE_SEQUENCE_FEATURE + ";" + glyphCell.getStyle());
+					else
+						glyphCell.setStyle(STYLE_SEQUENCE_FEATURE);
 					model.add(container, glyphCell, glyphIndex);
 				} else {
 					glyphCell = (mxCell) graph.insertVertex(container, null,
@@ -692,7 +704,10 @@ public class Converter {
 		for (Interaction interaction : interactions) {
 			mxCell edge = this.getGraphicalLayout(graph, interaction.getIdentity());
 			if (edge != null) {
-				edge.setStyle(STYLE_INTERACTION + ";" + edge.getStyle());
+				if(edge.getStyle() != null)
+					edge.setStyle(STYLE_INTERACTION + ";" + edge.getStyle());
+				else
+					edge.setStyle(STYLE_INTERACTION);
 				edge = (mxCell) model.add(rootViewCell, edge, 0);
 			} else {
 				edge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
@@ -741,7 +756,10 @@ public class Converter {
 		mxCell[] textBoxes = this.getGraphicalLayouts(graph, new URI(compDef.getIdentity()+"/textBox"));
 		if (textBoxes != null) {
 			for (mxCell textBox : textBoxes) {
-				textBox.setStyle(STYLE_TEXTBOX+";"+textBox.getStyle());
+				if(textBox.getStyle() != null)
+					textBox.setStyle(STYLE_TEXTBOX+";"+textBox.getStyle());
+				else
+					textBox.setStyle(STYLE_TEXTBOX);
 				model.add(viewCell, textBox, 0);
 			}
 		}

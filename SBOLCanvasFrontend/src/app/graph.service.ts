@@ -587,28 +587,7 @@ export class GraphService extends GraphHelpers {
 
       //TODO partRoles for proteins
       let proteinInfo = new GlyphInfo();
-      switch (name) {
-        case "dsNA":
-          proteinInfo.partType = "DNA molecule";
-          break;
-        case "macromolecule":
-          proteinInfo.partType = "Protein";
-          break;
-        case "NGA (No Glyph Assigned Molecular Species)":
-          proteinInfo.partType = "Protein";
-          break;
-        case "small-molecule":
-          proteinInfo.partType = "Small molecule";
-          break;
-        case "ssNA":
-          proteinInfo.partType = "RNA molecule";
-          break;
-        case "replacement-glyph":
-          proteinInfo.partType = "All_types";
-          break;
-        default:
-          proteinInfo.partType = "Protein";
-      }
+      proteinInfo.partType = this.moleculeNameToType(name);
       this.addToGlyphDict(proteinInfo);
 
       const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, proteinInfo.getFullURI(), x, y,

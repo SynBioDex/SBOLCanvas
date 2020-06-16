@@ -279,7 +279,7 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
-    protected async updateSelectedMolecularSpecies(this: GraphService, info: GlyphInfo){
+    protected async updateSelectedMolecularSpecies(this: GraphService, info: GlyphInfo) {
         this.graph.getModel().beginUpdate();
         try {
             let selectedCells = this.graph.getSelectionCells();
@@ -303,7 +303,7 @@ export class GraphHelpers extends GraphBase {
             let shouldDecouple = false;
             if (oldGlyphURI != newGlyphURI) {
                 let coupledMolecSpec = this.getCoupledMolecularSpecies(selectedCell.getValue());
-                if(coupledMolecSpec.length > 1){
+                if (coupledMolecSpec.length > 1) {
                     // decoupleResult will be "Yes" if they should still be coupled, "No" if not
                     let decoupleResult = await this.promptDeCouple();
                     if (decoupleResult === "Yes") {
@@ -331,30 +331,30 @@ export class GraphHelpers extends GraphBase {
                     }
                 }
 
-                if(!shouldDecouple){
+                if (!shouldDecouple) {
                     this.removeFromGlyphDict(oldGlyphURI);
                 }
-                if(shouldCouple && keepSubstructure){
-                        this.removeFromGlyphDict(newGlyphURI);
-                        this.addToGlyphDict(info);
+                if (shouldCouple && keepSubstructure) {
+                    this.removeFromGlyphDict(newGlyphURI);
+                    this.addToGlyphDict(info);
                 }
                 if (!shouldCouple || keepSubstructure) {
                     // we only don't want to add if we are updating substructure
                     this.addToGlyphDict(info);
                 }
 
-                if(shouldDecouple){
+                if (shouldDecouple) {
                     this.graph.getModel().setValue(selectedCell, newGlyphURI);
-                }else{
-                    for(let cell of coupledMolecSpec){
+                } else {
+                    for (let cell of coupledMolecSpec) {
                         this.graph.getModel().setValue(cell, newGlyphURI);
                     }
                 }
 
-            }else{
+            } else {
                 this.updateGlyphDict(info);
             }
-        }finally{
+        } finally {
             this.graph.getModel().endUpdate();
         }
     }
@@ -807,16 +807,16 @@ export class GraphHelpers extends GraphBase {
         return coupledCells;
     }
 
-    protected getCoupledMolecularSpecies(glyphURI: string){
+    protected getCoupledMolecularSpecies(glyphURI: string) {
         const coupledCells = [];
         const cell1 = this.graph.getModel().getCell("1");
-        for(let viewCell of cell1.children){
-            if(viewCell.isComponentView())
+        for (let viewCell of cell1.children) {
+            if (viewCell.isComponentView())
                 continue;
-            for(let viewChild of viewCell.children){
-                if(!viewChild.isMolecularSpeciesGlyph())
+            for (let viewChild of viewCell.children) {
+                if (!viewChild.isMolecularSpeciesGlyph())
                     continue;
-                if(viewChild.value === glyphURI)
+                if (viewChild.value === glyphURI)
                     coupledCells.push(viewChild);
             }
         }
@@ -1203,5 +1203,43 @@ export class GraphHelpers extends GraphBase {
         childCircuitContainer.setConnectable(false);
 
         return childViewCell;
+    }
+
+    protected moleculeNameToType(name: string) {
+        switch (name) {
+            case "dsNA":
+                return "DNA molecule";
+            case "macromolecule":
+                return "Protein";
+            case "NGA (No Glyph Assigned Molecular Species)":
+                return "Protein";
+            case "small-molecule":
+                return "Small molecule";
+            case "ssNA":
+                return "RNA molecule";
+            case "replacement-glyph":
+                return "All_types";
+            default:
+                return "Protein";
+        }
+    }
+
+    static moleculeTypeToName(type: string){
+        switch (type) {
+            case "DNA molecule":
+                return "dsNA";
+            case "Protein":
+                return "macromolecule";
+            case "Protein":
+                return "NGA (No Glyph Assigned Molecular Species)";
+            case "Small molecule":
+                return "small-molecule";
+            case "RNA molecule":
+                return "ssNA";
+            case "All_types":
+                return "replacement-glyph";
+            default:
+                return "NGA (No Glyph Assigned Molecular Species)";
+        }
     }
 }

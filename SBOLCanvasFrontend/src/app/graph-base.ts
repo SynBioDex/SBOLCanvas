@@ -1,11 +1,10 @@
 import * as mxEditor from 'mxgraph';
 import * as mxGraph from 'mxgraph';
-import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { InteractionInfo } from './interactionInfo';
 import { GlyphService } from './glyph.service';
-import { GraphEdits } from './graph-edits';
+import { GraphHelpers } from './graph-helpers';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -232,6 +231,8 @@ export class GraphBase {
                     reconstructCellStyle = true;
                 else if (cell.style.includes(GraphBase.STYLE_SEQUENCE_FEATURE) && !cell.style.includes(glyphDict[cell.value].partRole))
                     reconstructCellStyle = true;
+                else if (cell.style === GraphBase.STYLE_MOLECULAR_SPECIES || cell.style.includes(GraphBase.STYLE_MOLECULAR_SPECIES+";"))
+                    reconstructCellStyle = true;
             }
 
             // reconstruct the cell style
@@ -250,7 +251,10 @@ export class GraphBase {
                             cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
                     } else {
                         // molecular species
-                        cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
+                        if(!cell.style)
+                            cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
+                        else
+                            cell.style = cell.style.replace(GraphBase.STYLE_MOLECULAR_SPECIES, GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule")
                         cell.geometry.width = GraphBase.molecularSpeciesGlyphWidth;
                         cell.geometry.height = GraphBase.molecularSpeciesGlyphHeight;
                     }
@@ -260,10 +264,10 @@ export class GraphBase {
                     if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
                         name = "Process";
                     }
-                    if(!cell.style){
+                    if (!cell.style) {
                         cell.style = GraphBase.STYLE_INTERACTION + name;
-                    }else{
-                        cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION, GraphBase.STYLE_INTERACTION+name);
+                    } else {
+                        cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION, GraphBase.STYLE_INTERACTION + name);
                     }
                 }
             }
