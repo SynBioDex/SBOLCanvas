@@ -209,7 +209,7 @@ public class SynBioHub extends HttpServlet {
 			response.setStatus(HttpStatus.SC_OK);
 			response.setContentType("application/json");
 			return;
-		} catch (SynBioHubException | IOException | ParserConfigurationException | TransformerException | SBOLValidationException | SAXException e) {
+		} catch (SynBioHubException | IOException | ParserConfigurationException | TransformerException | SBOLValidationException | SAXException | URISyntaxException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
 			IOUtils.copy(inputStream, outputStream);
