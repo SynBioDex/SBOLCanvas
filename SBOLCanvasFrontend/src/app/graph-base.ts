@@ -254,7 +254,7 @@ export class GraphBase {
                         if(!cell.style)
                             cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
                         else
-                            cell.style = cell.style.replace(GraphBase.STYLE_MOLECULAR_SPECIES, GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule")
+                            cell.style = cell.style.replace(GraphBase.STYLE_MOLECULAR_SPECIES, GraphBase.STYLE_MOLECULAR_SPECIES + GraphBase.moleculeTypeToName(glyphDict[cell.value].partType))
                         cell.geometry.width = GraphBase.molecularSpeciesGlyphWidth;
                         cell.geometry.height = GraphBase.molecularSpeciesGlyphHeight;
                     }
@@ -892,6 +892,44 @@ export class GraphBase {
                 }
             }
         }));
+    }
+
+    protected moleculeNameToType(name: string) {
+        switch (name) {
+            case "dsNA":
+                return "DNA molecule";
+            case "macromolecule":
+                return "Protein";
+            case "NGA (No Glyph Assigned Molecular Species)":
+                return "Protein";
+            case "small-molecule":
+                return "Small molecule";
+            case "ssNA":
+                return "RNA molecule";
+            case "replacement-glyph":
+                return "All_types";
+            default:
+                return "Protein";
+        }
+    }
+
+    static moleculeTypeToName(type: string){
+        switch (type) {
+            case "DNA molecule":
+                return "dsNA";
+            case "Protein":
+                return "macromolecule";
+            case "Protein":
+                return "NGA (No Glyph Assigned Molecular Species)";
+            case "Small molecule":
+                return "small-molecule";
+            case "RNA molecule":
+                return "ssNA";
+            case "All_types":
+                return "replacement-glyph";
+            default:
+                return "NGA (No Glyph Assigned Molecular Species)";
+        }
     }
 
 }

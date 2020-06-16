@@ -227,15 +227,17 @@ public class Converter {
 		SBOLWriter.write(document, sbolStream);
 	}
 
-	public void toGraph(InputStream sbolStream, OutputStream graphStream) throws SBOLValidationException, IOException,
-			SBOLConversionException, ParserConfigurationException, TransformerException, SAXException, URISyntaxException {
+	public void toGraph(InputStream sbolStream, OutputStream graphStream)
+			throws SBOLValidationException, IOException, SBOLConversionException, ParserConfigurationException,
+			TransformerException, SAXException, URISyntaxException {
 		// load the sbol file into the proper objects
 		SBOLDocument document = SBOLReader.read(sbolStream);
 		toGraph(document, graphStream);
 	}
 
-	public void toGraph(SBOLDocument document, OutputStream graphStream) throws IOException,
-			ParserConfigurationException, TransformerException, SBOLValidationException, SAXException, URISyntaxException {
+	public void toGraph(SBOLDocument document, OutputStream graphStream)
+			throws IOException, ParserConfigurationException, TransformerException, SBOLValidationException,
+			SAXException, URISyntaxException {
 
 		document.setDefaultURIprefix(uriPrefix);
 
@@ -270,9 +272,9 @@ public class Converter {
 		graphStream.write(encodeMxGraphObject(model).getBytes());
 	}
 
-	public void toSubGraph(InputStream sbolStream, OutputStream graphStream)
-			throws SBOLValidationException, IOException, SBOLConversionException, SAXException,
-			ParserConfigurationException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
+	public void toSubGraph(InputStream sbolStream, OutputStream graphStream) throws SBOLValidationException,
+			IOException, SBOLConversionException, SAXException, ParserConfigurationException,
+			TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
 		SBOLDocument document = SBOLReader.read(sbolStream);
 		toSubGraph(document, graphStream);
 	}
@@ -388,8 +390,8 @@ public class Converter {
 		}
 	}
 
-	private void attachTextBoxAnnotation(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell, URI reference)
-			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
+	private void attachTextBoxAnnotation(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell,
+			URI reference) throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
 			URISyntaxException {
 
 		// store extra mxGraph information
@@ -402,9 +404,9 @@ public class Converter {
 		}
 	}
 
-	private void createComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell circuitContainer)
-			throws URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError,
-			TransformerException {
+	private void createComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
+			mxCell circuitContainer) throws URISyntaxException, SBOLValidationException,
+			TransformerFactoryConfigurationError, TransformerException {
 		// get the glyph info associated with this view cell
 		GlyphInfo glyphInfo = glyphInfoDict.get(circuitContainer.getValue());
 
@@ -569,7 +571,8 @@ public class Converter {
 	}
 
 	private Set<ComponentDefinition> createModuleView(SBOLDocument document, mxGraph graph, ModuleDefinition modDef)
-			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException, URISyntaxException {
+			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
+			URISyntaxException {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		mxCell cell1 = (mxCell) model.getCell("1");
 
@@ -580,11 +583,11 @@ public class Converter {
 		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0, STYLE_MODULE_VIEW);
 
 		// text boxes
-		mxCell[] textBoxes = this.getGraphicalLayouts(graph, new URI(modDef.getIdentity()+"/textBox"));
+		mxCell[] textBoxes = this.getGraphicalLayouts(graph, new URI(modDef.getIdentity() + "/textBox"));
 		if (textBoxes != null) {
 			for (mxCell textBox : textBoxes) {
-				if(textBox.getStyle() != null)
-					textBox.setStyle(STYLE_TEXTBOX+";"+textBox.getStyle());
+				if (textBox.getStyle() != null)
+					textBox.setStyle(STYLE_TEXTBOX + ";" + textBox.getStyle());
 				else
 					textBox.setStyle(STYLE_TEXTBOX);
 				model.add(rootViewCell, textBox, 0);
@@ -615,11 +618,11 @@ public class Converter {
 			// proteins
 			if (!compDef.getTypes().contains(ComponentDefinition.DNA_REGION)) {
 				// proteins don't have a mapping, but we need it for interactions
-				
+
 				mxCell protien = this.getGraphicalLayout(graph, funcComp.getIdentity());
 				if (protien != null) {
-					if(protien.getStyle() != null)
-						protien.setStyle(STYLE_MOLECULAR_SPECIES + ";"+protien.getStyle());
+					if (protien.getStyle() != null)
+						protien.setStyle(STYLE_MOLECULAR_SPECIES + ";" + protien.getStyle());
 					else
 						protien.setStyle(STYLE_MOLECULAR_SPECIES);
 					protien.setValue(compDef.getIdentity().toString());
@@ -638,8 +641,8 @@ public class Converter {
 			// add the container cell and backbone
 			mxCell container = this.getGraphicalLayout(graph, funcComp.getIdentity());
 			if (container != null) {
-				if(container.getStyle() != null)
-					container.setStyle(STYLE_CIRCUIT_CONTAINER+";"+container.getStyle());
+				if (container.getStyle() != null)
+					container.setStyle(STYLE_CIRCUIT_CONTAINER + ";" + container.getStyle());
 				else
 					container.setStyle(STYLE_CIRCUIT_CONTAINER);
 				container.setValue(compDef.getIdentity().toString());
@@ -650,8 +653,8 @@ public class Converter {
 			}
 			mxCell backbone = this.getGraphicalLayout(graph, compDef.getIdentity());
 			if (backbone != null) {
-				if(backbone.getStyle() != null)
-					backbone.setStyle(STYLE_BACKBONE+";"+backbone.getStyle());
+				if (backbone.getStyle() != null)
+					backbone.setStyle(STYLE_BACKBONE + ";" + backbone.getStyle());
 				else
 					backbone.setStyle(STYLE_BACKBONE);
 				model.add(container, backbone, 0);
@@ -669,7 +672,7 @@ public class Converter {
 				mxCell glyphCell = this.getGraphicalLayout(graph, glyphArray[glyphIndex].getIdentity());
 				if (glyphCell != null) {
 					glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
-					if(glyphCell.getStyle() != null)
+					if (glyphCell.getStyle() != null)
 						glyphCell.setStyle(STYLE_SEQUENCE_FEATURE + ";" + glyphCell.getStyle());
 					else
 						glyphCell.setStyle(STYLE_SEQUENCE_FEATURE);
@@ -704,7 +707,7 @@ public class Converter {
 		for (Interaction interaction : interactions) {
 			mxCell edge = this.getGraphicalLayout(graph, interaction.getIdentity());
 			if (edge != null) {
-				if(edge.getStyle() != null)
+				if (edge.getStyle() != null)
 					edge.setStyle(STYLE_INTERACTION + ";" + edge.getStyle());
 				else
 					edge.setStyle(STYLE_INTERACTION);
@@ -740,7 +743,8 @@ public class Converter {
 	}
 
 	private void createComponentView(SBOLDocument document, mxGraph graph, ComponentDefinition compDef)
-			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException, URISyntaxException {
+			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
+			URISyntaxException {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		mxCell cell1 = (mxCell) model.getCell("1");
 
@@ -753,11 +757,11 @@ public class Converter {
 				STYLE_COMPONENT_VIEW);
 
 		// if there are text boxes add them
-		mxCell[] textBoxes = this.getGraphicalLayouts(graph, new URI(compDef.getIdentity()+"/textBox"));
+		mxCell[] textBoxes = this.getGraphicalLayouts(graph, new URI(compDef.getIdentity() + "/textBox"));
 		if (textBoxes != null) {
 			for (mxCell textBox : textBoxes) {
-				if(textBox.getStyle() != null)
-					textBox.setStyle(STYLE_TEXTBOX+";"+textBox.getStyle());
+				if (textBox.getStyle() != null)
+					textBox.setStyle(STYLE_TEXTBOX + ";" + textBox.getStyle());
 				else
 					textBox.setStyle(STYLE_TEXTBOX);
 				model.add(viewCell, textBox, 0);
@@ -765,19 +769,27 @@ public class Converter {
 		}
 
 		// add the container cell and backbone
+		// TODO somehow merge the container and backbone into one graphical layout tied
+		// to the component definition
 		Annotation containerAnn = compDef.getAnnotation(new QName(uriPrefix, "containerCell", annPrefix));
 		mxCell container = null;
-		mxCell backbone = null;
+		mxCell backbone = this.getGraphicalLayout(graph, compDef.getIdentity());
 		if (containerAnn != null) {
 			container = (mxCell) decodeMxGraphObject(containerAnn.getStringValue());
 			container.setValue(compDef.getIdentity().toString());
 			model.add(viewCell, container, 0);
-			Annotation backboneAnn = compDef.getAnnotation(new QName(uriPrefix, "backboneCell", annPrefix));
-			backbone = (mxCell) decodeMxGraphObject(backboneAnn.getStringValue());
-			model.add(container, backbone, 0);
 		} else {
 			container = (mxCell) graph.insertVertex(viewCell, null, compDef.getIdentity().toString(), 0, 0, 0, 0,
 					STYLE_CIRCUIT_CONTAINER);
+		}
+
+		if (backbone != null) {
+			if (backbone.getStyle() != null)
+				backbone.setStyle(STYLE_BACKBONE + ";" + backbone.getStyle());
+			else
+				backbone.setStyle(STYLE_BACKBONE);
+			model.add(container, backbone, 0);
+		} else {
 			backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, STYLE_BACKBONE);
 		}
 
@@ -957,9 +969,11 @@ public class Converter {
 			if (cell.getStyle().contains(STYLE_TEXTBOX))
 				annList.add(new Annotation(new QName(uriPrefix, "text", annPrefix), (String) cell.getValue()));
 
+			annList.add(new Annotation(new QName(uriPrefix, "reference", annPrefix), reference));
+
 			Annotation nodeGlyph = layout.createAnnotation(new QName(uriPrefix, "NodeGlyph", annPrefix),
 					new QName(uriPrefix, "attributes", annPrefix), "attributes", annList);
-			nodeGlyph.setNestedIdentity(reference);
+			// nodeGlyph.setNestedIdentity(reference);
 
 		} else if (cell.isEdge()) {
 
@@ -1002,9 +1016,11 @@ public class Converter {
 				annList.add(new Annotation(new QName(uriPrefix, "curved", annPrefix),
 						Integer.parseInt((String) styles.get("curved")) == 1));
 
+			annList.add(new Annotation(new QName(uriPrefix, "reference", annPrefix), reference));
+
 			Annotation edgeGlyphAnn = layout.createAnnotation(new QName(uriPrefix, "EdgeGlyph", annPrefix),
 					new QName(uriPrefix, "attributes", annPrefix), "attributes", annList);
-			edgeGlyphAnn.setNestedIdentity(reference);
+			// edgeGlyphAnn.setNestedIdentity(reference);
 
 			// positional
 			mxGeometry geometry = cell.getGeometry();
@@ -1038,142 +1054,151 @@ public class Converter {
 		}
 	}
 
-	private mxCell[] getGraphicalLayouts(mxGraph graph, URI refference) {
+	private mxCell[] getGraphicalLayouts(mxGraph graph, URI reference) {
 		ArrayList<mxCell> cells = new ArrayList<mxCell>();
 
 		List<Annotation> annotations = layout.getAnnotations();
 		for (Annotation annotation : annotations) {
-			if (annotation.getNestedIdentity().equals(refference)) {
-				mxCell cell = new mxCell();
-				mxCell[] cellArr = { cell };
-				cell.setGeometry(new mxGeometry());
+			boolean shouldContinue = true;
+			for (Annotation attributeAnn : annotation.getAnnotations()) {
+				if (attributeAnn.getQName().getLocalPart().equals("reference") && attributeAnn.getURIValue().equals(reference)) {
+					shouldContinue = false;
+					break;
+				}
+			}
+			if (shouldContinue)
+				continue;
+			mxCell cell = new mxCell();
+			mxCell[] cellArr = { cell };
+			cell.setGeometry(new mxGeometry());
 
-				if (annotation.getQName().getLocalPart().equals("NodeGlyph")) {
-					cell.setVertex(true);
-					for (Annotation attributeAnn : annotation.getAnnotations()) {
-						String value = attributeAnn.getStringValue();
-						switch (attributeAnn.getQName().getLocalPart()) {
-						case "x":
-							cell.getGeometry().setX(Double.parseDouble(value));
-							break;
-						case "y":
-							cell.getGeometry().setY(Double.parseDouble(value));
-							break;
-						case "width":
-							cell.getGeometry().setWidth(Double.parseDouble(value));
-							break;
-						case "height":
-							cell.getGeometry().setHeight(Double.parseDouble(value));
-							break;
-						case "strokeColor":
-							graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr);
-							break;
-						case "strokeOpacity":
-							graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr);
-							break;
-						case "strokeWidth":
-							graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr);
-							break;
-						case "fillColor":
-							graph.setCellStyles(mxConstants.STYLE_FILLCOLOR, value, cellArr);
-							break;
-						case "fillOpacity":
-							graph.setCellStyles(mxConstants.STYLE_FILL_OPACITY, value, cellArr);
-							break;
-						case "fontColor":
-							graph.setCellStyles(mxConstants.STYLE_FONTCOLOR, value, cellArr);
-							break;
-						case "fontSize":
-							graph.setCellStyles(mxConstants.STYLE_FONTSIZE, value, cellArr);
-							break;
-						case "text":
-							cell.setValue(value);
-							break;
-						}
-					}
-				} else if (annotation.getQName().getLocalPart().equals("EdgeGlyph")) {
-					cell.setEdge(true);
-					for (Annotation attributeAnn : annotation.getAnnotations()) {
-						String value = attributeAnn.getStringValue();
-						switch (attributeAnn.getQName().getLocalPart()) {
-						case "strokeColor":
-							graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr);
-							break;
-						case "strokeOpacity":
-							graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr);
-							break;
-						case "strokeWidth":
-							graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr);
-							break;
-						case "endSize":
-							graph.setCellStyles(mxConstants.STYLE_ENDSIZE, value, cellArr);
-							break;
-						case "sourceSpacing":
-							graph.setCellStyles(mxConstants.STYLE_SOURCE_PERIMETER_SPACING, value, cellArr);
-							break;
-						case "targetSpacing":
-							graph.setCellStyles(mxConstants.STYLE_TARGET_PERIMETER_SPACING, value, cellArr);
-							break;
-						case "edge":
-							graph.setCellStyles(mxConstants.STYLE_EDGE, value, cellArr);
-							break;
-						case "rounded":
-							if (value.equals("true")) {
-								graph.setCellStyles(mxConstants.STYLE_ROUNDED, "1", cellArr);
-							}
-							break;
-						case "curved":
-							if (value.equals("true")) {
-								graph.setCellStyles("curved", "1", cellArr);
-							}
-							break;
-						case "sourcePoint":
-							mxPoint sourcePoint = new mxPoint();
-							for (Annotation sourceAnn : attributeAnn.getAnnotations()) {
-								switch (sourceAnn.getQName().getLocalPart()) {
-								case "x":
-									sourcePoint.setX(Double.parseDouble(sourceAnn.getStringValue()));
-									break;
-								case "y":
-									sourcePoint.setY(Double.parseDouble(sourceAnn.getStringValue()));
-									break;
-								}
-							}
-							cell.getGeometry().setSourcePoint(sourcePoint);
-							break;
-						case "targetPoint":
-							mxPoint targetPoint = new mxPoint();
-							for (Annotation sourceAnn : attributeAnn.getAnnotations()) {
-								switch (sourceAnn.getQName().getLocalPart()) {
-								case "x":
-									targetPoint.setX(Double.parseDouble(sourceAnn.getStringValue()));
-									break;
-								case "y":
-									targetPoint.setY(Double.parseDouble(sourceAnn.getStringValue()));
-									break;
-								}
-							}
-							cell.getGeometry().setSourcePoint(targetPoint);
-							break;
-						case "point":
-							mxPoint point = new mxPoint();
-							for (Annotation sourceAnn : attributeAnn.getAnnotations()) {
-								switch (sourceAnn.getQName().getLocalPart()) {
-								case "x":
-									point.setX(Double.parseDouble(sourceAnn.getStringValue()));
-									break;
-								case "y":
-									point.setY(Double.parseDouble(sourceAnn.getStringValue()));
-									break;
-								}
-							}
-							cell.getGeometry().getPoints().add(point);
-							break;
-						}
+			if (annotation.getQName().getLocalPart().equals("NodeGlyph")) {
+				cell.setVertex(true);
+				for (Annotation attributeAnn : annotation.getAnnotations()) {
+					String value = attributeAnn.getStringValue();
+					switch (attributeAnn.getQName().getLocalPart()) {
+					case "x":
+						cell.getGeometry().setX(Double.parseDouble(value));
+						break;
+					case "y":
+						cell.getGeometry().setY(Double.parseDouble(value));
+						break;
+					case "width":
+						cell.getGeometry().setWidth(Double.parseDouble(value));
+						break;
+					case "height":
+						cell.getGeometry().setHeight(Double.parseDouble(value));
+						break;
+					case "strokeColor":
+						graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr);
+						break;
+					case "strokeOpacity":
+						graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr);
+						break;
+					case "strokeWidth":
+						graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr);
+						break;
+					case "fillColor":
+						graph.setCellStyles(mxConstants.STYLE_FILLCOLOR, value, cellArr);
+						break;
+					case "fillOpacity":
+						graph.setCellStyles(mxConstants.STYLE_FILL_OPACITY, value, cellArr);
+						break;
+					case "fontColor":
+						graph.setCellStyles(mxConstants.STYLE_FONTCOLOR, value, cellArr);
+						break;
+					case "fontSize":
+						graph.setCellStyles(mxConstants.STYLE_FONTSIZE, value, cellArr);
+						break;
+					case "text":
+						cell.setValue(value);
+						break;
 					}
 				}
-				cells.add(cell);
+			} else if (annotation.getQName().getLocalPart().equals("EdgeGlyph")) {
+				cell.setEdge(true);
+				List<mxPoint> points = new ArrayList<mxPoint>();
+				for (Annotation attributeAnn : annotation.getAnnotations()) {
+					String value = attributeAnn.getStringValue();
+					switch (attributeAnn.getQName().getLocalPart()) {
+					case "strokeColor":
+						graph.setCellStyles(mxConstants.STYLE_STROKECOLOR, value, cellArr);
+						break;
+					case "strokeOpacity":
+						graph.setCellStyles(mxConstants.STYLE_STROKE_OPACITY, value, cellArr);
+						break;
+					case "strokeWidth":
+						graph.setCellStyles(mxConstants.STYLE_STROKEWIDTH, value, cellArr);
+						break;
+					case "endSize":
+						graph.setCellStyles(mxConstants.STYLE_ENDSIZE, value, cellArr);
+						break;
+					case "sourceSpacing":
+						graph.setCellStyles(mxConstants.STYLE_SOURCE_PERIMETER_SPACING, value, cellArr);
+						break;
+					case "targetSpacing":
+						graph.setCellStyles(mxConstants.STYLE_TARGET_PERIMETER_SPACING, value, cellArr);
+						break;
+					case "edge":
+						graph.setCellStyles(mxConstants.STYLE_EDGE, value, cellArr);
+						break;
+					case "rounded":
+						if (value.equals("true")) {
+							graph.setCellStyles(mxConstants.STYLE_ROUNDED, "1", cellArr);
+						}
+						break;
+					case "curved":
+						if (value.equals("true")) {
+							graph.setCellStyles("curved", "1", cellArr);
+						}
+						break;
+					case "sourcePoint":
+						mxPoint sourcePoint = new mxPoint();
+						for (Annotation sourceAnn : attributeAnn.getAnnotations()) {
+							switch (sourceAnn.getQName().getLocalPart()) {
+							case "x":
+								sourcePoint.setX(Double.parseDouble(sourceAnn.getStringValue()));
+								break;
+							case "y":
+								sourcePoint.setY(Double.parseDouble(sourceAnn.getStringValue()));
+								break;
+							}
+						}
+						cell.getGeometry().setSourcePoint(sourcePoint);
+						break;
+					case "targetPoint":
+						mxPoint targetPoint = new mxPoint();
+						for (Annotation sourceAnn : attributeAnn.getAnnotations()) {
+							switch (sourceAnn.getQName().getLocalPart()) {
+							case "x":
+								targetPoint.setX(Double.parseDouble(sourceAnn.getStringValue()));
+								break;
+							case "y":
+								targetPoint.setY(Double.parseDouble(sourceAnn.getStringValue()));
+								break;
+							}
+						}
+						cell.getGeometry().setSourcePoint(targetPoint);
+						break;
+					case "point":
+						mxPoint point = new mxPoint();
+						for (Annotation sourceAnn : attributeAnn.getAnnotations()) {
+							switch (sourceAnn.getQName().getLocalPart()) {
+							case "x":
+								point.setX(Double.parseDouble(sourceAnn.getStringValue()));
+								break;
+							case "y":
+								point.setY(Double.parseDouble(sourceAnn.getStringValue()));
+								break;
+							}
+						}
+						points.add(point);
+						break;
+					}
+				}
+				cell.getGeometry().setPoints(points);
 			}
+			cells.add(cell);
 		}
 
 		return cells.size() > 0 ? cells.toArray(new mxCell[0]) : null;
@@ -1181,7 +1206,7 @@ public class Converter {
 
 	private mxCell getGraphicalLayout(mxGraph graph, URI refference) {
 		mxCell[] cells = getGraphicalLayouts(graph, refference);
-		return cells.length > 0 ? cells[0] : null;
+		return cells == null ? null : cells[0];
 	}
 
 }
