@@ -34,8 +34,9 @@ import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
 
-import utils.Converter;
+import utils.MxToSBOL;
 import utils.SBOLData;
+import utils.SBOLToMx;
 
 @SuppressWarnings("serial")
 @WebServlet(urlPatterns = { "/SynBioHub/*" })
@@ -179,7 +180,7 @@ public class SynBioHub extends HttpServlet {
 
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
-				Converter converter = new Converter();
+				SBOLToMx converter = new SBOLToMx();
 				converter.toGraph(sbhf.getSBOL(URI.create(uri), true), response.getOutputStream());
 				response.setStatus(HttpStatus.SC_OK);
 				return;
@@ -192,7 +193,7 @@ public class SynBioHub extends HttpServlet {
 				
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
-				Converter converter = new Converter();
+				SBOLToMx converter = new SBOLToMx();
 				converter.toSubGraph(sbhf.getSBOL(URI.create(uri), true), response.getOutputStream());
 				response.setStatus(HttpStatus.SC_OK);
 				return;
@@ -235,7 +236,7 @@ public class SynBioHub extends HttpServlet {
 				}
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
-				Converter converter = new Converter();
+				MxToSBOL converter = new MxToSBOL();
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				converter.toSBOL(request.getInputStream(), out, name);
 				sbhf.addToCollection(URI.create(uri), true, new ByteArrayInputStream(out.toByteArray()));
