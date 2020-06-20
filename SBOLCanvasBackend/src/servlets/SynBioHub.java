@@ -23,6 +23,7 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.sbolstandard.core2.SBOLConversionException;
+import org.sbolstandard.core2.SBOLDocument;
 import org.sbolstandard.core2.SBOLValidationException;
 import org.synbiohub.frontend.IdentifiedMetadata;
 import org.synbiohub.frontend.SearchCriteria;
@@ -181,7 +182,16 @@ public class SynBioHub extends HttpServlet {
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
 				SBOLToMx converter = new SBOLToMx();
-				converter.toGraph(sbhf.getSBOL(URI.create(uri), true), response.getOutputStream());
+				
+				String layoutURI = uri.substring(0,uri.lastIndexOf("/"))+"_Layout"+uri.substring(uri.lastIndexOf("/"), uri.length());
+				SBOLDocument document;
+				try {
+					document = sbhf.getSBOL(URI.create(layoutURI), true);
+				}catch(SynBioHubException e) {
+					document = sbhf.getSBOL(URI.create(uri), true);
+				}
+				
+				converter.toGraph(document, response.getOutputStream());
 				response.setStatus(HttpStatus.SC_OK);
 				return;
 			}else if(request.getPathInfo().equals("/importRegistryPart")) {
@@ -194,7 +204,16 @@ public class SynBioHub extends HttpServlet {
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
 				SBOLToMx converter = new SBOLToMx();
-				converter.toSubGraph(sbhf.getSBOL(URI.create(uri), true), response.getOutputStream());
+				
+				String layoutURI = uri.substring(0,uri.lastIndexOf("/"))+"_Layout"+uri.substring(uri.lastIndexOf("/"), uri.length());
+				SBOLDocument document;
+				try {
+					document = sbhf.getSBOL(URI.create(layoutURI), true);
+				}catch(SynBioHubException e) {
+					document = sbhf.getSBOL(URI.create(uri), true);
+				}
+				
+				converter.toSubGraph(document, response.getOutputStream());
 				response.setStatus(HttpStatus.SC_OK);
 				return;
 			} else {
