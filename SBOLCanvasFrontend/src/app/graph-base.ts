@@ -70,7 +70,7 @@ export class GraphBase {
     keyHandler: any;
 
     // We can import non native designs. This will be set to true if ceratin annotations weren't found
-    anyForeignCellsFound = false;
+    static anyForeignCellsFound = false;
 
     constructor(protected glyphService: GlyphService) {
         // constructor code is divided into helper methods for organization,
@@ -220,7 +220,7 @@ export class GraphBase {
 
             // check for format conditions
             if ((cell.isCircuitContainer() && cell.getParent().getId() === "rootView" || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0) {
-                this.anyForeignCellsFound = true;
+                GraphBase.anyForeignCellsFound = true;
             }
 
             let reconstructCellStyle = false;

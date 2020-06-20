@@ -234,7 +234,7 @@ public class MxToSBOL extends Converter {
 					proteinCD.getDisplayId() + "_" + protein.getId(), AccessType.PUBLIC, proteinCD.getIdentity(),
 					DirectionType.INOUT);
 			// the layout information in the component definition
-			layoutHelper.addGraphicalNode(modDef.getIdentity(), proteinFuncComp.getIdentity(), protein);
+			layoutHelper.addGraphicalNode(modDef.getIdentity(), proteinFuncComp.getDisplayId(), protein);
 		}
 
 		// component definitions (should already have been created, just need to link
@@ -249,7 +249,7 @@ public class MxToSBOL extends Converter {
 					containerCD.getIdentity(), DirectionType.INOUT);
 
 			// store extra graph information
-			layoutHelper.addGraphicalNode(modDef.getIdentity(), funcComp.getIdentity(), circuitContainer);
+			layoutHelper.addGraphicalNode(modDef.getIdentity(), funcComp.getDisplayId(), circuitContainer);
 			GenericTopLevel layout = layoutHelper.getGraphicalLayout(containerCD.getIdentity());
 			layoutHelper.addLayoutRef(modDef.getIdentity(), layout.getIdentity(), containerCD.getDisplayId()+"_Reference");
 		}
@@ -303,7 +303,8 @@ public class MxToSBOL extends Converter {
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 		mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
 		layoutHelper.createGraphicalLayout(compDef.getIdentity(), compDef.getDisplayId()+"_Layout");
-		layoutHelper.addGraphicalNode(compDef.getIdentity(), compDef.getIdentity(), backboneCell);
+		layoutHelper.addGraphicalNode(compDef.getIdentity(), "container", circuitContainer);
+		layoutHelper.addGraphicalNode(compDef.getIdentity(), "backbone", backboneCell);
 	}
 	
 	private void linkModuleDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
@@ -320,7 +321,7 @@ public class MxToSBOL extends Converter {
 			InteractionInfo intInfo = (InteractionInfo) edge.getValue();
 			Interaction interaction = modDef.createInteraction(intInfo.getDisplayID(),
 					SBOLData.interactions.getValue(intInfo.getInteractionType()));
-			layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getIdentity(), edge);
+			layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getDisplayId(), edge);
 
 			// participants
 			mxCell source = (mxCell) edge.getSource();
@@ -367,7 +368,7 @@ public class MxToSBOL extends Converter {
 					AccessType.PUBLIC, URI.create((String) glyph.getValue()));
 
 			// cell annotation
-			layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getIdentity(), glyph);
+			layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
 			GenericTopLevel layout = layoutHelper.getGraphicalLayout(component.getDefinitionIdentity());
 			layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(), component.getDefinition().getDisplayId()+"_Reference");
 
@@ -410,7 +411,7 @@ public class MxToSBOL extends Converter {
 				.toArray(mxCell[]::new);
 
 		for (mxCell textBox : textBoxes) {
-			layoutHelper.addGraphicalNode(objectRef, new URI(objectRef+"/textBox"), textBox);
+			layoutHelper.addGraphicalNode(objectRef, "textBox", textBox);
 		}
 	}
 	

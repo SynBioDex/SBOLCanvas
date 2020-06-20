@@ -56,7 +56,7 @@ public class LayoutHelper {
 		layouts.put(objectRef, layout);
 	}
 	
-	public void addGraphicalNode(URI layoutRef, URI objectRef, mxCell cell) throws SBOLValidationException {
+	public void addGraphicalNode(URI layoutRef, String displayId, mxCell cell) throws SBOLValidationException {
 		GenericTopLevel layout = getGraphicalLayout(layoutRef);
 		Map<String, Object> styles = graph.getCellStyle(cell);
 
@@ -103,7 +103,7 @@ public class LayoutHelper {
 			if (cell.getStyle().contains(Converter.STYLE_TEXTBOX))
 				annList.add(new Annotation(Converter.createQName("text"), (String) cell.getValue()));
 
-			annList.add(new Annotation(Converter.createQName("objectRef"), objectRef));
+			annList.add(new Annotation(Converter.createQName("displayId"), displayId));
 
 			layout.createAnnotation(Converter.createQName("nodeGlyph"),
 					Converter.createQName("NodeGlyph"), "NodeGlyph_"+cell.getId(), annList);
@@ -149,7 +149,7 @@ public class LayoutHelper {
 				annList.add(new Annotation(Converter.createQName("curved"),
 						Integer.parseInt((String) styles.get("curved")) == 1));
 
-			annList.add(new Annotation(Converter.createQName("objectRef"), objectRef));
+			annList.add(new Annotation(Converter.createQName("displayId"), displayId));
 
 			Annotation edgeGlyphAnn = layout.createAnnotation(Converter.createQName("edgeGlyph"),
 					Converter.createQName("EdgeGlyph"), "EdgeGlyph_"+cell.getId(), annList);
@@ -191,8 +191,10 @@ public class LayoutHelper {
 		return layouts.get(objectRef);
 	}
 	
-	public mxCell[] getGraphicalObjects(URI layoutRef, URI objectRef) {
+	public mxCell[] getGraphicalObjects(URI layoutRef, String displayId) {
 		GenericTopLevel layout = getGraphicalLayout(layoutRef);
+		if(layout == null)
+			return null;
 		
 		ArrayList<mxCell> cells = new ArrayList<mxCell>();
 
@@ -202,8 +204,8 @@ public class LayoutHelper {
 			if(annotation.getAnnotations() == null)
 				continue;
 			for (Annotation attributeAnn : annotation.getAnnotations()) {
-				if (attributeAnn.getQName().getLocalPart().equals("reference")
-						&& attributeAnn.getURIValue().equals(objectRef)) {
+				if (attributeAnn.getQName().getLocalPart().equals("displayId")
+						&& attributeAnn.getStringValue().equals(displayId)) {
 					shouldContinue = false;
 					break;
 				}
@@ -214,7 +216,7 @@ public class LayoutHelper {
 			mxCell[] cellArr = { cell };
 			cell.setGeometry(new mxGeometry());
 
-			if (annotation.getQName().getLocalPart().equals("NodeGlyph")) {
+			if (annotation.getQName().getLocalPart().equals("nodeGlyph")) {
 				cell.setVertex(true);
 				for (Annotation attributeAnn : annotation.getAnnotations()) {
 					String value = attributeAnn.getStringValue();
@@ -257,7 +259,7 @@ public class LayoutHelper {
 						break;
 					}
 				}
-			} else if (annotation.getQName().getLocalPart().equals("EdgeGlyph")) {
+			} else if (annotation.getQName().getLocalPart().equals("edgeGlyph")) {
 				cell.setEdge(true);
 				List<mxPoint> points = new ArrayList<mxPoint>();
 				for (Annotation attributeAnn : annotation.getAnnotations()) {
@@ -346,8 +348,8 @@ public class LayoutHelper {
 		return cells.size() > 0 ? cells.toArray(new mxCell[0]) : null;
 	}
 	
-	public mxCell getGraphicalObject(URI layoutRef, URI objectRef) {
-		mxCell[] cells = getGraphicalObjects(layoutRef, objectRef);
+	public mxCell getGraphicalObject(URI layoutRef, String displayId) {
+		mxCell[] cells = getGraphicalObjects(layoutRef, displayId);
 		return cells != null ? cells[0] : null;
 	}
 	

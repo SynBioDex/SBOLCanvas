@@ -888,7 +888,7 @@ export class GraphService extends GraphHelpers {
    * and uses it to replace the current graph
    */
   setGraphToXML(graphString: string) {
-    this.anyForeignCellsFound = false;
+    GraphBase.anyForeignCellsFound = false;
     this.graph.home();
     this.graph.getModel().clear();
 
@@ -917,10 +917,10 @@ export class GraphService extends GraphHelpers {
         element.refreshCircuitContainer(this.graph);
     });
 
-    if (this.anyForeignCellsFound) {
+    if (GraphBase.anyForeignCellsFound) {
       console.log("FORMATTING !!!!!!!!!!!!!!!!");
       this.autoFormat();
-      this.anyForeignCellsFound = false;
+      GraphBase.anyForeignCellsFound = false;
     }
 
     this.fitCamera();

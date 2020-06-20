@@ -21,7 +21,6 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.sbolstandard.core2.Annotation;
 import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.FunctionalComponent;
@@ -36,7 +35,6 @@ import org.sbolstandard.core2.SBOLDocument;
 import org.sbolstandard.core2.SBOLReader;
 import org.sbolstandard.core2.SBOLValidationException;
 import org.sbolstandard.core2.SequenceAnnotation;
-import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
@@ -44,7 +42,6 @@ import com.mxgraph.io.mxCodec;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGraphModel;
 import com.mxgraph.util.mxConstants;
-import com.mxgraph.util.mxXmlUtils;
 import com.mxgraph.view.mxGraph;
 
 import data.GlyphInfo;
@@ -150,7 +147,7 @@ public class SBOLToMx extends Converter {
 
 		// text boxes
 		
-		mxCell[] textBoxes = layoutHelper.getGraphicalObjects(modDef.getIdentity(), new URI(modDef.getIdentity()+"/textBox"));
+		mxCell[] textBoxes = layoutHelper.getGraphicalObjects(modDef.getIdentity(), "textBox");
 		if (textBoxes != null) {
 			for (mxCell textBox : textBoxes) {
 				if (textBox.getStyle() != null)
@@ -186,7 +183,7 @@ public class SBOLToMx extends Converter {
 			if (!compDef.getTypes().contains(ComponentDefinition.DNA_REGION)) {
 				// proteins don't have a mapping, but we need it for interactions
 
-				mxCell protien = layoutHelper.getGraphicalObject(modDef.getIdentity(), funcComp.getIdentity());
+				mxCell protien = layoutHelper.getGraphicalObject(modDef.getIdentity(), funcComp.getDisplayId());
 				if (protien != null) {
 					if (protien.getStyle() != null)
 						protien.setStyle(STYLE_MOLECULAR_SPECIES + ";" + protien.getStyle());
@@ -206,7 +203,7 @@ public class SBOLToMx extends Converter {
 			}
 
 			// add the container cell and backbone
-			mxCell container = layoutHelper.getGraphicalObject(modDef.getIdentity(), funcComp.getIdentity());
+			mxCell container = layoutHelper.getGraphicalObject(modDef.getIdentity(), funcComp.getDisplayId());
 			if (container != null) {
 				if (container.getStyle() != null)
 					container.setStyle(STYLE_CIRCUIT_CONTAINER + ";" + container.getStyle());
@@ -218,7 +215,7 @@ public class SBOLToMx extends Converter {
 				container = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 						0, STYLE_CIRCUIT_CONTAINER);
 			}
-			mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), compDef.getIdentity());
+			mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), compDef.getDisplayId());
 			if (backbone != null) {
 				if (backbone.getStyle() != null)
 					backbone.setStyle(STYLE_BACKBONE + ";" + backbone.getStyle());
@@ -236,7 +233,7 @@ public class SBOLToMx extends Converter {
 			double maxX = 0;
 			for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 				Component glyphComponent = glyphArray[glyphIndex];
-				mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(), glyphComponent.getIdentity());
+				mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(), glyphComponent.getDisplayId());
 				if (glyphCell != null) {
 					glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
 					if (glyphCell.getStyle() != null)
@@ -272,7 +269,7 @@ public class SBOLToMx extends Converter {
 		// interactions
 		Set<Interaction> interactions = modDef.getInteractions();
 		for (Interaction interaction : interactions) {
-			mxCell edge = layoutHelper.getGraphicalObject(modDef.getIdentity(), interaction.getIdentity());
+			mxCell edge = layoutHelper.getGraphicalObject(modDef.getIdentity(), interaction.getDisplayId());
 			if (edge != null) {
 				if (edge.getStyle() != null)
 					edge.setStyle(STYLE_INTERACTION + ";" + edge.getStyle());
@@ -324,7 +321,7 @@ public class SBOLToMx extends Converter {
 				STYLE_COMPONENT_VIEW);
 
 		// if there are text boxes add them
-		mxCell[] textBoxes = layoutHelper.getGraphicalObjects(compDef.getIdentity(), new URI(compDef.getIdentity()+"/textBox"));
+		mxCell[] textBoxes = layoutHelper.getGraphicalObjects(compDef.getIdentity(), "textBox");
 		if (textBoxes != null) {
 			for (mxCell textBox : textBoxes) {
 				if (textBox.getStyle() != null)
@@ -338,11 +335,12 @@ public class SBOLToMx extends Converter {
 		// add the container cell and backbone
 		// TODO somehow merge the container and backbone into one graphical layout tied
 		// to the component definition
-		Annotation containerAnn = compDef.getAnnotation(createQName("containerCell"));
-		mxCell container = null;
-		mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), compDef.getIdentity());
-		if (containerAnn != null) {
-			container = (mxCell) decodeMxGraphObject(containerAnn.getStringValue());
+		mxCell container = layoutHelper.getGraphicalObject(compDef.getIdentity(), "container");
+		if (container != null) {
+			if(container.getStyle() != null)
+				container.setStyle(STYLE_CIRCUIT_CONTAINER+";"+container.getStyle());
+			else
+				container.setStyle(STYLE_CIRCUIT_CONTAINER);
 			container.setValue(compDef.getIdentity().toString());
 			model.add(viewCell, container, 0);
 		} else {
@@ -350,6 +348,7 @@ public class SBOLToMx extends Converter {
 					STYLE_CIRCUIT_CONTAINER);
 		}
 
+		mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), "backbone");
 		if (backbone != null) {
 			if (backbone.getStyle() != null)
 				backbone.setStyle(STYLE_BACKBONE + ";" + backbone.getStyle());
@@ -364,12 +363,14 @@ public class SBOLToMx extends Converter {
 		Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
 		for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 			Component glyphComponent = glyphArray[glyphIndex];
-			Annotation glyphAnn = glyphComponent.getAnnotation(createQName("glyphCell"));
-			mxCell glyphCell = null;
+			mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(), glyphComponent.getDisplayId());
 			double maxX = 0;
-			if (glyphAnn != null) {
-				glyphCell = (mxCell) decodeMxGraphObject(glyphAnn.getStringValue());
+			if (glyphCell != null) {
 				maxX = glyphCell.getGeometry().getX();
+				if(glyphCell.getStyle() != null)
+					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE+";"+glyphCell.getStyle());
+				else
+					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE);
 				glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
 				model.add(container, glyphCell, glyphIndex);
 			} else {
@@ -453,12 +454,12 @@ public class SBOLToMx extends Converter {
 		return sw.toString();
 	}
 	
-	private Object decodeMxGraphObject(String xml) throws SAXException, IOException, ParserConfigurationException {
-		Document stringDoc = mxXmlUtils.parseXml(xml);
-		mxCodec codec = new mxCodec(stringDoc);
-		Node node = stringDoc.getDocumentElement();
-		Object obj = codec.decode(node);
-		return obj;
-	}
+//	private Object decodeMxGraphObject(String xml) throws SAXException, IOException, ParserConfigurationException {
+//		Document stringDoc = mxXmlUtils.parseXml(xml);
+//		mxCodec codec = new mxCodec(stringDoc);
+//		Node node = stringDoc.getDocumentElement();
+//		Object obj = codec.decode(node);
+//		return obj;
+//	}
 	
 }
