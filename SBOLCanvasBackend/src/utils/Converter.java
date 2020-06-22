@@ -1,15 +1,19 @@
 package utils;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
 
+import org.sbolstandard.core2.Annotation;
 import org.sbolstandard.core2.SystemsBiologyOntology;
 
 import com.mxgraph.io.mxCodecRegistry;
 
+import data.CanvasAnnotation;
 import data.GlyphInfo;
 
 public class Converter {
@@ -60,6 +64,6 @@ public class Converter {
 	static QName createQName(String name) {
 		return new QName(URI_PREFIX, name, ANN_PREFIX);
 	}
-
+	
 	// helpers
 }

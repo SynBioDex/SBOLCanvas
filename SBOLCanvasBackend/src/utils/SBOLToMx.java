@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -21,6 +22,7 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.sbolstandard.core2.Annotation;
 import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.FunctionalComponent;
@@ -44,6 +46,7 @@ import com.mxgraph.model.mxGraphModel;
 import com.mxgraph.util.mxConstants;
 import com.mxgraph.view.mxGraph;
 
+import data.CanvasAnnotation;
 import data.GlyphInfo;
 import data.InteractionInfo;
 
@@ -315,7 +318,7 @@ public class SBOLToMx extends Converter {
 		// create the glyphInfo and store it in the dictionary
 		GlyphInfo info = genGlyphInfo(compDef);
 		glyphInfoDict.put(info.getFullURI(), info);
-
+		
 		// create the top view cell
 		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0,
 				STYLE_COMPONENT_VIEW);
@@ -333,8 +336,6 @@ public class SBOLToMx extends Converter {
 		}
 
 		// add the container cell and backbone
-		// TODO somehow merge the container and backbone into one graphical layout tied
-		// to the component definition
 		mxCell container = layoutHelper.getGraphicalObject(compDef.getIdentity(), "container");
 		if (container != null) {
 			if(container.getStyle() != null)
@@ -432,7 +433,8 @@ public class SBOLToMx extends Converter {
 		else
 			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
 		glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
-		// glyphInfo.setUriPrefix(uriPrefix.substring(0, uriPrefix.length() - 1));
+		
+		glyphInfo.setAnnotations(convertSBOLAnnotations(glyphCD.getAnnotations()));
 		return glyphInfo;
 	}
 	
@@ -441,6 +443,23 @@ public class SBOLToMx extends Converter {
 		info.setDisplayID(interaction.getDisplayId());
 		info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
 		return info;
+	}
+	
+	private static CanvasAnnotation[] convertSBOLAnnotations(List<Annotation> annotations){
+		List<CanvasAnnotation> canvasAnnotations = new ArrayList<CanvasAnnotation>();
+		for(Annotation annotation : annotations) {
+			CanvasAnnotation canvasAnn = new CanvasAnnotation();
+			canvasAnn.setQName(annotation.getQName());
+			if(annotation.getStringValue() != null) {
+				canvasAnn.setStringValue(annotation.getStringValue());
+			}else if(annotation.getURIValue() != null) {
+				canvasAnn.setUriValue(annotation.getURIValue());
+			}else if(annotation.getAnnotations() != null) {
+				canvasAnn.setAnnotations(convertSBOLAnnotations(annotation.getAnnotations()));
+			}
+			canvasAnnotations.add(canvasAnn);
+		}
+		return canvasAnnotations.toArray(new CanvasAnnotation[0]);
 	}
 	
 	private String encodeMxGraphObject(Object obj) throws TransformerFactoryConfigurationError, TransformerException {

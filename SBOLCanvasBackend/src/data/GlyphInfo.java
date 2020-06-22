@@ -1,8 +1,5 @@
 package data;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 public class GlyphInfo extends Info {
 
 	private String partType;
@@ -16,6 +13,7 @@ public class GlyphInfo extends Info {
 	private String version;
 	private String sequence;
 	private String uriPrefix;
+	private CanvasAnnotation[] annotations;
 
 	public String getUriPrefix() {
 		return uriPrefix;
@@ -105,36 +103,19 @@ public class GlyphInfo extends Info {
 		this.sequence = sequence;
 	}
 	
+	public CanvasAnnotation[] getAnnotations() {
+		return annotations;
+	}
+
+	public void setAnnotations(CanvasAnnotation[] annotations) {
+		this.annotations = annotations;
+	}
+	
 	public String getFullURI() {
 		String fullURI = this.uriPrefix + '/' + this.displayID;
 		if(this.version != null && this.version.length() > 0) {
 			fullURI += '/' + this.version;
 		}
 		return fullURI;
-	}
-	
-	@Override
-	public Element encode(Document doc) {
-		Element glyphInfo = doc.createElement("GlyphInfo");
-		if (description != null)
-			glyphInfo.setAttribute("description", description);
-		if (displayID != null)
-			glyphInfo.setAttribute("displayID", displayID);
-		if (name != null)
-			glyphInfo.setAttribute("name", name);
-		if (partRefine != null)
-			glyphInfo.setAttribute("partRefine", partRefine);
-		if (partRole != null)
-			glyphInfo.setAttribute("partRole", partRole);
-		if (partType != null)
-			glyphInfo.setAttribute("partType", partType);
-		if (sequence != null)
-			glyphInfo.setAttribute("sequence", sequence);
-		if (version != null)
-			glyphInfo.setAttribute("version", version);
-		if (uriPrefix != null)
-			glyphInfo.setAttribute("uriPrefix", uriPrefix);
-		glyphInfo.setAttribute("as", "data");
-		return glyphInfo;
 	}
 }

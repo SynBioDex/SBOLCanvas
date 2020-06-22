@@ -5,16 +5,20 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Set;
 
+import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import org.sbolstandard.core2.AccessType;
+import org.sbolstandard.core2.Annotation;
 import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.DirectionType;
@@ -44,6 +48,7 @@ import com.mxgraph.util.mxUtils;
 import com.mxgraph.util.mxXmlUtils;
 import com.mxgraph.view.mxGraph;
 
+import data.CanvasAnnotation;
 import data.GlyphInfo;
 import data.InteractionInfo;
 
@@ -294,9 +299,13 @@ public class MxToSBOL extends Converter {
 
 		// component sequence
 		if (glyphInfo.getSequence() != null && !glyphInfo.getSequence().equals("")) {
-			Sequence seq = document.createSequence(compDef.getDisplayId() + "Sequence", glyphInfo.getSequence(),
+			Sequence seq = document.createSequence(compDef.getDisplayId() + "_sequence", glyphInfo.getSequence(),
 					Sequence.IUPAC_DNA);
 			compDef.addSequence(seq.getIdentity());
+		}
+		
+		if(glyphInfo.getAnnotations() != null) {
+			
 		}
 
 		// store extra mxGraph information
@@ -413,6 +422,28 @@ public class MxToSBOL extends Converter {
 		for (mxCell textBox : textBoxes) {
 			layoutHelper.addGraphicalNode(objectRef, "textBox", textBox);
 		}
+	}
+	
+	private static List<Annotation> convertCanvasAnnotations(CanvasAnnotation[] canvasAnnotations) throws SBOLValidationException {
+		ArrayList<Annotation> annotations = new ArrayList<Annotation>();
+		for(CanvasAnnotation canvasAnn : canvasAnnotations) {
+			Annotation annotation = null;
+			QName qname = new QName(canvasAnn.getPrefix(), canvasAnn.getLocalPart(), canvasAnn.getNamespaceURI());
+			if(canvasAnn.getStringValue() != null) {
+				annotation = new Annotation(qname, canvasAnn.getStringValue());
+			}else if(canvasAnn.getUriValue() != null) {
+				annotation = new Annotation(qname, canvasAnn.getUriValue());
+			}else if(canvasAnn.getAnnotations() != null) {
+				QName nestedQName = new QName(canvasAnn.getNestedPrefix(), canvasAnn.getNestedLocalPart(), canvasAnn.getNestedNamespaceURI());
+				// the nested annotation constructor is private, the only way to do this without the document is to create an empty annotation
+				annotation = new Annotation(qname, "");
+				annotation.createAnnotation(qname, nestedQName, null, convertCanvasAnnotations(canvasAnn.getAnnotations()));
+				annotation.setNestedIdentity(canvasAnn.getNestedURI());
+			}
+			annotations.add(annotation);
+		}
+		
+		return annotations;
 	}
 	
 	private int getSequenceLength(SBOLDocument document, ComponentDefinition componentDef) {

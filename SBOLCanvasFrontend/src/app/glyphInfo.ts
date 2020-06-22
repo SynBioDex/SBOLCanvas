@@ -1,4 +1,5 @@
 import { ParsedEventType } from '@angular/compiler';
+import { CanvasAnnotation } from './canvasAnnotation';
 
 export class GlyphInfo {
   // Remember that when you change this you need to change the encode function in graph service
@@ -15,6 +16,7 @@ export class GlyphInfo {
   version: string;
   sequence: string;
   uriPrefix: string = GlyphInfo.baseURI;
+  annotations: CanvasAnnotation[];
 
   constructor(partType?: string) {
     this.displayID = 'id' + (GlyphInfo.counter++);
@@ -28,7 +30,9 @@ export class GlyphInfo {
   makeCopy() {
     const copy: GlyphInfo = new GlyphInfo();
     copy.partType = this.partType;
+    copy.otherTypes = this.otherTypes ? this.otherTypes.slice() : null;
     copy.partRole = this.partRole;
+    copy.otherRoles = this.otherRoles ? this.otherRoles.slice() : null;
     copy.partRefine = this.partRefine;
     copy.displayID = this.displayID;
     copy.name = this.name;
@@ -36,12 +40,15 @@ export class GlyphInfo {
     copy.version = this.version;
     copy.sequence = this.sequence;
     copy.uriPrefix = this.uriPrefix;
+    copy.annotations = this.annotations ? this.annotations.slice() : null;
     return copy;
   }
 
   copyDataFrom(other: GlyphInfo) {
     this.partType = other.partType;
+    this.otherTypes = other.otherTypes ? other.otherTypes.slice() : null;
     this.partRole = other.partRole;
+    this.otherRoles = other.otherRoles ? other.otherRoles.slice() : null;
     this.partRefine = other.partRefine;
     this.displayID = other.displayID;
     this.name = other.name;
@@ -49,6 +56,7 @@ export class GlyphInfo {
     this.version = other.version;
     this.sequence = other.sequence;
     this.uriPrefix = other.uriPrefix;
+    this.annotations = other.annotations.slice();
   }
 
   getFullURI(): string {
@@ -57,6 +65,29 @@ export class GlyphInfo {
       fullURI += '/' + this.version;
     }
     return fullURI;
+  }
+
+  decode(dec, node, into) {
+    const meta = node;
+    if (meta != null) {
+      for (let i = 0; i < meta.attributes.length; i++) {
+        const attrib = meta.attributes[i];
+        if (attrib.specified == true && attrib.name != 'as') {
+          this[attrib.name] = attrib.value;
+        }
+      }
+      for (let i = 0; i < meta.children.length; i++) {
+        const childNode = meta.children[i];
+        if (childNode.getAttribute("as") === "otherTypes") {
+          this.otherTypes = dec.decode(childNode);
+        } else if (childNode.getAttribute("as") === "otherRoles") {
+          this.otherRoles = dec.decode(childNode);
+        } else if (childNode.getAttribute("as") === "annotations") {
+          this.annotations = dec.decode(childNode);
+        }
+      }
+    }
+    return this;
   }
 
   encode(enc: any) {
@@ -90,6 +121,11 @@ export class GlyphInfo {
     if (this.uriPrefix)
       node.setAttribute("uriPrefix", this.uriPrefix);
 
+    if (this.annotations) {
+      let annotationsNode = enc.encode(this.annotations);
+      annotationsNode.setAttribute("as", "annotations");
+      node.appendChild(annotationsNode);
+    }
 
     return node;
   }

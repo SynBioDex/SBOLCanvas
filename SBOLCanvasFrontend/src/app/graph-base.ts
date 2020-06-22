@@ -5,6 +5,7 @@ import { GlyphInfo } from './glyphInfo';
 import { InteractionInfo } from './interactionInfo';
 import { GlyphService } from './glyph.service';
 import { GraphHelpers } from './graph-helpers';
+import { CanvasAnnotation } from './canvasAnnotation';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -158,24 +159,7 @@ export class GraphBase {
         const glyphInfoCodec = new mx.mxObjectCodec(new GlyphInfo());
         glyphInfoCodec.decode = function (dec, node, into) {
             const glyphData = new GlyphInfo();
-            const meta = node;
-            if (meta != null) {
-                for (let i = 0; i < meta.attributes.length; i++) {
-                    const attrib = meta.attributes[i];
-                    if (attrib.specified == true && attrib.name != 'as') {
-                        glyphData[attrib.name] = attrib.value;
-                    }
-                }
-                for (let i = 0; i < meta.children.length; i++) {
-                    const childNode = meta.children[i];
-                    if (childNode.getAttribute("as") === "otherTypes") {
-                        glyphData.otherTypes = dec.decode(childNode);
-                    } else if (childNode.getAttribute("as") === "otherRoles") {
-                        glyphData.otherRoles = dec.decode(childNode);
-                    }
-                }
-            }
-            return glyphData;
+            return glyphData.decode(dec, node, into);
         }
         glyphInfoCodec.encode = function (enc, object) {
             return object.encode(enc);
@@ -188,22 +172,25 @@ export class GraphBase {
         const interactionInfoCodec = new mx.mxObjectCodec(new InteractionInfo());
         interactionInfoCodec.decode = function (dec, node, into) {
             const interactionData = new InteractionInfo();
-            const meta = node;
-            if (meta != null) {
-                for (let i = 0; i < meta.attributes.length; i++) {
-                    const attrib = meta.attributes[i];
-                    if (attrib.specified == true && attrib.name != 'as') {
-                        interactionData[attrib.name] = attrib.value;
-                    }
-                }
-            }
-            return interactionData;
+            return interactionData.decode(dec, node, into);
         }
         interactionInfoCodec.encode = function (enc, object) {
             return object.encode(enc);
         }
         mx.mxCodecRegistry.register(interactionInfoCodec);
         window['InteractionInfo'] = InteractionInfo;
+
+        Object.defineProperty(CanvasAnnotation, "name", { configurable: true, value: "CanvasAnnotation" });
+        const canvasAnnotationCodec = new mx.mxObjectCodec(new CanvasAnnotation());
+        canvasAnnotationCodec.decode = function(dec, node, into){
+            const canvasAnnotation = new CanvasAnnotation();
+            return canvasAnnotation.decode(dec, node, into);
+        }
+        canvasAnnotationCodec.encode = function(enc, object){
+            return object.encode(enc);
+        }
+        mx.mxCodecRegistry.register(canvasAnnotationCodec);
+        window['CanvasAnnotation'] = CanvasAnnotation;
 
         // For circuitContainers, the order of the children matters.
         // We want it to match the order of the children's geometries
