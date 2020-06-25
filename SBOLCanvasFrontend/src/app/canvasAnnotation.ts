@@ -11,25 +11,6 @@ export class CanvasAnnotation {
   uriValue: string;
   annotations: CanvasAnnotation[];
 
-  decode(dec, node, into) {
-    const meta = node;
-    if (meta != null) {
-      for (let i = 0; i < meta.attributes.length; i++) {
-        const attrib = meta.attributes[i];
-        if (attrib.specified == true && attrib.name != 'as') {
-          this[attrib.name] = attrib.value;
-        }
-      }
-      for (let i = 0; i < meta.children.length; i++) {
-        const childNode = meta.children[i];
-        if (childNode.getAttribute("as") === "annotations") {
-          this.annotations = dec.decode(childNode);
-        }
-      }
-    }
-    return this;
-  }
-
   encode(enc: any) {
     let node = enc.document.createElement('CanvasAnnotation');
     if (this.namespaceURI)

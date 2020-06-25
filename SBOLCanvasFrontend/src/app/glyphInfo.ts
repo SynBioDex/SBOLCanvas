@@ -17,6 +17,8 @@ export class GlyphInfo {
   sequence: string;
   uriPrefix: string = GlyphInfo.baseURI;
   annotations: CanvasAnnotation[];
+  derivedFroms: string[];
+  generatedBys: string[];
 
   constructor(partType?: string) {
     this.displayID = 'id' + (GlyphInfo.counter++);
@@ -41,6 +43,8 @@ export class GlyphInfo {
     copy.sequence = this.sequence;
     copy.uriPrefix = this.uriPrefix;
     copy.annotations = this.annotations ? this.annotations.slice() : null;
+    copy.derivedFroms = this.derivedFroms ? this.derivedFroms.slice() : null;
+    copy.generatedBys = this.generatedBys ? this.generatedBys.slice() : null;
     return copy;
   }
 
@@ -56,7 +60,9 @@ export class GlyphInfo {
     this.version = other.version;
     this.sequence = other.sequence;
     this.uriPrefix = other.uriPrefix;
-    this.annotations = other.annotations.slice();
+    this.annotations = other.annotations ? other.annotations.slice() : null;
+    this.derivedFroms = other.derivedFroms ? other.derivedFroms.slice() : null;
+    this.generatedBys = other.generatedBys ? other.generatedBys.slice() : null;
   }
 
   getFullURI(): string {
@@ -65,29 +71,6 @@ export class GlyphInfo {
       fullURI += '/' + this.version;
     }
     return fullURI;
-  }
-
-  decode(dec, node, into) {
-    const meta = node;
-    if (meta != null) {
-      for (let i = 0; i < meta.attributes.length; i++) {
-        const attrib = meta.attributes[i];
-        if (attrib.specified == true && attrib.name != 'as') {
-          this[attrib.name] = attrib.value;
-        }
-      }
-      for (let i = 0; i < meta.children.length; i++) {
-        const childNode = meta.children[i];
-        if (childNode.getAttribute("as") === "otherTypes") {
-          this.otherTypes = dec.decode(childNode);
-        } else if (childNode.getAttribute("as") === "otherRoles") {
-          this.otherRoles = dec.decode(childNode);
-        } else if (childNode.getAttribute("as") === "annotations") {
-          this.annotations = dec.decode(childNode);
-        }
-      }
-    }
-    return this;
   }
 
   encode(enc: any) {
@@ -125,6 +108,16 @@ export class GlyphInfo {
       let annotationsNode = enc.encode(this.annotations);
       annotationsNode.setAttribute("as", "annotations");
       node.appendChild(annotationsNode);
+    }
+    if(this.derivedFroms){
+      let derivedFromsNode = enc.encode(this.derivedFroms);
+      derivedFromsNode.setAttribute("as", "derivedFroms");
+      node.appendChild(derivedFromsNode);
+    }
+    if(this.generatedBys){
+      let generatedBysNode = enc.encode(this.generatedBys);
+      generatedBysNode.setAttribute("as", "generatedBys");
+      node.appendChild(generatedBysNode);
     }
 
     return node;

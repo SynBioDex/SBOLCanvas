@@ -36,6 +36,7 @@ import org.sbolstandard.core2.SBOLWriter;
 import org.sbolstandard.core2.Sequence;
 import org.sbolstandard.core2.SequenceAnnotation;
 import org.sbolstandard.core2.SystemsBiologyOntology;
+import org.sbolstandard.core2.TopLevel;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -103,11 +104,11 @@ public class MxToSBOL extends Converter {
 			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE);
 		}
 	};
-	
+
 	public MxToSBOL() {
 		glyphInfoDict = new Hashtable<String, GlyphInfo>();
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename)
 			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
@@ -122,7 +123,7 @@ public class MxToSBOL extends Converter {
 		document.setDefaultURIprefix(URI_PREFIX);
 		document.setComplete(true);
 		document.setCreateDefaults(true);
-		
+
 		layoutHelper = new LayoutHelper(document, graph);
 
 		// Arrays.stream is the java 8 way to cast Object[] to some other array
@@ -194,7 +195,7 @@ public class MxToSBOL extends Converter {
 		SBOLWriter.setKeepGoing(true);
 		SBOLWriter.write(document, sbolStream);
 	}
-	
+
 	/**
 	 * @param document
 	 * @param model
@@ -216,8 +217,8 @@ public class MxToSBOL extends Converter {
 				.toArray(mxCell[]::new);
 
 		ModuleDefinition modDef = document.createModuleDefinition(viewCell.getId());
-		layoutHelper.createGraphicalLayout(modDef.getIdentity(), modDef.getDisplayId()+"_Layout");
-		
+		layoutHelper.createGraphicalLayout(modDef.getIdentity(), modDef.getDisplayId() + "_Layout");
+
 		// text boxes
 		if (textBoxes.length > 0) {
 			attachTextBoxAnnotation(model, viewCell, modDef.getIdentity());
@@ -256,10 +257,11 @@ public class MxToSBOL extends Converter {
 			// store extra graph information
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), funcComp.getDisplayId(), circuitContainer);
 			GenericTopLevel layout = layoutHelper.getGraphicalLayout(containerCD.getIdentity());
-			layoutHelper.addLayoutRef(modDef.getIdentity(), layout.getIdentity(), containerCD.getDisplayId()+"_Reference");
+			layoutHelper.addLayoutRef(modDef.getIdentity(), layout.getIdentity(),
+					containerCD.getDisplayId() + "_Reference");
 		}
 	}
-	
+
 	private void createComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
 			mxCell circuitContainer) throws URISyntaxException, SBOLValidationException,
 			TransformerFactoryConfigurationError, TransformerException {
@@ -293,7 +295,7 @@ public class MxToSBOL extends Converter {
 				compDef.addRole(new URI(role));
 			}
 		}
-
+		
 		compDef.setName(glyphInfo.getName());
 		compDef.setDescription(glyphInfo.getDescription());
 
@@ -303,19 +305,31 @@ public class MxToSBOL extends Converter {
 					Sequence.IUPAC_DNA);
 			compDef.addSequence(seq.getIdentity());
 		}
+
+		if (glyphInfo.getAnnotations() != null) {
+			convertCanvasAnnotations(glyphInfo.getAnnotations(), compDef);
+		}
 		
-		if(glyphInfo.getAnnotations() != null) {
-			
+		if(glyphInfo.getDerivedFroms() != null) {
+			for(URI derivedFrom : glyphInfo.getDerivedFroms()) {
+				compDef.addWasDerivedFrom(derivedFrom);
+			}
+		}
+		
+		if(glyphInfo.getGeneratedBys() != null) {
+			for(URI generatedBy : glyphInfo.getGeneratedBys()) {
+				compDef.addWasGeneratedBy(generatedBy);
+			}
 		}
 
 		// store extra mxGraph information
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 		mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
-		layoutHelper.createGraphicalLayout(compDef.getIdentity(), compDef.getDisplayId()+"_Layout");
+		layoutHelper.createGraphicalLayout(compDef.getIdentity(), compDef.getDisplayId() + "_Layout");
 		layoutHelper.addGraphicalNode(compDef.getIdentity(), "container", circuitContainer);
 		layoutHelper.addGraphicalNode(compDef.getIdentity(), "backbone", backboneCell);
 	}
-	
+
 	private void linkModuleDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
 			URISyntaxException {
@@ -359,7 +373,7 @@ public class MxToSBOL extends Converter {
 		}
 
 	}
-	
+
 	private void linkComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
 			mxCell circuitContainer) throws SBOLValidationException, TransformerFactoryConfigurationError,
 			TransformerException, URISyntaxException {
@@ -379,7 +393,8 @@ public class MxToSBOL extends Converter {
 			// cell annotation
 			layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
 			GenericTopLevel layout = layoutHelper.getGraphicalLayout(component.getDefinitionIdentity());
-			layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(), component.getDefinition().getDisplayId()+"_Reference");
+			layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
+					component.getDefinition().getDisplayId() + "_Reference");
 
 			// sequence constraints
 			if (previous != null) {
@@ -410,8 +425,9 @@ public class MxToSBOL extends Converter {
 			count++;
 		}
 	}
-	
-	private void attachTextBoxAnnotation(mxGraphModel model, mxCell viewCell, URI objectRef) throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
+
+	private void attachTextBoxAnnotation(mxGraphModel model, mxCell viewCell, URI objectRef)
+			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
 			URISyntaxException {
 
 		// store extra mxGraph information
@@ -423,29 +439,50 @@ public class MxToSBOL extends Converter {
 			layoutHelper.addGraphicalNode(objectRef, "textBox", textBox);
 		}
 	}
-	
-	private static List<Annotation> convertCanvasAnnotations(CanvasAnnotation[] canvasAnnotations) throws SBOLValidationException {
+
+	private static List<Annotation> convertCanvasAnnotations(CanvasAnnotation[] canvasAnnotations)
+			throws SBOLValidationException {
+		return convertCanvasAnnotations(canvasAnnotations, null);
+	}
+
+	private static List<Annotation> convertCanvasAnnotations(CanvasAnnotation[] canvasAnnotations, TopLevel topLevel)
+			throws SBOLValidationException {
 		ArrayList<Annotation> annotations = new ArrayList<Annotation>();
-		for(CanvasAnnotation canvasAnn : canvasAnnotations) {
+		for (CanvasAnnotation canvasAnn : canvasAnnotations) {
 			Annotation annotation = null;
-			QName qname = new QName(canvasAnn.getPrefix(), canvasAnn.getLocalPart(), canvasAnn.getNamespaceURI());
-			if(canvasAnn.getStringValue() != null) {
-				annotation = new Annotation(qname, canvasAnn.getStringValue());
-			}else if(canvasAnn.getUriValue() != null) {
-				annotation = new Annotation(qname, canvasAnn.getUriValue());
-			}else if(canvasAnn.getAnnotations() != null) {
-				QName nestedQName = new QName(canvasAnn.getNestedPrefix(), canvasAnn.getNestedLocalPart(), canvasAnn.getNestedNamespaceURI());
-				// the nested annotation constructor is private, the only way to do this without the document is to create an empty annotation
-				annotation = new Annotation(qname, "");
-				annotation.createAnnotation(qname, nestedQName, null, convertCanvasAnnotations(canvasAnn.getAnnotations()));
-				annotation.setNestedIdentity(canvasAnn.getNestedURI());
+			QName qName = new QName(canvasAnn.getNamespaceURI(), canvasAnn.getLocalPart(), canvasAnn.getPrefix());
+			if (canvasAnn.getStringValue() != null) {
+				if (topLevel != null)
+					annotation = topLevel.createAnnotation(qName, canvasAnn.getStringValue());
+				else
+					annotation = new Annotation(qName, canvasAnn.getStringValue());
+			} else if (canvasAnn.getUriValue() != null) {
+				if (topLevel != null)
+					annotation = topLevel.createAnnotation(qName, canvasAnn.getUriValue());
+				else
+					annotation = new Annotation(qName, canvasAnn.getUriValue());
+			} else if (canvasAnn.getAnnotations() != null) {
+				QName nestedQName = new QName(canvasAnn.getNestedNamespaceURI(), canvasAnn.getNestedLocalPart(),
+						canvasAnn.getNestedPrefix());
+				List<Annotation> subAnnotations = convertCanvasAnnotations(canvasAnn.getAnnotations());
+				if (topLevel != null) {
+					annotation = topLevel.createAnnotation(qName, nestedQName, null, subAnnotations);
+					annotation.setNestedIdentity(canvasAnn.getNestedURI());
+				} else {
+					// the nested annotation constructor is private, the only way to do this without
+					// the parent annotation is to create an empty annotation
+					annotation = new Annotation(qName, "");
+					annotation.setNestedQName(nestedQName);
+					annotation.setNestedIdentity(canvasAnn.getNestedURI());
+					annotation.setAnnotations(subAnnotations);
+				}
 			}
 			annotations.add(annotation);
 		}
-		
+
 		return annotations;
 	}
-	
+
 	private int getSequenceLength(SBOLDocument document, ComponentDefinition componentDef) {
 		if (componentDef.getSequences() != null && componentDef.getSequences().size() > 0) {
 			Sequence sequence = componentDef.getSequences().iterator().next();
@@ -468,7 +505,7 @@ public class MxToSBOL extends Converter {
 		}
 
 	}
-	
+
 	private FunctionalComponent getOrCreateParticipant(SBOLDocument document, ModuleDefinition modDef,
 			GlyphInfo partInfo, mxCell part) throws SBOLValidationException {
 		FunctionalComponent sourceFC = modDef.getFunctionalComponent(partInfo.getDisplayID() + "_" + part.getId());
@@ -490,7 +527,7 @@ public class MxToSBOL extends Converter {
 		}
 		return sourceFC;
 	}
-	
+
 	private mxGraph parseGraph(InputStream graphStream) throws IOException {
 		mxGraph graph = new mxGraph();
 		((mxGraphModel) graph.getModel()).setMaintainEdgeParent(false);
@@ -499,5 +536,5 @@ public class MxToSBOL extends Converter {
 		codec.decode(document.getDocumentElement(), graph.getModel());
 		return graph;
 	}
-	
+
 }

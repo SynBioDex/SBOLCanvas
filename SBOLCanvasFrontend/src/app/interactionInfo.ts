@@ -21,19 +21,6 @@ export class InteractionInfo {
     this.interactionType = other.interactionType;
   }
 
-  decode(dec, node, into) {
-    const meta = node;
-    if (meta != null) {
-      for (let i = 0; i < meta.attributes.length; i++) {
-        const attrib = meta.attributes[i];
-        if (attrib.specified == true && attrib.name != 'as') {
-          this[attrib.name] = attrib.value;
-        }
-      }
-    }
-    return this;
-  }
-
   encode(enc: any) {
     let node = enc.document.createElement('InteractionInfo');
     if (this.displayID)

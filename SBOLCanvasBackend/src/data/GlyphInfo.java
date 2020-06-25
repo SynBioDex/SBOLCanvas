@@ -1,5 +1,7 @@
 package data;
 
+import java.net.URI;
+
 public class GlyphInfo extends Info {
 
 	private String partType;
@@ -14,6 +16,8 @@ public class GlyphInfo extends Info {
 	private String sequence;
 	private String uriPrefix;
 	private CanvasAnnotation[] annotations;
+	private URI[] derivedFroms;
+	private URI[] generatedBys;
 
 	public String getUriPrefix() {
 		return uriPrefix;
@@ -109,6 +113,22 @@ public class GlyphInfo extends Info {
 
 	public void setAnnotations(CanvasAnnotation[] annotations) {
 		this.annotations = annotations;
+	}
+	
+	public URI[] getDerivedFroms() {
+		return derivedFroms;
+	}
+
+	public void setDerivedFroms(URI[] derivedFroms) {
+		this.derivedFroms = derivedFroms;
+	}
+
+	public URI[] getGeneratedBys() {
+		return generatedBys;
+	}
+
+	public void setGeneratedBys(URI[] generatedBys) {
+		this.generatedBys = generatedBys;
 	}
 	
 	public String getFullURI() {

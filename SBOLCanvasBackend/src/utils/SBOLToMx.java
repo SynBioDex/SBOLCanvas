@@ -434,6 +434,14 @@ public class SBOLToMx extends Converter {
 			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
 		glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
 		
+		if(glyphCD.getWasDerivedFroms() != null && glyphCD.getWasDerivedFroms().size() > 0) {
+			glyphInfo.setDerivedFroms(glyphCD.getWasDerivedFroms().toArray(new URI[0]));
+		}
+		
+		if(glyphCD.getWasGeneratedBys() != null && glyphCD.getWasGeneratedBys().size() > 0) {
+			glyphInfo.setGeneratedBys(glyphCD.getWasGeneratedBys().toArray(new URI[0]));
+		}
+		
 		glyphInfo.setAnnotations(convertSBOLAnnotations(glyphCD.getAnnotations()));
 		return glyphInfo;
 	}

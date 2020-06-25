@@ -153,13 +153,30 @@ export class GraphBase {
         window['mxPoint'] = mx.mxPoint;
         window['mxCell'] = mx.mxCell;
 
+        let genericDecode = function(dec, node, into){
+            const meta = node;
+            if (meta != null) {
+              for (let i = 0; i < meta.attributes.length; i++) {
+                const attrib = meta.attributes[i];
+                if (attrib.specified == true && attrib.name != 'as') {
+                  into[attrib.name] = attrib.value;
+                }
+              }
+              for (let i = 0; i < meta.children.length; i++) {
+                const childNode = meta.children[i];
+                into[childNode.getAttribute("as")] = dec.decode(childNode);
+              }
+            }
+            return into;
+        }
+
         //mxGraph uses function.name which uglifyJS breaks on production
         // Glyph info decode/encode
         Object.defineProperty(GlyphInfo, "name", { configurable: true, value: "GlyphInfo" });
         const glyphInfoCodec = new mx.mxObjectCodec(new GlyphInfo());
         glyphInfoCodec.decode = function (dec, node, into) {
             const glyphData = new GlyphInfo();
-            return glyphData.decode(dec, node, into);
+            return genericDecode(dec, node, glyphData);
         }
         glyphInfoCodec.encode = function (enc, object) {
             return object.encode(enc);
@@ -172,7 +189,7 @@ export class GraphBase {
         const interactionInfoCodec = new mx.mxObjectCodec(new InteractionInfo());
         interactionInfoCodec.decode = function (dec, node, into) {
             const interactionData = new InteractionInfo();
-            return interactionData.decode(dec, node, into);
+            return genericDecode(dec, node, interactionData);
         }
         interactionInfoCodec.encode = function (enc, object) {
             return object.encode(enc);
@@ -184,7 +201,7 @@ export class GraphBase {
         const canvasAnnotationCodec = new mx.mxObjectCodec(new CanvasAnnotation());
         canvasAnnotationCodec.decode = function(dec, node, into){
             const canvasAnnotation = new CanvasAnnotation();
-            return canvasAnnotation.decode(dec, node, into);
+            return genericDecode(dec, node, canvasAnnotation);
         }
         canvasAnnotationCodec.encode = function(enc, object){
             return object.encode(enc);
