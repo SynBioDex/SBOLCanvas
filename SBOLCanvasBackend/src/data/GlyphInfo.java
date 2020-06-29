@@ -14,10 +14,11 @@ public class GlyphInfo extends Info {
 	private String description;
 	private String version;
 	private String sequence;
+	private String sequenceURI;
 	private String uriPrefix;
 	private CanvasAnnotation[] annotations;
-	private URI[] derivedFroms;
-	private URI[] generatedBys;
+	private String[] derivedFroms;
+	private String[] generatedBys;
 
 	public String getUriPrefix() {
 		return uriPrefix;
@@ -107,6 +108,14 @@ public class GlyphInfo extends Info {
 		this.sequence = sequence;
 	}
 	
+	public String getSequenceURI() {
+		return sequenceURI;
+	}
+
+	public void setSequenceURI(String sequenceURI) {
+		this.sequenceURI = sequenceURI;
+	}
+	
 	public CanvasAnnotation[] getAnnotations() {
 		return annotations;
 	}
@@ -115,19 +124,19 @@ public class GlyphInfo extends Info {
 		this.annotations = annotations;
 	}
 	
-	public URI[] getDerivedFroms() {
+	public String[] getDerivedFroms() {
 		return derivedFroms;
 	}
 
-	public void setDerivedFroms(URI[] derivedFroms) {
+	public void setDerivedFroms(String[] derivedFroms) {
 		this.derivedFroms = derivedFroms;
 	}
 
-	public URI[] getGeneratedBys() {
+	public String[] getGeneratedBys() {
 		return generatedBys;
 	}
 
-	public void setGeneratedBys(URI[] generatedBys) {
+	public void setGeneratedBys(String[] generatedBys) {
 		this.generatedBys = generatedBys;
 	}
 	

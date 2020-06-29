@@ -15,6 +15,7 @@ export class GlyphInfo {
   description: string;
   version: string;
   sequence: string;
+  sequenceURI: string;
   uriPrefix: string = GlyphInfo.baseURI;
   annotations: CanvasAnnotation[];
   derivedFroms: string[];
@@ -41,6 +42,7 @@ export class GlyphInfo {
     copy.description = this.description;
     copy.version = this.version;
     copy.sequence = this.sequence;
+    copy.sequenceURI = this.sequenceURI;
     copy.uriPrefix = this.uriPrefix;
     copy.annotations = this.annotations ? this.annotations.slice() : null;
     copy.derivedFroms = this.derivedFroms ? this.derivedFroms.slice() : null;
@@ -59,6 +61,7 @@ export class GlyphInfo {
     this.description = other.description;
     this.version = other.version;
     this.sequence = other.sequence;
+    this.sequenceURI = other.sequenceURI;
     this.uriPrefix = other.uriPrefix;
     this.annotations = other.annotations ? other.annotations.slice() : null;
     this.derivedFroms = other.derivedFroms ? other.derivedFroms.slice() : null;
@@ -101,6 +104,8 @@ export class GlyphInfo {
       node.setAttribute("version", this.version);
     if (this.sequence && this.sequence.length > 0)
       node.setAttribute("sequence", this.sequence);
+    if(this.sequenceURI && this.sequenceURI.length > 0)
+      node.setAttribute("sequenceURI", this.sequenceURI);
     if (this.uriPrefix)
       node.setAttribute("uriPrefix", this.uriPrefix);
 

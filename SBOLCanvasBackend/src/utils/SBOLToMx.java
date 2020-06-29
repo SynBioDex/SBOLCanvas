@@ -7,6 +7,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -36,6 +37,7 @@ import org.sbolstandard.core2.SBOLConversionException;
 import org.sbolstandard.core2.SBOLDocument;
 import org.sbolstandard.core2.SBOLReader;
 import org.sbolstandard.core2.SBOLValidationException;
+import org.sbolstandard.core2.Sequence;
 import org.sbolstandard.core2.SequenceAnnotation;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
@@ -423,8 +425,11 @@ public class SBOLToMx extends Converter {
 		}
 		glyphInfo.setOtherTypes(otherTypes.toArray(new String[0]));
 
-		if (glyphCD.getSequences().size() > 0)
-			glyphInfo.setSequence(glyphCD.getSequences().iterator().next().getElements());
+		if (glyphCD.getSequences().size() > 0) {
+			Sequence sequence = glyphCD.getSequences().iterator().next();
+			glyphInfo.setSequence(sequence.getElements());
+			glyphInfo.setSequenceURI(sequence.getIdentity().toString());
+		}
 		glyphInfo.setVersion(glyphCD.getVersion());
 		String identity = glyphCD.getIdentity().toString();
 		int lastIndex = 0;
@@ -435,11 +440,23 @@ public class SBOLToMx extends Converter {
 		glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
 		
 		if(glyphCD.getWasDerivedFroms() != null && glyphCD.getWasDerivedFroms().size() > 0) {
-			glyphInfo.setDerivedFroms(glyphCD.getWasDerivedFroms().toArray(new URI[0]));
+			String[] derivedFroms = new String[glyphCD.getWasDerivedFroms().size()];
+			int index = 0;
+			for(URI derivedFrom : glyphCD.getWasDerivedFroms()) {
+				derivedFroms[index] = derivedFrom.toString();
+				index++;
+			}
+			glyphInfo.setDerivedFroms(derivedFroms);
 		}
 		
 		if(glyphCD.getWasGeneratedBys() != null && glyphCD.getWasGeneratedBys().size() > 0) {
-			glyphInfo.setGeneratedBys(glyphCD.getWasGeneratedBys().toArray(new URI[0]));
+			String[] generatedBys = new String[glyphCD.getWasGeneratedBys().size()];
+			int index = 0;
+			for(URI generatedBy : glyphCD.getWasGeneratedBys()) {
+				generatedBys[index] = generatedBy.toString();
+				index++;
+			}
+			glyphInfo.setGeneratedBys(generatedBys);
 		}
 		
 		glyphInfo.setAnnotations(convertSBOLAnnotations(glyphCD.getAnnotations()));

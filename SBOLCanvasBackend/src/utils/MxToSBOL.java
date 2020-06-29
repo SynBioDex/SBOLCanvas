@@ -301,9 +301,10 @@ public class MxToSBOL extends Converter {
 
 		// component sequence
 		if (glyphInfo.getSequence() != null && !glyphInfo.getSequence().equals("")) {
-			Sequence seq = document.createSequence(compDef.getDisplayId() + "_sequence", glyphInfo.getSequence(),
+			Sequence sequence = document.createSequence(compDef.getDisplayId() + "_sequence", glyphInfo.getSequence(),
 					Sequence.IUPAC_DNA);
-			compDef.addSequence(seq.getIdentity());
+//			if(glyphInfo.getSequenceURI() != null && !glyphInfo.getUriPrefix().equals(Converter.URI_PREFIX))
+//				compDef.addSequence(URI.create(glyphInfo.getSequenceURI()));
 		}
 
 		if (glyphInfo.getAnnotations() != null) {
@@ -311,16 +312,17 @@ public class MxToSBOL extends Converter {
 		}
 		
 		if(glyphInfo.getDerivedFroms() != null) {
-			for(URI derivedFrom : glyphInfo.getDerivedFroms()) {
-				compDef.addWasDerivedFrom(derivedFrom);
+			for(String derivedFrom : glyphInfo.getDerivedFroms()) {
+				compDef.addWasDerivedFrom(URI.create(derivedFrom));
 			}
 		}
 		
-		if(glyphInfo.getGeneratedBys() != null) {
-			for(URI generatedBy : glyphInfo.getGeneratedBys()) {
-				compDef.addWasGeneratedBy(generatedBy);
-			}
-		}
+		//TODO come back to me when the activity objects are round tripping
+//		if(glyphInfo.getGeneratedBys() != null) {
+//			for(String generatedBy : glyphInfo.getGeneratedBys()) {
+//				compDef.addWasGeneratedBy(URI.create(generatedBy));
+//			}
+//		}
 
 		// store extra mxGraph information
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
