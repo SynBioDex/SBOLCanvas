@@ -1,7 +1,5 @@
 package data;
 
-import java.net.URI;
-
 public class GlyphInfo extends Info {
 
 	private String partType;

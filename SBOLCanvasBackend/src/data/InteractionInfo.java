@@ -1,8 +1,5 @@
 package data;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 public class InteractionInfo extends Info {
 
 	private String displayID;

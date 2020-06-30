@@ -37,6 +37,9 @@ import org.sbolstandard.core2.Sequence;
 import org.sbolstandard.core2.SequenceAnnotation;
 import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.sbolstandard.core2.TopLevel;
+import org.synbiohub.frontend.SynBioHubException;
+import org.synbiohub.frontend.SynBioHubFrontend;
+import org.synbiohub.frontend.WebOfRegistriesData;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -112,7 +115,7 @@ public class MxToSBOL extends Converter {
 	@SuppressWarnings("unchecked")
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename)
 			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
-			SBOLConversionException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
+			SBOLConversionException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException, SynBioHubException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
@@ -159,8 +162,7 @@ public class MxToSBOL extends Converter {
 				createModuleDefinition(document, graph, model, viewCell);
 			} else {
 				// component definitions
-				ComponentDefinition compDef = document.getComponentDefinition(new URI(viewCell.getId()));
-				attachTextBoxAnnotation(model, viewCell, compDef.getIdentity());
+				attachTextBoxAnnotation(model, viewCell, URI.create(viewCell.getId()));
 			}
 		}
 
@@ -247,27 +249,45 @@ public class MxToSBOL extends Converter {
 		// them with functional components)
 		for (mxCell circuitContainer : circuitContainers) {
 
-			ComponentDefinition containerCD = document
-					.getComponentDefinition(new URI((String) circuitContainer.getValue()));
-
+			GlyphInfo glyphInfo = glyphInfoDict.get(circuitContainer.getValue());
+			
 			FunctionalComponent funcComp = modDef.createFunctionalComponent(
-					containerCD.getDisplayId() + "_" + circuitContainer.getId(), AccessType.PUBLIC,
-					containerCD.getIdentity(), DirectionType.INOUT);
+					glyphInfo.getDisplayID() + "_" + circuitContainer.getId(), AccessType.PUBLIC,
+					URI.create(glyphInfo.getFullURI()), DirectionType.INOUT);
 
 			// store extra graph information
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), funcComp.getDisplayId(), circuitContainer);
-			GenericTopLevel layout = layoutHelper.getGraphicalLayout(containerCD.getIdentity());
+			GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(glyphInfo.getFullURI()));
 			layoutHelper.addLayoutRef(modDef.getIdentity(), layout.getIdentity(),
-					containerCD.getDisplayId() + "_Reference");
+					glyphInfo.getDisplayID() + "_Reference");
 		}
 	}
 
 	private void createComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
 			mxCell circuitContainer) throws URISyntaxException, SBOLValidationException,
-			TransformerFactoryConfigurationError, TransformerException {
+			TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+		
+		// 
+		
 		// get the glyph info associated with this view cell
 		GlyphInfo glyphInfo = glyphInfoDict.get(circuitContainer.getValue());
 
+		// store extra mxGraph information
+		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
+		mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
+		URI identity = URI.create(glyphInfo.getFullURI());
+		layoutHelper.createGraphicalLayout(identity, glyphInfo.getDisplayID() + "_Layout");
+		layoutHelper.addGraphicalNode(identity, "container", circuitContainer);
+		layoutHelper.addGraphicalNode(identity, "backbone", backboneCell);
+
+		// if the uri isn't one of the synbiohub ones, skip the object
+		for(String registry : SBOLData.registries) {
+			if(glyphInfo.getUriPrefix().contains(registry)) {
+				document.addRegistry(registry);
+				return;
+			}
+		}
+		
 		// if there isn't a uri prefix give it the default
 		if (glyphInfo.getUriPrefix() == null || glyphInfo.getUriPrefix().equals(""))
 			glyphInfo.setUriPrefix(URI_PREFIX);
@@ -303,6 +323,7 @@ public class MxToSBOL extends Converter {
 		if (glyphInfo.getSequence() != null && !glyphInfo.getSequence().equals("")) {
 			Sequence sequence = document.createSequence(compDef.getDisplayId() + "_sequence", glyphInfo.getSequence(),
 					Sequence.IUPAC_DNA);
+			compDef.addSequence(sequence.getIdentity());
 //			if(glyphInfo.getSequenceURI() != null && !glyphInfo.getUriPrefix().equals(Converter.URI_PREFIX))
 //				compDef.addSequence(URI.create(glyphInfo.getSequenceURI()));
 		}
@@ -323,13 +344,6 @@ public class MxToSBOL extends Converter {
 //				compDef.addWasGeneratedBy(URI.create(generatedBy));
 //			}
 //		}
-
-		// store extra mxGraph information
-		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
-		mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
-		layoutHelper.createGraphicalLayout(compDef.getIdentity(), compDef.getDisplayId() + "_Layout");
-		layoutHelper.addGraphicalNode(compDef.getIdentity(), "container", circuitContainer);
-		layoutHelper.addGraphicalNode(compDef.getIdentity(), "backbone", backboneCell);
 	}
 
 	private void linkModuleDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
@@ -379,7 +393,7 @@ public class MxToSBOL extends Converter {
 	private void linkComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
 			mxCell circuitContainer) throws SBOLValidationException, TransformerFactoryConfigurationError,
 			TransformerException, URISyntaxException {
-
+		
 		ComponentDefinition compDef = document.getComponentDefinition(URI.create((String) circuitContainer.getValue()));
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
@@ -394,7 +408,7 @@ public class MxToSBOL extends Converter {
 
 			// cell annotation
 			layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
-			GenericTopLevel layout = layoutHelper.getGraphicalLayout(component.getDefinitionIdentity());
+			GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
 			layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
 					component.getDefinition().getDisplayId() + "_Reference");
 
