@@ -85,6 +85,19 @@ public class SBOLToMx extends Converter {
 			modDef = document.getRootModuleDefinitions().iterator().next();
 		}
 
+		// scan through components to ensure we have the correct registries set up
+		for(ComponentDefinition compDef : document.getComponentDefinitions()) {
+			for(Component comp : compDef.getComponents()) {
+				for(String registry : SBOLData.registries) {
+					if(comp.getDefinitionURI().toString().contains(registry)) {
+						document.addRegistry(registry);
+						document.getComponentDefinition(comp.getDefinitionURI());
+						break;
+					}
+				}
+			}
+		}
+		
 		// top level component definitions
 		Set<ComponentDefinition> compDefs = document.getComponentDefinitions();
 		Set<ComponentDefinition> handledCompDefs = new HashSet<ComponentDefinition>();

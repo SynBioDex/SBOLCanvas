@@ -38,8 +38,6 @@ import org.sbolstandard.core2.SequenceAnnotation;
 import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.sbolstandard.core2.TopLevel;
 import org.synbiohub.frontend.SynBioHubException;
-import org.synbiohub.frontend.SynBioHubFrontend;
-import org.synbiohub.frontend.WebOfRegistriesData;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -113,9 +111,9 @@ public class MxToSBOL extends Converter {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename)
-			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
-			SBOLConversionException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException, SynBioHubException {
+	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename) throws SAXException,
+			IOException, ParserConfigurationException, SBOLValidationException, SBOLConversionException,
+			TransformerFactoryConfigurationError, TransformerException, URISyntaxException, SynBioHubException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
@@ -141,7 +139,9 @@ public class MxToSBOL extends Converter {
 					.toArray(mxCell[]::new);
 			for (mxCell circuitContainer : circuitContainers) {
 				// avoid duplicates from aliases in modules
-				if (document.getComponentDefinition(new URI((String) circuitContainer.getValue())) != null)
+//				if (document.getComponentDefinition(new URI((String) circuitContainer.getValue())) != null)
+//					continue;
+				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null)
 					continue;
 				createComponentDefinition(document, graph, model, circuitContainer);
 			}
@@ -192,7 +192,7 @@ public class MxToSBOL extends Converter {
 				linkModuleDefinition(document, graph, model, viewCell);
 			}
 		}
-
+		
 		// write to body
 		SBOLWriter.setKeepGoing(true);
 		SBOLWriter.write(document, sbolStream);
@@ -250,7 +250,7 @@ public class MxToSBOL extends Converter {
 		for (mxCell circuitContainer : circuitContainers) {
 
 			GlyphInfo glyphInfo = glyphInfoDict.get(circuitContainer.getValue());
-			
+
 			FunctionalComponent funcComp = modDef.createFunctionalComponent(
 					glyphInfo.getDisplayID() + "_" + circuitContainer.getId(), AccessType.PUBLIC,
 					URI.create(glyphInfo.getFullURI()), DirectionType.INOUT);
@@ -266,9 +266,9 @@ public class MxToSBOL extends Converter {
 	private void createComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
 			mxCell circuitContainer) throws URISyntaxException, SBOLValidationException,
 			TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
-		
-		// 
-		
+
+		//
+
 		// get the glyph info associated with this view cell
 		GlyphInfo glyphInfo = glyphInfoDict.get(circuitContainer.getValue());
 
@@ -281,13 +281,13 @@ public class MxToSBOL extends Converter {
 		layoutHelper.addGraphicalNode(identity, "backbone", backboneCell);
 
 		// if the uri isn't one of the synbiohub ones, skip the object
-		for(String registry : SBOLData.registries) {
-			if(glyphInfo.getUriPrefix().contains(registry)) {
+		for (String registry : SBOLData.registries) {
+			if (glyphInfo.getUriPrefix().contains(registry)) {
 				document.addRegistry(registry);
 				return;
 			}
 		}
-		
+
 		// if there isn't a uri prefix give it the default
 		if (glyphInfo.getUriPrefix() == null || glyphInfo.getUriPrefix().equals(""))
 			glyphInfo.setUriPrefix(URI_PREFIX);
@@ -315,7 +315,7 @@ public class MxToSBOL extends Converter {
 				compDef.addRole(new URI(role));
 			}
 		}
-		
+
 		compDef.setName(glyphInfo.getName());
 		compDef.setDescription(glyphInfo.getDescription());
 
@@ -331,14 +331,14 @@ public class MxToSBOL extends Converter {
 		if (glyphInfo.getAnnotations() != null) {
 			convertCanvasAnnotations(glyphInfo.getAnnotations(), compDef);
 		}
-		
-		if(glyphInfo.getDerivedFroms() != null) {
-			for(String derivedFrom : glyphInfo.getDerivedFroms()) {
+
+		if (glyphInfo.getDerivedFroms() != null) {
+			for (String derivedFrom : glyphInfo.getDerivedFroms()) {
 				compDef.addWasDerivedFrom(URI.create(derivedFrom));
 			}
 		}
-		
-		//TODO come back to me when the activity objects are round tripping
+
+		// TODO come back to me when the activity objects are round tripping
 //		if(glyphInfo.getGeneratedBys() != null) {
 //			for(String generatedBy : glyphInfo.getGeneratedBys()) {
 //				compDef.addWasGeneratedBy(URI.create(generatedBy));
@@ -393,52 +393,70 @@ public class MxToSBOL extends Converter {
 	private void linkComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
 			mxCell circuitContainer) throws SBOLValidationException, TransformerFactoryConfigurationError,
 			TransformerException, URISyntaxException {
-		
+
 		ComponentDefinition compDef = document.getComponentDefinition(URI.create((String) circuitContainer.getValue()));
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
 				.toArray(mxCell[]::new);
-		Component previous = null;
-		int count = 0, start = 0, end = 0;
-		for (mxCell glyph : glyphs) {
-			GlyphInfo info = glyphInfoDict.get(glyph.getValue());
-			ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
-			Component component = compDef.createComponent(info.getDisplayID() + "_" + glyph.getParent().getIndex(glyph),
-					AccessType.PUBLIC, URI.create((String) glyph.getValue()));
 
-			// cell annotation
-			layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
-			GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
-			layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
-					component.getDefinition().getDisplayId() + "_Reference");
+		if (compDef.getComponents().size() > 0) {
+			// the component definition was pulled in from a registry
+			List<Component> components = compDef.getSortedComponents();
+			for (mxCell glyph : glyphs) {
+				GlyphInfo info = glyphInfoDict.get(glyph.getValue());
+				Component component = components.get(glyph.getParent().getIndex(glyph) - 1);
 
-			// sequence constraints
-			if (previous != null) {
-				compDef.createSequenceConstraint(compDef.getDisplayId() + "Constraint" + count,
-						RestrictionType.PRECEDES, previous.getIdentity(), component.getIdentity());
+				// cell annotation
+				layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
+				GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
+				layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
+						component.getDefinition().getDisplayId() + "_Reference");
 			}
+		} else {
+			// the component definition was created by us and has no components
+			Component previous = null;
+			int count = 0, start = 0, end = 0;
+			for (mxCell glyph : glyphs) {
+				GlyphInfo info = glyphInfoDict.get(glyph.getValue());
+				ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
+				Component component = compDef.createComponent(
+						info.getDisplayID() + "_" + glyph.getParent().getIndex(glyph), AccessType.PUBLIC,
+						URI.create((String) glyph.getValue()));
 
-			// container sequence annotation
-			OrientationType orientation = OrientationType.INLINE;
-			String direction = (String) graph.getCellStyle(glyph).get(mxConstants.STYLE_DIRECTION);
-			if (direction != null && !direction.equals("east")) {
-				orientation = OrientationType.REVERSECOMPLEMENT;
-			}
-			int length = getSequenceLength(document, glyphCD);
-			if (length > 0) {
-				start = end + 1;
-				end = start + length - 1;
-				SequenceAnnotation annotation = compDef.createSequenceAnnotation(
-						compDef.getDisplayId() + "Annotation" + count, "location" + count, start, end, orientation);
-				annotation.setComponent(component.getIdentity());
-			} else {
-				SequenceAnnotation annotation = compDef.createSequenceAnnotation(
-						compDef.getDisplayId() + "Annotation" + count, "location" + count, orientation);
-				annotation.setComponent(component.getIdentity());
-			}
+				// cell annotation
+				layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
+				GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
+				layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
+						component.getDefinition().getDisplayId() + "_Reference");
 
-			previous = component;
-			count++;
+				// sequence constraints
+				if (previous != null) {
+					compDef.createSequenceConstraint(compDef.getDisplayId() + "Constraint" + count,
+							RestrictionType.PRECEDES, previous.getIdentity(), component.getIdentity());
+				}
+
+				// container sequence annotation
+				OrientationType orientation = OrientationType.INLINE;
+				String direction = (String) graph.getCellStyle(glyph).get(mxConstants.STYLE_DIRECTION);
+				if (direction != null && !direction.equals("east")) {
+					orientation = OrientationType.REVERSECOMPLEMENT;
+				}
+				int length = getSequenceLength(document, glyphCD);
+				if (length > 0) {
+					start = end + 1;
+					end = start + length - 1;
+					SequenceAnnotation annotation = compDef.createSequenceAnnotation(
+							compDef.getDisplayId() + "Annotation" + count, "location" + count, start, end, orientation);
+					annotation.setComponent(component.getIdentity());
+				} else {
+					SequenceAnnotation annotation = compDef.createSequenceAnnotation(
+							compDef.getDisplayId() + "Annotation" + count, "location" + count, orientation);
+					annotation.setComponent(component.getIdentity());
+				}
+
+				previous = component;
+				count++;
+			}
 		}
 	}
 
