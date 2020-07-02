@@ -279,7 +279,7 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
-    protected async updateSelectedMolecularSpecies(this: GraphService, info: GlyphInfo){
+    protected async updateSelectedMolecularSpecies(this: GraphService, info: GlyphInfo) {
         this.graph.getModel().beginUpdate();
         try {
             let selectedCells = this.graph.getSelectionCells();
@@ -303,7 +303,7 @@ export class GraphHelpers extends GraphBase {
             let shouldDecouple = false;
             if (oldGlyphURI != newGlyphURI) {
                 let coupledMolecSpec = this.getCoupledMolecularSpecies(selectedCell.getValue());
-                if(coupledMolecSpec.length > 1){
+                if (coupledMolecSpec.length > 1) {
                     // decoupleResult will be "Yes" if they should still be coupled, "No" if not
                     let decoupleResult = await this.promptDeCouple();
                     if (decoupleResult === "Yes") {
@@ -331,30 +331,30 @@ export class GraphHelpers extends GraphBase {
                     }
                 }
 
-                if(!shouldDecouple){
+                if (!shouldDecouple) {
                     this.removeFromGlyphDict(oldGlyphURI);
                 }
-                if(shouldCouple && keepSubstructure){
-                        this.removeFromGlyphDict(newGlyphURI);
-                        this.addToGlyphDict(info);
+                if (shouldCouple && keepSubstructure) {
+                    this.removeFromGlyphDict(newGlyphURI);
+                    this.addToGlyphDict(info);
                 }
                 if (!shouldCouple || keepSubstructure) {
                     // we only don't want to add if we are updating substructure
                     this.addToGlyphDict(info);
                 }
 
-                if(shouldDecouple){
+                if (shouldDecouple) {
                     this.graph.getModel().setValue(selectedCell, newGlyphURI);
-                }else{
-                    for(let cell of coupledMolecSpec){
+                } else {
+                    for (let cell of coupledMolecSpec) {
                         this.graph.getModel().setValue(cell, newGlyphURI);
                     }
                 }
 
-            }else{
+            } else {
                 this.updateGlyphDict(info);
             }
-        }finally{
+        } finally {
             this.graph.getModel().endUpdate();
         }
     }
@@ -463,7 +463,7 @@ export class GraphHelpers extends GraphBase {
                 if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
                     name = "Process";
                 }
-                name = GraphBase.interactionGlyphBaseStyleName + name;
+                name = GraphBase.STYLE_INTERACTION + name;
 
                 // Modify the style string
                 let styleString = selectedCell.style.slice();
@@ -473,7 +473,7 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     // the string is something like "strokecolor=#000000;interactionStyleName;fillcolor=#ffffff;etc;etc;"
                     // we only want to replace the 'glyphStyleName' bit
-                    let startIdx = styleString.indexOf(GraphBase.interactionGlyphBaseStyleName);
+                    let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION);
                     let endIdx = styleString.indexOf(';', startIdx);
                     let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
                     styleString = styleString.replace(stringToReplace, name);
@@ -508,14 +508,14 @@ export class GraphHelpers extends GraphBase {
         try {
             graph.getModel().beginUpdate();
             // make sure the glyph style matches the partRole
-            let newStyleName = GraphBase.sequenceFeatureGlyphBaseStyleName + name;
+            let newStyleName = GraphBase.STYLE_SEQUENCE_FEATURE + name;
 
             // if there's no style for the partRole, use noGlyphAssigned
             let cellStyle = graph.getStylesheet().getCellStyle(newStyleName);
             // if there is no registered style for the newStyleName, getCellStyle returns an empty object.
             // all of our registered styles have several fields, use fillcolor as an example to check
             if (!cellStyle.fillColor)
-                newStyleName = GraphBase.sequenceFeatureGlyphBaseStyleName + GraphBase.noGlyphAssignedName;
+                newStyleName = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.STYLE_NGA;
 
             cells.forEach(function (cell) {
                 if (cell.isSequenceFeatureGlyph()) {
@@ -527,7 +527,7 @@ export class GraphHelpers extends GraphBase {
                     } else {
                         // the string is something like "strokecolor=#000000;glyphStyleName;fillcolor=#ffffff;etc;etc;"
                         // we only want to replace the 'glyphStyleName' bit
-                        let startIdx = styleString.indexOf(GraphBase.sequenceFeatureGlyphBaseStyleName);
+                        let startIdx = styleString.indexOf(GraphBase.STYLE_SEQUENCE_FEATURE);
                         let endIdx = styleString.indexOf(';', startIdx);
                         let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
                         styleString = styleString.replace(stringToReplace, newStyleName);
@@ -807,16 +807,16 @@ export class GraphHelpers extends GraphBase {
         return coupledCells;
     }
 
-    protected getCoupledMolecularSpecies(glyphURI: string){
+    protected getCoupledMolecularSpecies(glyphURI: string) {
         const coupledCells = [];
         const cell1 = this.graph.getModel().getCell("1");
-        for(let viewCell of cell1.children){
-            if(viewCell.isComponentView())
+        for (let viewCell of cell1.children) {
+            if (viewCell.isComponentView())
                 continue;
-            for(let viewChild of viewCell.children){
-                if(!viewChild.isMolecularSpeciesGlyph())
+            for (let viewChild of viewCell.children) {
+                if (!viewChild.isMolecularSpeciesGlyph())
                     continue;
-                if(viewChild.value === glyphURI)
+                if (viewChild.value === glyphURI)
                     coupledCells.push(viewChild);
             }
         }
@@ -1193,11 +1193,11 @@ export class GraphHelpers extends GraphBase {
     protected createViewCell(uri: string): mxCell {
         // construct the view cell
         const cell1 = this.graph.getModel().getCell(1);
-        const childViewCell = this.graph.insertVertex(cell1, uri, '', 0, 0, 0, 0, GraphBase.componentViewCellStyleName);
+        const childViewCell = this.graph.insertVertex(cell1, uri, '', 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
 
         // add the backbone to the view cell
-        const childCircuitContainer = this.graph.insertVertex(childViewCell, null, uri, 0, 0, 0, 0, GraphBase.circuitContainerStyleName);
-        const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, GraphBase.backboneStyleName);
+        const childCircuitContainer = this.graph.insertVertex(childViewCell, null, uri, 0, 0, 0, 0, GraphBase.STYLE_CIRCUIT_CONTAINER);
+        const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, GraphBase.STYLE_BACKBONE);
 
         childCircuitContainerBackbone.setConnectable(false);
         childCircuitContainer.setConnectable(false);

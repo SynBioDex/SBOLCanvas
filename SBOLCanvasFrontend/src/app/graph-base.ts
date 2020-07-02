@@ -1,11 +1,10 @@
 import * as mxEditor from 'mxgraph';
 import * as mxGraph from 'mxgraph';
-import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { InteractionInfo } from './interactionInfo';
 import { GlyphService } from './glyph.service';
-import { GraphEdits } from './graph-edits';
+import { GraphHelpers } from './graph-helpers';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -34,16 +33,16 @@ export class GraphBase {
 
     static readonly defaultInteractionSize = 80;
 
-    static readonly circuitContainerStyleName = 'circuitContainer';
-    static readonly backboneStyleName = 'backbone';
-    static readonly textboxStyleName = 'textBox';
-    static readonly scarStyleName = 'Scar (Assembly Scar)';
-    static readonly noGlyphAssignedName = 'NGA (No Glyph Assigned)';
-    static readonly molecularSpeciesGlyphBaseStyleName = 'molecularSpeciesGlyph';
-    static readonly sequenceFeatureGlyphBaseStyleName = 'sequenceFeatureGlyph';
-    static readonly interactionGlyphBaseStyleName = 'interactionGlyph';
-    static readonly moduleViewCellStyleName = "moduleViewCell";
-    static readonly componentViewCellStyleName = "componentViewCell";
+    static readonly STYLE_CIRCUIT_CONTAINER = 'circuitContainer';
+    static readonly STYLE_BACKBONE = 'backbone';
+    static readonly STYLE_TEXTBOX = 'textBox';
+    static readonly STYLE_SCAR = 'Scar (Assembly Scar)';
+    static readonly STYLE_NGA = 'NGA (No Glyph Assigned)';
+    static readonly STYLE_MOLECULAR_SPECIES = 'molecularSpeciesGlyph';
+    static readonly STYLE_SEQUENCE_FEATURE = 'sequenceFeatureGlyph';
+    static readonly STYLE_INTERACTION = 'interactionGlyph';
+    static readonly STYLE_MODULE_VIEW = "moduleViewCell";
+    static readonly STYLE_COMPONENT_VIEW = "componentViewCell";
 
     static readonly interactionControlName = 'Control';
     static readonly interactionInhibitionName = 'Inhibition';
@@ -71,7 +70,7 @@ export class GraphBase {
     keyHandler: any;
 
     // We can import non native designs. This will be set to true if ceratin annotations weren't found
-    anyForeignCellsFound = false;
+    static anyForeignCellsFound = false;
 
     constructor(protected glyphService: GlyphService) {
         // constructor code is divided into helper methods for organization,
@@ -96,6 +95,8 @@ export class GraphBase {
         // it's used mainly for 'actions', which for now means delete, later will mean undoing
         this.editor = new mx.mxEditor();
         this.graph = this.editor.graph;
+        // edges shouldn't find the nearest common ancestor
+        this.graph.getModel().maintainEdgeParent = false;
         this.editor.setGraphContainer(this.graphContainer);
 
         this.graph.setCellsCloneable(false);
@@ -126,7 +127,7 @@ export class GraphBase {
 
         // initalize the root view cell of the graph
         const cell1 = this.graph.getModel().getCell(1);
-        const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, GraphBase.moduleViewCellStyleName);
+        const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
         this.graph.enterGroup(rootViewCell);
         this.viewStack = [];
         this.viewStack.push(rootViewCell);
@@ -219,24 +220,41 @@ export class GraphBase {
 
             // check for format conditions
             if ((cell.isCircuitContainer() && cell.getParent().getId() === "rootView" || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0) {
-                this.anyForeignCellsFound = true;
+                GraphBase.anyForeignCellsFound = true;
+            }
+
+            let reconstructCellStyle = false;
+            if (cell && cell.id > 1 && !cell.isViewCell()) {
+                if (!cell.style || cell.style.length == 0)
+                    reconstructCellStyle = true;
+                else if (cell.getGeometry().height == 0)
+                    reconstructCellStyle = true;
+                else if (cell.style.includes(GraphBase.STYLE_SEQUENCE_FEATURE) && !cell.style.includes(glyphDict[cell.value].partRole))
+                    reconstructCellStyle = true;
+                else if (cell.style === GraphBase.STYLE_MOLECULAR_SPECIES || cell.style.includes(GraphBase.STYLE_MOLECULAR_SPECIES+";"))
+                    reconstructCellStyle = true;
             }
 
             // reconstruct the cell style
-            if (cell && cell.id > 1 && (cell.style == null || cell.style.length == 0 || (!cell.isViewCell() && cell.getGeometry().height == 0))) {
+            if (reconstructCellStyle) {
                 if (glyphDict[cell.value] != null) {
                     if (glyphDict[cell.value].partType === 'DNA region') {
                         // sequence feature
                         if (!cell.style) {
-                            cell.style = GraphBase.sequenceFeatureGlyphBaseStyleName + glyphDict[cell.value].partRole;
+                            cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole;
                         } else {
-                            cell.style = cell.style.replace(GraphBase.sequenceFeatureGlyphBaseStyleName, GraphBase.sequenceFeatureGlyphBaseStyleName + glyphDict[cell.value].partRole);
+                            cell.style = cell.style.replace(GraphBase.STYLE_SEQUENCE_FEATURE, GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole);
                         }
-                        cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth;
-                        cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
+                        if (cell.geometry.width == 0)
+                            cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth;
+                        if (cell.geometry.height == 0)
+                            cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
                     } else {
                         // molecular species
-                        cell.style = GraphBase.molecularSpeciesGlyphBaseStyleName + "macromolecule";
+                        if(!cell.style)
+                            cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
+                        else
+                            cell.style = cell.style.replace(GraphBase.STYLE_MOLECULAR_SPECIES, GraphBase.STYLE_MOLECULAR_SPECIES + GraphBase.moleculeTypeToName(glyphDict[cell.value].partType))
                         cell.geometry.width = GraphBase.molecularSpeciesGlyphWidth;
                         cell.geometry.height = GraphBase.molecularSpeciesGlyphHeight;
                     }
@@ -246,7 +264,11 @@ export class GraphBase {
                     if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
                         name = "Process";
                     }
-                    cell.style = GraphBase.interactionGlyphBaseStyleName + name;
+                    if (!cell.style) {
+                        cell.style = GraphBase.STYLE_INTERACTION + name;
+                    } else {
+                        cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION, GraphBase.STYLE_INTERACTION + name);
+                    }
                 }
             }
 
@@ -271,39 +293,39 @@ export class GraphBase {
         };
 
         mx.mxCell.prototype.isBackbone = function () {
-            return this.isStyle(GraphBase.backboneStyleName);
+            return this.isStyle(GraphBase.STYLE_BACKBONE);
         };
 
         mx.mxCell.prototype.isMolecularSpeciesGlyph = function () {
-            return this.isStyle(GraphBase.molecularSpeciesGlyphBaseStyleName);
+            return this.isStyle(GraphBase.STYLE_MOLECULAR_SPECIES);
         };
 
         mx.mxCell.prototype.isCircuitContainer = function () {
-            return this.isStyle(GraphBase.circuitContainerStyleName);
+            return this.isStyle(GraphBase.STYLE_CIRCUIT_CONTAINER);
         };
 
         mx.mxCell.prototype.isSequenceFeatureGlyph = function () {
-            return this.isStyle(GraphBase.sequenceFeatureGlyphBaseStyleName);
+            return this.isStyle(GraphBase.STYLE_SEQUENCE_FEATURE);
         };
 
         mx.mxCell.prototype.isScar = function () {
-            return this.isStyle(GraphBase.scarStyleName);
+            return this.isStyle(GraphBase.STYLE_SCAR);
         };
 
         mx.mxCell.prototype.isInteraction = function () {
-            return this.isStyle(GraphBase.interactionGlyphBaseStyleName);
+            return this.isStyle(GraphBase.STYLE_INTERACTION);
         }
 
         mx.mxCell.prototype.isViewCell = function () {
-            return this.isStyle(GraphBase.moduleViewCellStyleName) || this.isStyle(GraphBase.componentViewCellStyleName);
+            return this.isStyle(GraphBase.STYLE_MODULE_VIEW) || this.isStyle(GraphBase.STYLE_COMPONENT_VIEW);
         }
 
         mx.mxCell.prototype.isModuleView = function () {
-            return this.isStyle(GraphBase.moduleViewCellStyleName);
+            return this.isStyle(GraphBase.STYLE_MODULE_VIEW);
         }
 
         mx.mxCell.prototype.isComponentView = function () {
-            return this.isStyle(GraphBase.componentViewCellStyleName);
+            return this.isStyle(GraphBase.STYLE_COMPONENT_VIEW);
         }
 
         /**
@@ -544,7 +566,7 @@ export class GraphBase {
      * Can only be called before this.graph is initialized
      */
     initStyles() {
-        
+
         // Main glyph settings. These are applied to sequence feature glyphs and molecular species glyphs
         this.baseMolecularSpeciesGlyphStyle = {};
         this.baseMolecularSpeciesGlyphStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
@@ -570,7 +592,7 @@ export class GraphBase {
         textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
         textBoxStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
         textBoxStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
-        this.graph.getStylesheet().putCellStyle(GraphBase.textboxStyleName, textBoxStyle);
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_TEXTBOX, textBoxStyle);
 
         const circuitContainerStyle = {};
         circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
@@ -579,7 +601,7 @@ export class GraphBase {
         circuitContainerStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
         circuitContainerStyle[mx.mxConstants.STYLE_EDITABLE] = false;
         circuitContainerStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
-        this.graph.getStylesheet().putCellStyle(GraphBase.circuitContainerStyleName, circuitContainerStyle);
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_CIRCUIT_CONTAINER, circuitContainerStyle);
 
         const backboneStyle = {};
         backboneStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LINE;
@@ -587,7 +609,7 @@ export class GraphBase {
         backboneStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
         backboneStyle[mx.mxConstants.STYLE_RESIZABLE] = 0;
         backboneStyle[mx.mxConstants.STYLE_EDITABLE] = false;
-        this.graph.getStylesheet().putCellStyle(GraphBase.backboneStyleName, backboneStyle);
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_BACKBONE, backboneStyle);
 
         // Interaction styles
         const baseInteractionGlyphStyle = {};
@@ -601,26 +623,26 @@ export class GraphBase {
 
         const interactionControlStyle = mx.mxUtils.clone(baseInteractionGlyphStyle); // Inherit from the interaction defaults.
         interactionControlStyle[mx.mxConstants.STYLE_ENDARROW] = mx.mxConstants.ARROW_DIAMOND;
-        this.graph.getStylesheet().putCellStyle(GraphBase.interactionGlyphBaseStyleName + GraphBase.interactionControlName, interactionControlStyle);
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION + GraphBase.interactionControlName, interactionControlStyle);
 
         const interactionInhibitionStyle = mx.mxUtils.clone(baseInteractionGlyphStyle);
         interactionInhibitionStyle[mx.mxConstants.STYLE_ENDARROW] = GraphBase.interactionInhibitionName;
         interactionInhibitionStyle[mx.mxConstants.STYLE_ENDSIZE] = 15;
-        this.graph.getStylesheet().putCellStyle(GraphBase.interactionGlyphBaseStyleName + GraphBase.interactionInhibitionName, interactionInhibitionStyle);
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION + GraphBase.interactionInhibitionName, interactionInhibitionStyle);
 
         const interactionStimulationStyle = mx.mxUtils.clone(baseInteractionGlyphStyle);
         interactionStimulationStyle[mx.mxConstants.STYLE_ENDARROW] = mx.mxConstants.ARROW_BLOCK;
-        this.graph.getStylesheet().putCellStyle(GraphBase.interactionGlyphBaseStyleName + GraphBase.interactionStimulationName, interactionStimulationStyle);
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION + GraphBase.interactionStimulationName, interactionStimulationStyle);
 
         const interactionProcessStyle = mx.mxUtils.clone(baseInteractionGlyphStyle);
         interactionProcessStyle[mx.mxConstants.STYLE_ENDARROW] = mx.mxConstants.ARROW_BLOCK;
         interactionProcessStyle[mx.mxConstants.STYLE_ENDFILL] = 1;
-        this.graph.getStylesheet().putCellStyle(GraphBase.interactionGlyphBaseStyleName + GraphBase.interactionProcessName, interactionProcessStyle);
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION + GraphBase.interactionProcessName, interactionProcessStyle);
 
         const interactionDegradationStyle = mx.mxUtils.clone(baseInteractionGlyphStyle);
         interactionDegradationStyle[mx.mxConstants.STYLE_ENDARROW] = GraphBase.interactionDegradationName;
         interactionDegradationStyle[mx.mxConstants.STYLE_ENDSIZE] = 20;
-        this.graph.getStylesheet().putCellStyle(GraphBase.interactionGlyphBaseStyleName + GraphBase.interactionDegradationName, interactionDegradationStyle);
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION + GraphBase.interactionDegradationName, interactionDegradationStyle);
     }
 
     /**
@@ -658,7 +680,7 @@ export class GraphBase {
 
             const newGlyphStyle = mx.mxUtils.clone(this.baseSequenceFeatureGlyphStyle);
             newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
-            this.graph.getStylesheet().putCellStyle(GraphBase.sequenceFeatureGlyphBaseStyleName + name, newGlyphStyle);
+            this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_SEQUENCE_FEATURE + name, newGlyphStyle);
         }
 
         // molecularSpecies glyphs are simpler, since we don't have to morph
@@ -671,7 +693,7 @@ export class GraphBase {
 
             const newGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
             newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
-            this.graph.getStylesheet().putCellStyle(GraphBase.molecularSpeciesGlyphBaseStyleName + name, newGlyphStyle);
+            this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MOLECULAR_SPECIES + name, newGlyphStyle);
         }
 
         // *** Define custom markers for edge endpoints ***
@@ -846,12 +868,12 @@ export class GraphBase {
 
                 // sync circuit containers
                 let circuitContainers = new Set<mxCell>();
-                for(let movedCell of movedCells){
-                    if(movedCell.isSequenceFeatureGlyph()){
+                for (let movedCell of movedCells) {
+                    if (movedCell.isSequenceFeatureGlyph()) {
                         circuitContainers.add(movedCell.getParent());
                     }
                 }
-                for(let circuitContainer of Array.from(circuitContainers.values())){
+                for (let circuitContainer of Array.from(circuitContainers.values())) {
                     this.syncCircuitContainer(circuitContainer);
                 }
 
@@ -870,6 +892,44 @@ export class GraphBase {
                 }
             }
         }));
+    }
+
+    protected moleculeNameToType(name: string) {
+        switch (name) {
+            case "dsNA":
+                return "DNA molecule";
+            case "macromolecule":
+                return "Protein";
+            case "NGA (No Glyph Assigned Molecular Species)":
+                return "Protein";
+            case "small-molecule":
+                return "Small molecule";
+            case "ssNA":
+                return "RNA molecule";
+            case "replacement-glyph":
+                return "All_types";
+            default:
+                return "Protein";
+        }
+    }
+
+    static moleculeTypeToName(type: string){
+        switch (type) {
+            case "DNA molecule":
+                return "dsNA";
+            case "Protein":
+                return "macromolecule";
+            case "Protein":
+                return "NGA (No Glyph Assigned Molecular Species)";
+            case "Small molecule":
+                return "small-molecule";
+            case "RNA molecule":
+                return "ssNA";
+            case "All_types":
+                return "replacement-glyph";
+            default:
+                return "NGA (No Glyph Assigned Molecular Species)";
+        }
     }
 
 }

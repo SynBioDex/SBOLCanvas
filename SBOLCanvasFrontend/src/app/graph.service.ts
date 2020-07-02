@@ -232,8 +232,8 @@ export class GraphService extends GraphHelpers {
       } else {
         glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
       }
-      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.circuitContainerStyleName);
-      const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, GraphBase.sequenceFeatureGlyphHeight / 2, GraphBase.sequenceFeatureGlyphWidth, 1, GraphBase.backboneStyleName);
+      const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_CIRCUIT_CONTAINER);
+      const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, GraphBase.sequenceFeatureGlyphHeight / 2, GraphBase.sequenceFeatureGlyphWidth, 1, GraphBase.STYLE_BACKBONE);
 
       backbone.refreshBackbone(this.graph);
 
@@ -503,7 +503,7 @@ export class GraphService extends GraphHelpers {
     this.graph.getModel().beginUpdate();
     try {
       // Make sure scars are/become visible if we're adding one
-      if (name.includes(GraphBase.scarStyleName) && !this.showingScars) {
+      if (name.includes(GraphBase.STYLE_SCAR) && !this.showingScars) {
         this.toggleScars();
       }
 
@@ -526,7 +526,7 @@ export class GraphService extends GraphHelpers {
       this.addToGlyphDict(glyphInfo);
 
       // Insert new glyph and its components
-      const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.sequenceFeatureGlyphBaseStyleName + name);
+      const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_SEQUENCE_FEATURE + name);
 
       this.createViewCell(glyphInfo.getFullURI());
       sequenceFeatureCell.setConnectable(true);
@@ -587,32 +587,11 @@ export class GraphService extends GraphHelpers {
 
       //TODO partRoles for proteins
       let proteinInfo = new GlyphInfo();
-      switch (name) {
-        case "dsNA":
-          proteinInfo.partType = "DNA molecule";
-          break;
-        case "macromolecule":
-          proteinInfo.partType = "Protein";
-          break;
-        case "NGA (No Glyph Assigned Molecular Species)":
-          proteinInfo.partType = "Protein";
-          break;
-        case "small-molecule":
-          proteinInfo.partType = "Small molecule";
-          break;
-        case "ssNA":
-          proteinInfo.partType = "RNA molecule";
-          break;
-        case "replacement-glyph":
-          proteinInfo.partType = "All_types";
-          break;
-        default:
-          proteinInfo.partType = "Protein";
-      }
+      proteinInfo.partType = this.moleculeNameToType(name);
       this.addToGlyphDict(proteinInfo);
 
       const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, proteinInfo.getFullURI(), x, y,
-        GraphBase.molecularSpeciesGlyphWidth, GraphBase.molecularSpeciesGlyphHeight, GraphBase.molecularSpeciesGlyphBaseStyleName + name);
+        GraphBase.molecularSpeciesGlyphWidth, GraphBase.molecularSpeciesGlyphHeight, GraphBase.STYLE_MOLECULAR_SPECIES + name);
       molecularSpeciesGlyph.setConnectable(true);
 
       // The new glyph should be selected
@@ -670,24 +649,24 @@ export class GraphService extends GraphHelpers {
 
     this.graph.getModel().beginUpdate();
     try {
-      cell = new mx.mxCell(new InteractionInfo(), new mx.mxGeometry(x, y, 0, 0), GraphBase.interactionGlyphBaseStyleName + name);
+      cell = new mx.mxCell(new InteractionInfo(), new mx.mxGeometry(x, y, 0, 0), GraphBase.STYLE_INTERACTION + name);
 
       const selectionCells = this.graph.getSelectionCells();
       if (selectionCells.length == 1) {
         const selectedCell = this.graph.getSelectionCell();
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
-        this.graph.addEdge(cell, null, selectedCell, null);
+        this.graph.addEdge(cell, this.graph.getCurrentRoot(), selectedCell, null);
       } else if (selectionCells.length == 2) {
         const sourceCell = selectionCells[0];
         const destCell = selectionCells[1];
         cell.edge = true;
-        this.graph.addEdge(cell, null, sourceCell, destCell);
+        this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);
       } else {
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y + GraphBase.defaultInteractionSize), true);
         cell.geometry.setTerminalPoint(new mx.mxPoint(x + GraphBase.defaultInteractionSize, y), false);
         cell.edge = true;
-        this.graph.addEdge(cell, null, null, null);
+        this.graph.addEdge(cell, this.graph.getCurrentRoot(), null, null);
       }
 
 
@@ -732,7 +711,7 @@ export class GraphService extends GraphHelpers {
   addTextBoxAt(x, y) {
     this.graph.getModel().beginUpdate();
     try {
-      const cell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', x, y, GraphBase.defaultTextWidth, GraphBase.defaultTextHeight, GraphBase.textboxStyleName);
+      const cell = this.graph.insertVertex(this.graph.getDefaultParent(), null, 'Sample Text', x, y, GraphBase.defaultTextWidth, GraphBase.defaultTextHeight, GraphBase.STYLE_TEXTBOX);
       cell.setConnectable(false);
 
       // The new cell should be selected
@@ -909,7 +888,7 @@ export class GraphService extends GraphHelpers {
    * and uses it to replace the current graph
    */
   setGraphToXML(graphString: string) {
-    this.anyForeignCellsFound = false;
+    GraphBase.anyForeignCellsFound = false;
     this.graph.home();
     this.graph.getModel().clear();
 
@@ -938,10 +917,10 @@ export class GraphService extends GraphHelpers {
         element.refreshCircuitContainer(this.graph);
     });
 
-    if (this.anyForeignCellsFound) {
+    if (GraphBase.anyForeignCellsFound) {
       console.log("FORMATTING !!!!!!!!!!!!!!!!");
       this.autoFormat();
-      this.anyForeignCellsFound = false;
+      GraphBase.anyForeignCellsFound = false;
     }
 
     this.fitCamera();
@@ -1126,13 +1105,13 @@ export class GraphService extends GraphHelpers {
 
     // initalize the root view cell of the graph
     if (moduleMode) {
-      rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, GraphBase.moduleViewCellStyleName);
+      rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
       this.graph.enterGroup(rootViewCell);
       this.viewStack.push(rootViewCell);
     } else {
       let info = new GlyphInfo();
       this.addToGlyphDict(info);
-      rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, GraphBase.componentViewCellStyleName);
+      rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
       this.graph.enterGroup(rootViewCell);
       this.viewStack.push(rootViewCell);
       this.addBackbone();

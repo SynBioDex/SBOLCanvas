@@ -20,7 +20,8 @@ import org.sbolstandard.core2.SBOLConversionException;
 import org.sbolstandard.core2.SBOLValidationException;
 import org.xml.sax.SAXException;
 
-import utils.Converter;
+import utils.MxToSBOL;
+import utils.SBOLToMx;
 
 @SuppressWarnings("serial")
 @WebServlet(urlPatterns = { "/convert/*" })
@@ -34,10 +35,10 @@ public class Convert extends HttpServlet {
 					response.setStatus(HttpStatus.SC_BAD_REQUEST);
 					return;
 				}
-				Converter converter = new Converter();
+				MxToSBOL converter = new MxToSBOL();
 				converter.toSBOL(request.getInputStream(), response.getOutputStream(), name);
 			} else if (request.getPathInfo().equals("/toMxGraph")) {
-				Converter converter = new Converter();
+				SBOLToMx converter = new SBOLToMx();
 				converter.toGraph(request.getInputStream(), response.getOutputStream());
 			} else {
 				response.setStatus(HttpStatus.SC_METHOD_NOT_ALLOWED);
