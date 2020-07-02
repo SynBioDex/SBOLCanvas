@@ -5,8 +5,13 @@
       <input hidden (change)="onFileSelected()" #fileInput type="file" id="file">
       <mat-label>{{filename}}</mat-label>
   </div>
+
+  <div *ngIf="working">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+
   <div mat-dialog-actions>
       <button mat-button (click)="onCancelClick()">Cancel</button>
-      <button mat-button [mat-dialog-close]="data.file">Ok</button>
+      <button mat-button [disabled]="!finishCheck()" (click)="onOkClick()">Ok</button>
   </div>
 </mat-card>

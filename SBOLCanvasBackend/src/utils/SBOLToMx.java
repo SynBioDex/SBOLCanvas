@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
@@ -56,7 +57,7 @@ public class SBOLToMx extends Converter {
 	public SBOLToMx() {
 		glyphInfoDict = new Hashtable<String, GlyphInfo>();
 	}
-	
+
 	public void toGraph(InputStream sbolStream, OutputStream graphStream)
 			throws SBOLValidationException, IOException, SBOLConversionException, ParserConfigurationException,
 			TransformerException, SAXException, URISyntaxException {
@@ -77,7 +78,7 @@ public class SBOLToMx extends Converter {
 		model.setMaintainEdgeParent(false);
 		mxCell cell0 = (mxCell) model.getCell("0");
 		cell0.setValue(glyphInfoDict);
-		
+
 		layoutHelper = new LayoutHelper(document, graph);
 
 		ModuleDefinition modDef = null;
@@ -85,21 +86,8 @@ public class SBOLToMx extends Converter {
 			modDef = document.getRootModuleDefinitions().iterator().next();
 		}
 
-		// scan through components to ensure we have the correct registries set up
-		for(ComponentDefinition compDef : document.getComponentDefinitions()) {
-			for(Component comp : compDef.getComponents()) {
-				for(String registry : SBOLData.registries) {
-					if(comp.getDefinitionURI().toString().contains(registry)) {
-						document.addRegistry(registry);
-						document.getComponentDefinition(comp.getDefinitionURI());
-						break;
-					}
-				}
-			}
-		}
-		
 		// top level component definitions
-		Set<ComponentDefinition> compDefs = document.getComponentDefinitions();
+		Set<ComponentDefinition> compDefs = getComponentDefinitions(document);
 		Set<ComponentDefinition> handledCompDefs = new HashSet<ComponentDefinition>();
 		if (modDef != null) {
 			handledCompDefs = createModuleView(document, graph, modDef);
@@ -134,7 +122,7 @@ public class SBOLToMx extends Converter {
 		cell0.setValue(glyphInfoDict);
 
 		layoutHelper = new LayoutHelper(document, graph);
-		
+
 		// top level component definition
 		ComponentDefinition rootCompDef = document.getRootComponentDefinitions().iterator().next();
 
@@ -149,7 +137,7 @@ public class SBOLToMx extends Converter {
 		// convert the objects to the graph xml
 		graphStream.write(encodeMxGraphObject(model).getBytes());
 	}
-	
+
 	private Set<ComponentDefinition> createModuleView(SBOLDocument document, mxGraph graph, ModuleDefinition modDef)
 			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
 			URISyntaxException {
@@ -163,7 +151,7 @@ public class SBOLToMx extends Converter {
 		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0, STYLE_MODULE_VIEW);
 
 		// text boxes
-		
+
 		mxCell[] textBoxes = layoutHelper.getGraphicalObjects(modDef.getIdentity(), "textBox");
 		if (textBoxes != null) {
 			for (mxCell textBox : textBoxes) {
@@ -250,7 +238,8 @@ public class SBOLToMx extends Converter {
 			double maxX = 0;
 			for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 				Component glyphComponent = glyphArray[glyphIndex];
-				mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(), glyphComponent.getDisplayId());
+				mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(),
+						glyphComponent.getDisplayId());
 				if (glyphCell != null) {
 					glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
 					if (glyphCell.getStyle() != null)
@@ -332,7 +321,7 @@ public class SBOLToMx extends Converter {
 		// create the glyphInfo and store it in the dictionary
 		GlyphInfo info = genGlyphInfo(compDef);
 		glyphInfoDict.put(info.getFullURI(), info);
-		
+
 		// create the top view cell
 		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0,
 				STYLE_COMPONENT_VIEW);
@@ -352,8 +341,8 @@ public class SBOLToMx extends Converter {
 		// add the container cell and backbone
 		mxCell container = layoutHelper.getGraphicalObject(compDef.getIdentity(), "container");
 		if (container != null) {
-			if(container.getStyle() != null)
-				container.setStyle(STYLE_CIRCUIT_CONTAINER+";"+container.getStyle());
+			if (container.getStyle() != null)
+				container.setStyle(STYLE_CIRCUIT_CONTAINER + ";" + container.getStyle());
 			else
 				container.setStyle(STYLE_CIRCUIT_CONTAINER);
 			container.setValue(compDef.getIdentity().toString());
@@ -382,8 +371,8 @@ public class SBOLToMx extends Converter {
 			double maxX = 0;
 			if (glyphCell != null) {
 				maxX = glyphCell.getGeometry().getX();
-				if(glyphCell.getStyle() != null)
-					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE+";"+glyphCell.getStyle());
+				if (glyphCell.getStyle() != null)
+					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE + ";" + glyphCell.getStyle());
 				else
 					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE);
 				glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
@@ -405,7 +394,7 @@ public class SBOLToMx extends Converter {
 
 		}
 	}
-	
+
 	private GlyphInfo genGlyphInfo(ComponentDefinition glyphCD) {
 		GlyphInfo glyphInfo = new GlyphInfo();
 		glyphInfo.setDescription(glyphCD.getDescription());
@@ -450,55 +439,87 @@ public class SBOLToMx extends Converter {
 		else
 			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
 		glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
-		
-		if(glyphCD.getWasDerivedFroms() != null && glyphCD.getWasDerivedFroms().size() > 0) {
+
+		if (glyphCD.getWasDerivedFroms() != null && glyphCD.getWasDerivedFroms().size() > 0) {
 			String[] derivedFroms = new String[glyphCD.getWasDerivedFroms().size()];
 			int index = 0;
-			for(URI derivedFrom : glyphCD.getWasDerivedFroms()) {
+			for (URI derivedFrom : glyphCD.getWasDerivedFroms()) {
 				derivedFroms[index] = derivedFrom.toString();
 				index++;
 			}
 			glyphInfo.setDerivedFroms(derivedFroms);
 		}
-		
-		if(glyphCD.getWasGeneratedBys() != null && glyphCD.getWasGeneratedBys().size() > 0) {
+
+		if (glyphCD.getWasGeneratedBys() != null && glyphCD.getWasGeneratedBys().size() > 0) {
 			String[] generatedBys = new String[glyphCD.getWasGeneratedBys().size()];
 			int index = 0;
-			for(URI generatedBy : glyphCD.getWasGeneratedBys()) {
+			for (URI generatedBy : glyphCD.getWasGeneratedBys()) {
 				generatedBys[index] = generatedBy.toString();
 				index++;
 			}
 			glyphInfo.setGeneratedBys(generatedBys);
 		}
-		
+
 		glyphInfo.setAnnotations(convertSBOLAnnotations(glyphCD.getAnnotations()));
 		return glyphInfo;
 	}
-	
+
 	private InteractionInfo genInteractionInfo(Interaction interaction) {
 		InteractionInfo info = new InteractionInfo();
 		info.setDisplayID(interaction.getDisplayId());
 		info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
 		return info;
 	}
-	
-	private static CanvasAnnotation[] convertSBOLAnnotations(List<Annotation> annotations){
+
+	/**
+	 * Returns all the component definitions that this document should contain,
+	 * including ones obtained from registries
+	 * 
+	 * @return
+	 */
+	private static Set<ComponentDefinition> getComponentDefinitions(SBOLDocument document) {
+		// scan through components to ensure we have the correct registries set up
+		// and set up a component definition set as document.getComponentDefinitions
+		// doesn't give us all the dependents
+		Set<ComponentDefinition> compDefs = new HashSet<ComponentDefinition>();
+		Stack<ComponentDefinition> compDefStack = new Stack<ComponentDefinition>();
+		compDefStack.addAll(document.getComponentDefinitions());
+		while (compDefStack.size() > 0) {
+			ComponentDefinition compDef = compDefStack.pop();
+			if (compDefs.contains(compDef))
+				continue;
+			compDefs.add(compDef);
+			for (Component comp : compDef.getComponents()) {
+				for(String registry : SBOLData.registries) {
+					if(comp.getDefinitionURI().toString().contains(registry)) {
+						document.addRegistry(registry);
+						compDefStack.push(document.getComponentDefinition(comp.getDefinitionURI()));
+						break;
+					}
+				}
+			}
+		}
+		
+		return compDefs;
+	}
+
+	private static CanvasAnnotation[] convertSBOLAnnotations(List<Annotation> annotations) {
 		List<CanvasAnnotation> canvasAnnotations = new ArrayList<CanvasAnnotation>();
-		for(Annotation annotation : annotations) {
+		for (Annotation annotation : annotations) {
 			CanvasAnnotation canvasAnn = new CanvasAnnotation();
 			canvasAnn.setQName(annotation.getQName());
-			if(annotation.getStringValue() != null) {
+			if (annotation.getStringValue() != null) {
 				canvasAnn.setStringValue(annotation.getStringValue());
-			}else if(annotation.getURIValue() != null) {
+			} else if (annotation.getURIValue() != null) {
 				canvasAnn.setUriValue(annotation.getURIValue());
-			}else if(annotation.getAnnotations() != null) {
+			} else if (annotation.getAnnotations() != null) {
 				canvasAnn.setAnnotations(convertSBOLAnnotations(annotation.getAnnotations()));
 			}
 			canvasAnnotations.add(canvasAnn);
 		}
 		return canvasAnnotations.toArray(new CanvasAnnotation[0]);
 	}
-	
+
 	private String encodeMxGraphObject(Object obj) throws TransformerFactoryConfigurationError, TransformerException {
 		mxCodec codec = new mxCodec();
 		Node cellNode = codec.encode(obj);
@@ -509,7 +530,7 @@ public class SBOLToMx extends Converter {
 		t.transform(new DOMSource(cellNode), new StreamResult(sw));
 		return sw.toString();
 	}
-	
+
 //	private Object decodeMxGraphObject(String xml) throws SAXException, IOException, ParserConfigurationException {
 //		Document stringDoc = mxXmlUtils.parseXml(xml);
 //		mxCodec codec = new mxCodec(stringDoc);
@@ -517,5 +538,5 @@ public class SBOLToMx extends Converter {
 //		Object obj = codec.decode(node);
 //		return obj;
 //	}
-	
+
 }

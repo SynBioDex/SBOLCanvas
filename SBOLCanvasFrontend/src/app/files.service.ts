@@ -44,25 +44,32 @@ export class FilesService {
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
   }
 
-  loadLocal(file: File, graphService: GraphService) {
-    if (typeof (FileReader) !== 'undefined') {
-      const reader = new FileReader();
-
-      reader.onload = (e: any) => {
-        this.convertToMxGraph(String(reader.result)).subscribe(result => {
-          graphService.setGraphToXML(result);
-        });
-      };
-
-      reader.readAsText(file);
-    }
-
+  loadLocal(file: File, graphService: GraphService): Observable<void>{
+    return new Observable<void>( observer => {
+      if (typeof (FileReader) !== 'undefined') {
+        const reader = new FileReader();
+  
+        reader.onload = (e: any) => {
+          this.convertToMxGraph(String(reader.result)).subscribe(result => {
+            graphService.setGraphToXML(result);
+            observer.next();
+          });
+        };
+  
+        reader.readAsText(file);
+      }else{
+        observer.next();
+      }
+    });
   }
 
-  saveLocal(filename: string, contents: string) {
-    this.convertToSBOL(contents, filename).subscribe(result => {
-      var file = new File([result], filename + ".xml", { type: 'text/plain;charset=utf-8' });
-      FileSaver.saveAs(file);
+  saveLocal(filename: string, contents: string): Observable<void> {
+    return new Observable<void>( observer => {
+      this.convertToSBOL(contents, filename).subscribe(result => {
+        var file = new File([result], filename + ".xml", { type: 'text/plain;charset=utf-8' });
+        FileSaver.saveAs(file);
+        observer.next();
+      });
     });
   }
 

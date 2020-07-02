@@ -255,7 +255,7 @@ public class SynBioHub extends HttpServlet {
 				}
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
-				MxToSBOL converter = new MxToSBOL();
+				MxToSBOL converter = new MxToSBOL(user);
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				converter.toSBOL(request.getInputStream(), out, name);
 				sbhf.addToCollection(URI.create(uri), true, new ByteArrayInputStream(out.toByteArray()));

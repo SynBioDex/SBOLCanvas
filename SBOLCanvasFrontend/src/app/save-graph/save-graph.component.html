@@ -6,8 +6,13 @@
       <input matInput [(ngModel)]="data.filename">
     </mat-form-field>
   </div>
+
+  <div *ngIf="working">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+
   <div mat-dialog-actions>
     <button mat-button (click)="onCancelClick()">Cancel</button>
-    <button mat-button [mat-dialog-close]="data.filename" cdkFocusInitial>Ok</button>
+    <button mat-button [disabled]="!finishCheck()" (click)="onOkClick()" cdkFocusInitial>Ok</button>
   </div>
 </mat-card>

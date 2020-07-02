@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -106,18 +107,28 @@ public class MxToSBOL extends Converter {
 		}
 	};
 
+	private String userToken;
+	
 	public MxToSBOL() {
-		glyphInfoDict = new Hashtable<String, GlyphInfo>();
+		this(null);
 	}
-
+	
+	public MxToSBOL(String userToken) {
+		glyphInfoDict = new Hashtable<String, GlyphInfo>();
+		this.userToken = userToken;
+	}
+	
 	@SuppressWarnings("unchecked")
-	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename) throws SAXException,
-			IOException, ParserConfigurationException, SBOLValidationException, SBOLConversionException,
-			TransformerFactoryConfigurationError, TransformerException, URISyntaxException, SynBioHubException {
+	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename)
+			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
+			SBOLConversionException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException,
+			SynBioHubException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		glyphInfoDict = (Hashtable<String, GlyphInfo>) ((mxCell) model.getCell("0")).getValue();
+
+		enforceChildOrdering(model, graph);
 
 		// create the document
 		SBOLDocument document = new SBOLDocument();
@@ -192,7 +203,7 @@ public class MxToSBOL extends Converter {
 				linkModuleDefinition(document, graph, model, viewCell);
 			}
 		}
-		
+
 		// write to body
 		SBOLWriter.setKeepGoing(true);
 		SBOLWriter.write(document, sbolStream);
@@ -282,8 +293,9 @@ public class MxToSBOL extends Converter {
 
 		// if the uri isn't one of the synbiohub ones, skip the object
 		for (String registry : SBOLData.registries) {
-			if (glyphInfo.getUriPrefix().contains(registry)) {
+			if (glyphInfo.getUriPrefix().contains(registry) && (userToken != null || glyphInfo.getUriPrefix().contains("/public/"))) {
 				document.addRegistry(registry);
+				document.getRegistry(registry).setUser(userToken);
 				return;
 			}
 		}
@@ -515,6 +527,54 @@ public class MxToSBOL extends Converter {
 		}
 
 		return annotations;
+	}
+
+	/**
+	 * Enforces that children of circuit containers start with the backbone, and are
+	 * then sorted by their x position.
+	 * 
+	 * @param model
+	 * @param graph
+	 */
+	private static void enforceChildOrdering(mxGraphModel model, mxGraph graph) {
+		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
+				.toArray(mxCell[]::new);
+
+		for (mxCell viewCell : viewCells) {
+			mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
+					.toArray(mxCell[]::new);
+			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+					.toArray(mxCell[]::new);
+			for (mxCell circuitContainer : circuitContainers) {
+				// get the children of the circuit container
+				mxCell[] containerChildren = Arrays
+						.stream(mxGraphModel.getChildCells(model, circuitContainer, true, false))
+						.toArray(mxCell[]::new);
+				// sort the children based on x with the backbone at the 0'th position
+				Arrays.sort(containerChildren, new Comparator<mxCell>() {
+					@Override
+					public int compare(mxCell o1, mxCell o2) {
+						if (o1.getStyle().contains(STYLE_BACKBONE))
+							return -1;
+						else if (o2.getStyle().contains(STYLE_BACKBONE)) {
+							return -1;
+						} else {
+							return o1.getGeometry().getX() < o2.getGeometry().getX() ? -1 : 1;
+						}
+					}
+				});
+
+				// remove all the cells from the circuit container
+				for (mxCell cell : containerChildren) {
+					circuitContainer.remove(cell);
+				}
+
+				// add them back at the proper index
+				for (int i = 0; i < containerChildren.length; i++) {
+					model.add(circuitContainer, containerChildren[i], i);
+				}
+			}
+		}
 	}
 
 	private int getSequenceLength(SBOLDocument document, ComponentDefinition componentDef) {
