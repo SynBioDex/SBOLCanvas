@@ -846,7 +846,7 @@ export class GraphHelpers extends GraphBase {
     }
 
     protected removeViewCell(viewCell: mxCell) {
-        if (!viewCell || viewCell.isViewCell()) {
+        if (!viewCell || !viewCell.isViewCell()) {
             console.debug("Tried to remove a view cell that isn't a view cell!");
             return;
         }

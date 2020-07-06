@@ -43,10 +43,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.filesService.saveLocal(filename, this.graphService.getGraphXML());
   }
 
-  load(file: File) {
-    this.filesService.loadLocal(file, this.graphService);
-  }
-
   openUploadDialog(): void {
     this.dialog.open(UploadGraphComponent, {
       data: {componentMode: this.graphService.isRootAComponentView()}
@@ -80,9 +76,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.popupOpen = true;
     dialogRef.afterClosed().subscribe(result => {
       this.popupOpen = false;
-      if (result != null) {
-        this.load(result);
-      }
     });
   }
 

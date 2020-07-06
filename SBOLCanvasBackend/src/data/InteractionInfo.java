@@ -1,13 +1,11 @@
 package data;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 public class InteractionInfo extends Info {
 
 	private String displayID;
 	private String interactionType;
 	private String fromParticipationType;
+	private String toParticipationType;
 
 	public String getDisplayID() {
 		return displayID;
@@ -40,18 +38,4 @@ public class InteractionInfo extends Info {
 	public void setToParticipationType(String toParticipationType) {
 		this.toParticipationType = toParticipationType;
 	}
-
-	private String toParticipationType;
-
-	@Override
-	public Element encode(Document doc) {
-		Element intInfo = doc.createElement("InteractionInfo");
-		if (displayID != null)
-			intInfo.setAttribute("displayID", displayID);
-		if (interactionType != null)
-			intInfo.setAttribute("interactionType", interactionType);
-		intInfo.setAttribute("as", "data");
-		return intInfo;
-	}
-
 }

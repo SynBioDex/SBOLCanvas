@@ -60,6 +60,6 @@ public class Converter {
 	static QName createQName(String name) {
 		return new QName(URI_PREFIX, name, ANN_PREFIX);
 	}
-
+	
 	// helpers
 }

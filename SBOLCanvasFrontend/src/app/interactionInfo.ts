@@ -5,7 +5,7 @@ export class InteractionInfo {
   interactionType: string;
 
   constructor() {
-    this.displayID = 'Interaction'+(InteractionInfo.counter++);
+    this.displayID = 'Interaction' + (InteractionInfo.counter++);
     this.interactionType = "Yo momma";
   }
 
@@ -23,9 +23,9 @@ export class InteractionInfo {
 
   encode(enc: any) {
     let node = enc.document.createElement('InteractionInfo');
-    if(this.displayID)
+    if (this.displayID)
       node.setAttribute("displayID", this.displayID);
-    if(this.interactionType)
+    if (this.interactionType)
       node.setAttribute("interactionType", this.interactionType);
     return node;
   }

@@ -3,12 +3,16 @@ package utils;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.SequenceOntology;
 import org.sbolstandard.core2.SystemsBiologyOntology;
+import org.synbiohub.frontend.SynBioHubException;
+import org.synbiohub.frontend.SynBioHubFrontend;
+import org.synbiohub.frontend.WebOfRegistriesData;
 
 public class SBOLData {
 
@@ -19,6 +23,8 @@ public class SBOLData {
 	public static BiMap<String, URI> refinements;
 	public static HashMap<URI, URI> parents;
 	public static BiMap<String, URI> interactions;
+	public static HashSet<String> registries;
+	
 	
 	static {
 		so = new SequenceOntology();
@@ -86,6 +92,15 @@ public class SBOLData {
 		interactions.put("Degradation", SystemsBiologyOntology.DEGRADATION);
 		interactions.put("Genetic Production", SystemsBiologyOntology.GENETIC_PRODUCTION);
 		interactions.put("Control", SystemsBiologyOntology.CONTROL);
+		
+		registries = new HashSet<String>();
+		try {
+			for(WebOfRegistriesData registry : SynBioHubFrontend.getRegistries()) {
+				registries.add(registry.getInstanceUrl());
+			}
+		} catch (SynBioHubException e) {
+			e.printStackTrace();
+		}
 		
 	}
 	
