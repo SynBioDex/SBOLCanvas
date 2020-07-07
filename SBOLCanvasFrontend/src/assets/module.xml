@@ -1,0 +1,14 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="module" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="1.87499988" />
+        <alpha alpha="1" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <miterlimit limit="4" />
+        <roundrect arcsize="15" h="13.86" w="31.76" x="8.12" y="17.07" />
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

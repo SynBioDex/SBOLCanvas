@@ -6,6 +6,7 @@ import { GraphService } from '../graph.service';
 import { FilesService } from '../files.service';
 import { MatSelectChange, MatDialog } from '@angular/material';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
+import { ModuleInfo } from '../moduleInfo';
 
 
 @Component({
@@ -28,6 +29,7 @@ export class InfoEditorComponent implements OnInit {
   encodings: string[];
 
   glyphInfo: GlyphInfo;
+  moduleInfo: ModuleInfo;
   interactionInfo: InteractionInfo;
 
   constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog) { }
@@ -163,7 +165,14 @@ export class InfoEditorComponent implements OnInit {
   }
 
   /**
-   * Updates both the interaction info int he form and in the graph.
+   * Updates both the module info in the form and in the graph.
+   */
+  moduleInfoUpdated(moduleInfo: ModuleInfo){
+    this.moduleInfo = moduleInfo;
+  }
+
+  /**
+   * Updates both the interaction info in the form and in the graph.
    */
   interactionInfoUpdated(interactionInfo: InteractionInfo) {
     this.interactionInfo = interactionInfo;

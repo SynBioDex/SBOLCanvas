@@ -45,6 +45,10 @@ export class MetadataService {
   private interactionInfoSource = new BehaviorSubject(null);
   selectedInteractionInfo = this.interactionInfoSource.asObservable();
 
+  // Module info
+  private moduleInfoSource = new BehaviorSubject(null);
+  selectedModuleInfo = this.moduleInfoSource.asObservable();
+
   // Style Info
   private styleInfoSource = new BehaviorSubject(new StyleInfo([]));
   style = this.styleInfoSource.asObservable();
@@ -87,6 +91,10 @@ export class MetadataService {
 
   setSelectedInteractionInfo(newInfo: InteractionInfo) {
     this.interactionInfoSource.next(newInfo);
+  }
+
+  setSelectedModuleInfo(newInfo: ModuleInfo) {
+    this.moduleInfoSource.next(newInfo);
   }
 
   setComponentDefinitionMode(newSetting: boolean) {

@@ -640,6 +640,13 @@ export class GraphHelpers extends GraphBase {
                 this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy());
             }
         }
+        else if (cell.isModule()){
+            //TODO change me to reference the dictionary
+            let moduleInfo = cell.value;
+            if(moduleInfo){
+                this.metadataService.setSelectedModuleInfo(moduleInfo.makeCopy());
+            }
+        }
     }
 
     nullifyMetadata() {

@@ -618,19 +618,16 @@ export class GraphService extends GraphHelpers {
    * Creates an interaction edge of the given type at the center of the current view
    */
   addInteraction(name) {
-    let selectedCell = this.graph.getSelectionCell();
     const selectionCells = this.graph.getSelectionCells();
-    if (selectionCells.length == 1 || selectionCells.length == 2) {
-      if (selectionCells.length == 2) {
-        selectedCell = selectionCells[0];
-      }
+    if (selectionCells.length > 0 && selectionCells.length < 3) {
+      let selectedCell = selectionCells[0];
       const selectedParent = selectedCell.getParent();
-      if (!selectedParent.geometry) {
-        this.addInteractionAt(name, selectedCell.geometry.x + (selectedCell.geometry.width / 2),
-          selectedCell.geometry.y);
-      } else {
+      if(selectedParent.geometry && !selectedParent.isViewCell()){
         this.addInteractionAt(name, selectedParent.geometry.x + selectedCell.geometry.x + (selectedCell.geometry.width / 2),
           selectedParent.geometry.y);
+      }else {
+        this.addInteractionAt(name, selectedCell.geometry.x + (selectedCell.geometry.width / 2),
+        selectedCell.geometry.y);
       }
     } else {
       const pt = this.getDefaultNewCellCoords();
@@ -718,6 +715,31 @@ export class GraphService extends GraphHelpers {
       this.graph.clearSelection();
       this.graph.setSelectionCell(cell);
     } finally {
+      this.graph.getModel().endUpdate();
+    }
+  }
+
+  makeModuleDragsource(element) {
+    const insert = mx.mxUtils.bind(this, function (graph, evt, target, x, y){
+      this.addModuleAt(x - GraphBase.defaultModuleWidth/2, y-GraphBase.defaultModuleHeight / 2);
+    });
+    this.makeGeneralDragsource(element, insert);
+  }
+
+  addModule(){
+    const pt = this.getDefaultNewCellCoords();
+    this.addModuleAt(pt.x, pt.y);
+  }
+
+  addModuleAt(x, y){
+    this.graph.getModel().beginUpdate();
+    try{
+      const moduleCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, null, x, y, GraphBase.defaultModuleWidth, GraphBase.defaultModuleHeight, GraphBase.STYLE_MODULE);
+      moduleCell.setConnectable(true);
+
+      this.graph.clearSelection();
+      this.graph.setSelectionCell(moduleCell);
+    }finally{
       this.graph.getModel().endUpdate();
     }
   }

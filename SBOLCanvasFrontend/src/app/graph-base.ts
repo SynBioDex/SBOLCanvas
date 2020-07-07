@@ -32,11 +32,15 @@ export class GraphBase {
     static readonly defaultTextWidth = 120;
     static readonly defaultTextHeight = 80;
 
+    static readonly defaultModuleWidth = 120;
+    static readonly defaultModuleHeight = 50;
+
     static readonly defaultInteractionSize = 80;
 
     static readonly STYLE_CIRCUIT_CONTAINER = 'circuitContainer';
     static readonly STYLE_BACKBONE = 'backbone';
     static readonly STYLE_TEXTBOX = 'textBox';
+    static readonly STYLE_MODULE = 'module';
     static readonly STYLE_SCAR = 'Scar (Assembly Scar)';
     static readonly STYLE_NGA = 'NGA (No Glyph Assigned)';
     static readonly STYLE_MOLECULAR_SPECIES = 'molecularSpeciesGlyph';
@@ -320,6 +324,10 @@ export class GraphBase {
             return this.isStyle(GraphBase.STYLE_INTERACTION);
         }
 
+        mx.mxCell.prototype.isModule = function(){
+            return this.isStyle(GraphBase.STYLE_MODULE);
+        }
+
         mx.mxCell.prototype.isViewCell = function () {
             return this.isStyle(GraphBase.STYLE_MODULE_VIEW) || this.isStyle(GraphBase.STYLE_COMPONENT_VIEW);
         }
@@ -597,6 +605,16 @@ export class GraphBase {
         textBoxStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
         textBoxStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
         this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_TEXTBOX, textBoxStyle);
+
+        const moduleStyle = {};
+        moduleStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
+        moduleStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
+        moduleStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
+        moduleStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
+        moduleStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
+        moduleStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+        moduleStyle[mx.mxConstants.STYLE_ROUNDED] = true;
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MODULE, moduleStyle);
 
         const circuitContainerStyle = {};
         circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
