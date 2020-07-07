@@ -7,6 +7,7 @@ import { environment } from 'src/environments/environment';
 import {InteractionInfo} from "./interactionInfo";
 import {StyleInfo} from './style-info';
 import {Style} from '@angular/cli/lib/config/schema';
+import { ModuleInfo } from './moduleInfo';
 
 @Injectable({
   providedIn: 'root'

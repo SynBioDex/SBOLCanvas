@@ -13,6 +13,9 @@ import { GraphService } from './graph.service';
 import { MetadataService } from './metadata.service';
 import { StyleInfo } from './style-info';
 import { ErrorComponent } from './error/error.component';
+import { environment } from 'src/environments/environment';
+import { Info } from './info';
+import { ModuleInfo } from './moduleInfo';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -33,11 +36,11 @@ export class GraphHelpers extends GraphBase {
         if (cell.isCircuitContainer()) {
             if (this.viewStack.length > 1) {
                 // has a parent that might need to change
-                glyphInfo = this.getFromGlyphDict(this.selectionStack[this.selectionStack.length - 1].getParent().getValue());
+                glyphInfo = this.getFromInfoDict(this.selectionStack[this.selectionStack.length - 1].getParent().getValue());
             }
             //TODO come back to me when module definitions will need to be updated
         } else {
-            glyphInfo = this.getFromGlyphDict(cell.getParent().getValue());
+            glyphInfo = this.getFromInfoDict(cell.getParent().getValue());
         }
         return glyphInfo;
     }
@@ -54,12 +57,12 @@ export class GraphHelpers extends GraphBase {
 
             let oldGlyphURI = "";
             oldGlyphURI = selectedCell.value;
-            info.uriPrefix = GlyphInfo.baseURI;
+            info.uriPrefix = environment.baseURI;
             let newGlyphURI = info.getFullURI();
 
             // check for ownership prompt
-            let oldGlyphInfo = this.getFromGlyphDict(oldGlyphURI);
-            if (oldGlyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
+            let oldGlyphInfo = this.getFromInfoDict(oldGlyphURI);
+            if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
                 return;
             }
 
@@ -126,15 +129,15 @@ export class GraphHelpers extends GraphBase {
                 // update the glyphDictionary
                 if (!shouldDecouple) {
                     // we don't want to remove the old one if it will still be in use
-                    this.removeFromGlyphDict(oldGlyphURI);
+                    this.removeFromInfoDict(oldGlyphURI);
                 }
                 if (shouldCouple && keepSubstructure) {
                     // we need to remove the new one if we want to replace it with ours
-                    this.removeFromGlyphDict(newGlyphURI);
+                    this.removeFromInfoDict(newGlyphURI);
                 }
                 if (!shouldCouple || keepSubstructure) {
                     // we only don't want to add if we are updating substructure
-                    this.addToGlyphDict(info);
+                    this.addToInfoDict(info);
                 }
 
                 // update view cell and glyph/s
@@ -196,7 +199,7 @@ export class GraphHelpers extends GraphBase {
 
                 // update the glyph graphics
                 let newCoupledCells = this.getCoupledGlyphs(newGlyphURI);
-                info = this.getFromGlyphDict(newGlyphURI);
+                info = this.getFromInfoDict(newGlyphURI);
                 this.mutateSequenceFeatureGlyph(info.partRole, newCoupledCells, this.graph);
 
                 // sync the circuitcontainers
@@ -263,11 +266,11 @@ export class GraphHelpers extends GraphBase {
             }
 
             //let glyphEdit = new GraphService.glyphEdit(info);
-            this.updateGlyphDict(info);
+            this.updateInfoDict(info);
 
             // there may be coupled cells that need to also be mutated
             // the glyphInfo may be different than info, so use getFromGlyphDict
-            this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(selectedCell.value).partRole, this.getCoupledGlyphs(selectedCell.value));
+            this.mutateSequenceFeatureGlyph(this.getFromInfoDict(selectedCell.value).partRole, this.getCoupledGlyphs(selectedCell.value));
 
             // change the ownership
             this.changeOwnership(selectedCell.getValue());
@@ -291,12 +294,12 @@ export class GraphHelpers extends GraphBase {
 
             let oldGlyphURI = "";
             oldGlyphURI = selectedCell.value;
-            info.uriPrefix = GlyphInfo.baseURI;
+            info.uriPrefix = environment.baseURI;
             let newGlyphURI = info.getFullURI();
 
             // check for ownership prompt
-            let oldGlyphInfo = this.getFromGlyphDict(oldGlyphURI);
-            if (oldGlyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
+            let oldGlyphInfo = this.getFromInfoDict(oldGlyphURI);
+            if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
                 return;
             }
 
@@ -332,15 +335,15 @@ export class GraphHelpers extends GraphBase {
                 }
 
                 if (!shouldDecouple) {
-                    this.removeFromGlyphDict(oldGlyphURI);
+                    this.removeFromInfoDict(oldGlyphURI);
                 }
                 if (shouldCouple && keepSubstructure) {
-                    this.removeFromGlyphDict(newGlyphURI);
-                    this.addToGlyphDict(info);
+                    this.removeFromInfoDict(newGlyphURI);
+                    this.addToInfoDict(info);
                 }
                 if (!shouldCouple || keepSubstructure) {
                     // we only don't want to add if we are updating substructure
-                    this.addToGlyphDict(info);
+                    this.addToInfoDict(info);
                 }
 
                 if (shouldDecouple) {
@@ -352,11 +355,15 @@ export class GraphHelpers extends GraphBase {
                 }
 
             } else {
-                this.updateGlyphDict(info);
+                this.updateInfoDict(info);
             }
         } finally {
             this.graph.getModel().endUpdate();
         }
+    }
+
+    protected updateSelectedModuleInfo(this: GraphService, info: ModuleInfo){
+
     }
 
     /**
@@ -613,7 +620,7 @@ export class GraphHelpers extends GraphBase {
         // start with null data, (re)add it as possible
         this.nullifyMetadata();
 
-        if (!cells || cells.length === 0) {
+        if (!this.graph.getCurrentRoot().isModuleView() && (!cells || cells.length === 0)) {
             // no selection? can't display metadata
             return;
         }
@@ -622,14 +629,32 @@ export class GraphHelpers extends GraphBase {
         const styleInfo = new StyleInfo(cells, this.graph);
         this.metadataService.setSelectedStyleInfo(styleInfo);
 
-        if (cells.length !== 1) {
+        if (cells.length > 1) {
             // multiple selections? can't display glyph data
             return;
         }
 
-        const cell = cells[0];
-        if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()) {
-            const glyphInfo = this.getFromGlyphDict(cell.value);
+        // have to add special check as no selection cell should signify the module/component of the current view
+        let cell;
+        if(cells && cells.length > 0){
+            cell = cells[0];
+        }
+
+        if((!cell && this.graph.getCurrentRoot().isModuleView()) || cell.isModule()){
+            let moduleInfo;
+            if(!cell)
+                moduleInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
+            else
+                moduleInfo = this.getFromInfoDict(cell.value);
+            if (moduleInfo) {
+                this.metadataService.setSelectedModuleInfo(moduleInfo.makeCopy());
+            }
+        }else if ((!cell && this.graph.getCurrentRoot().isComponentView()) || cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()) {
+            let glyphInfo;
+            if(!cell)
+                glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
+            else
+                glyphInfo = this.getFromInfoDict(cell.value);
             if (glyphInfo) {
                 this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
             }
@@ -640,17 +665,11 @@ export class GraphHelpers extends GraphBase {
                 this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy());
             }
         }
-        else if (cell.isModule()){
-            //TODO change me to reference the dictionary
-            let moduleInfo = cell.value;
-            if(moduleInfo){
-                this.metadataService.setSelectedModuleInfo(moduleInfo.makeCopy());
-            }
-        }
     }
 
     nullifyMetadata() {
         this.metadataService.setSelectedGlyphInfo(null);
+        this.metadataService.setSelectedModuleInfo(null);
         this.metadataService.setSelectedInteractionInfo(null);
 
         // Empty 'StyleInfo' object indicates that nothing is selected, so no options should be available
@@ -888,10 +907,10 @@ export class GraphHelpers extends GraphBase {
 
         this.graph.getModel().beginUpdate();
         try {
-            let glyphInfo = this.getFromGlyphDict(glyphURI);
+            let glyphInfo = this.getFromInfoDict(glyphURI);
 
             // if we already own it, we don't need to do anything
-            if (!glyphInfo.uriPrefix || (glyphInfo.uriPrefix === GlyphInfo.baseURI && !fullCheck)) {
+            if (!glyphInfo.uriPrefix || (glyphInfo.uriPrefix === environment.baseURI && !fullCheck)) {
                 return;
             }
 
@@ -913,29 +932,29 @@ export class GraphHelpers extends GraphBase {
             let rootViewInfo;
             if (this.graph.getCurrentRoot()) {
                 rootViewId = this.graph.getCurrentRoot().getId();
-                rootViewInfo = this.getFromGlyphDict(rootViewId);
+                rootViewInfo = this.getFromInfoDict(rootViewId);
                 if (rootViewInfo) {
                     this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
                 }
             } else {
                 // special case of the root getting changed before changeOwnership is called
                 rootViewId = glyphURI;
-                rootViewInfo = this.getFromGlyphDict(rootViewId);
+                rootViewInfo = this.getFromInfoDict(rootViewId);
             }
 
             while (toCheck.size > 0) {
                 let checking: string = toCheck.values().next().value;
                 checked.add(checking);
                 toCheck.delete(checking);
-                if (checking.startsWith(GlyphInfo.baseURI) && !fullCheck) {
+                if (checking.startsWith(environment.baseURI) && !fullCheck) {
                     continue;
                 }
 
                 // change the glyphInfo's uriPrefix
-                let glyphInfo = this.getFromGlyphDict(checking).makeCopy();
-                glyphInfo.uriPrefix = GlyphInfo.baseURI;
-                this.removeFromGlyphDict(checking);
-                this.addToGlyphDict(glyphInfo);
+                let glyphInfo = this.getFromInfoDict(checking).makeCopy();
+                glyphInfo.uriPrefix = environment.baseURI;
+                this.removeFromInfoDict(checking);
+                this.addToInfoDict(glyphInfo);
 
                 // update the viewCell
                 let viewCell = this.graph.getModel().getCell(checking);
@@ -965,7 +984,7 @@ export class GraphHelpers extends GraphBase {
             // zoom back into the rootView
             if (rootViewInfo) {
                 rootViewInfo = rootViewInfo.makeCopy();
-                rootViewInfo.uriPrefix = GlyphInfo.baseURI;
+                rootViewInfo.uriPrefix = environment.baseURI;
                 let newRootViewCell = this.graph.getModel().getCell(rootViewInfo.getFullURI());
                 this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newRootViewCell, this));
             }
@@ -1095,34 +1114,34 @@ export class GraphHelpers extends GraphBase {
     }
 
     /**
-           * Updates a GlyphInfo
-           * NOTE: Should only be used if the glyphURI is the same
-           */
-    protected updateGlyphDict(info: GlyphInfo) {
+     * Updates an Info object
+     * NOTE: Should only be used if the glyphURI is the same
+     */
+    protected updateInfoDict(info: Info) {
         const cell0 = this.graph.getModel().getCell(0);
-        this.graph.getModel().execute(new GraphEdits.glyphInfoEdit(cell0, info, cell0.value[info.getFullURI()]));
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[info.getFullURI()]));
     }
 
     /**
-     * Remove a GlyphInfo object from the dictionary
+     * Remove an Info object from the dictionary
      */
-    protected removeFromGlyphDict(glyphURI: string) {
+    protected removeFromInfoDict(glyphURI: string) {
         const cell0 = this.graph.getModel().getCell(0);
-        this.graph.getModel().execute(new GraphEdits.glyphInfoEdit(cell0, null, cell0.value[glyphURI]));
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[glyphURI]));
     }
 
     /**
-     * Add a GlyphInfo object to the dictionary
+     * Add a Info object to the dictionary
      */
-    protected addToGlyphDict(info: GlyphInfo) {
+    protected addToInfoDict(info: Info) {
         const cell0 = this.graph.getModel().getCell(0);
-        this.graph.getModel().execute(new GraphEdits.glyphInfoEdit(cell0, info, null));
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null));
     }
 
     /**
      * Get the GlyphInfo with the given glyphURI from the dictionary
      */
-    protected getFromGlyphDict(glyphURI: string): GlyphInfo {
+    protected getFromInfoDict(glyphURI: string): GlyphInfo {
         const cell0 = this.graph.getModel().getCell(0);
         return cell0.value[glyphURI];
     }
@@ -1131,8 +1150,8 @@ export class GraphHelpers extends GraphBase {
         // label drawing
         let graphService = this;
         this.graph.convertValueToString = function (cell) {
-            if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
-                let info = graphService.getFromGlyphDict(cell.value);
+            if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isModule()) {
+                let info = graphService.getFromInfoDict(cell.value);
                 if (!info) {
                     return cell.value;
                 } else if (info.name != null && info.name != '') {

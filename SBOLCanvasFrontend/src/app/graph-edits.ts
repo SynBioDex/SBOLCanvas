@@ -2,6 +2,7 @@ import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { mxGraphView } from 'src/mxgraph';
 import { GraphService } from './graph.service';
+import { Info } from './info';
 
 /**
  * Contains all the custom edit objects necessary for mxGraph.
@@ -50,12 +51,12 @@ export class GraphEdits {
     }
 
     /**
-     * Edit object for glyphInfo history. Replaces glyphInfo's in a dictionary stored in cell0's value variable.
+     * Edit object for glyphInfo/moduleInfo history. Replaces glyphInfo's in a dictionary stored in cell0's value variable.
      */
-    static glyphInfoEdit = class {
+    static infoEdit = class {
         cell0: mxCell;
-        info: GlyphInfo;
-        previousInfo: GlyphInfo;
+        info: Info;
+        previousInfo: Info;
 
         /**
          * If info is null, removes previous from the dictionary.
@@ -65,7 +66,7 @@ export class GraphEdits {
          * @param info The info you want to put in the dictionary (or null if removing)
          * @param previousInfo The info that is already there (or null if adding)
          */
-        constructor(cell0: string, info: GlyphInfo, previousInfo: GlyphInfo) {
+        constructor(cell0: string, info: Info, previousInfo: Info) {
             this.cell0 = cell0;
             // store them in reverse so the execute performs the action the first time
             this.info = previousInfo;

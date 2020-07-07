@@ -1,10 +1,11 @@
 import { ParsedEventType } from '@angular/compiler';
 import { CanvasAnnotation } from './canvasAnnotation';
+import { Info } from './info';
+import { environment } from 'src/environments/environment';
 
-export class GlyphInfo {
+export class GlyphInfo extends Info{
   // Remember that when you change this you need to change the encode function in graph service
   static counter: number = 0;
-  static baseURI: string = "https://sbolcanvas.org";
   partType: string;
   otherTypes: string[];
   partRole: string;
@@ -16,12 +17,13 @@ export class GlyphInfo {
   version: string;
   sequence: string;
   sequenceURI: string;
-  uriPrefix: string = GlyphInfo.baseURI;
+  uriPrefix: string = environment.baseURI;
   annotations: CanvasAnnotation[];
   derivedFroms: string[];
   generatedBys: string[];
 
   constructor(partType?: string) {
+    super();
     this.displayID = 'id' + (GlyphInfo.counter++);
     if (partType) {
       this.partType = partType;

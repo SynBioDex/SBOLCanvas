@@ -7,8 +7,6 @@
 ///// <reference path="./graph-base.ts"/>
 
 import { Injectable } from '@angular/core';
-import * as mxEditor from 'mxgraph';
-import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { MetadataService } from './metadata.service';
@@ -16,12 +14,12 @@ import { GlyphService } from './glyph.service';
 import { InteractionInfo } from './interactionInfo';
 import { environment } from 'src/environments/environment';
 import { MatDialog } from '@angular/material';
-import { ErrorComponent } from './error/error.component';
-import { ConfirmComponent } from './confirm/confirm.component';
 import { GraphEdits } from './graph-edits';
 import { GraphBase, mx } from './graph-base';
 import { GraphHelpers } from './graph-helpers';
 import { StyleInfo } from './style-info';
+import { ModuleInfo } from './moduleInfo';
+import { Info } from './info';
 
 @Injectable({
   providedIn: 'root'
@@ -115,7 +113,7 @@ export class GraphService extends GraphHelpers {
       }
     }
     for (let parentInfo of Array.from(parentInfos.values())) {
-      if (parentInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
+      if (parentInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
         return;
       }
     }
@@ -228,9 +226,9 @@ export class GraphService extends GraphHelpers {
       let glyphInfo;
       if (this.graph.getCurrentRoot().isModuleView()) {
         glyphInfo = new GlyphInfo();
-        super.addToGlyphDict(glyphInfo);
+        super.addToInfoDict(glyphInfo);
       } else {
-        glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+        glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
       }
       const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_CIRCUIT_CONTAINER);
       const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, GraphBase.sequenceFeatureGlyphHeight / 2, GraphBase.sequenceFeatureGlyphWidth, 1, GraphBase.STYLE_BACKBONE);
@@ -277,11 +275,11 @@ export class GraphService extends GraphHelpers {
       for (let container of Array.from(containers.values())) {
         let glyphInfo;
         if (this.graph.getCurrentRoot().isComponentView()) {
-          glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+          glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
         } else {
-          glyphInfo = this.getFromGlyphDict(container);
+          glyphInfo = this.getFromInfoDict(container);
         }
-        if (ownershipPrompt && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+        if (ownershipPrompt && glyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
           return;
         }
       }
@@ -487,15 +485,15 @@ export class GraphService extends GraphHelpers {
       let glyphInfo;
       if (this.graph.getCurrentRoot().isComponentView()) {
         // normal case
-        glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+        glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
       } else if (this.atLeastOneCircuitContainerInGraph()) {
         // edge case that we're adding to a container in a module view
         if (!circuitContainer) {
           circuitContainer = this.getClosestCircuitContainerToPoint(x, y);
         }
-        glyphInfo = this.getFromGlyphDict(circuitContainer.getValue());
+        glyphInfo = this.getFromInfoDict(circuitContainer.getValue());
       }
-      if (glyphInfo && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+      if (glyphInfo && glyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
         return;
       }
     }
@@ -523,7 +521,7 @@ export class GraphService extends GraphHelpers {
       // create the glyph info and add it to the dictionary
       const glyphInfo = new GlyphInfo();
       glyphInfo.partRole = name;
-      this.addToGlyphDict(glyphInfo);
+      this.addToInfoDict(glyphInfo);
 
       // Insert new glyph and its components
       const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_SEQUENCE_FEATURE + name);
@@ -543,12 +541,12 @@ export class GraphService extends GraphHelpers {
         let glyphInfo;
         if (this.graph.getCurrentRoot().isComponentView()) {
           // normal case
-          glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+          glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
         } else {
           // edge case that we're adding to a container in a module view
-          glyphInfo = this.getFromGlyphDict(circuitContainer.getValue());
+          glyphInfo = this.getFromInfoDict(circuitContainer.getValue());
         }
-        if (glyphInfo.uriPrefix != GlyphInfo.baseURI) {
+        if (glyphInfo.uriPrefix != environment.baseURI) {
           this.changeOwnership(glyphInfo.getFullURI());
         }
       }
@@ -588,7 +586,7 @@ export class GraphService extends GraphHelpers {
       //TODO partRoles for proteins
       let proteinInfo = new GlyphInfo();
       proteinInfo.partType = this.moleculeNameToType(name);
-      this.addToGlyphDict(proteinInfo);
+      this.addToInfoDict(proteinInfo);
 
       const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, proteinInfo.getFullURI(), x, y,
         GraphBase.molecularSpeciesGlyphWidth, GraphBase.molecularSpeciesGlyphHeight, GraphBase.STYLE_MOLECULAR_SPECIES + name);
@@ -734,7 +732,10 @@ export class GraphService extends GraphHelpers {
   addModuleAt(x, y){
     this.graph.getModel().beginUpdate();
     try{
-      const moduleCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, null, x, y, GraphBase.defaultModuleWidth, GraphBase.defaultModuleHeight, GraphBase.STYLE_MODULE);
+      let moduleInfo = new ModuleInfo();
+      this.addToInfoDict(moduleInfo);
+
+      const moduleCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, moduleInfo.getFullURI(), x, y, GraphBase.defaultModuleWidth, GraphBase.defaultModuleHeight, GraphBase.STYLE_MODULE);
       moduleCell.setConnectable(true);
 
       this.graph.clearSelection();
@@ -747,38 +748,40 @@ export class GraphService extends GraphHelpers {
   /**
    * Find the selected cell, and if there is a glyph selected, update its metadata.
    */
-  setSelectedCellInfo(glyphInfo: GlyphInfo);
-  setSelectedCellInfo(interactionInfo: InteractionInfo);
-  async setSelectedCellInfo(info: any) {
+  async setSelectedCellInfo(info: Info) {
     const selectedCell = this.graph.getSelectionCell();
-    if (!selectedCell) {
+    if (info !instanceof ModuleInfo && !selectedCell) {
       return;
     }
 
-    // verify that the selected cell matches the type of info object
-    if (info instanceof GlyphInfo && (selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()) ||
-      (info instanceof InteractionInfo && selectedCell.isInteraction())) {
-
-      // since it does, update its info
-      this.graph.getModel().beginUpdate();
-      try {
-        if (info instanceof GlyphInfo) {
-          if(!selectedCell.isMolecularSpeciesGlyph()){
-            // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
-            this.updateSelectedGlyphInfo(info);
-          }else{
-            this.updateSelectedMolecularSpecies(info);
-          }
-        } else {
-          let interactionEdit = new GraphEdits.interactionEdit(selectedCell, info);
-          this.mutateInteractionGlyph(info.interactionType);
-          this.graph.getModel().execute(interactionEdit);
-        }
-      } finally {
-        this.graph.getModel().endUpdate();
-        this.graph.refresh(selectedCell);
-        this.updateAngularMetadata(this.graph.getSelectionCells());
+    this.graph.getModel().beginUpdate();
+    try{
+      // figure out which type of info object it is
+      if(info instanceof ModuleInfo && (!selectedCell || selectedCell.isModule())){
+        this.updateSelectedModuleInfo(info);
+        return;
       }
+      
+      if(info instanceof GlyphInfo && (selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph())){
+        if(!selectedCell.isMolecularSpeciesGlyph()){
+          // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
+          this.updateSelectedGlyphInfo(info);
+        }else{
+          this.updateSelectedMolecularSpecies(info);
+        }
+        return;
+      }
+
+      if(info instanceof InteractionInfo && selectedCell.isInteraction()){
+        let interactionEdit = new GraphEdits.interactionEdit(selectedCell, info);
+        this.mutateInteractionGlyph(info.interactionType);
+        this.graph.getModel().execute(interactionEdit);
+        return;
+      }
+    }finally{
+      this.graph.getModel().endUpdate();
+      this.graph.refresh(selectedCell);
+      this.updateAngularMetadata(this.graph.getSelectionCells());
     }
   }
 
@@ -975,7 +978,7 @@ export class GraphService extends GraphHelpers {
 
         // prompt ownership change
         let parentInfo = this.getParentInfo(selectedCell);
-        if (parentInfo && parentInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
+        if (parentInfo && parentInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
           return;
         }
 
@@ -1062,16 +1065,16 @@ export class GraphService extends GraphHelpers {
           this.graph.addCell(viewClone, cell1);
 
           // add the info to the dictionary
-          if (this.getFromGlyphDict(viewCells[i].getId()) != null) {
-            this.removeFromGlyphDict(viewCells[i].getId());
+          if (this.getFromInfoDict(viewCells[i].getId()) != null) {
+            this.removeFromInfoDict(viewCells[i].getId());
           }
-          this.addToGlyphDict(subGlyphDict[viewCells[i].getId()]);
+          this.addToInfoDict(subGlyphDict[viewCells[i].getId()]);
         }
 
         if (selectedCell.isSequenceFeatureGlyph()) {
           origParent.refreshCircuitContainer(this.graph);
           this.graph.setSelectionCell(newCell);
-          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newCell.value).partRole);
+          this.mutateSequenceFeatureGlyph(this.getFromInfoDict(newCell.value).partRole);
         }
 
         // if we came from a circuit container, zoom back into it
@@ -1132,7 +1135,7 @@ export class GraphService extends GraphHelpers {
       this.viewStack.push(rootViewCell);
     } else {
       let info = new GlyphInfo();
-      this.addToGlyphDict(info);
+      this.addToInfoDict(info);
       rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
       this.graph.enterGroup(rootViewCell);
       this.viewStack.push(rootViewCell);

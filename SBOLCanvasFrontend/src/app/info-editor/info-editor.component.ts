@@ -7,6 +7,7 @@ import { FilesService } from '../files.service';
 import { MatSelectChange, MatDialog } from '@angular/material';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { ModuleInfo } from '../moduleInfo';
+import { environment } from 'src/environments/environment';
 
 
 @Component({
@@ -37,6 +38,7 @@ export class InfoEditorComponent implements OnInit {
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
     this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo));
+    this.metadataService.selectedModuleInfo.subscribe(moduleInfo => this.moduleInfoUpdated(moduleInfo));
     this.filesService.getRegistries().subscribe(result => this.registries = result);
     this.getTypes();
     this.getRoles();
@@ -109,19 +111,30 @@ export class InfoEditorComponent implements OnInit {
           this.glyphInfo.displayID = replaced;
         } else if (this.interactionInfo != null) {
           this.interactionInfo.displayID = replaced;
+        } else if (this.moduleInfo){
+          this.moduleInfo.displayID = replaced;
         }
         break;
       }
       case 'name': {
-        this.glyphInfo.name = event.target.value;
+        if(this.glyphInfo)
+          this.glyphInfo.name = event.target.value;
+        else if(this.moduleInfo)
+          this.moduleInfo.name = event.target.value;
         break;
       }
       case 'description': {
-        this.glyphInfo.description = event.target.value;
+        if(this.glyphInfo)
+          this.glyphInfo.description = event.target.value;
+        else if(this.moduleInfo)
+          this.moduleInfo.description = event.target.value;
         break;
       }
       case 'version': {
-        this.glyphInfo.version = event.target.value;
+        if(this.glyphInfo)
+          this.glyphInfo.version = event.target.value;
+        else if(this.moduleInfo)
+          this.moduleInfo.version = event.target.value;
         break;
       }
       case 'sequence': {
@@ -137,6 +150,8 @@ export class InfoEditorComponent implements OnInit {
       this.graphService.setSelectedCellInfo(this.glyphInfo);
     } else if (this.interactionInfo != null) {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
+    } else if (this.moduleInfo != null){
+      this.graphService.setSelectedCellInfo(this.moduleInfo);
     }
   }
 
@@ -179,12 +194,18 @@ export class InfoEditorComponent implements OnInit {
   }
 
   localDesign(): boolean {
-    return this.glyphInfo.uriPrefix === GlyphInfo.baseURI;
+    if(this.glyphInfo)
+      return this.glyphInfo.uriPrefix === environment.baseURI;
+    else if(this.moduleInfo)
+      return this.moduleInfo.uriPrefix === environment.baseURI;
+    return true;
   }
 
   synBioHubDesign(): boolean {
     for (let registry of this.registries) {
-      if (this.glyphInfo.uriPrefix.startsWith(registry))
+      if(this.glyphInfo && this.glyphInfo.uriPrefix && this.glyphInfo.uriPrefix.startsWith(registry))
+        return true;
+      if(this.moduleInfo && this.moduleInfo.uriPrefix && this.moduleInfo.uriPrefix.startsWith(registry))
         return true;
     }
     return false;

@@ -4,8 +4,8 @@ import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { InteractionInfo } from './interactionInfo';
 import { GlyphService } from './glyph.service';
-import { GraphHelpers } from './graph-helpers';
 import { CanvasAnnotation } from './canvasAnnotation';
+import { environment } from 'src/environments/environment';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -831,7 +831,7 @@ export class GraphBase {
                         } else {
                             glyphInfo = this.getFromGlyphDict(container);
                         }
-                        if (ownershipChange && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+                        if (ownershipChange && glyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
                             cancelled = true;
                             // go check the finally block because I couldn't undo until after the end update
                             return;

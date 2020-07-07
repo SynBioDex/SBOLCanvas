@@ -1,18 +1,22 @@
+import { GlyphInfo } from './glyphInfo';
+import { Info } from './info';
+import { environment } from 'src/environments/environment';
 
 
-export class ModuleInfo {
+export class ModuleInfo extends Info{
     static counter: number = 0;
     displayID: string;
     name: string;
     description: string;
     version: string;
-    uriPrefix: string;
+    uriPrefix: string = environment.baseURI;
 
     constructor() {
+        super();
         this.displayID = 'module' + (ModuleInfo.counter++);
     }
 
-    makeCopy() {
+    makeCopy(): ModuleInfo {
         const copy: ModuleInfo = new ModuleInfo();
         copy.displayID = this.displayID;
         copy.name = this.name;
