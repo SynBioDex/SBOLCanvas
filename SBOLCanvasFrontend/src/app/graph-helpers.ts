@@ -28,6 +28,27 @@ export class GraphHelpers extends GraphBase {
     constructor(public dialog: MatDialog, protected metadataService: MetadataService, glyphService: GlyphService) {
         super(glyphService);
 
+        // initalize the GlyphInfoDictionary
+        const cell0 = this.graph.getModel().getCell(0);
+        const glyphDict = [];
+        this.graph.getModel().setValue(cell0, glyphDict);
+
+        // initalize the root view cell of the graph
+        const cell1 = this.graph.getModel().getCell(1);
+        const rootModuleInfo = new ModuleInfo();
+        this.addToInfoDict(rootModuleInfo);
+        const rootViewCell = this.graph.insertVertex(cell1, rootModuleInfo.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
+        this.graph.enterGroup(rootViewCell);
+        this.viewStack = [];
+        this.viewStack.push(rootViewCell);
+        this.selectionStack = [];
+
+
+        // don't let any of the setup be on the undo stack
+        this.editor.undoManager.clear();
+
+        this.updateAngularMetadata(this.graph.getSelectionCells());
+
         this.initLabelDrawing();
     }
 
@@ -362,8 +383,62 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
-    protected updateSelectedModuleInfo(this: GraphService, info: ModuleInfo){
+    protected async updateSelectedModuleInfo(this: GraphService, info: ModuleInfo) {
+        this.graph.getModel().beginUpdate();
+        try {
+            let selectedCells = this.graph.getSelectionCells();
+            if (selectedCells.length > 1 || selectedCells.length < 0) {
+                console.error("Trying to change info on too many or too few cells!");
+                return;
+            }
 
+            let selectedCell;
+            let oldModuleURI;
+            if (selectedCells.length == 1) {
+                selectedCell = selectedCells[0];
+                oldModuleURI = selectedCell.value;
+            } else if (selectedCells.length == 0) {
+                selectedCell = this.graph.getCurrentRoot();
+                oldModuleURI = selectedCell.getId();
+            }
+
+            info.uriPrefix = environment.baseURI;
+            let newModuleURI = info.getFullURI();
+
+            if (oldModuleURI != newModuleURI) {
+                // check for component definition conflict
+                let conflictInfo = this.getFromInfoDict(newModuleURI);
+                if (conflictInfo && !(conflictInfo instanceof ModuleInfo)) {
+                    this.dialog.open(ErrorComponent, { data: "The part " + newModuleURI + " already exists as a ComponentDefinition!" });
+                    return;
+                }
+
+                // check for ownership prompt
+                let oldGlyphInfo = this.getFromInfoDict(oldModuleURI);
+                if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
+                    return;
+                }
+
+                // check for other modules to keep coupled
+                let promptDecouple = false;
+                let coupledModules = this.getCoupledModules(oldModuleURI);
+                if ((selectedCell.isviewCell() && coupledModules.length > 0) || (selectedCell.isModule() && coupledModules.length > 1)) {
+                    promptDecouple = true;
+                }
+
+                // check for conflicts to couple with
+                let promptCouple = false;
+                let conflictModules = this.getCoupledModules(newModuleURI);
+                if (conflictModules.length > 0) {
+
+                }
+            } else {
+                this.updateInfoDict(info);
+            }
+
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
     }
 
     /**
@@ -636,22 +711,22 @@ export class GraphHelpers extends GraphBase {
 
         // have to add special check as no selection cell should signify the module/component of the current view
         let cell;
-        if(cells && cells.length > 0){
+        if (cells && cells.length > 0) {
             cell = cells[0];
         }
 
-        if((!cell && this.graph.getCurrentRoot().isModuleView()) || cell.isModule()){
+        if ((!cell && this.graph.getCurrentRoot().isModuleView()) || cell.isModule()) {
             let moduleInfo;
-            if(!cell)
+            if (!cell)
                 moduleInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
             else
                 moduleInfo = this.getFromInfoDict(cell.value);
             if (moduleInfo) {
                 this.metadataService.setSelectedModuleInfo(moduleInfo.makeCopy());
             }
-        }else if ((!cell && this.graph.getCurrentRoot().isComponentView()) || cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()) {
+        } else if ((!cell && this.graph.getCurrentRoot().isComponentView()) || cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()) {
             let glyphInfo;
-            if(!cell)
+            if (!cell)
                 glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
             else
                 glyphInfo = this.getFromInfoDict(cell.value);
@@ -843,6 +918,22 @@ export class GraphHelpers extends GraphBase {
                 if (!viewChild.isMolecularSpeciesGlyph())
                     continue;
                 if (viewChild.value === glyphURI)
+                    coupledCells.push(viewChild);
+            }
+        }
+        return coupledCells;
+    }
+
+    protected getCoupledModules(moduleURI: string) {
+        const coupledCells = [];
+        const cell1 = this.graph.getModel().getCell("1");
+        for (let viewCell of cell1.children) {
+            if (viewCell.isComponentView())
+                continue;
+            for (let viewChild of viewCell.children) {
+                if (!viewChild.isModule())
+                    continue;
+                if (viewChild.value === moduleURI)
                     coupledCells.push(viewChild);
             }
         }

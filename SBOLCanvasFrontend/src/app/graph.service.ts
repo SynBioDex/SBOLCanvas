@@ -1130,7 +1130,9 @@ export class GraphService extends GraphHelpers {
 
     // initalize the root view cell of the graph
     if (moduleMode) {
-      rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
+      let rootModuleInfo = new ModuleInfo();
+      this.addToInfoDict(rootModuleInfo);
+      rootViewCell = this.graph.insertVertex(cell1, rootModuleInfo.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
       this.graph.enterGroup(rootViewCell);
       this.viewStack.push(rootViewCell);
     } else {
@@ -1143,6 +1145,8 @@ export class GraphService extends GraphHelpers {
     }
 
     this.metadataService.setComponentDefinitionMode(!moduleMode);
+
+    //this.updateAngularMetadata(this.graph.getSelectionCells());
 
     this.editor.undoManager.clear();
   }

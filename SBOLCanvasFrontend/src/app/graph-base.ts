@@ -6,6 +6,7 @@ import { InteractionInfo } from './interactionInfo';
 import { GlyphService } from './glyph.service';
 import { CanvasAnnotation } from './canvasAnnotation';
 import { environment } from 'src/environments/environment';
+import { ModuleInfo } from './moduleInfo';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -129,22 +130,6 @@ export class GraphBase {
         this.initStyles();
         this.initCustomShapes();
         this.initSequenceFeatureGlyphMovement();
-
-        // initalize the root view cell of the graph
-        const cell1 = this.graph.getModel().getCell(1);
-        const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
-        this.graph.enterGroup(rootViewCell);
-        this.viewStack = [];
-        this.viewStack.push(rootViewCell);
-        this.selectionStack = [];
-
-        // initalize the GlyphInfoDictionary
-        const cell0 = this.graph.getModel().getCell(0);
-        const glyphDict = [];
-        this.graph.getModel().setValue(cell0, glyphDict);
-
-        // don't let any of the setup be on the undo stack
-        this.editor.undoManager.clear();
     }
 
     /**
