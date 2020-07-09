@@ -136,13 +136,14 @@ export class GraphEdits {
 
                 // change the view
                 this.view.clear(this.view.currentRoot, true);
-                this.view.currentRoot = childViewCell;
+                this.view.setCurrentRoot(childViewCell);
 
                 // fix any layout problems
                 childViewCell.refreshViewCell(this.graphService.graph);
 
                 // set the selection to the circuit container
-                this.graphService.graph.setSelectionCell(childViewCell.children[0]);
+                if(childViewCell.isComponentView())
+                    this.graphService.graph.setSelectionCell(childViewCell.children[0]);
                 this.graphService.fitCamera();
 
                 // make sure we can't add new strands/interactions/molecules
@@ -157,26 +158,27 @@ export class GraphEdits {
 
                 // change the view
                 this.view.clear(this.view.currentRoot, true);
-                this.view.currentRoot = this.graphService.viewStack[this.graphService.viewStack.length - 1];
+                this.view.setCurrentRoot(this.graphService.viewStack[this.graphService.viewStack.length - 1]);
 
                 // set the selection back
                 this.graphService.graph.setSelectionCell(newSelectedCell);
                 this.graphService.setAllScars(this.graphService.showingScars);
-                this.graphService.fitCamera();
-
+                
                 // make sure we can add new strands/interactions/molecules on the top level
                 if (this.graphService.graph.getCurrentRoot() && this.graphService.graph.getCurrentRoot().isViewCell()) {
                     this.graphService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
-
+                    
                     // refresh the circuit containers
                     this.graphService.graph.getCurrentRoot().refreshViewCell(this.graphService.graph);
                 }
-
+                
                 if (newSelectedCell) {
                     this.glyphCell = newSelectedCell;
                 } else {
                     this.glyphCell = previousView
                 }
+                
+                this.graphService.fitCamera();
             }
         }
     }

@@ -142,19 +142,19 @@ export class GraphBase {
         window['mxPoint'] = mx.mxPoint;
         window['mxCell'] = mx.mxCell;
 
-        let genericDecode = function(dec, node, into){
+        let genericDecode = function (dec, node, into) {
             const meta = node;
             if (meta != null) {
-              for (let i = 0; i < meta.attributes.length; i++) {
-                const attrib = meta.attributes[i];
-                if (attrib.specified == true && attrib.name != 'as') {
-                  into[attrib.name] = attrib.value;
+                for (let i = 0; i < meta.attributes.length; i++) {
+                    const attrib = meta.attributes[i];
+                    if (attrib.specified == true && attrib.name != 'as') {
+                        into[attrib.name] = attrib.value;
+                    }
                 }
-              }
-              for (let i = 0; i < meta.children.length; i++) {
-                const childNode = meta.children[i];
-                into[childNode.getAttribute("as")] = dec.decode(childNode);
-              }
+                for (let i = 0; i < meta.children.length; i++) {
+                    const childNode = meta.children[i];
+                    into[childNode.getAttribute("as")] = dec.decode(childNode);
+                }
             }
             return into;
         }
@@ -188,11 +188,11 @@ export class GraphBase {
 
         Object.defineProperty(CanvasAnnotation, "name", { configurable: true, value: "CanvasAnnotation" });
         const canvasAnnotationCodec = new mx.mxObjectCodec(new CanvasAnnotation());
-        canvasAnnotationCodec.decode = function(dec, node, into){
+        canvasAnnotationCodec.decode = function (dec, node, into) {
             const canvasAnnotation = new CanvasAnnotation();
             return genericDecode(dec, node, canvasAnnotation);
         }
-        canvasAnnotationCodec.encode = function(enc, object){
+        canvasAnnotationCodec.encode = function (enc, object) {
             return object.encode(enc);
         }
         mx.mxCodecRegistry.register(canvasAnnotationCodec);
@@ -224,7 +224,7 @@ export class GraphBase {
                     reconstructCellStyle = true;
                 else if (cell.style.includes(GraphBase.STYLE_SEQUENCE_FEATURE) && !cell.style.includes(glyphDict[cell.value].partRole))
                     reconstructCellStyle = true;
-                else if (cell.style === GraphBase.STYLE_MOLECULAR_SPECIES || cell.style.includes(GraphBase.STYLE_MOLECULAR_SPECIES+";"))
+                else if (cell.style === GraphBase.STYLE_MOLECULAR_SPECIES || cell.style.includes(GraphBase.STYLE_MOLECULAR_SPECIES + ";"))
                     reconstructCellStyle = true;
             }
 
@@ -244,7 +244,7 @@ export class GraphBase {
                             cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
                     } else {
                         // molecular species
-                        if(!cell.style)
+                        if (!cell.style)
                             cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
                         else
                             cell.style = cell.style.replace(GraphBase.STYLE_MOLECULAR_SPECIES, GraphBase.STYLE_MOLECULAR_SPECIES + GraphBase.moleculeTypeToName(glyphDict[cell.value].partType))
@@ -309,7 +309,7 @@ export class GraphBase {
             return this.isStyle(GraphBase.STYLE_INTERACTION);
         }
 
-        mx.mxCell.prototype.isModule = function(){
+        mx.mxCell.prototype.isModule = function () {
             return this.isStyle(GraphBase.STYLE_MODULE);
         }
 
@@ -447,9 +447,11 @@ export class GraphBase {
             }
 
             // refresh all circuit containers
-            for (let child of this.children) {
-                if (child.isCircuitContainer()) {
-                    child.refreshCircuitContainer(graph);
+            if (this.children) {
+                for (let child of this.children) {
+                    if (child.isCircuitContainer()) {
+                        child.refreshCircuitContainer(graph);
+                    }
                 }
             }
         };
@@ -812,9 +814,9 @@ export class GraphBase {
                     for (let container of Array.from(containers.values())) {
                         let glyphInfo;
                         if (sender.getCurrentRoot().isComponentView()) {
-                            glyphInfo = this.getFromGlyphDict(sender.getCurrentRoot().getId());
+                            glyphInfo = this.getFromInfoDict(sender.getCurrentRoot().getId());
                         } else {
-                            glyphInfo = this.getFromGlyphDict(container);
+                            glyphInfo = this.getFromInfoDict(container);
                         }
                         if (ownershipChange && glyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
                             cancelled = true;
@@ -920,7 +922,7 @@ export class GraphBase {
         }
     }
 
-    static moleculeTypeToName(type: string){
+    static moleculeTypeToName(type: string) {
         switch (type) {
             case "DNA molecule":
                 return "dsNA";

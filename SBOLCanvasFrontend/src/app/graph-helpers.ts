@@ -451,9 +451,11 @@ export class GraphHelpers extends GraphBase {
         const cell1 = this.graph.getModel().getCell("1");
         // find all the circuit containers
         for (let viewChild of cell1.children) {
-            for (let containerChild of viewChild.children) {
-                if (containerChild.isCircuitContainer() && containerChild.getId() != cell.getId() && containerChild.getValue() === cell.getValue()) {
-                    toReplace.push(containerChild);
+            if (viewChild.children) {
+                for (let containerChild of viewChild.children) {
+                    if (containerChild.isCircuitContainer() && containerChild.getId() != cell.getId() && containerChild.getValue() === cell.getValue()) {
+                        toReplace.push(containerChild);
+                    }
                 }
             }
         }
@@ -695,14 +697,15 @@ export class GraphHelpers extends GraphBase {
         // start with null data, (re)add it as possible
         this.nullifyMetadata();
 
-        if (!this.graph.getCurrentRoot().isModuleView() && (!cells || cells.length === 0)) {
-            // no selection? can't display metadata
+        // if there is no current root it's because we're in the middle of reseting the view
+        if (!this.graph.getCurrentRoot())
             return;
-        }
 
         // style first.
-        const styleInfo = new StyleInfo(cells, this.graph);
-        this.metadataService.setSelectedStyleInfo(styleInfo);
+        if (cells && cells.length > 0) {
+            const styleInfo = new StyleInfo(cells, this.graph);
+            this.metadataService.setSelectedStyleInfo(styleInfo);
+        }
 
         if (cells.length > 1) {
             // multiple selections? can't display glyph data
@@ -715,7 +718,7 @@ export class GraphHelpers extends GraphBase {
             cell = cells[0];
         }
 
-        if ((!cell && this.graph.getCurrentRoot().isModuleView()) || cell.isModule()) {
+        if ((!cell && this.graph.getCurrentRoot().isModuleView()) || (cell && cell.isModule())) {
             let moduleInfo;
             if (!cell)
                 moduleInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
@@ -724,7 +727,7 @@ export class GraphHelpers extends GraphBase {
             if (moduleInfo) {
                 this.metadataService.setSelectedModuleInfo(moduleInfo.makeCopy());
             }
-        } else if ((!cell && this.graph.getCurrentRoot().isComponentView()) || cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()) {
+        } else if ((!cell && this.graph.getCurrentRoot().isComponentView()) || (cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()))) {
             let glyphInfo;
             if (!cell)
                 glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
@@ -1307,17 +1310,22 @@ export class GraphHelpers extends GraphBase {
         circuitContainer.refreshCircuitContainer(this.graph);
     }
 
-    protected createViewCell(uri: string): mxCell {
+    protected createViewCell(uri: string, module: boolean = false): mxCell {
         // construct the view cell
         const cell1 = this.graph.getModel().getCell(1);
-        const childViewCell = this.graph.insertVertex(cell1, uri, '', 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
+        let childViewCell;
+        if (module) {
+            childViewCell = this.graph.insertVertex(cell1, uri, '', 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
+        } else {
+            childViewCell = this.graph.insertVertex(cell1, uri, '', 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
 
-        // add the backbone to the view cell
-        const childCircuitContainer = this.graph.insertVertex(childViewCell, null, uri, 0, 0, 0, 0, GraphBase.STYLE_CIRCUIT_CONTAINER);
-        const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, GraphBase.STYLE_BACKBONE);
+            // add the backbone to the view cell
+            const childCircuitContainer = this.graph.insertVertex(childViewCell, null, uri, 0, 0, 0, 0, GraphBase.STYLE_CIRCUIT_CONTAINER);
+            const childCircuitContainerBackbone = this.graph.insertVertex(childCircuitContainer, null, '', 0, 0, 0, 0, GraphBase.STYLE_BACKBONE);
 
-        childCircuitContainerBackbone.setConnectable(false);
-        childCircuitContainer.setConnectable(false);
+            childCircuitContainerBackbone.setConnectable(false);
+            childCircuitContainer.setConnectable(false);
+        }
 
         return childViewCell;
     }

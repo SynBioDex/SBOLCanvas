@@ -1,3 +1,4 @@
+<div *ngIf="registries && partTypes && partRoles && interactionTypes"> <!-- Don't show anything until all the data from the backend is loaded -->
 <div *ngIf="glyphInfo" class="info-menu-container">
   <mat-form-field>
     <mat-label>Part type</mat-label>
@@ -101,4 +102,5 @@
   <mat-form-field>
     <input matInput id="displayID" placeholder="Display ID" value="{{ interactionInfo.displayID }}" (change)="inputChange($event)">
   </mat-form-field>
+</div>
 </div>

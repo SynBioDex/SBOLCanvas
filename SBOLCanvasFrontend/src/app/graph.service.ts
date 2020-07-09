@@ -164,7 +164,7 @@ export class GraphService extends GraphHelpers {
   }
 
   /**
-   * "Drills in" to replace the canvas with the selected glyph's component definition
+   * "Drills in" to replace the canvas with the selected glyph's component/module view
    */
   enterGlyph() {
     let selection = this.graph.getSelectionCells();
@@ -172,7 +172,7 @@ export class GraphService extends GraphHelpers {
       return;
     }
 
-    if (!selection[0].isSequenceFeatureGlyph()) {
+    if (!selection[0].isSequenceFeatureGlyph() && !selection[0].isModule()) {
       return;
     }
 
@@ -738,6 +738,8 @@ export class GraphService extends GraphHelpers {
       const moduleCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, moduleInfo.getFullURI(), x, y, GraphBase.defaultModuleWidth, GraphBase.defaultModuleHeight, GraphBase.STYLE_MODULE);
       moduleCell.setConnectable(true);
 
+      this.createViewCell(moduleInfo.getFullURI(), true);
+
       this.graph.clearSelection();
       this.graph.setSelectionCell(moduleCell);
     }finally{
@@ -1146,7 +1148,7 @@ export class GraphService extends GraphHelpers {
 
     this.metadataService.setComponentDefinitionMode(!moduleMode);
 
-    //this.updateAngularMetadata(this.graph.getSelectionCells());
+    this.updateAngularMetadata(this.graph.getSelectionCells());
 
     this.editor.undoManager.clear();
   }
