@@ -557,7 +557,7 @@ public class MxToSBOL extends Converter {
 						if (o1.getStyle().contains(STYLE_BACKBONE))
 							return -1;
 						else if (o2.getStyle().contains(STYLE_BACKBONE)) {
-							return -1;
+							return 1;
 						} else {
 							return o1.getGeometry().getX() < o2.getGeometry().getX() ? -1 : 1;
 						}
