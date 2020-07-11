@@ -783,7 +783,7 @@ export class GraphService extends GraphHelpers {
     }finally{
       this.graph.getModel().endUpdate();
       this.graph.refresh(selectedCell);
-      this.updateAngularMetadata(this.graph.getSelectionCells());
+      //this.updateAngularMetadata(this.graph.getSelectionCells());
     }
   }
 

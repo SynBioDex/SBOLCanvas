@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo } from '../interactionInfo';
 import { MetadataService } from '../metadata.service';
@@ -33,7 +33,7 @@ export class InfoEditorComponent implements OnInit {
   moduleInfo: ModuleInfo;
   interactionInfo: InteractionInfo;
 
-  constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog) { }
+  constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog, private changeDetector: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
@@ -177,6 +177,9 @@ export class InfoEditorComponent implements OnInit {
         this.partRefinements = [];
       }
     }
+    // this needs to be called because we may have gotten here from an async function
+    // an async function doesn't update the view for some reason
+    this.changeDetector.detectChanges();
   }
 
   /**
@@ -184,6 +187,9 @@ export class InfoEditorComponent implements OnInit {
    */
   moduleInfoUpdated(moduleInfo: ModuleInfo){
     this.moduleInfo = moduleInfo;
+    // this needs to be called because we may have gotten here from an async function
+    // an async function doesn't update the view for some reason
+    this.changeDetector.detectChanges();
   }
 
   /**
@@ -191,6 +197,9 @@ export class InfoEditorComponent implements OnInit {
    */
   interactionInfoUpdated(interactionInfo: InteractionInfo) {
     this.interactionInfo = interactionInfo;
+    // this needs to be called because we may have gotten here from an async function
+    // an async function doesn't update the view for some reason
+    this.changeDetector.detectChanges();
   }
 
   localDesign(): boolean {

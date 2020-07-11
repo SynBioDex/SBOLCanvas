@@ -288,9 +288,6 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     this.changeOwnership(selectedCell.getValue(), true);
                 }
-
-                // update the view
-                this.updateAngularMetadata(this.graph.getSelectionCells());
                 return;
             }
 
@@ -304,10 +301,9 @@ export class GraphHelpers extends GraphBase {
             // change the ownership
             this.changeOwnership(selectedCell.getValue());
 
-            // update the view
-            this.updateAngularMetadata(this.graph.getSelectionCells());
         } finally {
             this.graph.getModel().endUpdate();
+            this.updateAngularMetadata(this.graph.getSelectionCells());
         }
     }
 
@@ -494,8 +490,13 @@ export class GraphHelpers extends GraphBase {
 
                 // update the view cell and module/s
                 let moduleZoomed;
-                if (selectedCell.isViewCell() && this.selectionStack.length > 0) {
-                    moduleZoomed = this.selectionStack[this.selectionStack.length - 1];
+                if(selectedCell.isViewCell()){
+                    if(this.selectionStack.length > 0){
+                        moduleZoomed = this.selectionStack[this.selectionStack.length -1 ];
+                    }else{
+                        moduleZoomed = selectedCell;
+                    }
+                    this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
                 }
 
                 let viewCell = this.graph.getModel().getCell(oldModuleURI);
@@ -525,12 +526,24 @@ export class GraphHelpers extends GraphBase {
                         graph.getModel().setValue(cell, newModuleURI);
                     });
                     if (moduleZoomed) {
-                        this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), moduleZoomed, this));
+                        if(moduleZoomed.isViewCell()){
+                            // if the module zoomed is a view cell, the view stored in moduleZoomed is before the call to updateViewCell
+                            // that means it is no longer the correct one, and we need to get it from the model
+                            let newViewCell = this.graph.getModel().getCell(newModuleURI);
+                            this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newViewCell, this));
+                        }else{
+                            this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), moduleZoomed, this));
+                        }
                     }
                 } else if (moduleZoomed) {
-                    // we came from a view cell, so update the view cell, and zoom back in
-                    this.graph.getModel().setValue(moduleZoomed, newModuleURI);
-                    this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), moduleZoomed, this));
+                    if(moduleZoomed.isViewCell()){
+                        let newViewCell = this.graph.getModel().getCell(newModuleURI);
+                        this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newViewCell, this));
+                    }else{
+                        // we came from a view cell, so update the view cell, and zoom back in
+                        this.graph.getModel().setValue(moduleZoomed, newModuleURI);
+                        this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), moduleZoomed, this));
+                    }
                 } else {
                     // if we want to decouple, just set the current cell
                     this.graph.getModel().setValue(selectedCell, newModuleURI);
@@ -542,21 +555,16 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     this.changeOwnership(selectedCell.getValue(), true);
                 }
-
-                // update the view
-                this.updateAngularMetadata(this.graph.getSelectionCells());
             } else {
                 this.updateInfoDict(info);
 
                 // change the ownership
                 this.changeOwnership(selectedCell.getValue());
-
-                // update the view
-                this.updateAngularMetadata(this.graph.getSelectioNCells());
             }
 
         } finally {
             this.graph.getModel().endUpdate();
+            this.updateAngularMetadata(this.graph.getSelectionCells());
         }
     }
 
@@ -1285,7 +1293,12 @@ export class GraphHelpers extends GraphBase {
                 }
             }
         } else {
-            let viewCell = this.graph.getModel().getCell(cell.value);
+            let viewCell;
+            if(cell.isViewCell()){
+                viewCell = cell;
+            }else{
+                viewCell = this.graph.getModel().getCell(cell.value);
+            }
             if(viewCell.children){
                 for(let viewChild of viewCell.children){
                     if(viewChild.isModule()){
