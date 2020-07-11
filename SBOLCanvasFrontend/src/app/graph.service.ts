@@ -752,7 +752,7 @@ export class GraphService extends GraphHelpers {
    */
   async setSelectedCellInfo(info: Info) {
     const selectedCell = this.graph.getSelectionCell();
-    if (info !instanceof ModuleInfo && !selectedCell) {
+    if (!(info instanceof ModuleInfo) && !selectedCell) {
       return;
     }
 

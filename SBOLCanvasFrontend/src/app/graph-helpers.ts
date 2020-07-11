@@ -54,12 +54,11 @@ export class GraphHelpers extends GraphBase {
 
     protected getParentInfo(cell: mxCell): GlyphInfo {
         let glyphInfo;
-        if (cell.isCircuitContainer()) {
+        if (cell.isCircuitContainer() || cell.isViewCell()) {
             if (this.viewStack.length > 1) {
                 // has a parent that might need to change
                 glyphInfo = this.getFromInfoDict(this.selectionStack[this.selectionStack.length - 1].getParent().getValue());
             }
-            //TODO come back to me when module definitions will need to be updated
         } else {
             glyphInfo = this.getFromInfoDict(cell.getParent().getValue());
         }
@@ -88,6 +87,13 @@ export class GraphHelpers extends GraphBase {
             }
 
             if (oldGlyphURI != newGlyphURI) {
+                // check for module definition conflict
+                let conflictInfo = this.getFromInfoDict(newGlyphURI);
+                if (conflictInfo && !(conflictInfo instanceof GlyphInfo)) {
+                    this.dialog.open(ErrorComponent, { data: "The part " + newGlyphURI + " already exists as a ModuleDefinition!" });
+                    return;
+                }
+                
                 // if the uri changed, that means it could cause a cycle
                 if (this.checkCycleUp(selectedCell, newGlyphURI)) {
                     // Tell the user a cycle isn't allowed
@@ -104,12 +110,14 @@ export class GraphHelpers extends GraphBase {
                     if (coupledCell != selectedCell && this.getParentInfo(coupledCell) && this.getParentInfo(selectedCell) &&
                         this.getParentInfo(coupledCell).getFullURI() != this.getParentInfo(selectedCell).getFullURI()) {
                         promptDecouple = true;
+                        break;
                     }
                 }
                 for (let coupledContainer of coupledContainers) {
                     if (coupledContainer != selectedCell && this.getParentInfo(coupledContainer) && this.getParentInfo(selectedCell) &&
                         this.getParentInfo(coupledContainer).getFullURI() != this.getParentInfo(selectedCell).getFullURI()) {
                         promptDecouple = true;
+                        break;
                     }
                 }
                 if (promptDecouple) {
@@ -405,7 +413,19 @@ export class GraphHelpers extends GraphBase {
             info.uriPrefix = environment.baseURI;
             let newModuleURI = info.getFullURI();
 
+            // check for ownership prompt
+            let oldGlyphInfo = this.getFromInfoDict(oldModuleURI);
+            if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
+                return;
+            }
+
             if (oldModuleURI != newModuleURI) {
+                if (this.checkCycleUp(selectedCell, newModuleURI)) {
+                    // Tell the user a cycle isn't allowed
+                    this.dialog.open(ErrorComponent, { data: "ModuleInstance objects MUST NOT form circular reference chains via their definition properties and parent ModuleDefinition objects." });
+                    return;
+                }
+
                 // check for component definition conflict
                 let conflictInfo = this.getFromInfoDict(newModuleURI);
                 if (conflictInfo && !(conflictInfo instanceof ModuleInfo)) {
@@ -413,27 +433,126 @@ export class GraphHelpers extends GraphBase {
                     return;
                 }
 
-                // check for ownership prompt
-                let oldGlyphInfo = this.getFromInfoDict(oldModuleURI);
-                if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
-                    return;
-                }
 
                 // check for other modules to keep coupled
+                let shouldDecouple = false;
                 let promptDecouple = false;
                 let coupledModules = this.getCoupledModules(oldModuleURI);
-                if ((selectedCell.isviewCell() && coupledModules.length > 0) || (selectedCell.isModule() && coupledModules.length > 1)) {
-                    promptDecouple = true;
+                for (let coupledCell of coupledModules) {
+                    if (coupledCell != selectedCell && this.getParentInfo(coupledCell) && this.getParentInfo(selectedCell) &&
+                        this.getParentInfo(coupledCell).getFullURI() != this.getParentInfo(selectedCell).getFullURI()) {
+                        promptDecouple = true;
+                        break;
+                    }
+                }
+                if (promptDecouple) {
+                    let decoupleResult = await this.promptDeCouple();
+                    if (decoupleResult === "Yes") {
+                        shouldDecouple = false;
+                    } else if (decoupleResult === "No") {
+                        shouldDecouple = true;
+                    } else {
+                        return;
+                    }
                 }
 
                 // check for conflicts to couple with
-                let promptCouple = false;
-                let conflictModules = this.getCoupledModules(newModuleURI);
-                if (conflictModules.length > 0) {
-
+                let shouldCouple = false;
+                let keepSubstructure = false;
+                let conflictViewCell = this.graph.getModel().getCell(newModuleURI);
+                if (conflictViewCell) {
+                    let coupleResult = await this.promptCouple();
+                    shouldCouple = true;
+                    if (coupleResult === "Keep") {
+                        keepSubstructure = true;
+                    } else if (coupleResult === "Update") {
+                        keepSubstructure = false;
+                    } else {
+                        return;
+                    }
                 }
+
+                if (shouldCouple && keepSubstructure && this.checkCycleDown(selectedCell, newModuleURI)) {
+                    // tell the user a cycle isn't allowed
+                    this.dialog.open(ErrorComponent, { data: "ModuleInstance objects MUST NOT form circular reference chains via their definition properties and parent ModuleDefinition objects." });
+                    return;
+                }
+
+                // update the infoDictionary
+                if (!shouldDecouple) {
+                    // we don't want to remove the old one if it will still be in use
+                    this.removeFromInfoDict(oldModuleURI);
+                }
+                if (shouldCouple && keepSubstructure) {
+                    // we need to remove the new one if we want to replace it with ours
+                    this.removeFromInfoDict(newModuleURI);
+                }
+                if (!shouldCouple || keepSubstructure) {
+                    // we don't want to add if we are updating substructure
+                    this.addToInfoDict(info);
+                }
+
+                // update the view cell and module/s
+                let moduleZoomed;
+                if (selectedCell.isViewCell() && this.selectionStack.length > 0) {
+                    moduleZoomed = this.selectionStack[this.selectionStack.length - 1];
+                }
+
+                let viewCell = this.graph.getModel().getCell(oldModuleURI);
+                // if we're decoupling create a clone
+                if (shouldDecouple) {
+                    viewCell = this.graph.getModel().cloneCell(viewCell);
+                }
+                if (shouldCouple) {
+                    if (keepSubstructure) {
+                        // if we're coupling and keeping substructure, remove the conflict
+                        this.graph.getModel().remove(conflictViewCell);
+                        this.updateViewCell(viewCell, newModuleURI);
+                    } else {
+                        // if we're coupling and updating, remove the current substructure
+                        this.graph.getModel().remove(viewCell);
+                    }
+                } else {
+                    // otherwise update the view cell
+                    this.updateViewCell(viewCell, newModuleURI);
+                }
+
+                // update the selected module value
+                if (!shouldDecouple) {
+                    // if we were coupled, and don't want to decouple, update all coupled cells
+                    const graph = this.graph;
+                    coupledModules.forEach(function (cell) {
+                        graph.getModel().setValue(cell, newModuleURI);
+                    });
+                    if (moduleZoomed) {
+                        this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), moduleZoomed, this));
+                    }
+                } else if (moduleZoomed) {
+                    // we came from a view cell, so update the view cell, and zoom back in
+                    this.graph.getModel().setValue(moduleZoomed, newModuleURI);
+                    this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), moduleZoomed, this));
+                } else {
+                    // if we want to decouple, just set the current cell
+                    this.graph.getModel().setValue(selectedCell, newModuleURI);
+                }
+
+                // update the ownership
+                if (selectedCell.isModuleView()) {
+                    this.changeOwnership(newModuleURI);
+                } else {
+                    this.changeOwnership(selectedCell.getValue(), true);
+                }
+
+                // update the view
+                this.updateAngularMetadata(this.graph.getSelectionCells());
             } else {
                 this.updateInfoDict(info);
+
+                // change the ownership
+                this.changeOwnership(selectedCell.getValue());
+
+                // update the view
+                this.updateAngularMetadata(this.graph.getSelectioNCells());
             }
 
         } finally {
@@ -933,11 +1052,13 @@ export class GraphHelpers extends GraphBase {
         for (let viewCell of cell1.children) {
             if (viewCell.isComponentView())
                 continue;
-            for (let viewChild of viewCell.children) {
-                if (!viewChild.isModule())
-                    continue;
-                if (viewChild.value === moduleURI)
-                    coupledCells.push(viewChild);
+            if (viewCell.children) {
+                for (let viewChild of viewCell.children) {
+                    if (!viewChild.isModule())
+                        continue;
+                    if (viewChild.value === moduleURI)
+                        coupledCells.push(viewChild);
+                }
             }
         }
         return coupledCells;
@@ -1116,8 +1237,10 @@ export class GraphHelpers extends GraphBase {
         let checked = new Set<string>();
         let toCheck = new Set<string>();
         // check upward
-        if (cell.isCircuitContainer() && this.selectionStack.length > 1) {
+        if ((cell.isCircuitContainer() || cell.isViewCell()) && this.selectionStack.length > 1) {
             toCheck.add(this.selectionStack[this.selectionStack.length - 1].getParent().getParent().getId());
+        } else if(cell.isModule()){
+            toCheck.add(cell.getParent().getId());
         } else {
             toCheck.add(cell.getParent().getParent().getId());
         }
@@ -1163,10 +1286,17 @@ export class GraphHelpers extends GraphBase {
             }
         } else {
             let viewCell = this.graph.getModel().getCell(cell.value);
-            let viewChildren = viewCell.children[0].children;
-            for (let i = 0; i < viewChildren.length; i++) {
-                if (viewChildren[i].isSequenceFeatureGlyph()) {
-                    toCheck.add(viewChildren[i].value);
+            if(viewCell.children){
+                for(let viewChild of viewCell.children){
+                    if(viewChild.isModule()){
+                        toCheck.add(viewChild.value);
+                    }else if(viewChild.isCircuitContainer() && viewChild.children){
+                        for(let containerChild of viewChild.children){
+                            if(containerChild.isSequenceFeatureGlyph()){
+                                toCheck.add(containerChild.value);
+                            }
+                        }
+                    }
                 }
             }
         }
