@@ -752,9 +752,6 @@ export class GraphService extends GraphHelpers {
    */
   async setSelectedCellInfo(info: Info) {
     const selectedCell = this.graph.getSelectionCell();
-    if (!(info instanceof ModuleInfo) && !selectedCell) {
-      return;
-    }
 
     this.graph.getModel().beginUpdate();
     try{
@@ -764,8 +761,8 @@ export class GraphService extends GraphHelpers {
         return;
       }
       
-      if(info instanceof GlyphInfo && (selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph())){
-        if(!selectedCell.isMolecularSpeciesGlyph()){
+      if(info instanceof GlyphInfo && (!selectedCell || selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph())){
+        if(!selectedCell || !selectedCell.isMolecularSpeciesGlyph()){
           // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
           this.updateSelectedGlyphInfo(info);
         }else{

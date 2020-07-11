@@ -128,7 +128,9 @@ export class GraphEdits {
                 } else {
                     childViewCell = this.graphService.graph.getModel().getCell(this.glyphCell.value);
                     // add info to the selectionstack
-                    this.graphService.selectionStack.push(this.glyphCell);
+                    // edge case of zooming back into rootview of the diagram (nothing should be put in the selectionStack)
+                    if(this.graphService.viewStack.length > 0)
+                        this.graphService.selectionStack.push(this.glyphCell);
                 }
 
                 // add the info to the view stack

@@ -69,14 +69,23 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().beginUpdate();
         try {
             let selectedCells = this.graph.getSelectionCells();
-            if (selectedCells.length > 1 || selectedCells.length == 0) {
+            if (selectedCells.length > 1 || selectedCells.length < 0) {
                 console.error("Trying to change info on too many or too few cells!");
                 return;
             }
-            let selectedCell = selectedCells[0];
+            let selectedCell;
+            if(selectedCells.length == 0){
+                selectedCell = this.graph.getCurrentRoot();
+            }else{
+                selectedCell = selectedCells[0];
+            }
 
-            let oldGlyphURI = "";
-            oldGlyphURI = selectedCell.value;
+            let oldGlyphURI;
+            if(selectedCell.isViewCell()){
+                oldGlyphURI = selectedCell.getId();
+            }else{
+                oldGlyphURI = selectedCell.value;
+            }
             info.uriPrefix = environment.baseURI;
             let newGlyphURI = info.getFullURI();
 
@@ -171,10 +180,15 @@ export class GraphHelpers extends GraphBase {
 
                 // update view cell and glyph/s
                 let glyphZoomed;
-                if (selectedCell.isCircuitContainer()) {
+                if (selectedCell.isCircuitContainer() || selectedCell.isViewCell()) {
                     if (this.graph.getCurrentRoot().isComponentView()) {
-                        // default case (we're zoomed into a component view)
-                        glyphZoomed = this.selectionStack[this.selectionStack.length - 1];
+                        if(this.selectionStack.length > 0){
+                            // default case (we're zoomed into a component view)
+                            glyphZoomed = this.selectionStack[this.selectionStack.length - 1];
+                        }else{
+                            // top level container
+                            glyphZoomed = selectedCell;    
+                        }
                         this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
                     } else {
                         // edge case (we're in a module view, and there is no view cell to update)
@@ -215,7 +229,12 @@ export class GraphHelpers extends GraphBase {
                         graph.getModel().setValue(cell, newGlyphURI);
                     });
                     if (glyphZoomed) {
-                        this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), glyphZoomed, this));
+                        if(glyphZoomed.isViewCell()){
+                            let newViewCell = this.graph.getModel().getCell(newGlyphURI);
+                            this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newViewCell, this));
+                        }else{
+                            this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), glyphZoomed, this));
+                        }
                     }
                 } else if (glyphZoomed) {
                     // we came from a circuit container, so update the view cell, and zoom back in
@@ -283,7 +302,7 @@ export class GraphHelpers extends GraphBase {
                 }
 
                 // update the ownership
-                if (selectedCell.isCircuitContainer()) {
+                if (selectedCell.isCircuitContainer() || selectedCell.isViewCell()) {
                     this.changeOwnership(newGlyphURI, true)
                 } else {
                     this.changeOwnership(selectedCell.getValue(), true);
