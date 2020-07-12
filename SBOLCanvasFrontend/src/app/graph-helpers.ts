@@ -454,8 +454,8 @@ export class GraphHelpers extends GraphBase {
                 let promptDecouple = false;
                 let coupledModules = this.getCoupledModules(oldModuleURI);
                 for (let coupledCell of coupledModules) {
-                    if (coupledCell != selectedCell && this.getParentInfo(coupledCell) && this.getParentInfo(selectedCell) &&
-                        this.getParentInfo(coupledCell).getFullURI() != this.getParentInfo(selectedCell).getFullURI()) {
+                    if (coupledCell != selectedCell && (selectedCell.isModule() || 
+                    (selectedCell.isViewCell() && this.viewStack.length > 0 && coupledCell != this.viewStack[this.viewStack.length - 1]))) {
                         promptDecouple = true;
                         break;
                     }
@@ -1264,8 +1264,13 @@ export class GraphHelpers extends GraphBase {
         let checked = new Set<string>();
         let toCheck = new Set<string>();
         // check upward
-        if ((cell.isCircuitContainer() || cell.isViewCell()) && this.selectionStack.length > 1) {
-            toCheck.add(this.selectionStack[this.selectionStack.length - 1].getParent().getParent().getId());
+        if ((cell.isCircuitContainer() || cell.isViewCell()) && this.selectionStack.length > 0) {
+            let selectedCell = this.selectionStack[this.selectionStack.length - 1];
+            if(selectedCell.isModule()){
+                toCheck.add(selectedCell.getParent().getId());
+            }else if(selectedCell.isSequenceFeatureGlyph()){
+                toCheck.add(selectedCell.getParent().getParent().getId());
+            }
         } else if(cell.isModule()){
             toCheck.add(cell.getParent().getId());
         } else {
