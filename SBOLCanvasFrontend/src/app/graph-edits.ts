@@ -3,6 +3,7 @@ import { GlyphInfo } from './glyphInfo';
 import { mxGraphView } from 'src/mxgraph';
 import { GraphService } from './graph.service';
 import { Info } from './info';
+import { mx } from './graph-base';
 
 /**
  * Contains all the custom edit objects necessary for mxGraph.
@@ -134,11 +135,15 @@ export class GraphEdits {
                 }
 
                 // add the info to the view stack
+                let previousView = this.graphService.viewStack[this.graphService.viewStack.length -1 ];
                 this.graphService.viewStack.push(childViewCell);
 
                 // change the view
                 this.view.clear(this.view.currentRoot, true);
-                this.view.setCurrentRoot(childViewCell);
+                this.view.currentRoot = childViewCell;
+                // mxCurrentRootChange has this when zooming in, but it's causing a text positioning square where there shouldn't be one
+                // not having it seems to have no adverse effects
+                //this.view.validate(); 
 
                 // fix any layout problems
                 childViewCell.refreshViewCell(this.graphService.graph);
@@ -146,6 +151,8 @@ export class GraphEdits {
                 // set the selection to the circuit container
                 if(childViewCell.isComponentView())
                     this.graphService.graph.setSelectionCell(childViewCell.children[0]);
+                else
+                    this.graphService.graph.clearSelection();
                 this.graphService.fitCamera();
 
                 // make sure we can't add new strands/interactions/molecules
@@ -160,12 +167,13 @@ export class GraphEdits {
 
                 // change the view
                 this.view.clear(this.view.currentRoot, true);
-                this.view.setCurrentRoot(this.graphService.viewStack[this.graphService.viewStack.length - 1]);
+                this.view.currentRoot = this.graphService.viewStack[this.graphService.viewStack.length - 1];
+                this.view.refresh();
 
                 // set the selection back
                 this.graphService.graph.setSelectionCell(newSelectedCell);
                 this.graphService.setAllScars(this.graphService.showingScars);
-                
+
                 // make sure we can add new strands/interactions/molecules on the top level
                 if (this.graphService.graph.getCurrentRoot() && this.graphService.graph.getCurrentRoot().isViewCell()) {
                     this.graphService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
@@ -177,7 +185,7 @@ export class GraphEdits {
                 if (newSelectedCell) {
                     this.glyphCell = newSelectedCell;
                 } else {
-                    this.glyphCell = previousView
+                    this.glyphCell = previousView;
                 }
                 
                 this.graphService.fitCamera();

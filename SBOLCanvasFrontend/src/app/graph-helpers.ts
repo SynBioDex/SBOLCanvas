@@ -74,16 +74,16 @@ export class GraphHelpers extends GraphBase {
                 return;
             }
             let selectedCell;
-            if(selectedCells.length == 0){
+            if (selectedCells.length == 0) {
                 selectedCell = this.graph.getCurrentRoot();
-            }else{
+            } else {
                 selectedCell = selectedCells[0];
             }
 
             let oldGlyphURI;
-            if(selectedCell.isViewCell()){
+            if (selectedCell.isViewCell()) {
                 oldGlyphURI = selectedCell.getId();
-            }else{
+            } else {
                 oldGlyphURI = selectedCell.value;
             }
             info.uriPrefix = environment.baseURI;
@@ -102,7 +102,7 @@ export class GraphHelpers extends GraphBase {
                     this.dialog.open(ErrorComponent, { data: "The part " + newGlyphURI + " already exists as a ModuleDefinition!" });
                     return;
                 }
-                
+
                 // if the uri changed, that means it could cause a cycle
                 if (this.checkCycleUp(selectedCell, newGlyphURI)) {
                     // Tell the user a cycle isn't allowed
@@ -116,17 +116,19 @@ export class GraphHelpers extends GraphBase {
                 // lots of cases to deal with
                 let promptDecouple = false;
                 for (let coupledCell of coupledCells) {
-                    if (coupledCell != selectedCell && this.getParentInfo(coupledCell) && this.getParentInfo(selectedCell) &&
-                        this.getParentInfo(coupledCell).getFullURI() != this.getParentInfo(selectedCell).getFullURI()) {
+                    if (coupledCell != selectedCell && (selectedCell.isSequenceFeatureGlyph() ||
+                        ((selectedCell.isCircuitContainer() || selectedCell.isViewCell()) && this.selectionStack.length > 0 && coupledCell != this.selectionStack[this.selectionStack.length - 1]))) {
                         promptDecouple = true;
                         break;
                     }
                 }
-                for (let coupledContainer of coupledContainers) {
-                    if (coupledContainer != selectedCell && this.getParentInfo(coupledContainer) && this.getParentInfo(selectedCell) &&
-                        this.getParentInfo(coupledContainer).getFullURI() != this.getParentInfo(selectedCell).getFullURI()) {
-                        promptDecouple = true;
-                        break;
+                if (!promptDecouple) {
+                    for (let coupledContainer of coupledContainers) {
+                        if (coupledContainer != selectedCell && this.getParentInfo(coupledContainer) && this.getParentInfo(selectedCell) &&
+                            this.getParentInfo(coupledContainer).getFullURI() != this.getParentInfo(selectedCell).getFullURI()) {
+                            promptDecouple = true;
+                            break;
+                        }
                     }
                 }
                 if (promptDecouple) {
@@ -182,12 +184,12 @@ export class GraphHelpers extends GraphBase {
                 let glyphZoomed;
                 if (selectedCell.isCircuitContainer() || selectedCell.isViewCell()) {
                     if (this.graph.getCurrentRoot().isComponentView()) {
-                        if(this.selectionStack.length > 0){
+                        if (this.selectionStack.length > 0) {
                             // default case (we're zoomed into a component view)
                             glyphZoomed = this.selectionStack[this.selectionStack.length - 1];
-                        }else{
+                        } else {
                             // top level container
-                            glyphZoomed = selectedCell;    
+                            glyphZoomed = selectedCell;
                         }
                         this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
                     } else {
@@ -229,10 +231,10 @@ export class GraphHelpers extends GraphBase {
                         graph.getModel().setValue(cell, newGlyphURI);
                     });
                     if (glyphZoomed) {
-                        if(glyphZoomed.isViewCell()){
+                        if (glyphZoomed.isViewCell()) {
                             let newViewCell = this.graph.getModel().getCell(newGlyphURI);
                             this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newViewCell, this));
-                        }else{
+                        } else {
                             this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), glyphZoomed, this));
                         }
                     }
@@ -454,8 +456,8 @@ export class GraphHelpers extends GraphBase {
                 let promptDecouple = false;
                 let coupledModules = this.getCoupledModules(oldModuleURI);
                 for (let coupledCell of coupledModules) {
-                    if (coupledCell != selectedCell && (selectedCell.isModule() || 
-                    (selectedCell.isViewCell() && this.viewStack.length > 0 && coupledCell != this.viewStack[this.viewStack.length - 1]))) {
+                    if (coupledCell != selectedCell && (selectedCell.isModule() ||
+                        (selectedCell.isViewCell() && this.selectionStack.length > 0 && coupledCell != this.selectionStack[this.selectionStack.length - 1]))) {
                         promptDecouple = true;
                         break;
                     }
@@ -509,10 +511,10 @@ export class GraphHelpers extends GraphBase {
 
                 // update the view cell and module/s
                 let moduleZoomed;
-                if(selectedCell.isViewCell()){
-                    if(this.selectionStack.length > 0){
-                        moduleZoomed = this.selectionStack[this.selectionStack.length -1 ];
-                    }else{
+                if (selectedCell.isViewCell()) {
+                    if (this.selectionStack.length > 0) {
+                        moduleZoomed = this.selectionStack[this.selectionStack.length - 1];
+                    } else {
                         moduleZoomed = selectedCell;
                     }
                     this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
@@ -545,20 +547,20 @@ export class GraphHelpers extends GraphBase {
                         graph.getModel().setValue(cell, newModuleURI);
                     });
                     if (moduleZoomed) {
-                        if(moduleZoomed.isViewCell()){
+                        if (moduleZoomed.isViewCell()) {
                             // if the module zoomed is a view cell, the view stored in moduleZoomed is before the call to updateViewCell
                             // that means it is no longer the correct one, and we need to get it from the model
                             let newViewCell = this.graph.getModel().getCell(newModuleURI);
                             this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newViewCell, this));
-                        }else{
+                        } else {
                             this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), moduleZoomed, this));
                         }
                     }
                 } else if (moduleZoomed) {
-                    if(moduleZoomed.isViewCell()){
+                    if (moduleZoomed.isViewCell()) {
                         let newViewCell = this.graph.getModel().getCell(newModuleURI);
                         this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newViewCell, this));
-                    }else{
+                    } else {
                         // we came from a view cell, so update the view cell, and zoom back in
                         this.graph.getModel().setValue(moduleZoomed, newModuleURI);
                         this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), moduleZoomed, this));
@@ -1263,36 +1265,48 @@ export class GraphHelpers extends GraphBase {
     protected checkCycleUp(cell: mxCell, glyphURI: string) {
         let checked = new Set<string>();
         let toCheck = new Set<string>();
-        // check upward
+
+        // initalize the toCheck list
         if ((cell.isCircuitContainer() || cell.isViewCell()) && this.selectionStack.length > 0) {
             let selectedCell = this.selectionStack[this.selectionStack.length - 1];
-            if(selectedCell.isModule()){
+            if (selectedCell.isModule()) {
                 toCheck.add(selectedCell.getParent().getId());
-            }else if(selectedCell.isSequenceFeatureGlyph()){
+            } else if (selectedCell.isSequenceFeatureGlyph()) {
                 toCheck.add(selectedCell.getParent().getParent().getId());
             }
-        } else if(cell.isModule()){
+        } else if (cell.isModule()) {
             toCheck.add(cell.getParent().getId());
         } else {
-            toCheck.add(cell.getParent().getParent().getId());
+            toCheck.add(cell.getParent().getValue());
         }
+
         while (toCheck.size > 0) {
             let checking: string = toCheck.values().next().value;
             checked.add(checking);
             toCheck.delete(checking);
             if (checking === glyphURI) {
+                // exit case, a cycle was found upward
                 return true;
             }
+
+            // circuitContainer, sequenceFeature, and module can have values of the uri, we don't care about circuitContainers
             let toAddCells = [];
             for (let key in this.graph.getModel().cells) {
                 const cell = this.graph.getModel().cells[key];
-                if (cell.value === checking) {
+                if (cell.value === checking && (cell.isSequenceFeatureGlyph() || cell.isModule())) {
                     toAddCells.push(cell);
                 }
             }
+
+            // adding a squence features container value lets us ignore the case where there isn't a view cell for that id
             for (let i = 0; i < toAddCells.length; i++) {
-                let toAdd = toAddCells[i].getParent().getParent().getId();
-                if (toAdd != "rootView" && !checked.has(toAdd)) { // TODO replace with a check if the cell is a module view
+                let toAdd;
+                if(toAddCells[i].isSequenceFeatureGlyph()){
+                    toAdd = toAddCells[i].getParent().getValue();
+                }else{
+                    toAdd = toAddCells[i].getParent().getId();
+                }
+                if (!checked.has(toAdd)) {
                     toCheck.add(toAdd);
                 }
             }
@@ -1309,7 +1323,8 @@ export class GraphHelpers extends GraphBase {
     protected checkCycleDown(cell: mxCell, glyphURI: string) {
         let checked = new Set<string>();
         let toCheck = new Set<string>();
-        // check downward
+
+        // initalize the toCheck set
         if (cell.isCircuitContainer()) {
             for (let i = 0; i < cell.children.length; i++) {
                 if (cell.children[i].isSequenceFeatureGlyph()) {
@@ -1318,18 +1333,18 @@ export class GraphHelpers extends GraphBase {
             }
         } else {
             let viewCell;
-            if(cell.isViewCell()){
+            if (cell.isViewCell()) {
                 viewCell = cell;
-            }else{
+            } else {
                 viewCell = this.graph.getModel().getCell(cell.value);
             }
-            if(viewCell.children){
-                for(let viewChild of viewCell.children){
-                    if(viewChild.isModule()){
+            if (viewCell.children) {
+                for (let viewChild of viewCell.children) {
+                    if (viewChild.isModule()) {
                         toCheck.add(viewChild.value);
-                    }else if(viewChild.isCircuitContainer() && viewChild.children){
-                        for(let containerChild of viewChild.children){
-                            if(containerChild.isSequenceFeatureGlyph()){
+                    } else if (viewChild.isCircuitContainer() && viewChild.children) {
+                        for (let containerChild of viewChild.children) {
+                            if (containerChild.isSequenceFeatureGlyph()) {
                                 toCheck.add(containerChild.value);
                             }
                         }
@@ -1343,14 +1358,22 @@ export class GraphHelpers extends GraphBase {
             checked.add(checking);
             toCheck.delete(checking);
             if (checking === glyphURI) {
+                // end case where a cycle has been found
                 return true;
             }
 
             let viewCell = this.graph.getModel().getCell(checking);
-            let viewChildren = viewCell.children[0].children;
-            for (let i = 0; i < viewChildren.length; i++) {
-                if (viewChildren[i].isSequenceFeatureGlyph() && !checked.has(viewChildren[i].value)) {
-                    toCheck.add(viewChildren[i].value);
+            if (viewCell.children) {
+                for (let viewChild of viewCell.children) {
+                    if (viewChild.isModule() && !checked.has(viewChild.value)) {
+                        toCheck.add(viewChild.value);
+                    } else if (viewChild.isCircuitContainer() && viewChild.children) {
+                        for (let containerChild of viewChild.children) {
+                            if (containerChild.isSequenceFeatureGlyph() && !checked.has(containerChild.value)) {
+                                toCheck.add(containerChild.value);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1421,7 +1444,7 @@ export class GraphHelpers extends GraphBase {
                     return info.displayID;
                 }
             } else if (cell.isCircuitContainer()) {
-                return '';
+                return null;
             } else {
                 return cell.value;
             }

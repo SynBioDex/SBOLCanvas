@@ -41,7 +41,7 @@ export class GraphBase {
     static readonly STYLE_CIRCUIT_CONTAINER = 'circuitContainer';
     static readonly STYLE_BACKBONE = 'backbone';
     static readonly STYLE_TEXTBOX = 'textBox';
-    static readonly STYLE_MODULE = 'module';
+    static readonly STYLE_MODULE = 'moduleGlyph';
     static readonly STYLE_SCAR = 'Scar (Assembly Scar)';
     static readonly STYLE_NGA = 'NGA (No Glyph Assigned)';
     static readonly STYLE_MOLECULAR_SPECIES = 'molecularSpeciesGlyph';
