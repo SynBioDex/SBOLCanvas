@@ -71,11 +71,11 @@
     <mat-menu #helpMenu="matMenu">
       <button mat-menu-item class="toolbar-row-button"
               [matTooltip]="'Help using SBOL Canvas'"
-              [routerLink]="['/tutorial']">Tutorial</button>
+              onClick="window.open('/tutorial')">Tutorial</button>
 
       <button mat-menu-item class="toolbar-row-button"
               [matTooltip]="'About SBOL Canavs and its creators'"
-              [routerLink]="['/about']">About</button>
+              onClick="window.open('/about')">About</button>
 
       <button mat-menu-item class="toolbar-row-button"
               [matTooltip]="'Links to Github issue tracker.'"
