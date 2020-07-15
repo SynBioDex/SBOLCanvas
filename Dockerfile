@@ -15,6 +15,7 @@ RUN resources/build_automation/build_backend.sh
 ## Build angular stuff and copy into WEB-INF
 RUN apk add --update nodejs npm
 RUN npm install -g @angular/cli
+RUN apk add git
 RUN resources/build_automation/build_frontend.sh
 
 # New container
