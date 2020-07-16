@@ -40,6 +40,7 @@ import { ExportComponent } from './export/export.component';
 import { LandingPageComponent } from './landing-page/landing-page.component';
 import { TutorialComponent } from './tutorial/tutorial.component';
 import { ConfirmComponent } from './confirm/confirm.component';
+import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
 
 
 @NgModule({
@@ -65,6 +66,7 @@ import { ConfirmComponent } from './confirm/confirm.component';
     LandingPageComponent,
     TutorialComponent,
     ConfirmComponent,
+    FuncCompSelectorComponent,
   ],
   imports: [
     BrowserModule,
@@ -84,7 +86,7 @@ import { ConfirmComponent } from './confirm/confirm.component';
     provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
     }],
   bootstrap: [AppComponent],
-  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, ExportComponent, LoginComponent, ErrorComponent, ConfirmComponent, ColorPickerComponent ]
+  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, ExportComponent, LoginComponent, ErrorComponent, ConfirmComponent, FuncCompSelectorComponent, ColorPickerComponent ]
 })
 export class AppModule {
 }

@@ -5,11 +5,9 @@ import { environment } from 'src/environments/environment';
 
 export class ModuleInfo extends Info{
     static counter: number = 0;
-    displayID: string;
     name: string;
     description: string;
     version: string;
-    uriPrefix: string = environment.baseURI;
 
     constructor() {
         super();

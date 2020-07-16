@@ -4,7 +4,6 @@ import { environment } from 'src/environments/environment';
 export class InteractionInfo extends Info {
   // Remember that when you change this you need to change the encode function in graph service
   static counter: number = 0;
-  displayID: string;
   interactionType: string;
 
   constructor() {

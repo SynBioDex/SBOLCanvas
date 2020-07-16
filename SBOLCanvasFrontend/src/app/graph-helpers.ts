@@ -16,6 +16,7 @@ import { ErrorComponent } from './error/error.component';
 import { environment } from 'src/environments/environment';
 import { Info } from './info';
 import { ModuleInfo } from './moduleInfo';
+import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -249,7 +250,7 @@ export class GraphHelpers extends GraphBase {
 
                 // update the glyph graphics
                 let newCoupledCells = this.getCoupledGlyphs(newGlyphURI);
-                info = this.getFromInfoDict(newGlyphURI);
+                info = <GlyphInfo>this.getFromInfoDict(newGlyphURI);
                 this.mutateSequenceFeatureGlyph(info.partRole, newCoupledCells, this.graph);
 
                 // sync the circuitcontainers
@@ -317,7 +318,7 @@ export class GraphHelpers extends GraphBase {
 
             // there may be coupled cells that need to also be mutated
             // the glyphInfo may be different than info, so use getFromGlyphDict
-            this.mutateSequenceFeatureGlyph(this.getFromInfoDict(selectedCell.value).partRole, this.getCoupledGlyphs(selectedCell.value));
+            this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(selectedCell.value)).partRole, this.getCoupledGlyphs(selectedCell.value));
 
             // change the ownership
             this.changeOwnership(selectedCell.getValue());
@@ -647,6 +648,27 @@ export class GraphHelpers extends GraphBase {
         // prompt the user if they want to keep the cells coupled
         const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: "Other components are coupled with this one. Would you like to keep them coupled?", options: ["Yes", "No", "Cancel"] } });
         return confirmRef.afterClosed().toPromise();
+    }
+
+    protected async promptChooseFunctionalComponent(cell: mxCell){
+        let viewCell;
+        if(cell.isModule()){
+            viewCell = this.graph.getModel().getCell(cell.value);
+        }else if (cell.isModuleView()){
+            viewCell = cell;
+        }
+        let options = [];
+        if(viewCell.children){
+            for(let viewChild of viewCell.children){
+                if(viewChild.isCircuitContainer() || viewChild.isMolecularSpeciesGlyph()){
+                    let info = <GlyphInfo>this.getFromInfoDict(viewChild.getValue()).makeCopy();
+                    options.push({id: viewChild.getId(), info: info});
+                }
+                //TODO what do we do if it's a module?
+            }
+        }
+        const choiceRef = this.dialog.open(FuncCompSelectorComponent, { data: { from: viewCell.getId(), options: options}});
+        return choiceRef.afterClosed().toPromise();
     }
 
     /**
@@ -1196,6 +1218,7 @@ export class GraphHelpers extends GraphBase {
 
                 // change the glyphInfo's uriPrefix
                 let glyphInfo = this.getFromInfoDict(checking).makeCopy();
+                
                 glyphInfo.uriPrefix = environment.baseURI;
                 this.removeFromInfoDict(checking);
                 this.addToInfoDict(glyphInfo);
@@ -1425,7 +1448,7 @@ export class GraphHelpers extends GraphBase {
     /**
      * Get the GlyphInfo with the given glyphURI from the dictionary
      */
-    protected getFromInfoDict(glyphURI: string): GlyphInfo {
+    protected getFromInfoDict(glyphURI: string): Info {
         const cell0 = this.graph.getModel().getCell(0);
         return cell0.value[glyphURI];
     }
@@ -1434,8 +1457,17 @@ export class GraphHelpers extends GraphBase {
         // label drawing
         let graphService = this;
         this.graph.convertValueToString = function (cell) {
-            if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isModule()) {
-                let info = graphService.getFromInfoDict(cell.value);
+            if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
+                let info = <GlyphInfo>graphService.getFromInfoDict(cell.value);
+                if (!info) {
+                    return cell.value;
+                } else if (info.name != null && info.name != '') {
+                    return info.name;
+                } else {
+                    return info.displayID;
+                }
+            } else if (cell.isModule()){
+                let info = <ModuleInfo>graphService.getFromInfoDict(cell.value);
                 if (!info) {
                     return cell.value;
                 } else if (info.name != null && info.name != '') {

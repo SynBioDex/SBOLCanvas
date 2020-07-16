@@ -649,6 +649,7 @@ export class GraphService extends GraphHelpers {
       const selectionCells = this.graph.getSelectionCells();
       if (selectionCells.length == 1) {
         const selectedCell = this.graph.getSelectionCell();
+        //this.promptChooseFunctionalComponent(selectedCell);
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), selectedCell, null);
@@ -1073,7 +1074,7 @@ export class GraphService extends GraphHelpers {
         if (selectedCell.isSequenceFeatureGlyph()) {
           origParent.refreshCircuitContainer(this.graph);
           this.graph.setSelectionCell(newCell);
-          this.mutateSequenceFeatureGlyph(this.getFromInfoDict(newCell.value).partRole);
+          this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(newCell.value)).partRole);
         }
 
         // if we came from a circuit container, zoom back into it

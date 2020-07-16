@@ -11,13 +11,11 @@ export class GlyphInfo extends Info{
   partRole: string;
   otherRoles: string[];
   partRefine: string;
-  displayID: string;
   name: string;
   description: string;
   version: string;
   sequence: string;
   sequenceURI: string;
-  uriPrefix: string = environment.baseURI;
   annotations: CanvasAnnotation[];
   derivedFroms: string[];
   generatedBys: string[];
