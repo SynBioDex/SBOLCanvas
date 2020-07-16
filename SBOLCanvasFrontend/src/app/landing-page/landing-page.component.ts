@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { Title } from '@angular/platform-browser';
+import { environment } from 'src/environments/environment';
+import { versions } from 'src/environments/versions';
 
 @Component({
   selector: 'app-landing-page',
@@ -7,7 +10,12 @@ import { Component, OnInit } from '@angular/core';
 })
 export class LandingPageComponent implements OnInit {
 
-  constructor() { }
+  hash = "dev";
+
+  constructor(private titleService: Title) {
+    this.titleService.setTitle("SBOL Canvas About");
+    this.hash = versions.revision;
+  }
 
   ngOnInit() {
   }

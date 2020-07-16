@@ -2,7 +2,8 @@
   "name": "sbolcanvas-frontend",
   "version": "0.0.0",
   "scripts": {
-    "bundle-report": "ng build --prod --stats-json && webpack-bundle-analyzer dist/SBOLCanvasFrontend/stats.json"
+    "bundle-report": "ng build --prod --stats-json && webpack-bundle-analyzer dist/SBOLCanvasFrontend/stats.json",
+    "prebuild.prod": "ts-node -O \"{\\\"module\\\":\\\"commonjs\\\"}\" git.version.ts"
   },
   "private": true,
   "dependencies": {
