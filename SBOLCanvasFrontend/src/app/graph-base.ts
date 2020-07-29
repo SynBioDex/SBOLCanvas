@@ -129,7 +129,7 @@ export class GraphBase {
 
         this.initStyles();
         this.initCustomShapes();
-        this.initSequenceFeatureGlyphMovement();
+        this.initListeners();
     }
 
     /**
@@ -775,7 +775,24 @@ export class GraphBase {
     /**
      * Sets up logic for handling sequenceFeatureGlyph movement
      */
-    initSequenceFeatureGlyphMovement() {
+    initListeners() {
+        // edge movement
+        this.graph.addListener(mx.mxEvent.CONNECT_CELL, mx.mxUtils.bind(this, async function(sender, evt){
+
+            let edge = evt.getProperty("edge");
+            let terminal = evt.getProperty("terminal");
+            let source = evt.getProperty("source");
+
+            try{
+
+            }finally{
+                
+            }
+
+            evt.consume();
+        }));
+
+        // cell movement
         this.graph.addListener(mx.mxEvent.MOVE_CELLS, mx.mxUtils.bind(this, async function (sender, evt) {
             // sender is the graph
 

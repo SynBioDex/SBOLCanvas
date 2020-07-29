@@ -245,11 +245,10 @@ public class SynBioHub extends HttpServlet {
 			String server = request.getParameter("server");
 			String user = request.getHeader("Authorization");
 			String uri = request.getParameter("uri");
-			String name = request.getParameter("name");
 
 			if (request.getPathInfo().equals("/addToCollection")) {
 
-				if (server == null || user == null || uri == null || name == null) {
+				if (server == null || user == null || uri == null) {
 					response.setStatus(HttpStatus.SC_BAD_REQUEST);
 					return;
 				}
@@ -257,7 +256,7 @@ public class SynBioHub extends HttpServlet {
 				sbhf.setUser(user);
 				MxToSBOL converter = new MxToSBOL(user);
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				converter.toSBOL(request.getInputStream(), out, name);
+				converter.toSBOL(request.getInputStream(), out);
 				sbhf.addToCollection(URI.create(uri), true, new ByteArrayInputStream(out.toByteArray()));
 				response.setStatus(HttpStatus.SC_CREATED);
 

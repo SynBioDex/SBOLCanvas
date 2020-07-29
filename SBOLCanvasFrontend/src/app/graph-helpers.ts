@@ -650,7 +650,7 @@ export class GraphHelpers extends GraphBase {
         return confirmRef.afterClosed().toPromise();
     }
 
-    protected async promptChooseFunctionalComponent(cell: mxCell){
+    protected async promptChooseFunctionalComponent(cell: mxCell, from: boolean) : Promise<string>{
         let viewCell;
         if(cell.isModule()){
             viewCell = this.graph.getModel().getCell(cell.value);
@@ -662,13 +662,15 @@ export class GraphHelpers extends GraphBase {
             for(let viewChild of viewCell.children){
                 if(viewChild.isCircuitContainer() || viewChild.isMolecularSpeciesGlyph()){
                     let info = <GlyphInfo>this.getFromInfoDict(viewChild.getValue()).makeCopy();
+                    //TODO if(info.visibility == public && (info.direction == in || inout && from == false) || out)
                     options.push({id: viewChild.getId(), info: info});
                 }
                 //TODO what do we do if it's a module?
             }
         }
         const choiceRef = this.dialog.open(FuncCompSelectorComponent, { data: { from: viewCell.getId(), options: options}});
-        return choiceRef.afterClosed().toPromise();
+        let result = await choiceRef.afterClosed().toPromise();
+        return result.info.getFullURI()+"_"+result.id;
     }
 
     /**

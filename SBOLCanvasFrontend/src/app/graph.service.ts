@@ -141,7 +141,13 @@ export class GraphService extends GraphHelpers {
         } else if (cell.isInteraction()) {
           const src = cell.source;
           const dest = cell.target;
-          this.graph.addEdge(cell, null, dest, src);
+          let newEdge = this.graph.addEdge(cell, null, dest, src);
+          // reverse the info to/from
+          let newInfo = newEdge.value.makeCopy();
+          let tmpTo = newInfo.to;
+          newInfo.to = newInfo.from;
+          newInfo.from = tmpTo;
+          this.graph.getModel().execute(new GraphEdits.interactionEdit(newEdge, newInfo));
         }
       }
 
@@ -639,7 +645,7 @@ export class GraphService extends GraphHelpers {
    * @param x The x coordinate that the interaction should appear at
    * @param y The y coordinate that the interaction should appear at
    */
-  addInteractionAt(name: string, x, y) {
+  async addInteractionAt(name: string, x, y) {
     let cell;
 
     this.graph.getModel().beginUpdate();
@@ -649,13 +655,21 @@ export class GraphService extends GraphHelpers {
       const selectionCells = this.graph.getSelectionCells();
       if (selectionCells.length == 1) {
         const selectedCell = this.graph.getSelectionCell();
-        //this.promptChooseFunctionalComponent(selectedCell);
+        if(selectedCell.isModule()){
+          cell.value.from = await this.promptChooseFunctionalComponent(selectedCell, true);
+        }
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), selectedCell, null);
       } else if (selectionCells.length == 2) {
         const sourceCell = selectionCells[0];
         const destCell = selectionCells[1];
+        if(sourceCell.isModule()){
+          cell.value.from = await this.promptChooseFunctionalComponent(sourceCell, true);
+        }
+        if(destCell.isModule()){
+          cell.value.to = await this.promptChooseFunctionalComponent(destCell, false);
+        }
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);
       } else {

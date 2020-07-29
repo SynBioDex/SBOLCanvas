@@ -12,11 +12,6 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field *ngIf="!componentMode">
-      <input matInput placeholder="Module Name" [(ngModel)]="moduleName">
-    </mat-form-field>
-
-
     <mat-form-field>
       <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter"/>
     </mat-form-field>

@@ -15,7 +15,6 @@ export class UploadGraphComponent implements OnInit {
   registry: string;
   collections = new MatTableDataSource([]);
   collection: string;
-  moduleName: string;
   componentMode: boolean;
 
   displayedColumns: string[] = ['displayId', 'name', 'version', 'description'];
@@ -56,7 +55,7 @@ export class UploadGraphComponent implements OnInit {
   }
 
   finishCheck() {
-    return this.collection != null && this.collection.length > 0 && (this.componentMode || (this.moduleName != null && this.moduleName.length > 0));
+    return this.collection != null && this.collection.length > 0;
   }
 
   onCancelClick() {
@@ -65,7 +64,7 @@ export class UploadGraphComponent implements OnInit {
 
   onUploadClick() {
     this.working = true;
-    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.registry, this.collection, this.loginService.users[this.registry], this.moduleName).subscribe(result => {
+    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.registry, this.collection, this.loginService.users[this.registry]).subscribe(result => {
       this.working = false;
       this.dialogRef.close();
     });

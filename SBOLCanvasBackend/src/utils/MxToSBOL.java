@@ -119,7 +119,7 @@ public class MxToSBOL extends Converter {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public void toSBOL(InputStream graphStream, OutputStream sbolStream, String filename)
+	public void toSBOL(InputStream graphStream, OutputStream sbolStream)
 			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
 			SBOLConversionException, TransformerFactoryConfigurationError, TransformerException, URISyntaxException,
 			SynBioHubException {
@@ -167,9 +167,7 @@ public class MxToSBOL extends Converter {
 			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
 					.toArray(mxCell[]::new);
 			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || proteins.length > 0) {
-				// TODO when moddefs are supported the id should already be correct
 				// module definitions
-				((mxCell) viewCell).setId(filename);
 				createModuleDefinition(document, graph, model, viewCell);
 			} else {
 				// component definitions
