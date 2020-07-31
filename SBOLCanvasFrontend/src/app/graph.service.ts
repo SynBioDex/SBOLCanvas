@@ -297,6 +297,8 @@ export class GraphService extends GraphHelpers {
       for (let cell of selectedCells) {
         if (cell.isSequenceFeatureGlyph())
           circuitContainers.push(cell.getParent());
+        else if (cell.isCircuitContainer() && this.graph.getCurrentRoot() && this.graph.getCurrentRoot().isComponentView())
+          circuitContainers.push(cell);
       }
 
       // If we are not at the top level, we need to check
@@ -309,6 +311,22 @@ export class GraphService extends GraphHelpers {
           // the revised selection
           if (!(cell.isBackbone() || cell.isCircuitContainer())) {
             newSelection.push(cell);
+          }else{
+            let circuitContainer;
+            if(cell.isBackbone()){
+              circuitContainer = cell.getParent();
+            }else if(cell.isCircuitContainer()){
+              circuitContainer = cell;
+            }
+            
+            // If we find a backbone is selected, add all it's children
+            if(circuitContainer.children){
+              for(let child of circuitContainer.children){
+                if(!child.isBackbone()){
+                  newSelection.push(child);
+                }
+              }
+            }
           }
         }
         this.graph.setSelectionCells(newSelection);
@@ -656,7 +674,10 @@ export class GraphService extends GraphHelpers {
       if (selectionCells.length == 1) {
         const selectedCell = this.graph.getSelectionCell();
         if(selectedCell.isModule()){
-          cell.value.from = await this.promptChooseFunctionalComponent(selectedCell, true);
+          let result = await this.promptChooseFunctionalComponent(selectedCell, true);
+          if(!result)
+            return;
+          cell.value.from = result;
         }
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
@@ -665,10 +686,16 @@ export class GraphService extends GraphHelpers {
         const sourceCell = selectionCells[0];
         const destCell = selectionCells[1];
         if(sourceCell.isModule()){
-          cell.value.from = await this.promptChooseFunctionalComponent(sourceCell, true);
+          let result = await this.promptChooseFunctionalComponent(sourceCell, true);
+          if(!result)
+            return;
+          cell.value.from = result;
         }
         if(destCell.isModule()){
-          cell.value.to = await this.promptChooseFunctionalComponent(destCell, false);
+          let result = await this.promptChooseFunctionalComponent(destCell, false);
+          if(!result)
+            return;
+          cell.value.to = result;
         }
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);

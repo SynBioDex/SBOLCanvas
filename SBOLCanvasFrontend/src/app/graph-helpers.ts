@@ -670,6 +670,9 @@ export class GraphHelpers extends GraphBase {
         }
         const choiceRef = this.dialog.open(FuncCompSelectorComponent, { data: { from: viewCell.getId(), options: options}});
         let result = await choiceRef.afterClosed().toPromise();
+        if(!result){
+            return null;
+        }
         return result.info.getFullURI()+"_"+result.id;
     }
 

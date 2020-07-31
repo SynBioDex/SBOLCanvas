@@ -7,6 +7,7 @@ import { GlyphService } from './glyph.service';
 import { CanvasAnnotation } from './canvasAnnotation';
 import { environment } from 'src/environments/environment';
 import { ModuleInfo } from './moduleInfo';
+import { GraphEdits } from './graph-edits';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -779,16 +780,42 @@ export class GraphBase {
         // edge movement
         this.graph.addListener(mx.mxEvent.CONNECT_CELL, mx.mxUtils.bind(this, async function(sender, evt){
 
+            // if the terminal is a module, we need to prompt what it should be changed to, otherwise just clear it
+
             let edge = evt.getProperty("edge");
             let terminal = evt.getProperty("terminal");
             let source = evt.getProperty("source");
 
+            let cancelled = false;
+
             try{
+                sender.getModel().beginUpdate();
+                let newTarget = null;
+                if(terminal != null && terminal.isModule()){
+                    newTarget = await this.promptChooseFunctionalComponent(terminal, source);
+                    if(!newTarget){
+                        cancelled = true;
+                        return;
+                    }
+                }
 
+                let infoCopy = edge.value.makeCopy();
+
+                if(source){
+                    infoCopy.from = newTarget;
+                }else{
+                    infoCopy.to = newTarget;
+                }
+
+                sender.getModel().execute(new GraphEdits.interactionEdit(edge, infoCopy));
             }finally{
-                
+                sender.getModel().endUpdate();
+                // undo has to happen after end update
+                if (cancelled) {
+                    this.editor.undoManager.undo();
+                    this.editor.undoManager.trim();
+                }
             }
-
             evt.consume();
         }));
 
