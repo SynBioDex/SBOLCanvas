@@ -638,6 +638,33 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    protected udpateInteractions(oldReference: string, newReference: string) {
+        try {
+            this.graph.getmodel().beginUpdate();
+            const cell1 = this.graph.getModel().getCell("1");
+            let viewCells = cell1.children;
+            for (let viewCell of viewCells) {
+                if (viewCell.isComponentView())
+                    continue;
+                let interactions = this.graph.getModel().getChildEdges(viewCell);
+                for (let interaction of interactions) {
+                    if (interaction.value.from === oldReference) {
+                        let infoCopy = interaction.value.makeCopy();
+                        infoCopy.from = newReference;
+                        this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
+                    }
+                    if (interaction.value.to === oldReference) {
+                        let infoCopy = interaction.value.makeCopy();
+                        infoCopy.to = newReference;
+                        this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
+                    }
+                }
+            }
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+    }
+
     protected async promptCouple(): Promise<String> {
         // a cell with this display ID already exists prompt user if they want to couple them
         const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: "A component with this URI already exists. Would you like to couple them and keep the current substructure, or update it?", options: ["Keep", "Update", "Cancel"] } });
@@ -650,30 +677,30 @@ export class GraphHelpers extends GraphBase {
         return confirmRef.afterClosed().toPromise();
     }
 
-    protected async promptChooseFunctionalComponent(cell: mxCell, from: boolean) : Promise<string>{
+    protected async promptChooseFunctionalComponent(cell: mxCell, from: boolean): Promise<string> {
         let viewCell;
-        if(cell.isModule()){
+        if (cell.isModule()) {
             viewCell = this.graph.getModel().getCell(cell.value);
-        }else if (cell.isModuleView()){
+        } else if (cell.isModuleView()) {
             viewCell = cell;
         }
         let options = [];
-        if(viewCell.children){
-            for(let viewChild of viewCell.children){
-                if(viewChild.isCircuitContainer() || viewChild.isMolecularSpeciesGlyph()){
+        if (viewCell.children) {
+            for (let viewChild of viewCell.children) {
+                if (viewChild.isCircuitContainer() || viewChild.isMolecularSpeciesGlyph()) {
                     let info = <GlyphInfo>this.getFromInfoDict(viewChild.getValue()).makeCopy();
                     //TODO if(info.visibility == public && (info.direction == in || inout && from == false) || out)
-                    options.push({id: viewChild.getId(), info: info});
+                    options.push({ id: viewChild.getId(), info: info });
                 }
                 //TODO what do we do if it's a module?
             }
         }
-        const choiceRef = this.dialog.open(FuncCompSelectorComponent, { data: { from: viewCell.getId(), options: options}});
+        const choiceRef = this.dialog.open(FuncCompSelectorComponent, { data: { from: viewCell.getId(), options: options } });
         let result = await choiceRef.afterClosed().toPromise();
-        if(!result){
+        if (!result) {
             return null;
         }
-        return result.info.getFullURI()+"_"+result.id;
+        return result.info.getFullURI() + "_" + result.id;
     }
 
     /**
@@ -1013,12 +1040,13 @@ export class GraphHelpers extends GraphBase {
         let toExpand = new Set<string>();
 
         // get the main root of what we can see
-        let root = this.graph.getCurrentRoot();
-        let coupledCells = this.getCoupledGlyphs(root.getId());
-        while (coupledCells.length > 0) {
-            root = coupledCells[0].getParent().getParent();
-            coupledCells = this.getCoupledGlyphs(root.getId());
-        }
+        let root = this.viewStack[0];
+        // let root = this.graph.getCurrentRoot();
+        // let coupledCells = this.getCoupledGlyphs(root.getId());
+        // while (coupledCells.length > 0) {
+        //     root = coupledCells[0].getParent().getParent();
+        //     coupledCells = this.getCoupledGlyphs(root.getId());
+        // }
         toExpand.add(root.getId());
 
         // populate the reached set
@@ -1030,15 +1058,23 @@ export class GraphHelpers extends GraphBase {
 
             // get the children of the viewCell
             let viewChildren = this.graph.getModel().getChildren(viewCell);
-            for (let child of viewChildren) {
-                // If the child isn't a circuit container, it can't lead to another viewCell
-                if (!child.isCircuitContainer())
-                    continue;
-                let glyphs = this.graph.getModel().getChildren(child);
-                for (let glyph of glyphs) {
-                    if (!glyph.isSequenceFeatureGlyph() || reached.has(glyph.value))
+            if (viewChildren) {
+                for (let child of viewChildren) {
+                    // If the child isn't a circuit container or module, it can't lead to another viewCell
+                    if (!child.isCircuitContainer() && !child.isModule())
                         continue;
-                    toExpand.add(glyph.value);
+                    if (child.isModule()) {
+                        if (reached.has(child.value))
+                            continue;
+                        toExpand.add(child.value);
+                    } else if (child.isCircuitContainer()) {
+                        let glyphs = this.graph.getModel().getChildren(child);
+                        for (let glyph of glyphs) {
+                            if (!glyph.isSequenceFeatureGlyph() || reached.has(glyph.value))
+                                continue;
+                            toExpand.add(glyph.value);
+                        }
+                    }
                 }
             }
         }
@@ -1223,7 +1259,7 @@ export class GraphHelpers extends GraphBase {
 
                 // change the glyphInfo's uriPrefix
                 let glyphInfo = this.getFromInfoDict(checking).makeCopy();
-                
+
                 glyphInfo.uriPrefix = environment.baseURI;
                 this.removeFromInfoDict(checking);
                 this.addToInfoDict(glyphInfo);
@@ -1329,9 +1365,9 @@ export class GraphHelpers extends GraphBase {
             // adding a squence features container value lets us ignore the case where there isn't a view cell for that id
             for (let i = 0; i < toAddCells.length; i++) {
                 let toAdd;
-                if(toAddCells[i].isSequenceFeatureGlyph()){
+                if (toAddCells[i].isSequenceFeatureGlyph()) {
                     toAdd = toAddCells[i].getParent().getValue();
-                }else{
+                } else {
                     toAdd = toAddCells[i].getParent().getId();
                 }
                 if (!checked.has(toAdd)) {
@@ -1471,7 +1507,7 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     return info.displayID;
                 }
-            } else if (cell.isModule()){
+            } else if (cell.isModule()) {
                 let info = <ModuleInfo>graphService.getFromInfoDict(cell.value);
                 if (!info) {
                     return cell.value;

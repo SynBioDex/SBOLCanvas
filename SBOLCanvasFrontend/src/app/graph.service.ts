@@ -677,7 +677,7 @@ export class GraphService extends GraphHelpers {
           let result = await this.promptChooseFunctionalComponent(selectedCell, true);
           if(!result)
             return;
-          cell.value.from = result;
+          cell.value.fromURI = result;
         }
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
@@ -689,13 +689,13 @@ export class GraphService extends GraphHelpers {
           let result = await this.promptChooseFunctionalComponent(sourceCell, true);
           if(!result)
             return;
-          cell.value.from = result;
+          cell.value.fromURI = result;
         }
         if(destCell.isModule()){
           let result = await this.promptChooseFunctionalComponent(destCell, false);
           if(!result)
             return;
-          cell.value.to = result;
+          cell.value.toURI = result;
         }
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);

@@ -37,7 +37,7 @@ public class Convert extends HttpServlet {
 					return;
 				}
 				MxToSBOL converter = new MxToSBOL();
-				converter.toSBOL(request.getInputStream(), response.getOutputStream(), name);
+				converter.toSBOL(request.getInputStream(), response.getOutputStream());
 			} else if (request.getPathInfo().equals("/toMxGraph")) {
 				SBOLToMx converter = new SBOLToMx();
 				converter.toGraph(request.getInputStream(), response.getOutputStream());

@@ -802,9 +802,9 @@ export class GraphBase {
                 let infoCopy = edge.value.makeCopy();
 
                 if(source){
-                    infoCopy.from = newTarget;
+                    infoCopy.fromURI = newTarget;
                 }else{
-                    infoCopy.to = newTarget;
+                    infoCopy.toURI = newTarget;
                 }
 
                 sender.getModel().execute(new GraphEdits.interactionEdit(edge, infoCopy));

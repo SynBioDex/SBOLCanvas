@@ -49,13 +49,14 @@ import com.mxgraph.util.mxConstants;
 import com.mxgraph.view.mxGraph;
 
 import data.CanvasAnnotation;
+import data.Info;
 import data.GlyphInfo;
 import data.InteractionInfo;
 
 public class SBOLToMx extends Converter {
 
 	public SBOLToMx() {
-		glyphInfoDict = new Hashtable<String, GlyphInfo>();
+		infoDict = new Hashtable<String, Info>();
 	}
 
 	public void toGraph(InputStream sbolStream, OutputStream graphStream)
@@ -77,20 +78,20 @@ public class SBOLToMx extends Converter {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		model.setMaintainEdgeParent(false);
 		mxCell cell0 = (mxCell) model.getCell("0");
-		cell0.setValue(glyphInfoDict);
+		cell0.setValue(infoDict);
 
 		layoutHelper = new LayoutHelper(document, graph);
 
-		ModuleDefinition modDef = null;
+		ModuleDefinition rootModDef = null;
 		if (document.getRootModuleDefinitions().size() > 0) {
-			modDef = document.getRootModuleDefinitions().iterator().next();
+			rootModDef = document.getRootModuleDefinitions().iterator().next();
 		}
 
 		// top level component definitions
 		Set<ComponentDefinition> compDefs = getComponentDefinitions(document);
 		Set<ComponentDefinition> handledCompDefs = new HashSet<ComponentDefinition>();
-		if (modDef != null) {
-			handledCompDefs = createModuleView(document, graph, modDef);
+		if (rootModDef != null) {
+			handledCompDefs = createModuleView(document, graph, rootModDef);
 		}
 
 		// we don't want to create views for componentDefinitions handled in the module
@@ -119,7 +120,7 @@ public class SBOLToMx extends Converter {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		model.setMaintainEdgeParent(false);
 		mxCell cell0 = (mxCell) model.getCell("0");
-		cell0.setValue(glyphInfoDict);
+		cell0.setValue(infoDict);
 
 		layoutHelper = new LayoutHelper(document, graph);
 
@@ -202,7 +203,7 @@ public class SBOLToMx extends Converter {
 				}
 				compToCell.put(funcComp.getIdentity() + "_" + compDef.getIdentity(), protien);
 				GlyphInfo info = genGlyphInfo(compDef);
-				glyphInfoDict.put(info.getFullURI(), info);
+				infoDict.put(info.getFullURI(), info);
 				handledCompDefs.add(compDef);
 				continue;
 			}
@@ -231,7 +232,7 @@ public class SBOLToMx extends Converter {
 				backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, STYLE_BACKBONE);
 			}
 			GlyphInfo info = genGlyphInfo(compDef);
-			glyphInfoDict.put(info.getFullURI(), info);
+			infoDict.put(info.getFullURI(), info);
 
 			// glyphs
 			Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
@@ -320,7 +321,7 @@ public class SBOLToMx extends Converter {
 
 		// create the glyphInfo and store it in the dictionary
 		GlyphInfo info = genGlyphInfo(compDef);
-		glyphInfoDict.put(info.getFullURI(), info);
+		infoDict.put(info.getFullURI(), info);
 
 		// create the top view cell
 		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0,
