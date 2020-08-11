@@ -162,8 +162,6 @@ public class MxToSBOL extends Converter {
 					.toArray(mxCell[]::new);
 			for (mxCell circuitContainer : circuitContainers) {
 				// avoid duplicates from aliases in modules
-//				if (document.getComponentDefinition(new URI((String) circuitContainer.getValue())) != null)
-//					continue;
 				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null)
 					continue;
 				createComponentDefinition(document, graph, model, circuitContainer);
@@ -240,9 +238,10 @@ public class MxToSBOL extends Converter {
 				.toArray(mxCell[]::new);
 
 		ModuleInfo modInfo = (ModuleInfo) infoDict.get(viewCell.getId());
-		if(modInfo.getUriPrefix() == null)
+		if (modInfo.getUriPrefix() == null)
 			modInfo.setUriPrefix(URI_PREFIX);
-		ModuleDefinition modDef = document.createModuleDefinition(modInfo.getUriPrefix(), modInfo.getDisplayID(), modInfo.getVersion());
+		ModuleDefinition modDef = document.createModuleDefinition(modInfo.getUriPrefix(), modInfo.getDisplayID(),
+				modInfo.getVersion());
 		layoutHelper.createGraphicalLayout(modDef.getIdentity(), modDef.getDisplayId() + "_Layout");
 
 		// text boxes
@@ -250,21 +249,44 @@ public class MxToSBOL extends Converter {
 			attachTextBoxAnnotation(model, viewCell, modDef.getIdentity());
 		}
 
+		// if the uri is one of the synbiohub ones, just add the layout
+		boolean layoutOnly = false;
+		for (String registry : SBOLData.registries) {
+			if (modInfo.getUriPrefix().contains(registry)
+					&& (userToken != null || modInfo.getUriPrefix().contains("/public/"))) {
+				document.addRegistry(registry);
+				document.getRegistry(registry).setUser(userToken);
+				layoutOnly = true;
+				break;
+			}
+		}
+
 		// proteins
 		for (mxCell protein : proteins) {
 			// proteins also have glyphInfos
 			GlyphInfo proteinInfo = (GlyphInfo) infoDict.get(protein.getValue());
-			ComponentDefinition proteinCD = document.getComponentDefinition(new URI((String) protein.getValue()));
-			if (proteinCD == null) {
-				proteinCD = document.createComponentDefinition(proteinInfo.getDisplayID(), proteinInfo.getVersion(),
-						SBOLData.types.getValue(proteinInfo.getPartType()));
-				proteinCD.setDescription(proteinInfo.getDescription());
-				proteinCD.setName(proteinInfo.getName());
-				proteinCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
+			FunctionalComponent proteinFuncComp = null;
+			if (!layoutOnly) {
+				ComponentDefinition proteinCD = document.getComponentDefinition(new URI((String) protein.getValue()));
+				if (proteinCD == null) {
+					proteinCD = document.createComponentDefinition(proteinInfo.getDisplayID(), proteinInfo.getVersion(),
+							SBOLData.types.getValue(proteinInfo.getPartType()));
+					proteinCD.setDescription(proteinInfo.getDescription());
+					proteinCD.setName(proteinInfo.getName());
+					proteinCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
+				}
+				proteinFuncComp = modDef.createFunctionalComponent(proteinCD.getDisplayId() + "_" + protein.getId(),
+						AccessType.PUBLIC, proteinCD.getIdentity(), DirectionType.INOUT);
+			} else {
+				// find the correct functionalComponent from the set of functional components
+				Set<FunctionalComponent> funcComps = modDef.getFunctionalComponents();
+				for (FunctionalComponent funcComp : funcComps) {
+					if (funcComp.getDefinitionIdentity().toString().equals((String) protein.getValue())) {
+						proteinFuncComp = funcComp;
+						break;
+					}
+				}
 			}
-			FunctionalComponent proteinFuncComp = modDef.createFunctionalComponent(
-					proteinCD.getDisplayId() + "_" + protein.getId(), AccessType.PUBLIC, proteinCD.getIdentity(),
-					DirectionType.INOUT);
 			// the layout information in the component definition
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), proteinFuncComp.getDisplayId(), protein);
 		}
@@ -274,13 +296,22 @@ public class MxToSBOL extends Converter {
 		for (mxCell circuitContainer : circuitContainers) {
 
 			GlyphInfo glyphInfo = (GlyphInfo) infoDict.get(circuitContainer.getValue());
-
-			FunctionalComponent funcComp = modDef.createFunctionalComponent(
-					glyphInfo.getDisplayID() + "_" + circuitContainer.getId(), AccessType.PUBLIC,
-					URI.create(glyphInfo.getFullURI()), DirectionType.INOUT);
-
+			FunctionalComponent circuitFuncComp = null;
+			if (!layoutOnly) {
+				circuitFuncComp = modDef.createFunctionalComponent(
+						glyphInfo.getDisplayID() + "_" + circuitContainer.getId(), AccessType.PUBLIC,
+						URI.create(glyphInfo.getFullURI()), DirectionType.INOUT);
+			} else {
+				Set<FunctionalComponent> funcComps = modDef.getFunctionalComponents();
+				for (FunctionalComponent funcComp : funcComps) {
+					if (funcComp.getDefinitionIdentity().toString().equals((String) circuitContainer.getValue())) {
+						circuitFuncComp = funcComp;
+						break;
+					}
+				}
+			}
 			// store extra graph information
-			layoutHelper.addGraphicalNode(modDef.getIdentity(), funcComp.getDisplayId(), circuitContainer);
+			layoutHelper.addGraphicalNode(modDef.getIdentity(), circuitFuncComp.getDisplayId(), circuitContainer);
 			GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(glyphInfo.getFullURI()));
 			layoutHelper.addLayoutRef(modDef.getIdentity(), layout.getIdentity(),
 					glyphInfo.getDisplayID() + "_Reference");
@@ -290,8 +321,6 @@ public class MxToSBOL extends Converter {
 	private void createComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
 			mxCell circuitContainer) throws URISyntaxException, SBOLValidationException,
 			TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
-
-		//
 
 		// get the glyph info associated with this view cell
 		GlyphInfo glyphInfo = (GlyphInfo) infoDict.get(circuitContainer.getValue());
@@ -304,7 +333,7 @@ public class MxToSBOL extends Converter {
 		layoutHelper.addGraphicalNode(identity, "container", circuitContainer);
 		layoutHelper.addGraphicalNode(identity, "backbone", backboneCell);
 
-		// if the uri isn't one of the synbiohub ones, skip the object
+		// if the uri is one of the synbiohub ones, skip the object
 		for (String registry : SBOLData.registries) {
 			if (glyphInfo.getUriPrefix().contains(registry)
 					&& (userToken != null || glyphInfo.getUriPrefix().contains("/public/"))) {
@@ -382,15 +411,29 @@ public class MxToSBOL extends Converter {
 
 		ModuleDefinition modDef = document.getModuleDefinition(URI.create((String) viewCell.getId()));
 
-		// TODO detect if part came from registry and only add layout if yes
+		ModuleInfo modDefInfo = (ModuleInfo) infoDict.get(modDef.getIdentity().toString());
+
+		// if the uri is one of the synbiohub ones, just add the layout
+		boolean layoutOnly = false;
+		for (String registry : SBOLData.registries) {
+			if (modDefInfo.getUriPrefix().contains(registry)
+					&& (userToken != null || modDefInfo.getUriPrefix().contains("/public/"))) {
+				document.addRegistry(registry);
+				document.getRegistry(registry).setUser(userToken);
+				layoutOnly = true;
+				break;
+			}
+		}
 
 		// module definitions (should already have been created, just need to link
 		// them with modules
-		for (mxCell moduleCell : modules) {
-			ModuleInfo modInfo = (ModuleInfo) infoDict.get(moduleCell.getValue());
-			modDef.createModule(
-					modInfo.getDisplayID() + "_" + moduleCell.getParent().getIndex(moduleCell),
-					URI.create((String) moduleCell.getValue()));
+		if (!layoutOnly) {
+			for (mxCell moduleCell : modules) {
+				ModuleInfo modInfo = (ModuleInfo) infoDict.get(moduleCell.getValue());
+				modDef.createModule(modInfo.getDisplayID() + "_" + moduleCell.getParent().getIndex(moduleCell),
+						URI.create((String) moduleCell.getValue()));
+				layoutHelper.addGraphicalNode(modDef.getIdentity(), modInfo.getDisplayID()+"_"+moduleCell.getParent().getIndex(moduleCell), moduleCell);
+			}
 		}
 
 		// edges to interactions
@@ -398,10 +441,26 @@ public class MxToSBOL extends Converter {
 
 			// interaction
 			InteractionInfo intInfo = (InteractionInfo) edge.getValue();
-			Interaction interaction = modDef.createInteraction(intInfo.getDisplayID(),
-					SBOLData.interactions.getValue(intInfo.getInteractionType()));
+			Interaction interaction = null;
+			if(!layoutOnly) {
+				interaction = modDef.createInteraction(intInfo.getDisplayID(),
+						SBOLData.interactions.getValue(intInfo.getInteractionType()));				
+			}else {
+				Set<Interaction> interactions = modDef.getInteractions();
+				// find the interaction with the correct identity
+				for(Interaction inter : interactions) {
+					if(inter.getIdentity().toString().equals((String) intInfo.getFullURI())){
+						interaction = inter;
+					}
+				}
+			}
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getDisplayId(), edge);
 
+			// nothing below here is layout
+			if(layoutOnly) {
+				return;
+			}
+			
 			// participants
 			mxCell source = (mxCell) edge.getSource();
 			mxCell sourceParent = null;
@@ -410,7 +469,7 @@ public class MxToSBOL extends Converter {
 			GlyphInfo sourceInfo = null;
 			GlyphInfo targetInfo = null;
 			if (source != null && source.getStyle().contains(STYLE_MODULE)) {
-				String fromCellID = intInfo.getFromURI().substring(intInfo.getFromURI().lastIndexOf("_")+1);
+				String fromCellID = intInfo.getFromURI().substring(intInfo.getFromURI().lastIndexOf("_") + 1);
 				String fromID = intInfo.getFromURI().substring(0, intInfo.getFromURI().lastIndexOf("_"));
 				sourceInfo = (GlyphInfo) infoDict.get(fromID);
 				sourceParent = source;

@@ -213,7 +213,7 @@ public class SynBioHub extends HttpServlet {
 					document = sbhf.getSBOL(URI.create(uri), true);
 				}
 				
-				converter.toSubGraph(document, response.getOutputStream());
+				converter.toGraph(document, response.getOutputStream());
 				response.setStatus(HttpStatus.SC_OK);
 				return;
 			} else {

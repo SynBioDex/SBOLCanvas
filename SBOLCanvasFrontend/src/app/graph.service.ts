@@ -962,15 +962,16 @@ export class GraphService extends GraphHelpers {
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
 
-    // get the viewCell that has no references
+    // The child of cell 1 that isn't a view cell points to the root view
     const cell1 = this.graph.getModel().getCell("1");
     let viewCells = this.graph.getModel().getChildren(cell1);
-    let rootViewCell = viewCells[0];
-    for (let viewCell of viewCells) {
-      if (this.getCoupledGlyphs(viewCell.getId()).length > 0)
-        continue;
-      rootViewCell = viewCell;
-      break;
+    let rootViewCell;
+    for(let child of viewCells){
+      if(!child.isViewCell()){
+        rootViewCell = this.graph.getModel().getCell(child.getValue());
+        this.graph.getModel().remove(child);
+        break;
+      }
     }
     this.graph.enterGroup(rootViewCell);
     this.viewStack = [];

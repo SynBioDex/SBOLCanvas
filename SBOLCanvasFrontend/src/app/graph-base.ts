@@ -174,6 +174,19 @@ export class GraphBase {
         mx.mxCodecRegistry.register(glyphInfoCodec);
         window['GlyphInfo'] = GlyphInfo;
 
+        // Module info encode/decode
+        Object.defineProperty(ModuleInfo, "name", { configurable: true, value: "ModuleInfo" });
+        const moduleInfoCodec = new mx.mxObjectCodec(new ModuleInfo());
+        moduleInfoCodec.decode = function(dec, node, into){
+            const moduleData = new ModuleInfo();
+            return genericDecode(dec, node, moduleData);
+        }
+        moduleInfoCodec.encode = function(enc, object){
+            return object.encode(enc);
+        }
+        mx.mxCodecRegistry.register(moduleInfoCodec);
+        window['ModuleInfo'] = ModuleInfo;
+
         // Interaction info encode/decode
         Object.defineProperty(InteractionInfo, "name", { configurable: true, value: "InteractionInfo" });
         const interactionInfoCodec = new mx.mxObjectCodec(new InteractionInfo());

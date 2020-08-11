@@ -8,6 +8,7 @@ import { MatSelectChange, MatDialog } from '@angular/material';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
+import { Console } from 'console';
 
 
 @Component({
@@ -155,11 +156,12 @@ export class InfoEditorComponent implements OnInit {
     }
   }
 
-  openDownloadDialog() {
+  openDownloadDialog(moduleMode: boolean = false) {
     this.dialog.open(DownloadGraphComponent, {
       data: {
         import: true,
-        info: this.glyphInfo
+        moduleMode: moduleMode,
+        info: moduleMode ? null : this.glyphInfo
       }
     });
   }

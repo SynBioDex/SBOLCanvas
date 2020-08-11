@@ -86,6 +86,8 @@
   <mat-label *ngIf="localDesign()" matTooltipShowDelay="1000" matTooltip="{{ moduleInfo.getFullURI() }}">URI: Local Design</mat-label>
   <mat-label *ngIf="synBioHubDesign()" matTooltipShowDelay="1000" matTooltip="{{ moduleInfo.getFullURI() }}">URI: <a href="{{ moduleInfo.getFullURI() }}" target="_blank">SynBioHub Record</a></mat-label>
   <mat-label *ngIf="importedDesign()" matTooltipShowDelay="1000" matTooltip="{{ moduleInfo.getFullURI() }}">URI: Imported Design</mat-label>
+
+  <button mat-stroked-button (click)="openDownloadDialog(true)">Import Component</button>
 </div>
 
 

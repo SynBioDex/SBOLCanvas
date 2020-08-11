@@ -31,6 +31,7 @@ export class DownloadGraphComponent implements OnInit {
   partRefine: string;
 
   import: boolean;
+  moduleMode: boolean;
 
   partRequest: Subscription;
 
@@ -50,7 +51,12 @@ export class DownloadGraphComponent implements OnInit {
       if (this.data.import != null) {
         this.import = this.data.import;
       } else {
-        this.data.import = false;
+        this.import = false;
+      }
+      if(this.data.moduleMode != null){
+        this.moduleMode = this.data.moduleMode;
+      }else{
+        this.moduleMode = false;
       }
       if (this.data.info != null) {
         this.partType = this.data.info.partType;
