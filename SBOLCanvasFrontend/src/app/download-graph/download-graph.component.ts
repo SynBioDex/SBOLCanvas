@@ -53,9 +53,9 @@ export class DownloadGraphComponent implements OnInit {
       } else {
         this.import = false;
       }
-      if(this.data.moduleMode != null){
+      if (this.data.moduleMode != null) {
         this.moduleMode = this.data.moduleMode;
-      }else{
+      } else {
         this.moduleMode = false;
       }
       if (this.data.info != null) {
@@ -73,6 +73,11 @@ export class DownloadGraphComponent implements OnInit {
           this.partTypes = results[1];
           this.partRoles = results[2];
           this.roleRefinements = results[3];
+          this.working = false;
+        });
+      } else {
+        this.filesService.getRegistries().subscribe(registries => {
+          this.registries = registries;
           this.working = false;
         });
       }
@@ -201,11 +206,19 @@ export class DownloadGraphComponent implements OnInit {
 
   downloadModule() {
     this.working = true;
-    this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
-      this.graphService.setGraphToXML(xml);
-      this.working = false;
-      this.dialogRef.close();
-    });
+    if (this.import) {
+      this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
+        this.graphService.setSelectedToXML(xml);
+        this.working = false;
+        this.dialogRef.close();
+      })
+    } else {
+      this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
+        this.graphService.setGraphToXML(xml);
+        this.working = false;
+        this.dialogRef.close();
+      });
+    }
   }
 
   changeCollection(collection: string) {
@@ -233,7 +246,7 @@ export class DownloadGraphComponent implements OnInit {
     if (this.registry != null) {
       this.working = true;
       this.parts.data = [];
-      if (this.import) {
+      if (this.import && !this.moduleMode) {
         // collection and components
         let roleOrRefine = this.partRefine != null && this.partRefine.length > 0 ? this.partRefine : this.partRole;
         this.partRequest = forkJoin(
@@ -252,7 +265,25 @@ export class DownloadGraphComponent implements OnInit {
           this.parts.data = partCache;
           this.working = false;
         })
-      } else {
+      } else if(this.import && this.moduleMode){
+        // collections and modules
+        this.partRequest = forkJoin(
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules")
+        ).subscribe(parts =>{
+          let partCache = [];
+          parts[0].forEach(part => {
+            part.type = DownloadGraphComponent.collectionType;
+            partCache.push(part);
+          });
+          parts[1].forEach(part => {
+            part.type = DownloadGraphComponent.moduleType;
+            partCache.push(part);
+          });
+          this.parts.data = partCache;
+          this.working = false;
+        });
+      }else {
         // collection, modules, and components
         this.partRequest = forkJoin(
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),

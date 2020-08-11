@@ -55,7 +55,9 @@ export class GraphHelpers extends GraphBase {
 
     protected getParentInfo(cell: mxCell): GlyphInfo {
         let glyphInfo;
-        if (cell.isCircuitContainer() || cell.isViewCell()) {
+        if(cell.isCircuitContainer() || cell.isModule()){
+            glyphInfo = this.getFromInfoDict(cell.getParent().getId());
+        }else if (cell.isViewCell()) {
             if (this.viewStack.length > 1) {
                 // has a parent that might need to change
                 glyphInfo = this.getFromInfoDict(this.selectionStack[this.selectionStack.length - 1].getParent().getValue());

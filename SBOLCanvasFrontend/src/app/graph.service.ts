@@ -311,18 +311,18 @@ export class GraphService extends GraphHelpers {
           // the revised selection
           if (!(cell.isBackbone() || cell.isCircuitContainer())) {
             newSelection.push(cell);
-          }else{
+          } else {
             let circuitContainer;
-            if(cell.isBackbone()){
+            if (cell.isBackbone()) {
               circuitContainer = cell.getParent();
-            }else if(cell.isCircuitContainer()){
+            } else if (cell.isCircuitContainer()) {
               circuitContainer = cell;
             }
-            
+
             // If we find a backbone is selected, add all it's children
-            if(circuitContainer.children){
-              for(let child of circuitContainer.children){
-                if(!child.isBackbone()){
+            if (circuitContainer.children) {
+              for (let child of circuitContainer.children) {
+                if (!child.isBackbone()) {
                   newSelection.push(child);
                 }
               }
@@ -644,12 +644,12 @@ export class GraphService extends GraphHelpers {
     if (selectionCells.length > 0 && selectionCells.length < 3) {
       let selectedCell = selectionCells[0];
       const selectedParent = selectedCell.getParent();
-      if(selectedParent.geometry && !selectedParent.isViewCell()){
+      if (selectedParent.geometry && !selectedParent.isViewCell()) {
         this.addInteractionAt(name, selectedParent.geometry.x + selectedCell.geometry.x + (selectedCell.geometry.width / 2),
           selectedParent.geometry.y);
-      }else {
+      } else {
         this.addInteractionAt(name, selectedCell.geometry.x + (selectedCell.geometry.width / 2),
-        selectedCell.geometry.y);
+          selectedCell.geometry.y);
       }
     } else {
       const pt = this.getDefaultNewCellCoords();
@@ -673,9 +673,9 @@ export class GraphService extends GraphHelpers {
       const selectionCells = this.graph.getSelectionCells();
       if (selectionCells.length == 1) {
         const selectedCell = this.graph.getSelectionCell();
-        if(selectedCell.isModule()){
+        if (selectedCell.isModule()) {
           let result = await this.promptChooseFunctionalComponent(selectedCell, true);
-          if(!result)
+          if (!result)
             return;
           cell.value.fromURI = result;
         }
@@ -685,15 +685,15 @@ export class GraphService extends GraphHelpers {
       } else if (selectionCells.length == 2) {
         const sourceCell = selectionCells[0];
         const destCell = selectionCells[1];
-        if(sourceCell.isModule()){
+        if (sourceCell.isModule()) {
           let result = await this.promptChooseFunctionalComponent(sourceCell, true);
-          if(!result)
+          if (!result)
             return;
           cell.value.fromURI = result;
         }
-        if(destCell.isModule()){
+        if (destCell.isModule()) {
           let result = await this.promptChooseFunctionalComponent(destCell, false);
-          if(!result)
+          if (!result)
             return;
           cell.value.toURI = result;
         }
@@ -760,20 +760,20 @@ export class GraphService extends GraphHelpers {
   }
 
   makeModuleDragsource(element) {
-    const insert = mx.mxUtils.bind(this, function (graph, evt, target, x, y){
-      this.addModuleAt(x - GraphBase.defaultModuleWidth/2, y-GraphBase.defaultModuleHeight / 2);
+    const insert = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+      this.addModuleAt(x - GraphBase.defaultModuleWidth / 2, y - GraphBase.defaultModuleHeight / 2);
     });
     this.makeGeneralDragsource(element, insert);
   }
 
-  addModule(){
+  addModule() {
     const pt = this.getDefaultNewCellCoords();
     this.addModuleAt(pt.x, pt.y);
   }
 
-  addModuleAt(x, y){
+  addModuleAt(x, y) {
     this.graph.getModel().beginUpdate();
-    try{
+    try {
       let moduleInfo = new ModuleInfo();
       this.addToInfoDict(moduleInfo);
 
@@ -784,7 +784,7 @@ export class GraphService extends GraphHelpers {
 
       this.graph.clearSelection();
       this.graph.setSelectionCell(moduleCell);
-    }finally{
+    } finally {
       this.graph.getModel().endUpdate();
     }
   }
@@ -796,30 +796,30 @@ export class GraphService extends GraphHelpers {
     const selectedCell = this.graph.getSelectionCell();
 
     this.graph.getModel().beginUpdate();
-    try{
+    try {
       // figure out which type of info object it is
-      if(info instanceof ModuleInfo && (!selectedCell || selectedCell.isModule())){
+      if (info instanceof ModuleInfo && (!selectedCell || selectedCell.isModule())) {
         this.updateSelectedModuleInfo(info);
         return;
       }
-      
-      if(info instanceof GlyphInfo && (!selectedCell || selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph())){
-        if(!selectedCell || !selectedCell.isMolecularSpeciesGlyph()){
+
+      if (info instanceof GlyphInfo && (!selectedCell || selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph())) {
+        if (!selectedCell || !selectedCell.isMolecularSpeciesGlyph()) {
           // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
           this.updateSelectedGlyphInfo(info);
-        }else{
+        } else {
           this.updateSelectedMolecularSpecies(info);
         }
         return;
       }
 
-      if(info instanceof InteractionInfo && selectedCell.isInteraction()){
+      if (info instanceof InteractionInfo && selectedCell.isInteraction()) {
         let interactionEdit = new GraphEdits.interactionEdit(selectedCell, info);
         this.mutateInteractionGlyph(info.interactionType);
         this.graph.getModel().execute(interactionEdit);
         return;
       }
-    }finally{
+    } finally {
       this.graph.getModel().endUpdate();
       this.graph.refresh(selectedCell);
       //this.updateAngularMetadata(this.graph.getSelectionCells());
@@ -966,8 +966,8 @@ export class GraphService extends GraphHelpers {
     const cell1 = this.graph.getModel().getCell("1");
     let viewCells = this.graph.getModel().getChildren(cell1);
     let rootViewCell;
-    for(let child of viewCells){
-      if(!child.isViewCell()){
+    for (let child of viewCells) {
+      if (!child.isViewCell()) {
         rootViewCell = this.graph.getModel().getCell(child.getValue());
         this.graph.getModel().remove(child);
         break;
@@ -1008,12 +1008,17 @@ export class GraphService extends GraphHelpers {
   async setSelectedToXML(cellString: string) {
     const selectionCells = this.graph.getSelectionCells();
 
-    if (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer())) {
+    if (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule())) {
       // We're making a new cell to replace the selected one
       let selectedCell = selectionCells[0];
 
       this.graph.getModel().beginUpdate();
       try {
+
+        // nothing selected means that we're replacing the view cell
+        if(!selectedCell){
+          selectedCell = this.graph.getCurrentRoot();
+        }
 
         let fromCircuitContainer = selectedCell.isCircuitContainer();
         let inModuleView = this.graph.getCurrentRoot().isModuleView();
@@ -1024,18 +1029,21 @@ export class GraphService extends GraphHelpers {
           return;
         }
 
-        // zoom out to make things easier
-        if (fromCircuitContainer && this.viewStack.length > 1) {
-          selectedCell = this.selectionStack[this.selectionStack.length - 1];
-          this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
-        }
-
         // change ownership
         if (parentInfo) {
-          let parentIndex = this.graph.getCurrentRoot().getIndex(selectedCell.getParent());
-          let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
-          this.changeOwnership(parentInfo.getFullURI());
-          selectedCell = this.graph.getCurrentRoot().children[parentIndex].children[selectedCellIndex];
+          if(selectedCell.isViewCell()){
+            this.changeOwnership(parentInfo.getFullURI());
+            selectedCell = this.graph.getCurrentRoot();
+          }else if(selectedCell.isCircuitContainer() || selectedCell.isModule()){
+            let selectedIndex = selectedCell.getParent().getIndex(selectedCell);
+            this.changeOwnership(parentInfo.getFullURI());
+            selectedCell = this.graph.getCurrentRoot().children[selectedIndex];
+          }else{
+            let parentIndex = this.graph.getCurrentRoot().getIndex(selectedCell.getParent());
+            let selectedIndex = selectedCell.getParent().getIndex(selectedCell);
+            this.changeOwnership(parentInfo.getFullURI());
+            selectedCell = this.graph.getCurrentRoot().children[parentIndex].children[selectedIndex];
+          }
         }
 
         // setup the decoding info

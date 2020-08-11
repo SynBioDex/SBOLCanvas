@@ -211,6 +211,7 @@ public class SBOLToMx extends Converter {
 				container = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 						0, STYLE_CIRCUIT_CONTAINER);
 			}
+			compToCell.put(funcComp.getIdentity() + "_" + compDef.getIdentity(), container);
 			mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), compDef.getDisplayId());
 			if (backbone != null) {
 				if (backbone.getStyle() != null)

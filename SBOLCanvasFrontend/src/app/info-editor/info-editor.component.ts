@@ -8,7 +8,6 @@ import { MatSelectChange, MatDialog } from '@angular/material';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
-import { Console } from 'console';
 
 
 @Component({
