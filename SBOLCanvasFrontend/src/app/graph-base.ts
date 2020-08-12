@@ -76,8 +76,8 @@ export class GraphBase {
     // This object handles the hotkeys for the graph.
     keyHandler: any;
 
-    // We can import non native designs. This will be set to true if ceratin annotations weren't found
-    static anyForeignCellsFound = false;
+    // when decoding we add any unformatted view cells to this set
+    static unFormatedCells = new Set<mxCell>();
 
     constructor(protected glyphService: GlyphService) {
         // constructor code is divided into helper methods for organization,
@@ -226,8 +226,8 @@ export class GraphBase {
             let glyphDict = cell0.value;
 
             // check for format conditions
-            if ((cell.isCircuitContainer() && cell.getParent().getId() === "rootView" || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0) {
-                GraphBase.anyForeignCellsFound = true;
+            if ((cell.isCircuitContainer() && cell.getParent().isModuleView() || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0) {
+                GraphBase.unFormatedCells.add(cell.getParent());
             }
 
             let reconstructCellStyle = false;

@@ -954,7 +954,7 @@ export class GraphService extends GraphHelpers {
    * and uses it to replace the current graph
    */
   setGraphToXML(graphString: string) {
-    GraphBase.anyForeignCellsFound = false;
+    GraphBase.unFormatedCells.clear();
     this.graph.home();
     this.graph.getModel().clear();
 
@@ -984,10 +984,10 @@ export class GraphService extends GraphHelpers {
         element.refreshCircuitContainer(this.graph);
     });
 
-    if (GraphBase.anyForeignCellsFound) {
+    if (GraphBase.unFormatedCells.size > 0) {
       console.log("FORMATTING !!!!!!!!!!!!!!!!");
-      this.autoFormat();
-      GraphBase.anyForeignCellsFound = false;
+      this.autoFormat(GraphBase.unFormatedCells);
+      GraphBase.unFormatedCells.clear();
     }
 
     this.fitCamera();
@@ -1008,19 +1008,18 @@ export class GraphService extends GraphHelpers {
   async setSelectedToXML(cellString: string) {
     const selectionCells = this.graph.getSelectionCells();
 
-    if (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule())) {
+    if (selectionCells.length == 0 || (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule()))) {
       // We're making a new cell to replace the selected one
-      let selectedCell = selectionCells[0];
+      let selectedCell;
+      if(selectionCells.length > 0){
+        selectedCell = selectionCells[0];
+      }else{
+        // nothing selected means we're replacing the view cell
+        selectedCell = this.graph.getCurrentRoot();
+      }
 
       this.graph.getModel().beginUpdate();
       try {
-
-        // nothing selected means that we're replacing the view cell
-        if(!selectedCell){
-          selectedCell = this.graph.getCurrentRoot();
-        }
-
-        let fromCircuitContainer = selectedCell.isCircuitContainer();
         let inModuleView = this.graph.getCurrentRoot().isModuleView();
 
         // prompt ownership change
@@ -1044,6 +1043,15 @@ export class GraphService extends GraphHelpers {
             this.changeOwnership(parentInfo.getFullURI());
             selectedCell = this.graph.getCurrentRoot().children[parentIndex].children[selectedIndex];
           }
+        }
+
+        // if we're in a non top level circuit container, module, or view cell zoom out to make things easier
+        let zoomOut = false;
+        if(((selectedCell.isCircuitContainer() || selectedCell.isComponentView())&& this.graph.getCurrentRoot().isComponentView() && this.viewStack.length > 1) || 
+        ((selectedCell.isModule() || selectedCell.isModuleView())&& this.viewStack.length > 1)){
+          zoomOut = true;
+          selectedCell = this.selectionStack[this.selectionStack.length -1];
+          this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
         }
 
         // setup the decoding info
@@ -1094,6 +1102,24 @@ export class GraphService extends GraphHelpers {
               }
             });
           }
+        }else if(selectedCell.isModule()){
+          // store old cell's parent
+          origParent = selectedCell.getParent();
+
+          // generated cells don't have a proper geometry
+          newCell.setStyle(selectedCell.getStyle());
+          this.graph.getModel().setGeometry(newCell, selectedCell.geometry);
+
+          // add new cell to the graph
+          this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+
+          // remove the old cell's view cell if it doesn't have any references
+          if (this.getCoupledModules(selectedCell.value).length < 2) {
+            this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
+          }
+
+          // remove the old cell
+          this.graph.getModel().remove(selectedCell);
         }
 
         // Now create all children of the new cell
@@ -1127,8 +1153,8 @@ export class GraphService extends GraphHelpers {
           this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(newCell.value)).partRole);
         }
 
-        // if we came from a circuit container, zoom back into it
-        if (fromCircuitContainer) {
+        // if we zoomed out zoom back in
+        if (zoomOut) {
           if (selectedCell.isSequenceFeatureGlyph()) {
             // if the selected cell is a sequenceFeature that means we came from a sub view
             this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newCell, this));
@@ -1151,6 +1177,12 @@ export class GraphService extends GraphHelpers {
               circuitContainer.refreshCircuitContainer(this.graph);
             }
           }
+        }
+
+        if (GraphBase.unFormatedCells.size > 0) {
+          console.log("FORMATTING !!!!!!!!!!!!!!!!");
+          this.autoFormat(GraphBase.unFormatedCells);
+          GraphBase.unFormatedCells.clear();
         }
 
         // sync circuit containers

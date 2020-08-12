@@ -965,12 +965,26 @@ export class GraphHelpers extends GraphBase {
        * This generally does a bad job. Only use this for outside files with no
        * position information at all.
        */
-    protected autoFormat(this: GraphService) {
+    protected autoFormat(this: GraphService, viewCells: Set<mxCell> = null) {
+        if(viewCells){
+            for(let viewCell of Array.from(viewCells.values())){
+                if(!viewCell.isViewCell()){
+                    console.error("Tried to auto format a cell that isn't a view cell!");
+                    return;
+                }
+            }
+        }
         var first = new mx.mxStackLayout(this.graph, false, 20);
         var second = new mx.mxFastOrganicLayout(this.graph);
 
         var layout = new mx.mxCompositeLayout(this.graph, [first, second], first);
-        layout.execute(this.graph.getDefaultParent());
+        if(viewCells){
+            for(let viewCell of Array.from(viewCells.values())){
+                layout.execute(viewCell);
+            }
+        }else{
+            layout.execute(this.graph.getDefaultParent());
+        }
 
         this.fitCamera();
     }
@@ -1189,18 +1203,15 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().remove(viewCell);
 
         // check if any of the children's viewcells have other parents
-        let viewChildren = viewCell.children[0].children;
-        for (let i = 0; i < viewChildren.length; i++) {
-            if (viewChildren[i].isSequenceFeatureGlyph()) {
-                let otherRefs = [];
-                for (let key in this.graph.getModel().cells) {
-                    const cell = this.graph.getModel().cells[key];
-                    if (cell.value === viewChildren[i].value) {
-                        otherRefs.push(cell);
+        if(viewCell.children){
+            for(let viewChild of viewCell.children){
+                if(viewChild.isModule() && this.getCoupledModules(viewChild.value).length == 0){
+                    this.removeViewCell(this.graph.getModel().getCell(viewChild.value));
+                }else if(viewChild.isCircuitContainer()){
+                    for(let containerChild of viewChild.children){
+                        if(containerChild.isSequenceFeatureGlyph() && this.getCoupledGlyphs(containerChild.value).length == 0)
+                            this.removeViewCell(this.graph.getModel().getCell(containerChild.value));
                     }
-                }
-                if (otherRefs.length == 0) {
-                    this.removeViewCell(this.graph.getModel().getCell(viewChildren[i].value));
                 }
             }
         }
