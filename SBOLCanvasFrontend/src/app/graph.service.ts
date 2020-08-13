@@ -979,10 +979,12 @@ export class GraphService extends GraphHelpers {
     this.selectionStack = [];
 
     let children = this.graph.getModel().getChildren(this.graph.getDefaultParent());
-    children.forEach(element => {
-      if (element.isCircuitContainer())
-        element.refreshCircuitContainer(this.graph);
-    });
+    if (children) {
+      children.forEach(element => {
+        if (element.isCircuitContainer())
+          element.refreshCircuitContainer(this.graph);
+      });
+    }
 
     if (GraphBase.unFormatedCells.size > 0) {
       console.log("FORMATTING !!!!!!!!!!!!!!!!");
@@ -1011,9 +1013,9 @@ export class GraphService extends GraphHelpers {
     if (selectionCells.length == 0 || (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule()))) {
       // We're making a new cell to replace the selected one
       let selectedCell;
-      if(selectionCells.length > 0){
+      if (selectionCells.length > 0) {
         selectedCell = selectionCells[0];
-      }else{
+      } else {
         // nothing selected means we're replacing the view cell
         selectedCell = this.graph.getCurrentRoot();
       }
@@ -1030,14 +1032,14 @@ export class GraphService extends GraphHelpers {
 
         // change ownership
         if (parentInfo) {
-          if(selectedCell.isViewCell()){
+          if (selectedCell.isViewCell()) {
             this.changeOwnership(parentInfo.getFullURI());
             selectedCell = this.graph.getCurrentRoot();
-          }else if(selectedCell.isCircuitContainer() || selectedCell.isModule()){
+          } else if (selectedCell.isCircuitContainer() || selectedCell.isModule()) {
             let selectedIndex = selectedCell.getParent().getIndex(selectedCell);
             this.changeOwnership(parentInfo.getFullURI());
             selectedCell = this.graph.getCurrentRoot().children[selectedIndex];
-          }else{
+          } else {
             let parentIndex = this.graph.getCurrentRoot().getIndex(selectedCell.getParent());
             let selectedIndex = selectedCell.getParent().getIndex(selectedCell);
             this.changeOwnership(parentInfo.getFullURI());
@@ -1047,10 +1049,10 @@ export class GraphService extends GraphHelpers {
 
         // if we're in a non top level circuit container, module, or view cell zoom out to make things easier
         let zoomOut = false;
-        if(((selectedCell.isCircuitContainer() || selectedCell.isComponentView())&& this.graph.getCurrentRoot().isComponentView() && this.viewStack.length > 1) || 
-        ((selectedCell.isModule() || selectedCell.isModuleView())&& this.viewStack.length > 1)){
+        if (((selectedCell.isCircuitContainer() || selectedCell.isComponentView()) && this.graph.getCurrentRoot().isComponentView() && this.viewStack.length > 1) ||
+          ((selectedCell.isModule() || selectedCell.isModuleView()) && this.viewStack.length > 1)) {
           zoomOut = true;
-          selectedCell = this.selectionStack[this.selectionStack.length -1];
+          selectedCell = this.selectionStack[this.selectionStack.length - 1];
           this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
         }
 
@@ -1102,7 +1104,7 @@ export class GraphService extends GraphHelpers {
               }
             });
           }
-        }else if(selectedCell.isModule()){
+        } else if (selectedCell.isModule()) {
           // store old cell's parent
           origParent = selectedCell.getParent();
 
@@ -1179,11 +1181,22 @@ export class GraphService extends GraphHelpers {
           }
         }
 
+        // root cells won't be zoomed out, so just zoom into the correct one, and remove the old one
+        if (selectedCell.isViewCell()) {
+          let newViewId = newCell.getValue();
+          const newView = this.graph.getModel().getCell(newViewId);
+          this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
+          this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newView, this));
+          this.removeViewCell(selectedCell);
+        }
+
         if (GraphBase.unFormatedCells.size > 0) {
           console.log("FORMATTING !!!!!!!!!!!!!!!!");
           this.autoFormat(GraphBase.unFormatedCells);
           GraphBase.unFormatedCells.clear();
         }
+
+        this.trimUnreferencedCells();
 
         // sync circuit containers
         if (origParent) {

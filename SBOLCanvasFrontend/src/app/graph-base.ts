@@ -77,7 +77,7 @@ export class GraphBase {
     keyHandler: any;
 
     // when decoding we add any unformatted view cells to this set
-    static unFormatedCells = new Set<mxCell>();
+    static unFormatedCells = new Set<string>();
 
     constructor(protected glyphService: GlyphService) {
         // constructor code is divided into helper methods for organization,
@@ -227,7 +227,7 @@ export class GraphBase {
 
             // check for format conditions
             if ((cell.isCircuitContainer() && cell.getParent().isModuleView() || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0) {
-                GraphBase.unFormatedCells.add(cell.getParent());
+                GraphBase.unFormatedCells.add(cell.getParent().getId());
             }
 
             let reconstructCellStyle = false;

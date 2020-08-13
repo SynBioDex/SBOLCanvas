@@ -965,25 +965,31 @@ export class GraphHelpers extends GraphBase {
        * This generally does a bad job. Only use this for outside files with no
        * position information at all.
        */
-    protected autoFormat(this: GraphService, viewCells: Set<mxCell> = null) {
-        if(viewCells){
-            for(let viewCell of Array.from(viewCells.values())){
-                if(!viewCell.isViewCell()){
-                    console.error("Tried to auto format a cell that isn't a view cell!");
-                    return;
-                }
-            }
-        }
+    protected autoFormat(this: GraphService, viewCells: Set<string> = null) {
         var first = new mx.mxStackLayout(this.graph, false, 20);
         var second = new mx.mxFastOrganicLayout(this.graph);
 
         var layout = new mx.mxCompositeLayout(this.graph, [first, second], first);
         if(viewCells){
-            for(let viewCell of Array.from(viewCells.values())){
+            for(let viewCellId of Array.from(viewCells.values())){
+                const viewCell = this.graph.getModel().getCell(viewCellId);
                 layout.execute(viewCell);
+                // remove the noEdgeStyle from newly formatted edges
+                if(viewCell.children){
+                    for(let viewChild of viewCell.children){
+                        if(viewChild.isEdge()){
+                            viewChild.setStyle(viewChild.getStyle().replace("noEdgeStyle=1;", ""));
+                        }
+                    }
+                }
             }
         }else{
             layout.execute(this.graph.getDefaultParent());
+            for(let viewChild of this.graph.getDefualtParent().children){
+                if(viewChild.isEdge()){
+                    viewChild.setStyle(viewChild.getStyle().replace("noEdgeStyle=1;", ""));
+                }
+            }
         }
 
         this.fitCamera();
