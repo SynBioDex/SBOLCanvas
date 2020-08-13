@@ -332,6 +332,13 @@ export class GraphService extends GraphHelpers {
         this.graph.setSelectionCells(newSelection);
       }
 
+      // remove interactions with modules if the item it connects to is being removed
+      for(let selectedCell of selectedCells){
+        if(selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()){
+          this.updateInteractions(selectedCell.getValue()+"_"+selectedCell.getId(), null);
+        }
+      }
+
       this.editor.execute('delete');
 
       this.trimUnreferencedCells();
@@ -1190,18 +1197,33 @@ export class GraphService extends GraphHelpers {
           this.removeViewCell(selectedCell);
         }
 
+        // top level circuit containers need to be synced to get the changes before the trim
+        if(selectedCell.isCircuitContainer()){
+          this.updateInteractions(selectedCell.getValue()+"_"+selectedCell.getId(), newCell.getValue()+"_"+selectedCell.getId());
+          this.graph.getModel().setValue(selectedCell, newCell.getValue());
+          const viewCell = this.graph.getModel().getCell(newCell.getValue());
+          if(viewCell.children){
+            for(let viewChild of viewCell.children){
+              if(viewChild.isCircuitContainer()){
+                this.syncCircuitContainer(viewChild);
+                break;
+              }
+            }
+          }
+        }
+
         if (GraphBase.unFormatedCells.size > 0) {
           console.log("FORMATTING !!!!!!!!!!!!!!!!");
           this.autoFormat(GraphBase.unFormatedCells);
           GraphBase.unFormatedCells.clear();
         }
 
-        this.trimUnreferencedCells();
-
         // sync circuit containers
         if (origParent) {
           this.syncCircuitContainer(origParent);
         }
+
+        this.trimUnreferencedCells();
       } finally {
         this.graph.getModel().endUpdate();
       }

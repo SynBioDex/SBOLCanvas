@@ -306,6 +306,8 @@ export class GraphHelpers extends GraphBase {
                     }
                 }
 
+                this.updateInteractions(oldGlyphURI+"_"+selectedCell.getId(), newGlyphURI+"_"+selectedCell.getId());
+
                 // update the ownership
                 if (selectedCell.isCircuitContainer() || selectedCell.isViewCell()) {
                     this.changeOwnership(newGlyphURI, true)
@@ -402,6 +404,8 @@ export class GraphHelpers extends GraphBase {
                         this.graph.getModel().setValue(cell, newGlyphURI);
                     }
                 }
+
+                this.updateInteractions(oldGlyphURI+"_"+selectedCell.getId(), newGlyphURI+"_"+selectedCell.getId());
 
             } else {
                 this.updateInfoDict(info);
@@ -640,9 +644,9 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
-    protected udpateInteractions(oldReference: string, newReference: string) {
+    protected updateInteractions(oldReference: string, newReference: string) {
         try {
-            this.graph.getmodel().beginUpdate();
+            this.graph.getModel().beginUpdate();
             const cell1 = this.graph.getModel().getCell("1");
             let viewCells = cell1.children;
             for (let viewCell of viewCells) {
@@ -650,14 +654,18 @@ export class GraphHelpers extends GraphBase {
                     continue;
                 let interactions = this.graph.getModel().getChildEdges(viewCell);
                 for (let interaction of interactions) {
-                    if (interaction.value.from === oldReference) {
+                    if(!newReference){
+                        this.graph.getModel().remove(interaction);
+                        continue;
+                    }
+                    if (interaction.value.fromURI === oldReference) {
                         let infoCopy = interaction.value.makeCopy();
-                        infoCopy.from = newReference;
+                        infoCopy.fromURI = newReference;
                         this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
                     }
-                    if (interaction.value.to === oldReference) {
+                    if (interaction.value.toURI === oldReference) {
                         let infoCopy = interaction.value.makeCopy();
-                        infoCopy.to = newReference;
+                        infoCopy.toURI = newReference;
                         this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
                     }
                 }
