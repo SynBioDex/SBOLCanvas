@@ -58,8 +58,13 @@ import data.ModuleInfo;
 
 public class SBOLToMx extends Converter {
 
+	HashMap<FunctionalComponent, mxCell> funcCompToCell;
+	HashMap<FunctionalComponent, FunctionalComponent> mappings;
+
 	public SBOLToMx() {
 		infoDict = new Hashtable<String, Info>();
+		funcCompToCell = new HashMap<FunctionalComponent, mxCell>();
+		mappings = new HashMap<FunctionalComponent, FunctionalComponent>();
 	}
 
 	public void toGraph(InputStream sbolStream, OutputStream graphStream)
@@ -101,6 +106,11 @@ public class SBOLToMx extends Converter {
 		Set<ComponentDefinition> handledCompDefs = new HashSet<ComponentDefinition>();
 		for (ModuleDefinition modDef : document.getModuleDefinitions()) {
 			handledCompDefs.addAll(createModuleView(document, graph, modDef));
+		}
+		
+		// link interactions after all modules have been created, as the internal references can cross modules
+		for(ModuleDefinition modDef : document.getModuleDefinitions()) {
+			setupModuleInteractions(document, graph, modDef);
 		}
 
 		// we don't want to create views for componentDefinitions handled in the module
@@ -146,14 +156,13 @@ public class SBOLToMx extends Converter {
 		// them
 		Set<FunctionalComponent> modDefFCs = modDef.getFunctionalComponents();
 		Set<FunctionalComponent> notMappedFCs = modDef.getFunctionalComponents();
-		HashMap<URI, URI> uriMaps = new HashMap<URI, URI>();
 		for (FunctionalComponent funcComp : modDefFCs) {
 			Set<MapsTo> mapsTos = funcComp.getMapsTos();
 			if (mapsTos != null && mapsTos.size() > 0) {
 				for (MapsTo mapsTo : mapsTos) {
 					FunctionalComponent mappedFC = modDef.getFunctionalComponent(mapsTo.getLocalIdentity());
 					notMappedFCs.remove(mappedFC);
-					uriMaps.put(mapsTo.getLocalIdentity(), mapsTo.getRemoteIdentity());
+					mappings.put((FunctionalComponent) mapsTo.getLocal(), (FunctionalComponent) mapsTo.getRemote());
 				}
 			}
 		}
@@ -165,13 +174,12 @@ public class SBOLToMx extends Converter {
 				for (MapsTo mapsTo : mapsTos) {
 					FunctionalComponent mappedFC = modDef.getFunctionalComponent(mapsTo.getLocalIdentity());
 					notMappedFCs.remove(mappedFC);
-					uriMaps.put(mapsTo.getLocalIdentity(), mapsTo.getRemoteIdentity());
+					mappings.put((FunctionalComponent) mapsTo.getLocal(), (FunctionalComponent) mapsTo.getRemote());
 				}
 			}
 		}
 
 		// create the top level component definitions and proteins
-		HashMap<String, mxCell> compToCell = new HashMap<String, mxCell>();
 		for (FunctionalComponent funcComp : notMappedFCs) {
 			ComponentDefinition compDef = funcComp.getDefinition();
 
@@ -191,7 +199,7 @@ public class SBOLToMx extends Converter {
 					protien = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 							0, STYLE_MOLECULAR_SPECIES);
 				}
-				compToCell.put(funcComp.getIdentity() + "_" + compDef.getIdentity(), protien);
+				funcCompToCell.put(funcComp, protien);
 				GlyphInfo info = genGlyphInfo(compDef);
 				infoDict.put(info.getFullURI(), info);
 				handledCompDefs.add(compDef);
@@ -211,7 +219,7 @@ public class SBOLToMx extends Converter {
 				container = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 						0, STYLE_CIRCUIT_CONTAINER);
 			}
-			compToCell.put(funcComp.getIdentity() + "_" + compDef.getIdentity(), container);
+			funcCompToCell.put(funcComp, container);
 			mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), compDef.getDisplayId());
 			if (backbone != null) {
 				if (backbone.getStyle() != null)
@@ -257,7 +265,7 @@ public class SBOLToMx extends Converter {
 				// store the cell so we can use it in interactions
 				for (MapsTo mapsTo : funcComp.getMapsTos()) {
 					if (mapsTo.getLocalDefinition().equals(glyphComponent.getDefinition())) {
-						compToCell.put(mapsTo.getLocalIdentity() + "_" + glyphComponent.getIdentity(), glyphCell);
+						funcCompToCell.put((FunctionalComponent) mapsTo.getLocal(), glyphCell);
 						break;
 					}
 				}
@@ -281,50 +289,7 @@ public class SBOLToMx extends Converter {
 
 			// store the cell so we can use it in interactions
 			for (MapsTo mapsTo : module.getMapsTos()) {
-				compToCell.put(mapsTo.getLocalIdentity() + "_" + mapsTo.getRemoteIdentity(), moduleCell);
-			}
-		}
-
-		// interactions
-		Set<Interaction> interactions = modDef.getInteractions();
-		for (Interaction interaction : interactions) {
-			mxCell edge = layoutHelper.getGraphicalObject(modDef.getIdentity(), interaction.getDisplayId());
-			if (edge != null) {
-				if (edge.getStyle() != null)
-					edge.setStyle(STYLE_INTERACTION + ";" + edge.getStyle());
-				else
-					edge.setStyle(STYLE_INTERACTION);
-				edge = (mxCell) model.add(rootViewCell, edge, 0);
-			} else {
-				edge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
-			}
-			edge.setValue(genInteractionInfo(interaction));
-
-			URI targetType = getParticipantType(false, interaction.getTypes());
-			URI sourceType = getParticipantType(true, interaction.getTypes());
-
-			Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
-			for (int i = 0; i < participations.length; i++) {
-				// theoretically more than 2, but we currently only support 2
-				if (participations[i].getRoles().contains(sourceType)) {
-					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
-					if (mappedURI == null)
-						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
-					mxCell source = compToCell.get(participations[i].getParticipant().getIdentity() + "_" + mappedURI);
-					edge.setSource(source);
-					if(source.getStyle().contains(STYLE_MODULE)) {
-						((InteractionInfo) edge.getValue()).setFromURI(mappedURI.toString());
-					}
-				} else if (participations[i].getRoles().contains(targetType)) {
-					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
-					if (mappedURI == null)
-						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
-					mxCell target = compToCell.get(participations[i].getParticipant().getIdentity() + "_" + mappedURI);
-					edge.setTarget(target);
-					if(target.getStyle().contains(STYLE_MODULE)) {
-						((InteractionInfo) edge.getValue()).setToURI(mappedURI.toString());
-					}
-				}
+				funcCompToCell.put((FunctionalComponent) mapsTo.getLocal(), moduleCell);
 			}
 		}
 
@@ -411,6 +376,50 @@ public class SBOLToMx extends Converter {
 				}
 			}
 
+		}
+	}
+
+	private void setupModuleInteractions(SBOLDocument document, mxGraph graph, ModuleDefinition modDef) {
+		mxGraphModel model = (mxGraphModel) graph.getModel();
+		mxCell rootViewCell = (mxCell) model.getCell(modDef.getIdentity().toString());
+
+		// interactions
+		Set<Interaction> interactions = modDef.getInteractions();
+		for (Interaction interaction : interactions) {
+			mxCell edge = layoutHelper.getGraphicalObject(modDef.getIdentity(), interaction.getDisplayId());
+			if (edge != null) {
+				if (edge.getStyle() != null)
+					edge.setStyle(STYLE_INTERACTION + ";" + edge.getStyle());
+				else
+					edge.setStyle(STYLE_INTERACTION);
+				edge = (mxCell) model.add(rootViewCell, edge, 0);
+			} else {
+				edge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
+			}
+			edge.setValue(genInteractionInfo(interaction));
+
+			URI targetType = getParticipantType(false, interaction.getTypes());
+			URI sourceType = getParticipantType(true, interaction.getTypes());
+
+			Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
+			for (int i = 0; i < participations.length; i++) {
+				// theoretically more than 2, but we currently only support 2
+				if (participations[i].getRoles().contains(sourceType)) {
+					mxCell source = funcCompToCell.get(participations[i].getParticipant());
+					edge.setSource(source);
+					if (source.getStyle().contains(STYLE_MODULE)) {
+						mxCell referenced = funcCompToCell.get(mappings.get(participations[i].getParticipant()));
+						((InteractionInfo) edge.getValue()).setFromURI(referenced.getValue()+"_"+referenced.getId());
+					}
+				} else if (participations[i].getRoles().contains(targetType)) {
+					mxCell target = funcCompToCell.get(participations[i].getParticipant());
+					edge.setTarget(target);
+					if (target.getStyle().contains(STYLE_MODULE)) {
+						mxCell referenced = funcCompToCell.get(mappings.get(participations[i].getParticipant()));
+						((InteractionInfo) edge.getValue()).setToURI(referenced.getValue()+"_"+referenced.getId());
+					}
+				}
+			}
 		}
 	}
 

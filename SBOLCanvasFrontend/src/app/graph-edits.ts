@@ -145,8 +145,8 @@ export class GraphEdits {
                 // not having it seems to have no adverse effects
                 //this.view.validate(); 
 
-                // fix any layout problems
-                childViewCell.refreshViewCell(this.graphService.graph);
+                // Note, this will cause a backbone to call layout.execute which breaks things on undo
+                //childViewCell.refreshViewCell(this.graphService.graph);
 
                 // set the selection to the circuit container
                 if(childViewCell.isComponentView())

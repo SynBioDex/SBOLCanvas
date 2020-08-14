@@ -184,6 +184,9 @@ export class GraphService extends GraphHelpers {
 
     this.graph.getModel().beginUpdate();
     try {
+      let viewCell = this.graph.getModel().getCell(selection[0].getValue());
+      // doing this in the graph edit breaks things in the undo, so we put it here
+      viewCell.refreshViewCell(this.graph);
       let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
       this.graph.getModel().execute(zoomEdit);
     } finally {
@@ -1199,7 +1202,9 @@ export class GraphService extends GraphHelpers {
 
         // top level circuit containers need to be synced to get the changes before the trim
         if(selectedCell.isCircuitContainer()){
-          this.updateInteractions(selectedCell.getValue()+"_"+selectedCell.getId(), newCell.getValue()+"_"+selectedCell.getId());
+          let previousReference = selectedCell.getValue()+"_"+selectedCell.getId();
+          let selectedParent = selectedCell.getParent();
+          let selectedIndex = selectedParent.getIndex(selectedCell);
           this.graph.getModel().setValue(selectedCell, newCell.getValue());
           const viewCell = this.graph.getModel().getCell(newCell.getValue());
           if(viewCell.children){
@@ -1210,6 +1215,8 @@ export class GraphService extends GraphHelpers {
               }
             }
           }
+          selectedCell = selectedParent.children[selectedIndex];
+          this.updateInteractions(previousReference, newCell.getValue()+"_"+selectedCell.getId());
         }
 
         if (GraphBase.unFormatedCells.size > 0) {

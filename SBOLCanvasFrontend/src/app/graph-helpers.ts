@@ -619,6 +619,7 @@ export class GraphHelpers extends GraphBase {
         for (let circuitContainer of toReplace) {
             let cellClone = this.graph.getModel().cloneCell(cell);
             let originalParent = circuitContainer.getParent();
+            let originalIndex = originalParent.getIndex(cell);
             // copy the geometry
             cellClone.geometry = circuitContainer.geometry;
 
@@ -639,7 +640,7 @@ export class GraphHelpers extends GraphBase {
                 }
             }
             this.graph.getModel().remove(circuitContainer);
-            let cellAdded = this.graph.getModel().add(originalParent, cellClone);
+            let cellAdded = this.graph.getModel().add(originalParent, cellClone, originalIndex);
             cellAdded.refreshCircuitContainer(this.graph);
         }
     }
@@ -1261,7 +1262,7 @@ export class GraphHelpers extends GraphBase {
                 this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
             }
 
-            // zoom out of the rootView TODO come back to me when recursive modules is a thing
+            // zoom out of the rootView
             let rootViewId;
             let rootViewInfo;
             if (this.graph.getCurrentRoot()) {
@@ -1301,7 +1302,9 @@ export class GraphHelpers extends GraphBase {
                 for (let key in this.graph.getModel().cells) {
                     const cell = this.graph.getModel().cells[key];
                     if (cell.value === checking) {
+                        let previousReference = cell.getValue()+"_"+cell.getId();
                         this.graph.getModel().setValue(cell, glyphInfo.getFullURI());
+                        this.updateInteractions(previousReference, cell.getValue()+"_"+cell.getId());
                         if (cell.isSequenceFeatureGlyph()) {
                             let toAdd = cell.getParent().getParent();
                             if (toAdd.isComponentView() && !checked.has(toAdd.getId())) {
