@@ -7,8 +7,6 @@
 ///// <reference path="./graph-base.ts"/>
 
 import { Injectable } from '@angular/core';
-import * as mxEditor from 'mxgraph';
-import * as mxDragSource from 'mxgraph';
 import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { MetadataService } from './metadata.service';
@@ -16,12 +14,12 @@ import { GlyphService } from './glyph.service';
 import { InteractionInfo } from './interactionInfo';
 import { environment } from 'src/environments/environment';
 import { MatDialog } from '@angular/material';
-import { ErrorComponent } from './error/error.component';
-import { ConfirmComponent } from './confirm/confirm.component';
 import { GraphEdits } from './graph-edits';
 import { GraphBase, mx } from './graph-base';
 import { GraphHelpers } from './graph-helpers';
 import { StyleInfo } from './style-info';
+import { ModuleInfo } from './moduleInfo';
+import { Info } from './info';
 
 @Injectable({
   providedIn: 'root'
@@ -115,7 +113,7 @@ export class GraphService extends GraphHelpers {
       }
     }
     for (let parentInfo of Array.from(parentInfos.values())) {
-      if (parentInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
+      if (parentInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
         return;
       }
     }
@@ -143,7 +141,13 @@ export class GraphService extends GraphHelpers {
         } else if (cell.isInteraction()) {
           const src = cell.source;
           const dest = cell.target;
-          this.graph.addEdge(cell, null, dest, src);
+          let newEdge = this.graph.addEdge(cell, null, dest, src);
+          // reverse the info to/from
+          let newInfo = newEdge.value.makeCopy();
+          let tmpTo = newInfo.to;
+          newInfo.to = newInfo.from;
+          newInfo.from = tmpTo;
+          this.graph.getModel().execute(new GraphEdits.interactionEdit(newEdge, newInfo));
         }
       }
 
@@ -166,7 +170,7 @@ export class GraphService extends GraphHelpers {
   }
 
   /**
-   * "Drills in" to replace the canvas with the selected glyph's component definition
+   * "Drills in" to replace the canvas with the selected glyph's component/module view
    */
   enterGlyph() {
     let selection = this.graph.getSelectionCells();
@@ -174,12 +178,15 @@ export class GraphService extends GraphHelpers {
       return;
     }
 
-    if (!selection[0].isSequenceFeatureGlyph()) {
+    if (!selection[0].isSequenceFeatureGlyph() && !selection[0].isModule()) {
       return;
     }
 
     this.graph.getModel().beginUpdate();
     try {
+      let viewCell = this.graph.getModel().getCell(selection[0].getValue());
+      // doing this in the graph edit breaks things in the undo, so we put it here
+      viewCell.refreshViewCell(this.graph);
       let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
       this.graph.getModel().execute(zoomEdit);
     } finally {
@@ -228,9 +235,9 @@ export class GraphService extends GraphHelpers {
       let glyphInfo;
       if (this.graph.getCurrentRoot().isModuleView()) {
         glyphInfo = new GlyphInfo();
-        super.addToGlyphDict(glyphInfo);
+        super.addToInfoDict(glyphInfo);
       } else {
-        glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+        glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
       }
       const circuitContainer = this.graph.insertVertex(this.graph.getDefaultParent(), null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_CIRCUIT_CONTAINER);
       const backbone = this.graph.insertVertex(circuitContainer, null, '', 0, GraphBase.sequenceFeatureGlyphHeight / 2, GraphBase.sequenceFeatureGlyphWidth, 1, GraphBase.STYLE_BACKBONE);
@@ -277,11 +284,11 @@ export class GraphService extends GraphHelpers {
       for (let container of Array.from(containers.values())) {
         let glyphInfo;
         if (this.graph.getCurrentRoot().isComponentView()) {
-          glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+          glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
         } else {
-          glyphInfo = this.getFromGlyphDict(container);
+          glyphInfo = this.getFromInfoDict(container);
         }
-        if (ownershipPrompt && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+        if (ownershipPrompt && glyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
           return;
         }
       }
@@ -293,6 +300,8 @@ export class GraphService extends GraphHelpers {
       for (let cell of selectedCells) {
         if (cell.isSequenceFeatureGlyph())
           circuitContainers.push(cell.getParent());
+        else if (cell.isCircuitContainer() && this.graph.getCurrentRoot() && this.graph.getCurrentRoot().isComponentView())
+          circuitContainers.push(cell);
       }
 
       // If we are not at the top level, we need to check
@@ -305,9 +314,32 @@ export class GraphService extends GraphHelpers {
           // the revised selection
           if (!(cell.isBackbone() || cell.isCircuitContainer())) {
             newSelection.push(cell);
+          } else {
+            let circuitContainer;
+            if (cell.isBackbone()) {
+              circuitContainer = cell.getParent();
+            } else if (cell.isCircuitContainer()) {
+              circuitContainer = cell;
+            }
+
+            // If we find a backbone is selected, add all it's children
+            if (circuitContainer.children) {
+              for (let child of circuitContainer.children) {
+                if (!child.isBackbone()) {
+                  newSelection.push(child);
+                }
+              }
+            }
           }
         }
         this.graph.setSelectionCells(newSelection);
+      }
+
+      // remove interactions with modules if the item it connects to is being removed
+      for(let selectedCell of selectedCells){
+        if(selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()){
+          this.updateInteractions(selectedCell.getValue()+"_"+selectedCell.getId(), null);
+        }
       }
 
       this.editor.execute('delete');
@@ -487,15 +519,15 @@ export class GraphService extends GraphHelpers {
       let glyphInfo;
       if (this.graph.getCurrentRoot().isComponentView()) {
         // normal case
-        glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+        glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
       } else if (this.atLeastOneCircuitContainerInGraph()) {
         // edge case that we're adding to a container in a module view
         if (!circuitContainer) {
           circuitContainer = this.getClosestCircuitContainerToPoint(x, y);
         }
-        glyphInfo = this.getFromGlyphDict(circuitContainer.getValue());
+        glyphInfo = this.getFromInfoDict(circuitContainer.getValue());
       }
-      if (glyphInfo && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+      if (glyphInfo && glyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
         return;
       }
     }
@@ -523,7 +555,7 @@ export class GraphService extends GraphHelpers {
       // create the glyph info and add it to the dictionary
       const glyphInfo = new GlyphInfo();
       glyphInfo.partRole = name;
-      this.addToGlyphDict(glyphInfo);
+      this.addToInfoDict(glyphInfo);
 
       // Insert new glyph and its components
       const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_SEQUENCE_FEATURE + name);
@@ -543,12 +575,12 @@ export class GraphService extends GraphHelpers {
         let glyphInfo;
         if (this.graph.getCurrentRoot().isComponentView()) {
           // normal case
-          glyphInfo = this.getFromGlyphDict(this.graph.getCurrentRoot().getId());
+          glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
         } else {
           // edge case that we're adding to a container in a module view
-          glyphInfo = this.getFromGlyphDict(circuitContainer.getValue());
+          glyphInfo = this.getFromInfoDict(circuitContainer.getValue());
         }
-        if (glyphInfo.uriPrefix != GlyphInfo.baseURI) {
+        if (glyphInfo.uriPrefix != environment.baseURI) {
           this.changeOwnership(glyphInfo.getFullURI());
         }
       }
@@ -588,7 +620,7 @@ export class GraphService extends GraphHelpers {
       //TODO partRoles for proteins
       let proteinInfo = new GlyphInfo();
       proteinInfo.partType = this.moleculeNameToType(name);
-      this.addToGlyphDict(proteinInfo);
+      this.addToInfoDict(proteinInfo);
 
       const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, proteinInfo.getFullURI(), x, y,
         GraphBase.molecularSpeciesGlyphWidth, GraphBase.molecularSpeciesGlyphHeight, GraphBase.STYLE_MOLECULAR_SPECIES + name);
@@ -618,19 +650,16 @@ export class GraphService extends GraphHelpers {
    * Creates an interaction edge of the given type at the center of the current view
    */
   addInteraction(name) {
-    let selectedCell = this.graph.getSelectionCell();
     const selectionCells = this.graph.getSelectionCells();
-    if (selectionCells.length == 1 || selectionCells.length == 2) {
-      if (selectionCells.length == 2) {
-        selectedCell = selectionCells[0];
-      }
+    if (selectionCells.length > 0 && selectionCells.length < 3) {
+      let selectedCell = selectionCells[0];
       const selectedParent = selectedCell.getParent();
-      if (!selectedParent.geometry) {
-        this.addInteractionAt(name, selectedCell.geometry.x + (selectedCell.geometry.width / 2),
-          selectedCell.geometry.y);
-      } else {
+      if (selectedParent.geometry && !selectedParent.isViewCell()) {
         this.addInteractionAt(name, selectedParent.geometry.x + selectedCell.geometry.x + (selectedCell.geometry.width / 2),
           selectedParent.geometry.y);
+      } else {
+        this.addInteractionAt(name, selectedCell.geometry.x + (selectedCell.geometry.width / 2),
+          selectedCell.geometry.y);
       }
     } else {
       const pt = this.getDefaultNewCellCoords();
@@ -644,7 +673,7 @@ export class GraphService extends GraphHelpers {
    * @param x The x coordinate that the interaction should appear at
    * @param y The y coordinate that the interaction should appear at
    */
-  addInteractionAt(name: string, x, y) {
+  async addInteractionAt(name: string, x, y) {
     let cell;
 
     this.graph.getModel().beginUpdate();
@@ -654,12 +683,30 @@ export class GraphService extends GraphHelpers {
       const selectionCells = this.graph.getSelectionCells();
       if (selectionCells.length == 1) {
         const selectedCell = this.graph.getSelectionCell();
+        if (selectedCell.isModule()) {
+          let result = await this.promptChooseFunctionalComponent(selectedCell, true);
+          if (!result)
+            return;
+          cell.value.fromURI = result;
+        }
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), selectedCell, null);
       } else if (selectionCells.length == 2) {
         const sourceCell = selectionCells[0];
         const destCell = selectionCells[1];
+        if (sourceCell.isModule()) {
+          let result = await this.promptChooseFunctionalComponent(sourceCell, true);
+          if (!result)
+            return;
+          cell.value.fromURI = result;
+        }
+        if (destCell.isModule()) {
+          let result = await this.promptChooseFunctionalComponent(destCell, false);
+          if (!result)
+            return;
+          cell.value.toURI = result;
+        }
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);
       } else {
@@ -722,41 +769,70 @@ export class GraphService extends GraphHelpers {
     }
   }
 
+  makeModuleDragsource(element) {
+    const insert = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+      this.addModuleAt(x - GraphBase.defaultModuleWidth / 2, y - GraphBase.defaultModuleHeight / 2);
+    });
+    this.makeGeneralDragsource(element, insert);
+  }
+
+  addModule() {
+    const pt = this.getDefaultNewCellCoords();
+    this.addModuleAt(pt.x, pt.y);
+  }
+
+  addModuleAt(x, y) {
+    this.graph.getModel().beginUpdate();
+    try {
+      let moduleInfo = new ModuleInfo();
+      this.addToInfoDict(moduleInfo);
+
+      const moduleCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, moduleInfo.getFullURI(), x, y, GraphBase.defaultModuleWidth, GraphBase.defaultModuleHeight, GraphBase.STYLE_MODULE);
+      moduleCell.setConnectable(true);
+
+      this.createViewCell(moduleInfo.getFullURI(), true);
+
+      this.graph.clearSelection();
+      this.graph.setSelectionCell(moduleCell);
+    } finally {
+      this.graph.getModel().endUpdate();
+    }
+  }
+
   /**
    * Find the selected cell, and if there is a glyph selected, update its metadata.
    */
-  setSelectedCellInfo(glyphInfo: GlyphInfo);
-  setSelectedCellInfo(interactionInfo: InteractionInfo);
-  async setSelectedCellInfo(info: any) {
+  async setSelectedCellInfo(info: Info) {
     const selectedCell = this.graph.getSelectionCell();
-    if (!selectedCell) {
-      return;
-    }
 
-    // verify that the selected cell matches the type of info object
-    if (info instanceof GlyphInfo && (selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()) ||
-      (info instanceof InteractionInfo && selectedCell.isInteraction())) {
-
-      // since it does, update its info
-      this.graph.getModel().beginUpdate();
-      try {
-        if (info instanceof GlyphInfo) {
-          if(!selectedCell.isMolecularSpeciesGlyph()){
-            // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
-            this.updateSelectedGlyphInfo(info);
-          }else{
-            this.updateSelectedMolecularSpecies(info);
-          }
-        } else {
-          let interactionEdit = new GraphEdits.interactionEdit(selectedCell, info);
-          this.mutateInteractionGlyph(info.interactionType);
-          this.graph.getModel().execute(interactionEdit);
-        }
-      } finally {
-        this.graph.getModel().endUpdate();
-        this.graph.refresh(selectedCell);
-        this.updateAngularMetadata(this.graph.getSelectionCells());
+    this.graph.getModel().beginUpdate();
+    try {
+      // figure out which type of info object it is
+      if (info instanceof ModuleInfo && (!selectedCell || selectedCell.isModule())) {
+        this.updateSelectedModuleInfo(info);
+        return;
       }
+
+      if (info instanceof GlyphInfo && (!selectedCell || selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph())) {
+        if (!selectedCell || !selectedCell.isMolecularSpeciesGlyph()) {
+          // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
+          this.updateSelectedGlyphInfo(info);
+        } else {
+          this.updateSelectedMolecularSpecies(info);
+        }
+        return;
+      }
+
+      if (info instanceof InteractionInfo && selectedCell.isInteraction()) {
+        let interactionEdit = new GraphEdits.interactionEdit(selectedCell, info);
+        this.mutateInteractionGlyph(info.interactionType);
+        this.graph.getModel().execute(interactionEdit);
+        return;
+      }
+    } finally {
+      this.graph.getModel().endUpdate();
+      this.graph.refresh(selectedCell);
+      //this.updateAngularMetadata(this.graph.getSelectionCells());
     }
   }
 
@@ -888,7 +964,7 @@ export class GraphService extends GraphHelpers {
    * and uses it to replace the current graph
    */
   setGraphToXML(graphString: string) {
-    GraphBase.anyForeignCellsFound = false;
+    GraphBase.unFormatedCells.clear();
     this.graph.home();
     this.graph.getModel().clear();
 
@@ -896,15 +972,16 @@ export class GraphService extends GraphHelpers {
     const codec = new mx.mxCodec(doc);
     codec.decode(doc.documentElement, this.graph.getModel());
 
-    // get the viewCell that has no references
+    // The child of cell 1 that isn't a view cell points to the root view
     const cell1 = this.graph.getModel().getCell("1");
     let viewCells = this.graph.getModel().getChildren(cell1);
-    let rootViewCell = viewCells[0];
-    for (let viewCell of viewCells) {
-      if (this.getCoupledGlyphs(viewCell.getId()).length > 0)
-        continue;
-      rootViewCell = viewCell;
-      break;
+    let rootViewCell;
+    for (let child of viewCells) {
+      if (!child.isViewCell()) {
+        rootViewCell = this.graph.getModel().getCell(child.getValue());
+        this.graph.getModel().remove(child);
+        break;
+      }
     }
     this.graph.enterGroup(rootViewCell);
     this.viewStack = [];
@@ -912,15 +989,17 @@ export class GraphService extends GraphHelpers {
     this.selectionStack = [];
 
     let children = this.graph.getModel().getChildren(this.graph.getDefaultParent());
-    children.forEach(element => {
-      if (element.isCircuitContainer())
-        element.refreshCircuitContainer(this.graph);
-    });
+    if (children) {
+      children.forEach(element => {
+        if (element.isCircuitContainer())
+          element.refreshCircuitContainer(this.graph);
+      });
+    }
 
-    if (GraphBase.anyForeignCellsFound) {
+    if (GraphBase.unFormatedCells.size > 0) {
       console.log("FORMATTING !!!!!!!!!!!!!!!!");
-      this.autoFormat();
-      GraphBase.anyForeignCellsFound = false;
+      this.autoFormat(GraphBase.unFormatedCells);
+      GraphBase.unFormatedCells.clear();
     }
 
     this.fitCamera();
@@ -941,34 +1020,50 @@ export class GraphService extends GraphHelpers {
   async setSelectedToXML(cellString: string) {
     const selectionCells = this.graph.getSelectionCells();
 
-    if (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer())) {
+    if (selectionCells.length == 0 || (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule()))) {
       // We're making a new cell to replace the selected one
-      let selectedCell = selectionCells[0];
+      let selectedCell;
+      if (selectionCells.length > 0) {
+        selectedCell = selectionCells[0];
+      } else {
+        // nothing selected means we're replacing the view cell
+        selectedCell = this.graph.getCurrentRoot();
+      }
 
       this.graph.getModel().beginUpdate();
       try {
-
-        let fromCircuitContainer = selectedCell.isCircuitContainer();
         let inModuleView = this.graph.getCurrentRoot().isModuleView();
 
         // prompt ownership change
         let parentInfo = this.getParentInfo(selectedCell);
-        if (parentInfo && parentInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
+        if (parentInfo && parentInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(parentInfo.displayID)) {
           return;
-        }
-
-        // zoom out to make things easier
-        if (fromCircuitContainer && this.viewStack.length > 1) {
-          selectedCell = this.selectionStack[this.selectionStack.length - 1];
-          this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
         }
 
         // change ownership
         if (parentInfo) {
-          let parentIndex = this.graph.getCurrentRoot().getIndex(selectedCell.getParent());
-          let selectedCellIndex = selectedCell.getParent().getIndex(selectedCell);
-          this.changeOwnership(parentInfo.getFullURI());
-          selectedCell = this.graph.getCurrentRoot().children[parentIndex].children[selectedCellIndex];
+          if (selectedCell.isViewCell()) {
+            this.changeOwnership(parentInfo.getFullURI());
+            selectedCell = this.graph.getCurrentRoot();
+          } else if (selectedCell.isCircuitContainer() || selectedCell.isModule()) {
+            let selectedIndex = selectedCell.getParent().getIndex(selectedCell);
+            this.changeOwnership(parentInfo.getFullURI());
+            selectedCell = this.graph.getCurrentRoot().children[selectedIndex];
+          } else {
+            let parentIndex = this.graph.getCurrentRoot().getIndex(selectedCell.getParent());
+            let selectedIndex = selectedCell.getParent().getIndex(selectedCell);
+            this.changeOwnership(parentInfo.getFullURI());
+            selectedCell = this.graph.getCurrentRoot().children[parentIndex].children[selectedIndex];
+          }
+        }
+
+        // if we're in a non top level circuit container, module, or view cell zoom out to make things easier
+        let zoomOut = false;
+        if (((selectedCell.isCircuitContainer() || selectedCell.isComponentView()) && this.graph.getCurrentRoot().isComponentView() && this.viewStack.length > 1) ||
+          ((selectedCell.isModule() || selectedCell.isModuleView()) && this.viewStack.length > 1)) {
+          zoomOut = true;
+          selectedCell = this.selectionStack[this.selectionStack.length - 1];
+          this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
         }
 
         // setup the decoding info
@@ -1019,6 +1114,24 @@ export class GraphService extends GraphHelpers {
               }
             });
           }
+        } else if (selectedCell.isModule()) {
+          // store old cell's parent
+          origParent = selectedCell.getParent();
+
+          // generated cells don't have a proper geometry
+          newCell.setStyle(selectedCell.getStyle());
+          this.graph.getModel().setGeometry(newCell, selectedCell.geometry);
+
+          // add new cell to the graph
+          this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+
+          // remove the old cell's view cell if it doesn't have any references
+          if (this.getCoupledModules(selectedCell.value).length < 2) {
+            this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
+          }
+
+          // remove the old cell
+          this.graph.getModel().remove(selectedCell);
         }
 
         // Now create all children of the new cell
@@ -1040,20 +1153,20 @@ export class GraphService extends GraphHelpers {
           this.graph.addCell(viewClone, cell1);
 
           // add the info to the dictionary
-          if (this.getFromGlyphDict(viewCells[i].getId()) != null) {
-            this.removeFromGlyphDict(viewCells[i].getId());
+          if (this.getFromInfoDict(viewCells[i].getId()) != null) {
+            this.removeFromInfoDict(viewCells[i].getId());
           }
-          this.addToGlyphDict(subGlyphDict[viewCells[i].getId()]);
+          this.addToInfoDict(subGlyphDict[viewCells[i].getId()]);
         }
 
         if (selectedCell.isSequenceFeatureGlyph()) {
           origParent.refreshCircuitContainer(this.graph);
           this.graph.setSelectionCell(newCell);
-          this.mutateSequenceFeatureGlyph(this.getFromGlyphDict(newCell.value).partRole);
+          this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(newCell.value)).partRole);
         }
 
-        // if we came from a circuit container, zoom back into it
-        if (fromCircuitContainer) {
+        // if we zoomed out zoom back in
+        if (zoomOut) {
           if (selectedCell.isSequenceFeatureGlyph()) {
             // if the selected cell is a sequenceFeature that means we came from a sub view
             this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newCell, this));
@@ -1078,10 +1191,46 @@ export class GraphService extends GraphHelpers {
           }
         }
 
+        // root cells won't be zoomed out, so just zoom into the correct one, and remove the old one
+        if (selectedCell.isViewCell()) {
+          let newViewId = newCell.getValue();
+          const newView = this.graph.getModel().getCell(newViewId);
+          this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
+          this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newView, this));
+          this.removeViewCell(selectedCell);
+        }
+
+        // top level circuit containers need to be synced to get the changes before the trim
+        if(selectedCell.isCircuitContainer()){
+          let previousReference = selectedCell.getValue()+"_"+selectedCell.getId();
+          let selectedParent = selectedCell.getParent();
+          let selectedIndex = selectedParent.getIndex(selectedCell);
+          this.graph.getModel().setValue(selectedCell, newCell.getValue());
+          const viewCell = this.graph.getModel().getCell(newCell.getValue());
+          if(viewCell.children){
+            for(let viewChild of viewCell.children){
+              if(viewChild.isCircuitContainer()){
+                this.syncCircuitContainer(viewChild);
+                break;
+              }
+            }
+          }
+          selectedCell = selectedParent.children[selectedIndex];
+          this.updateInteractions(previousReference, newCell.getValue()+"_"+selectedCell.getId());
+        }
+
+        if (GraphBase.unFormatedCells.size > 0) {
+          console.log("FORMATTING !!!!!!!!!!!!!!!!");
+          this.autoFormat(GraphBase.unFormatedCells);
+          GraphBase.unFormatedCells.clear();
+        }
+
         // sync circuit containers
         if (origParent) {
           this.syncCircuitContainer(origParent);
         }
+
+        this.trimUnreferencedCells();
       } finally {
         this.graph.getModel().endUpdate();
       }
@@ -1105,12 +1254,14 @@ export class GraphService extends GraphHelpers {
 
     // initalize the root view cell of the graph
     if (moduleMode) {
-      rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
+      let rootModuleInfo = new ModuleInfo();
+      this.addToInfoDict(rootModuleInfo);
+      rootViewCell = this.graph.insertVertex(cell1, rootModuleInfo.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
       this.graph.enterGroup(rootViewCell);
       this.viewStack.push(rootViewCell);
     } else {
       let info = new GlyphInfo();
-      this.addToGlyphDict(info);
+      this.addToInfoDict(info);
       rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
       this.graph.enterGroup(rootViewCell);
       this.viewStack.push(rootViewCell);
@@ -1118,6 +1269,8 @@ export class GraphService extends GraphHelpers {
     }
 
     this.metadataService.setComponentDefinitionMode(!moduleMode);
+
+    this.updateAngularMetadata(this.graph.getSelectionCells());
 
     this.editor.undoManager.clear();
   }

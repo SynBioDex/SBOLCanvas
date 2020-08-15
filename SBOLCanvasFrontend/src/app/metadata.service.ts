@@ -7,6 +7,7 @@ import { environment } from 'src/environments/environment';
 import {InteractionInfo} from "./interactionInfo";
 import {StyleInfo} from './style-info';
 import {Style} from '@angular/cli/lib/config/schema';
+import { ModuleInfo } from './moduleInfo';
 
 @Injectable({
   providedIn: 'root'
@@ -44,6 +45,10 @@ export class MetadataService {
   // Interaction Info
   private interactionInfoSource = new BehaviorSubject(null);
   selectedInteractionInfo = this.interactionInfoSource.asObservable();
+
+  // Module info
+  private moduleInfoSource = new BehaviorSubject(null);
+  selectedModuleInfo = this.moduleInfoSource.asObservable();
 
   // Style Info
   private styleInfoSource = new BehaviorSubject(new StyleInfo([]));
@@ -87,6 +92,10 @@ export class MetadataService {
 
   setSelectedInteractionInfo(newInfo: InteractionInfo) {
     this.interactionInfoSource.next(newInfo);
+  }
+
+  setSelectedModuleInfo(newInfo: ModuleInfo) {
+    this.moduleInfoSource.next(newInfo);
   }
 
   setComponentDefinitionMode(newSetting: boolean) {

@@ -12,7 +12,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field *ngIf="data != null">
+    <mat-form-field *ngIf="data != null && !moduleMode">
       <mat-label>Part type</mat-label>
       <mat-select id="partType" [disabled]="partTypes == null || partTypes.length < 1"
       (selectionChange)="setPartType($event.value)" value="{{partType}}">
@@ -34,7 +34,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field *ngIf="data != null">
+    <mat-form-field *ngIf="data != null && !moduleMode">
       <mat-label>Part role</mat-label>
       <mat-select id="partRole" [disabled]="partRoles == null || partRoles.length < 1"
       (selectionChange)="setPartRole($event.value)" value="{{partRole}}">
@@ -45,7 +45,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field *ngIf="data != null">
+    <mat-form-field *ngIf="data != null && !moduleMode">
       <mat-label>Role refinement</mat-label>
       <mat-select id="roleRefinement" [disabled]="roleRefinements == null || roleRefinements.length < 1"
       (selectionChange)="setPartRefinement($event.value)" value="{{partRefine}}">

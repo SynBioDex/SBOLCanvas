@@ -7,24 +7,14 @@ public class GlyphInfo extends Info {
 	private String partRole;
 	private String[] otherRoles;
 	private String partRefine;
-	private String displayID;
 	private String name;
 	private String description;
 	private String version;
 	private String sequence;
 	private String sequenceURI;
-	private String uriPrefix;
 	private CanvasAnnotation[] annotations;
 	private String[] derivedFroms;
 	private String[] generatedBys;
-
-	public String getUriPrefix() {
-		return uriPrefix;
-	}
-
-	public void setUriPrefix(String uriPrefix) {
-		this.uriPrefix = uriPrefix;
-	}
 
 	public String getPartType() {
 		return partType;
@@ -64,14 +54,6 @@ public class GlyphInfo extends Info {
 
 	public void setPartRefine(String partRefine) {
 		this.partRefine = partRefine;
-	}
-
-	public String getDisplayID() {
-		return displayID;
-	}
-
-	public void setDisplayID(String displayID) {
-		this.displayID = displayID;
 	}
 
 	public String getName() {

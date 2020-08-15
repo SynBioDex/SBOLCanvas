@@ -73,8 +73,8 @@ export class FilesService {
     });
   }
 
-  async saveRemote(server: string, collection: string, user: string, filename: string, contents: string) {
-    await this.uploadSBOL(contents, server, collection, user, filename).toPromise();
+  async saveRemote(server: string, collection: string, user: string, contents: string) {
+    await this.uploadSBOL(contents, server, collection, user).toPromise();
   }
 
   getRegistries(): Observable<any> {
@@ -136,11 +136,10 @@ export class FilesService {
     return this.http.post(this.toMxGraphURL, sbolXML, { responseType: 'text' });
   }
 
-  uploadSBOL(mxGraphXML: string, server: string, collection: string, user: string, filename: string) {
+  uploadSBOL(mxGraphXML: string, server: string, collection: string, user: string) {
     let headers = new HttpHeaders();
     headers = headers.set("Authorization", user);
     let params = new HttpParams();
-    params = params.append("name", filename);
     params = params.append("server", server);
     params = params.append("uri", collection);
     return this.http.post(this.addToCollectionURL, mxGraphXML, { responseType: 'text', headers: headers, params: params });

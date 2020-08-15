@@ -2,6 +2,8 @@ import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { mxGraphView } from 'src/mxgraph';
 import { GraphService } from './graph.service';
+import { Info } from './info';
+import { mx } from './graph-base';
 
 /**
  * Contains all the custom edit objects necessary for mxGraph.
@@ -50,12 +52,12 @@ export class GraphEdits {
     }
 
     /**
-     * Edit object for glyphInfo history. Replaces glyphInfo's in a dictionary stored in cell0's value variable.
+     * Edit object for glyphInfo/moduleInfo history. Replaces glyphInfo's in a dictionary stored in cell0's value variable.
      */
-    static glyphInfoEdit = class {
+    static infoEdit = class {
         cell0: mxCell;
-        info: GlyphInfo;
-        previousInfo: GlyphInfo;
+        info: Info;
+        previousInfo: Info;
 
         /**
          * If info is null, removes previous from the dictionary.
@@ -65,7 +67,7 @@ export class GraphEdits {
          * @param info The info you want to put in the dictionary (or null if removing)
          * @param previousInfo The info that is already there (or null if adding)
          */
-        constructor(cell0: string, info: GlyphInfo, previousInfo: GlyphInfo) {
+        constructor(cell0: string, info: Info, previousInfo: Info) {
             this.cell0 = cell0;
             // store them in reverse so the execute performs the action the first time
             this.info = previousInfo;
@@ -127,21 +129,30 @@ export class GraphEdits {
                 } else {
                     childViewCell = this.graphService.graph.getModel().getCell(this.glyphCell.value);
                     // add info to the selectionstack
-                    this.graphService.selectionStack.push(this.glyphCell);
+                    // edge case of zooming back into rootview of the diagram (nothing should be put in the selectionStack)
+                    if(this.graphService.viewStack.length > 0)
+                        this.graphService.selectionStack.push(this.glyphCell);
                 }
 
                 // add the info to the view stack
+                let previousView = this.graphService.viewStack[this.graphService.viewStack.length -1 ];
                 this.graphService.viewStack.push(childViewCell);
 
                 // change the view
                 this.view.clear(this.view.currentRoot, true);
                 this.view.currentRoot = childViewCell;
+                // mxCurrentRootChange has this when zooming in, but it's causing a text positioning square where there shouldn't be one
+                // not having it seems to have no adverse effects
+                //this.view.validate(); 
 
-                // fix any layout problems
-                childViewCell.refreshViewCell(this.graphService.graph);
+                // Note, this will cause a backbone to call layout.execute which breaks things on undo
+                //childViewCell.refreshViewCell(this.graphService.graph);
 
                 // set the selection to the circuit container
-                this.graphService.graph.setSelectionCell(childViewCell.children[0]);
+                if(childViewCell.isComponentView())
+                    this.graphService.graph.setSelectionCell(childViewCell.children[0]);
+                else
+                    this.graphService.graph.clearSelection();
                 this.graphService.fitCamera();
 
                 // make sure we can't add new strands/interactions/molecules
@@ -157,25 +168,27 @@ export class GraphEdits {
                 // change the view
                 this.view.clear(this.view.currentRoot, true);
                 this.view.currentRoot = this.graphService.viewStack[this.graphService.viewStack.length - 1];
+                this.view.refresh();
 
                 // set the selection back
                 this.graphService.graph.setSelectionCell(newSelectedCell);
                 this.graphService.setAllScars(this.graphService.showingScars);
-                this.graphService.fitCamera();
 
                 // make sure we can add new strands/interactions/molecules on the top level
                 if (this.graphService.graph.getCurrentRoot() && this.graphService.graph.getCurrentRoot().isViewCell()) {
                     this.graphService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
-
+                    
                     // refresh the circuit containers
                     this.graphService.graph.getCurrentRoot().refreshViewCell(this.graphService.graph);
                 }
-
+                
                 if (newSelectedCell) {
                     this.glyphCell = newSelectedCell;
                 } else {
-                    this.glyphCell = previousView
+                    this.glyphCell = previousView;
                 }
+                
+                this.graphService.fitCamera();
             }
         }
     }

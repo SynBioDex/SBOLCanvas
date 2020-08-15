@@ -1,3 +1,4 @@
+<div *ngIf="registries && partTypes && partRoles && interactionTypes"> <!-- Don't show anything until all the data from the backend is loaded -->
 <div *ngIf="glyphInfo" class="info-menu-container">
   <mat-form-field>
     <mat-label>Part type</mat-label>
@@ -65,6 +66,30 @@
   <button mat-stroked-button (click)="openDownloadDialog()">Import Component</button>
 </div>
 
+<div *ngIf="moduleInfo" class="info-menu-container">
+  <mat-form-field>
+    <input matInput id="displayID" placeholder="Display ID" value="{{ moduleInfo.displayID }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Must be composed of only alphanumeric or underscore characters and MUST NOT begin with a digit.">
+  </mat-form-field>
+
+  <mat-form-field>
+    <input matInput id="name" placeholder="Name" value="{{ moduleInfo.name }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Intended to be displayed to a human when visualizing an Identified object.">
+  </mat-form-field>
+
+  <mat-form-field>
+    <textarea matInput id="description" placeholder="Description" value="{{ moduleInfo.description }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Inteded to contain a more thorough text description of an Identified object."></textarea>
+  </mat-form-field>
+
+  <mat-form-field>
+      <textarea matInput id="version" placeholder="Version" value="{{ moduleInfo.version }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Recomended style is numbers and qualifiers that are separated by '.' and '-'."></textarea>
+  </mat-form-field>
+
+  <mat-label *ngIf="localDesign()" matTooltipShowDelay="1000" matTooltip="{{ moduleInfo.getFullURI() }}">URI: Local Design</mat-label>
+  <mat-label *ngIf="synBioHubDesign()" matTooltipShowDelay="1000" matTooltip="{{ moduleInfo.getFullURI() }}">URI: <a href="{{ moduleInfo.getFullURI() }}" target="_blank">SynBioHub Record</a></mat-label>
+  <mat-label *ngIf="importedDesign()" matTooltipShowDelay="1000" matTooltip="{{ moduleInfo.getFullURI() }}">URI: Imported Design</mat-label>
+
+  <button mat-stroked-button (click)="openDownloadDialog(true)">Import Component</button>
+</div>
+
 
 <div *ngIf="interactionInfo" class="info-menu-container">
   <mat-form-field>
@@ -79,4 +104,5 @@
   <mat-form-field>
     <input matInput id="displayID" placeholder="Display ID" value="{{ interactionInfo.displayID }}" (change)="inputChange($event)">
   </mat-form-field>
+</div>
 </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo } from '../interactionInfo';
 import { MetadataService } from '../metadata.service';
@@ -6,6 +6,8 @@ import { GraphService } from '../graph.service';
 import { FilesService } from '../files.service';
 import { MatSelectChange, MatDialog } from '@angular/material';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
+import { ModuleInfo } from '../moduleInfo';
+import { environment } from 'src/environments/environment';
 
 
 @Component({
@@ -28,13 +30,15 @@ export class InfoEditorComponent implements OnInit {
   encodings: string[];
 
   glyphInfo: GlyphInfo;
+  moduleInfo: ModuleInfo;
   interactionInfo: InteractionInfo;
 
-  constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog) { }
+  constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog, private changeDetector: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
     this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo));
+    this.metadataService.selectedModuleInfo.subscribe(moduleInfo => this.moduleInfoUpdated(moduleInfo));
     this.filesService.getRegistries().subscribe(result => this.registries = result);
     this.getTypes();
     this.getRoles();
@@ -107,19 +111,30 @@ export class InfoEditorComponent implements OnInit {
           this.glyphInfo.displayID = replaced;
         } else if (this.interactionInfo != null) {
           this.interactionInfo.displayID = replaced;
+        } else if (this.moduleInfo){
+          this.moduleInfo.displayID = replaced;
         }
         break;
       }
       case 'name': {
-        this.glyphInfo.name = event.target.value;
+        if(this.glyphInfo)
+          this.glyphInfo.name = event.target.value;
+        else if(this.moduleInfo)
+          this.moduleInfo.name = event.target.value;
         break;
       }
       case 'description': {
-        this.glyphInfo.description = event.target.value;
+        if(this.glyphInfo)
+          this.glyphInfo.description = event.target.value;
+        else if(this.moduleInfo)
+          this.moduleInfo.description = event.target.value;
         break;
       }
       case 'version': {
-        this.glyphInfo.version = event.target.value;
+        if(this.glyphInfo)
+          this.glyphInfo.version = event.target.value;
+        else if(this.moduleInfo)
+          this.moduleInfo.version = event.target.value;
         break;
       }
       case 'sequence': {
@@ -135,14 +150,17 @@ export class InfoEditorComponent implements OnInit {
       this.graphService.setSelectedCellInfo(this.glyphInfo);
     } else if (this.interactionInfo != null) {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
+    } else if (this.moduleInfo != null){
+      this.graphService.setSelectedCellInfo(this.moduleInfo);
     }
   }
 
-  openDownloadDialog() {
+  openDownloadDialog(moduleMode: boolean = false) {
     this.dialog.open(DownloadGraphComponent, {
       data: {
         import: true,
-        info: this.glyphInfo
+        moduleMode: moduleMode,
+        info: moduleMode ? null : this.glyphInfo
       }
     });
   }
@@ -160,22 +178,44 @@ export class InfoEditorComponent implements OnInit {
         this.partRefinements = [];
       }
     }
+    // this needs to be called because we may have gotten here from an async function
+    // an async function doesn't update the view for some reason
+    this.changeDetector.detectChanges();
   }
 
   /**
-   * Updates both the interaction info int he form and in the graph.
+   * Updates both the module info in the form and in the graph.
+   */
+  moduleInfoUpdated(moduleInfo: ModuleInfo){
+    this.moduleInfo = moduleInfo;
+    // this needs to be called because we may have gotten here from an async function
+    // an async function doesn't update the view for some reason
+    this.changeDetector.detectChanges();
+  }
+
+  /**
+   * Updates both the interaction info in the form and in the graph.
    */
   interactionInfoUpdated(interactionInfo: InteractionInfo) {
     this.interactionInfo = interactionInfo;
+    // this needs to be called because we may have gotten here from an async function
+    // an async function doesn't update the view for some reason
+    this.changeDetector.detectChanges();
   }
 
   localDesign(): boolean {
-    return this.glyphInfo.uriPrefix === GlyphInfo.baseURI;
+    if(this.glyphInfo)
+      return this.glyphInfo.uriPrefix === environment.baseURI;
+    else if(this.moduleInfo)
+      return this.moduleInfo.uriPrefix === environment.baseURI;
+    return true;
   }
 
   synBioHubDesign(): boolean {
     for (let registry of this.registries) {
-      if (this.glyphInfo.uriPrefix.startsWith(registry))
+      if(this.glyphInfo && this.glyphInfo.uriPrefix && this.glyphInfo.uriPrefix.startsWith(registry))
+        return true;
+      if(this.moduleInfo && this.moduleInfo.uriPrefix && this.moduleInfo.uriPrefix.startsWith(registry))
         return true;
     }
     return false;

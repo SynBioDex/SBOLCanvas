@@ -4,8 +4,10 @@ import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { InteractionInfo } from './interactionInfo';
 import { GlyphService } from './glyph.service';
-import { GraphHelpers } from './graph-helpers';
 import { CanvasAnnotation } from './canvasAnnotation';
+import { environment } from 'src/environments/environment';
+import { ModuleInfo } from './moduleInfo';
+import { GraphEdits } from './graph-edits';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -32,11 +34,15 @@ export class GraphBase {
     static readonly defaultTextWidth = 120;
     static readonly defaultTextHeight = 80;
 
+    static readonly defaultModuleWidth = 120;
+    static readonly defaultModuleHeight = 50;
+
     static readonly defaultInteractionSize = 80;
 
     static readonly STYLE_CIRCUIT_CONTAINER = 'circuitContainer';
     static readonly STYLE_BACKBONE = 'backbone';
     static readonly STYLE_TEXTBOX = 'textBox';
+    static readonly STYLE_MODULE = 'moduleGlyph';
     static readonly STYLE_SCAR = 'Scar (Assembly Scar)';
     static readonly STYLE_NGA = 'NGA (No Glyph Assigned)';
     static readonly STYLE_MOLECULAR_SPECIES = 'molecularSpeciesGlyph';
@@ -70,8 +76,8 @@ export class GraphBase {
     // This object handles the hotkeys for the graph.
     keyHandler: any;
 
-    // We can import non native designs. This will be set to true if ceratin annotations weren't found
-    static anyForeignCellsFound = false;
+    // when decoding we add any unformatted view cells to this set
+    static unFormatedCells = new Set<string>();
 
     constructor(protected glyphService: GlyphService) {
         // constructor code is divided into helper methods for organization,
@@ -124,23 +130,7 @@ export class GraphBase {
 
         this.initStyles();
         this.initCustomShapes();
-        this.initSequenceFeatureGlyphMovement();
-
-        // initalize the root view cell of the graph
-        const cell1 = this.graph.getModel().getCell(1);
-        const rootViewCell = this.graph.insertVertex(cell1, "rootView", "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
-        this.graph.enterGroup(rootViewCell);
-        this.viewStack = [];
-        this.viewStack.push(rootViewCell);
-        this.selectionStack = [];
-
-        // initalize the GlyphInfoDictionary
-        const cell0 = this.graph.getModel().getCell(0);
-        const glyphDict = [];
-        this.graph.getModel().setValue(cell0, glyphDict);
-
-        // don't let any of the setup be on the undo stack
-        this.editor.undoManager.clear();
+        this.initListeners();
     }
 
     /**
@@ -153,19 +143,19 @@ export class GraphBase {
         window['mxPoint'] = mx.mxPoint;
         window['mxCell'] = mx.mxCell;
 
-        let genericDecode = function(dec, node, into){
+        let genericDecode = function (dec, node, into) {
             const meta = node;
             if (meta != null) {
-              for (let i = 0; i < meta.attributes.length; i++) {
-                const attrib = meta.attributes[i];
-                if (attrib.specified == true && attrib.name != 'as') {
-                  into[attrib.name] = attrib.value;
+                for (let i = 0; i < meta.attributes.length; i++) {
+                    const attrib = meta.attributes[i];
+                    if (attrib.specified == true && attrib.name != 'as') {
+                        into[attrib.name] = attrib.value;
+                    }
                 }
-              }
-              for (let i = 0; i < meta.children.length; i++) {
-                const childNode = meta.children[i];
-                into[childNode.getAttribute("as")] = dec.decode(childNode);
-              }
+                for (let i = 0; i < meta.children.length; i++) {
+                    const childNode = meta.children[i];
+                    into[childNode.getAttribute("as")] = dec.decode(childNode);
+                }
             }
             return into;
         }
@@ -184,6 +174,19 @@ export class GraphBase {
         mx.mxCodecRegistry.register(glyphInfoCodec);
         window['GlyphInfo'] = GlyphInfo;
 
+        // Module info encode/decode
+        Object.defineProperty(ModuleInfo, "name", { configurable: true, value: "ModuleInfo" });
+        const moduleInfoCodec = new mx.mxObjectCodec(new ModuleInfo());
+        moduleInfoCodec.decode = function(dec, node, into){
+            const moduleData = new ModuleInfo();
+            return genericDecode(dec, node, moduleData);
+        }
+        moduleInfoCodec.encode = function(enc, object){
+            return object.encode(enc);
+        }
+        mx.mxCodecRegistry.register(moduleInfoCodec);
+        window['ModuleInfo'] = ModuleInfo;
+
         // Interaction info encode/decode
         Object.defineProperty(InteractionInfo, "name", { configurable: true, value: "InteractionInfo" });
         const interactionInfoCodec = new mx.mxObjectCodec(new InteractionInfo());
@@ -199,11 +202,11 @@ export class GraphBase {
 
         Object.defineProperty(CanvasAnnotation, "name", { configurable: true, value: "CanvasAnnotation" });
         const canvasAnnotationCodec = new mx.mxObjectCodec(new CanvasAnnotation());
-        canvasAnnotationCodec.decode = function(dec, node, into){
+        canvasAnnotationCodec.decode = function (dec, node, into) {
             const canvasAnnotation = new CanvasAnnotation();
             return genericDecode(dec, node, canvasAnnotation);
         }
-        canvasAnnotationCodec.encode = function(enc, object){
+        canvasAnnotationCodec.encode = function (enc, object) {
             return object.encode(enc);
         }
         mx.mxCodecRegistry.register(canvasAnnotationCodec);
@@ -223,8 +226,8 @@ export class GraphBase {
             let glyphDict = cell0.value;
 
             // check for format conditions
-            if ((cell.isCircuitContainer() && cell.getParent().getId() === "rootView" || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0) {
-                GraphBase.anyForeignCellsFound = true;
+            if ((cell.isCircuitContainer() && cell.getParent().isModuleView() || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0) {
+                GraphBase.unFormatedCells.add(cell.getParent().getId());
             }
 
             let reconstructCellStyle = false;
@@ -235,7 +238,7 @@ export class GraphBase {
                     reconstructCellStyle = true;
                 else if (cell.style.includes(GraphBase.STYLE_SEQUENCE_FEATURE) && !cell.style.includes(glyphDict[cell.value].partRole))
                     reconstructCellStyle = true;
-                else if (cell.style === GraphBase.STYLE_MOLECULAR_SPECIES || cell.style.includes(GraphBase.STYLE_MOLECULAR_SPECIES+";"))
+                else if (cell.style === GraphBase.STYLE_MOLECULAR_SPECIES || cell.style.includes(GraphBase.STYLE_MOLECULAR_SPECIES + ";"))
                     reconstructCellStyle = true;
             }
 
@@ -255,7 +258,7 @@ export class GraphBase {
                             cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
                     } else {
                         // molecular species
-                        if(!cell.style)
+                        if (!cell.style)
                             cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
                         else
                             cell.style = cell.style.replace(GraphBase.STYLE_MOLECULAR_SPECIES, GraphBase.STYLE_MOLECULAR_SPECIES + GraphBase.moleculeTypeToName(glyphDict[cell.value].partType))
@@ -318,6 +321,10 @@ export class GraphBase {
 
         mx.mxCell.prototype.isInteraction = function () {
             return this.isStyle(GraphBase.STYLE_INTERACTION);
+        }
+
+        mx.mxCell.prototype.isModule = function () {
+            return this.isStyle(GraphBase.STYLE_MODULE);
         }
 
         mx.mxCell.prototype.isViewCell = function () {
@@ -454,9 +461,11 @@ export class GraphBase {
             }
 
             // refresh all circuit containers
-            for (let child of this.children) {
-                if (child.isCircuitContainer()) {
-                    child.refreshCircuitContainer(graph);
+            if (this.children) {
+                for (let child of this.children) {
+                    if (child.isCircuitContainer()) {
+                        child.refreshCircuitContainer(graph);
+                    }
                 }
             }
         };
@@ -597,6 +606,16 @@ export class GraphBase {
         textBoxStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
         textBoxStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
         this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_TEXTBOX, textBoxStyle);
+
+        const moduleStyle = {};
+        moduleStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
+        moduleStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
+        moduleStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
+        moduleStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
+        moduleStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
+        moduleStyle[mx.mxConstants.STYLE_EDITABLE] = false;
+        moduleStyle[mx.mxConstants.STYLE_ROUNDED] = true;
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MODULE, moduleStyle);
 
         const circuitContainerStyle = {};
         circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE;
@@ -770,7 +789,50 @@ export class GraphBase {
     /**
      * Sets up logic for handling sequenceFeatureGlyph movement
      */
-    initSequenceFeatureGlyphMovement() {
+    initListeners() {
+        // edge movement
+        this.graph.addListener(mx.mxEvent.CONNECT_CELL, mx.mxUtils.bind(this, async function(sender, evt){
+
+            // if the terminal is a module, we need to prompt what it should be changed to, otherwise just clear it
+
+            let edge = evt.getProperty("edge");
+            let terminal = evt.getProperty("terminal");
+            let source = evt.getProperty("source");
+
+            let cancelled = false;
+
+            try{
+                sender.getModel().beginUpdate();
+                let newTarget = null;
+                if(terminal != null && terminal.isModule()){
+                    newTarget = await this.promptChooseFunctionalComponent(terminal, source);
+                    if(!newTarget){
+                        cancelled = true;
+                        return;
+                    }
+                }
+
+                let infoCopy = edge.value.makeCopy();
+
+                if(source){
+                    infoCopy.fromURI = newTarget;
+                }else{
+                    infoCopy.toURI = newTarget;
+                }
+
+                sender.getModel().execute(new GraphEdits.interactionEdit(edge, infoCopy));
+            }finally{
+                sender.getModel().endUpdate();
+                // undo has to happen after end update
+                if (cancelled) {
+                    this.editor.undoManager.undo();
+                    this.editor.undoManager.trim();
+                }
+            }
+            evt.consume();
+        }));
+
+        // cell movement
         this.graph.addListener(mx.mxEvent.MOVE_CELLS, mx.mxUtils.bind(this, async function (sender, evt) {
             // sender is the graph
 
@@ -809,11 +871,11 @@ export class GraphBase {
                     for (let container of Array.from(containers.values())) {
                         let glyphInfo;
                         if (sender.getCurrentRoot().isComponentView()) {
-                            glyphInfo = this.getFromGlyphDict(sender.getCurrentRoot().getId());
+                            glyphInfo = this.getFromInfoDict(sender.getCurrentRoot().getId());
                         } else {
-                            glyphInfo = this.getFromGlyphDict(container);
+                            glyphInfo = this.getFromInfoDict(container);
                         }
-                        if (ownershipChange && glyphInfo.uriPrefix != GlyphInfo.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
+                        if (ownershipChange && glyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(glyphInfo.displayID)) {
                             cancelled = true;
                             // go check the finally block because I couldn't undo until after the end update
                             return;
@@ -917,7 +979,7 @@ export class GraphBase {
         }
     }
 
-    static moleculeTypeToName(type: string){
+    static moleculeTypeToName(type: string) {
         switch (type) {
             case "DNA molecule":
                 return "dsNA";

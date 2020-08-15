@@ -27,10 +27,12 @@ import org.sbolstandard.core2.Annotation;
 import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.FunctionalComponent;
+import org.sbolstandard.core2.Identified;
 import org.sbolstandard.core2.Interaction;
 import org.sbolstandard.core2.Location;
 import org.sbolstandard.core2.MapsTo;
 import org.sbolstandard.core2.ModuleDefinition;
+import org.sbolstandard.core2.Module;
 import org.sbolstandard.core2.OrientationType;
 import org.sbolstandard.core2.Participation;
 import org.sbolstandard.core2.SBOLConversionException;
@@ -49,13 +51,20 @@ import com.mxgraph.util.mxConstants;
 import com.mxgraph.view.mxGraph;
 
 import data.CanvasAnnotation;
+import data.Info;
 import data.GlyphInfo;
 import data.InteractionInfo;
+import data.ModuleInfo;
 
 public class SBOLToMx extends Converter {
 
+	HashMap<FunctionalComponent, mxCell> funcCompToCell;
+	HashMap<FunctionalComponent, FunctionalComponent> mappings;
+
 	public SBOLToMx() {
-		glyphInfoDict = new Hashtable<String, GlyphInfo>();
+		infoDict = new Hashtable<String, Info>();
+		funcCompToCell = new HashMap<FunctionalComponent, mxCell>();
+		mappings = new HashMap<FunctionalComponent, FunctionalComponent>();
 	}
 
 	public void toGraph(InputStream sbolStream, OutputStream graphStream)
@@ -77,59 +86,36 @@ public class SBOLToMx extends Converter {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		model.setMaintainEdgeParent(false);
 		mxCell cell0 = (mxCell) model.getCell("0");
-		cell0.setValue(glyphInfoDict);
+		cell0.setValue(infoDict);
 
 		layoutHelper = new LayoutHelper(document, graph);
 
-		ModuleDefinition modDef = null;
+		ModuleDefinition rootModDef = null;
 		if (document.getRootModuleDefinitions().size() > 0) {
-			modDef = document.getRootModuleDefinitions().iterator().next();
+			rootModDef = document.getRootModuleDefinitions().iterator().next();
+			graph.insertVertex((mxCell) model.getCell("1"), null, rootModDef.getIdentity().toString(), 0, 0, 0, 0);
+		}
+
+		if (rootModDef == null) {
+			ComponentDefinition rootCompDef = document.getRootComponentDefinitions().iterator().next();
+			graph.insertVertex((mxCell) model.getCell("1"), null, rootCompDef.getIdentity().toString(), 0, 0, 0, 0);
 		}
 
 		// top level component definitions
 		Set<ComponentDefinition> compDefs = getComponentDefinitions(document);
 		Set<ComponentDefinition> handledCompDefs = new HashSet<ComponentDefinition>();
-		if (modDef != null) {
-			handledCompDefs = createModuleView(document, graph, modDef);
+		for (ModuleDefinition modDef : document.getModuleDefinitions()) {
+			handledCompDefs.addAll(createModuleView(document, graph, modDef));
+		}
+		
+		// link interactions after all modules have been created, as the internal references can cross modules
+		for(ModuleDefinition modDef : document.getModuleDefinitions()) {
+			setupModuleInteractions(document, graph, modDef);
 		}
 
 		// we don't want to create views for componentDefinitions handled in the module
 		// definition (proteins)
 		compDefs.removeAll(handledCompDefs);
-		for (ComponentDefinition compDef : compDefs) {
-			createComponentView(document, graph, compDef);
-		}
-
-		// convert the objects to the graph xml
-		graphStream.write(encodeMxGraphObject(model).getBytes());
-	}
-
-	public void toSubGraph(InputStream sbolStream, OutputStream graphStream) throws SBOLValidationException,
-			IOException, SBOLConversionException, SAXException, ParserConfigurationException,
-			TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
-		SBOLDocument document = SBOLReader.read(sbolStream);
-		toSubGraph(document, graphStream);
-	}
-
-	public void toSubGraph(SBOLDocument document, OutputStream graphStream)
-			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException,
-			TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
-		// set up the graph and glyphdict
-		mxGraph graph = new mxGraph();
-		mxGraphModel model = (mxGraphModel) graph.getModel();
-		model.setMaintainEdgeParent(false);
-		mxCell cell0 = (mxCell) model.getCell("0");
-		cell0.setValue(glyphInfoDict);
-
-		layoutHelper = new LayoutHelper(document, graph);
-
-		// top level component definition
-		ComponentDefinition rootCompDef = document.getRootComponentDefinitions().iterator().next();
-
-		graph.insertVertex((mxCell) model.getCell("1"), null, rootCompDef.getIdentity().toString(), 0, 0, 0, 0);
-
-		Set<ComponentDefinition> compDefs = document.getComponentDefinitions();
-
 		for (ComponentDefinition compDef : compDefs) {
 			createComponentView(document, graph, compDef);
 		}
@@ -144,14 +130,17 @@ public class SBOLToMx extends Converter {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		mxCell cell1 = (mxCell) model.getCell("1");
 
+		// create the moduleInfo and store it in the dictionary
+		ModuleInfo modInfo = genModuleInfo(modDef);
+		infoDict.put(modInfo.getFullURI(), modInfo);
+
 		Set<ComponentDefinition> handledCompDefs = new HashSet<ComponentDefinition>();
 
 		// create the root view cell
-		// TODO pull the the module id when multiple modules are supported.
-		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, "rootView", null, 0, 0, 0, 0, STYLE_MODULE_VIEW);
+		mxCell rootViewCell = (mxCell) graph.insertVertex(cell1, modDef.getIdentity().toString(), null, 0, 0, 0, 0,
+				STYLE_MODULE_VIEW);
 
 		// text boxes
-
 		mxCell[] textBoxes = layoutHelper.getGraphicalObjects(modDef.getIdentity(), "textBox");
 		if (textBoxes != null) {
 			for (mxCell textBox : textBoxes) {
@@ -167,20 +156,30 @@ public class SBOLToMx extends Converter {
 		// them
 		Set<FunctionalComponent> modDefFCs = modDef.getFunctionalComponents();
 		Set<FunctionalComponent> notMappedFCs = modDef.getFunctionalComponents();
-		HashMap<URI, URI> uriMaps = new HashMap<URI, URI>();
 		for (FunctionalComponent funcComp : modDefFCs) {
 			Set<MapsTo> mapsTos = funcComp.getMapsTos();
 			if (mapsTos != null && mapsTos.size() > 0) {
 				for (MapsTo mapsTo : mapsTos) {
 					FunctionalComponent mappedFC = modDef.getFunctionalComponent(mapsTo.getLocalIdentity());
 					notMappedFCs.remove(mappedFC);
-					uriMaps.put(mapsTo.getLocalIdentity(), mapsTo.getRemoteIdentity());
+					mappings.put((FunctionalComponent) mapsTo.getLocal(), (FunctionalComponent) mapsTo.getRemote());
+				}
+			}
+		}
+		// modules contain mapsTos as well
+		Set<Module> modules = modDef.getModules();
+		for (Module module : modules) {
+			Set<MapsTo> mapsTos = module.getMapsTos();
+			if (mapsTos != null && mapsTos.size() > 0) {
+				for (MapsTo mapsTo : mapsTos) {
+					FunctionalComponent mappedFC = modDef.getFunctionalComponent(mapsTo.getLocalIdentity());
+					notMappedFCs.remove(mappedFC);
+					mappings.put((FunctionalComponent) mapsTo.getLocal(), (FunctionalComponent) mapsTo.getRemote());
 				}
 			}
 		}
 
 		// create the top level component definitions and proteins
-		HashMap<String, mxCell> compToCell = new HashMap<String, mxCell>();
 		for (FunctionalComponent funcComp : notMappedFCs) {
 			ComponentDefinition compDef = funcComp.getDefinition();
 
@@ -200,9 +199,9 @@ public class SBOLToMx extends Converter {
 					protien = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 							0, STYLE_MOLECULAR_SPECIES);
 				}
-				compToCell.put(funcComp.getIdentity() + "_" + compDef.getIdentity(), protien);
+				funcCompToCell.put(funcComp, protien);
 				GlyphInfo info = genGlyphInfo(compDef);
-				glyphInfoDict.put(info.getFullURI(), info);
+				infoDict.put(info.getFullURI(), info);
 				handledCompDefs.add(compDef);
 				continue;
 			}
@@ -220,6 +219,7 @@ public class SBOLToMx extends Converter {
 				container = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 						0, STYLE_CIRCUIT_CONTAINER);
 			}
+			funcCompToCell.put(funcComp, container);
 			mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), compDef.getDisplayId());
 			if (backbone != null) {
 				if (backbone.getStyle() != null)
@@ -231,7 +231,7 @@ public class SBOLToMx extends Converter {
 				backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, STYLE_BACKBONE);
 			}
 			GlyphInfo info = genGlyphInfo(compDef);
-			glyphInfoDict.put(info.getFullURI(), info);
+			infoDict.put(info.getFullURI(), info);
 
 			// glyphs
 			Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
@@ -265,47 +265,31 @@ public class SBOLToMx extends Converter {
 				// store the cell so we can use it in interactions
 				for (MapsTo mapsTo : funcComp.getMapsTos()) {
 					if (mapsTo.getLocalDefinition().equals(glyphComponent.getDefinition())) {
-						compToCell.put(mapsTo.getLocalIdentity() + "_" + glyphComponent.getIdentity(), glyphCell);
+						funcCompToCell.put((FunctionalComponent) mapsTo.getLocal(), glyphCell);
 						break;
 					}
 				}
 			}
 		}
 
-		// interactions
-		Set<Interaction> interactions = modDef.getInteractions();
-		for (Interaction interaction : interactions) {
-			mxCell edge = layoutHelper.getGraphicalObject(modDef.getIdentity(), interaction.getDisplayId());
-			if (edge != null) {
-				if (edge.getStyle() != null)
-					edge.setStyle(STYLE_INTERACTION + ";" + edge.getStyle());
+		// create modules
+		for (Module module : modDef.getModules()) {
+			mxCell moduleCell = layoutHelper.getGraphicalObject(modDef.getIdentity(), module.getDisplayId());
+			if (moduleCell != null) {
+				moduleCell.setValue(module.getDefinition().getIdentity().toString());
+				if (moduleCell.getStyle() != null)
+					moduleCell.setStyle(STYLE_MODULE + ";" + moduleCell.getStyle());
 				else
-					edge.setStyle(STYLE_INTERACTION);
-				edge = (mxCell) model.add(rootViewCell, edge, 0);
+					moduleCell.setStyle(STYLE_MODULE);
+				model.add(rootViewCell, moduleCell, 0);
 			} else {
-				edge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
+				moduleCell = (mxCell) graph.insertVertex(rootViewCell, null,
+						module.getDefinition().getIdentity().toString(), 0, 0, 0, 0, STYLE_MODULE);
 			}
-			edge.setValue(genInteractionInfo(interaction));
 
-			URI targetType = getParticipantType(false, interaction.getTypes());
-			URI sourceType = getParticipantType(true, interaction.getTypes());
-
-			Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
-			for (int i = 0; i < participations.length; i++) {
-				// theoretically more than 2, but we currently only support 2
-				if (participations[i].getRoles().contains(sourceType)) {
-					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
-					if (mappedURI == null)
-						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
-					mxCell source = compToCell.get(participations[i].getParticipant().getIdentity() + "_" + mappedURI);
-					edge.setSource(source);
-				} else if (participations[i].getRoles().contains(targetType)) {
-					URI mappedURI = uriMaps.get(participations[i].getParticipant().getIdentity());
-					if (mappedURI == null)
-						mappedURI = participations[i].getParticipant().getDefinition().getIdentity();
-					mxCell target = compToCell.get(participations[i].getParticipant().getIdentity() + "_" + mappedURI);
-					edge.setTarget(target);
-				}
+			// store the cell so we can use it in interactions
+			for (MapsTo mapsTo : module.getMapsTos()) {
+				funcCompToCell.put((FunctionalComponent) mapsTo.getLocal(), moduleCell);
 			}
 		}
 
@@ -320,7 +304,7 @@ public class SBOLToMx extends Converter {
 
 		// create the glyphInfo and store it in the dictionary
 		GlyphInfo info = genGlyphInfo(compDef);
-		glyphInfoDict.put(info.getFullURI(), info);
+		infoDict.put(info.getFullURI(), info);
 
 		// create the top view cell
 		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0,
@@ -395,6 +379,61 @@ public class SBOLToMx extends Converter {
 		}
 	}
 
+	private void setupModuleInteractions(SBOLDocument document, mxGraph graph, ModuleDefinition modDef) {
+		mxGraphModel model = (mxGraphModel) graph.getModel();
+		mxCell rootViewCell = (mxCell) model.getCell(modDef.getIdentity().toString());
+
+		// interactions
+		Set<Interaction> interactions = modDef.getInteractions();
+		for (Interaction interaction : interactions) {
+			mxCell edge = layoutHelper.getGraphicalObject(modDef.getIdentity(), interaction.getDisplayId());
+			if (edge != null) {
+				if (edge.getStyle() != null)
+					edge.setStyle(STYLE_INTERACTION + ";" + edge.getStyle());
+				else
+					edge.setStyle(STYLE_INTERACTION);
+				edge = (mxCell) model.add(rootViewCell, edge, 0);
+			} else {
+				edge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
+			}
+			edge.setValue(genInteractionInfo(interaction));
+
+			URI targetType = getParticipantType(false, interaction.getTypes());
+			URI sourceType = getParticipantType(true, interaction.getTypes());
+
+			Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
+			for (int i = 0; i < participations.length; i++) {
+				// theoretically more than 2, but we currently only support 2
+				if (participations[i].getRoles().contains(sourceType)) {
+					mxCell source = funcCompToCell.get(participations[i].getParticipant());
+					edge.setSource(source);
+					if (source.getStyle().contains(STYLE_MODULE)) {
+						mxCell referenced = funcCompToCell.get(mappings.get(participations[i].getParticipant()));
+						((InteractionInfo) edge.getValue()).setFromURI(referenced.getValue()+"_"+referenced.getId());
+					}
+				} else if (participations[i].getRoles().contains(targetType)) {
+					mxCell target = funcCompToCell.get(participations[i].getParticipant());
+					edge.setTarget(target);
+					if (target.getStyle().contains(STYLE_MODULE)) {
+						mxCell referenced = funcCompToCell.get(mappings.get(participations[i].getParticipant()));
+						((InteractionInfo) edge.getValue()).setToURI(referenced.getValue()+"_"+referenced.getId());
+					}
+				}
+			}
+		}
+	}
+
+	private ModuleInfo genModuleInfo(ModuleDefinition modDef) {
+		ModuleInfo moduleInfo = new ModuleInfo();
+		moduleInfo.setDescription(modDef.getDescription());
+		moduleInfo.setDisplayID(modDef.getDisplayId());
+		moduleInfo.setName(modDef.getName());
+		moduleInfo.setVersion(modDef.getVersion());
+		moduleInfo.setUriPrefix(getURIPrefix(modDef));
+
+		return moduleInfo;
+	}
+
 	private GlyphInfo genGlyphInfo(ComponentDefinition glyphCD) {
 		GlyphInfo glyphInfo = new GlyphInfo();
 		glyphInfo.setDescription(glyphCD.getDescription());
@@ -432,13 +471,7 @@ public class SBOLToMx extends Converter {
 			glyphInfo.setSequenceURI(sequence.getIdentity().toString());
 		}
 		glyphInfo.setVersion(glyphCD.getVersion());
-		String identity = glyphCD.getIdentity().toString();
-		int lastIndex = 0;
-		if (glyphInfo.getVersion() != null)
-			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID() + "/" + glyphInfo.getVersion());
-		else
-			lastIndex = identity.lastIndexOf(glyphInfo.getDisplayID());
-		glyphInfo.setUriPrefix(identity.substring(0, lastIndex - 1));
+		glyphInfo.setUriPrefix(getURIPrefix(glyphCD));
 
 		if (glyphCD.getWasDerivedFroms() != null && glyphCD.getWasDerivedFroms().size() > 0) {
 			String[] derivedFroms = new String[glyphCD.getWasDerivedFroms().size()];
@@ -490,8 +523,8 @@ public class SBOLToMx extends Converter {
 				continue;
 			compDefs.add(compDef);
 			for (Component comp : compDef.getComponents()) {
-				for(String registry : SBOLData.registries) {
-					if(comp.getDefinitionURI().toString().contains(registry)) {
+				for (String registry : SBOLData.registries) {
+					if (comp.getDefinitionURI().toString().contains(registry)) {
 						document.addRegistry(registry);
 						compDefStack.push(document.getComponentDefinition(comp.getDefinitionURI()));
 						break;
@@ -499,7 +532,7 @@ public class SBOLToMx extends Converter {
 				}
 			}
 		}
-		
+
 		return compDefs;
 	}
 
@@ -529,6 +562,17 @@ public class SBOLToMx extends Converter {
 		t.setOutputProperty(OutputKeys.INDENT, "no");
 		t.transform(new DOMSource(cellNode), new StreamResult(sw));
 		return sw.toString();
+	}
+
+	private String getURIPrefix(Identified identified) {
+		int lastIndex = 0;
+		String identity = identified.getIdentity().toString();
+		if (identified.getVersion() != null) {
+			lastIndex = identity.lastIndexOf(identified.getDisplayId() + "/" + identified.getVersion());
+		} else {
+			lastIndex = identity.lastIndexOf(identified.getDisplayId());
+		}
+		return identity.substring(0, lastIndex - 1);
 	}
 
 //	private Object decodeMxGraphObject(String xml) throws SAXException, IOException, ParserConfigurationException {

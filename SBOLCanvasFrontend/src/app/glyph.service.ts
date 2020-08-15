@@ -73,6 +73,7 @@ export class GlyphService {
   private utilXMLs: string[] = [
     'assets/backbone.xml',
     'assets/textBox.xml',
+    'assets/module.xml',
   ];
 
   private sequenceFeatures: any = {};

@@ -100,6 +100,13 @@
             <svg #canvasElement [attr.elementType]="elementTypes.TEXT_BOX" width="52px" height="52px" [innerHTML]="utilsDict['textBox']"></svg>
           </button>
         </mat-grid-tile>
+        <mat-grid-tile *ngIf="!componentDefinitionMode && stringMatches('module definition', searchPhrase)">
+          <button mat-button (click)="addModule()"
+                  [matTooltip]="'Module'"
+                  style="width:52px;height:52px;">
+            <svg #canvasElement [attr.elementType]="elementTypes.MODULE" width="52px" height="52px" [innerHTML]="utilsDict['module']"></svg>
+          </button>
+        </mat-grid-tile>
       </mat-grid-list>
     </mat-expansion-panel>
 

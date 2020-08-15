@@ -8,6 +8,7 @@ import { UploadGraphComponent } from '../upload-graph/upload-graph.component';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { ExportComponent } from '../export/export.component';
 import { ConfirmComponent } from '../confirm/confirm.component';
+import { FuncCompSelectorComponent } from '../func-comp-selector/func-comp-selector.component';
 
 export interface SaveDialogData {
   filename: string;

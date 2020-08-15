@@ -10,7 +10,7 @@ import org.sbolstandard.core2.SystemsBiologyOntology;
 
 import com.mxgraph.io.mxCodecRegistry;
 
-import data.GlyphInfo;
+import data.Info;
 
 public class Converter {
 
@@ -22,6 +22,7 @@ public class Converter {
 	protected static final String STYLE_CIRCUIT_CONTAINER = "circuitContainer";
 	protected static final String STYLE_BACKBONE = "backbone";
 	protected static final String STYLE_TEXTBOX = "textBox";
+	protected static final String STYLE_MODULE = "moduleGlyph";
 	protected static final String STYLE_SCAR = "Scar (Assembly Scar)";
 	protected static final String STYLE_NGA = "NGA (No Glyph Assigned)";
 	protected static final String STYLE_MOLECULAR_SPECIES = "molecularSpeciesGlyph";
@@ -35,7 +36,7 @@ public class Converter {
 		mxCodecRegistry.addPackage("data");
 	};
 
-	protected Hashtable<String, GlyphInfo> glyphInfoDict;
+	protected Hashtable<String, Info> infoDict;
 	protected LayoutHelper layoutHelper;
 
 	protected static URI getParticipantType(boolean source, Set<URI> interactionTypes) {
