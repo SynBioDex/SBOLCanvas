@@ -42,6 +42,7 @@ import { TutorialComponent } from './tutorial/tutorial.component';
 import { ConfirmComponent } from './confirm/confirm.component';
 import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
 import { ExportDesignComponent } from './export-design/export-design.component';
+import { CollectionCreationComponent } from './collection-creation/collection-creation.component';
 
 
 @NgModule({
@@ -69,6 +70,7 @@ import { ExportDesignComponent } from './export-design/export-design.component';
     ConfirmComponent,
     FuncCompSelectorComponent,
     ExportDesignComponent,
+    CollectionCreationComponent,
   ],
   imports: [
     BrowserModule,
@@ -96,6 +98,7 @@ import { ExportDesignComponent } from './export-design/export-design.component';
     DownloadGraphComponent, 
     ExportImageComponent, 
     ExportDesignComponent,
+    CollectionCreationComponent,
     LoginComponent, 
     ErrorComponent, 
     ConfirmComponent, 
