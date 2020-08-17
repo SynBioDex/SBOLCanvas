@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
@@ -41,7 +40,6 @@ import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.sbolstandard.core2.TopLevel;
 import org.synbiohub.frontend.SynBioHubException;
 import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 import com.mxgraph.io.mxCodec;
 import com.mxgraph.model.mxCell;
@@ -131,10 +129,48 @@ public class MxToSBOL extends Converter {
 		this.userToken = userToken;
 	}
 
+	public void toSBOL(InputStream graphStream, OutputStream sbolStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+		SBOLDocument document = setupDocument(graphStream);
+
+		// write to body
+		SBOLWriter.setKeepGoing(true);
+		SBOLWriter.write(document, sbolStream);
+	}
+
+	public void toGenBank(InputStream graphStream, OutputStream outputStream) throws SBOLConversionException, IOException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+		SBOLDocument document = setupDocument(graphStream);
+		
+		// write to body
+		SBOLWriter.setKeepGoing(true);
+		SBOLWriter.write(document, outputStream, SBOLDocument.GENBANK);
+	}
+
+	public void toGFF(InputStream graphStream, OutputStream outputStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+		SBOLDocument document = setupDocument(graphStream);
+		
+		// write to body
+		SBOLWriter.setKeepGoing(true);
+		SBOLWriter.write(document, outputStream, SBOLDocument.GFF3format);
+	}
+
+	public void toFasta(InputStream graphStream, OutputStream outputStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+		SBOLDocument document = setupDocument(graphStream);
+		
+		// write to body
+		SBOLWriter.setKeepGoing(true);
+		SBOLWriter.write(document, outputStream, SBOLDocument.FASTAformat);
+	}
+
+	public void toSBOL1(InputStream graphStream, OutputStream outputStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+		SBOLDocument document = setupDocument(graphStream);
+
+		// write to body
+		SBOLWriter.setKeepGoing(true);
+		SBOLWriter.write(document, outputStream, SBOLDocument.RDFV1);
+	}
+
 	@SuppressWarnings("unchecked")
-	public void toSBOL(InputStream graphStream, OutputStream sbolStream) throws SAXException, IOException,
-			ParserConfigurationException, SBOLValidationException, SBOLConversionException,
-			TransformerFactoryConfigurationError, TransformerException, URISyntaxException, SynBioHubException {
+	public SBOLDocument setupDocument(InputStream graphStream) throws IOException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
@@ -212,9 +248,7 @@ public class MxToSBOL extends Converter {
 			}
 		}
 
-		// write to body
-		SBOLWriter.setKeepGoing(true);
-		SBOLWriter.write(document, sbolStream);
+		return document;
 	}
 
 	/**
@@ -432,7 +466,8 @@ public class MxToSBOL extends Converter {
 				ModuleInfo modInfo = (ModuleInfo) infoDict.get(moduleCell.getValue());
 				modDef.createModule(modInfo.getDisplayID() + "_" + moduleCell.getParent().getIndex(moduleCell),
 						URI.create((String) moduleCell.getValue()));
-				layoutHelper.addGraphicalNode(modDef.getIdentity(), modInfo.getDisplayID()+"_"+moduleCell.getParent().getIndex(moduleCell), moduleCell);
+				layoutHelper.addGraphicalNode(modDef.getIdentity(),
+						modInfo.getDisplayID() + "_" + moduleCell.getParent().getIndex(moduleCell), moduleCell);
 			}
 		}
 
@@ -442,14 +477,14 @@ public class MxToSBOL extends Converter {
 			// interaction
 			InteractionInfo intInfo = (InteractionInfo) edge.getValue();
 			Interaction interaction = null;
-			if(!layoutOnly) {
+			if (!layoutOnly) {
 				interaction = modDef.createInteraction(intInfo.getDisplayID(),
-						SBOLData.interactions.getValue(intInfo.getInteractionType()));				
-			}else {
+						SBOLData.interactions.getValue(intInfo.getInteractionType()));
+			} else {
 				Set<Interaction> interactions = modDef.getInteractions();
 				// find the interaction with the correct identity
-				for(Interaction inter : interactions) {
-					if(inter.getIdentity().toString().equals((String) intInfo.getFullURI())){
+				for (Interaction inter : interactions) {
+					if (inter.getIdentity().toString().equals((String) intInfo.getFullURI())) {
 						interaction = inter;
 					}
 				}
@@ -457,10 +492,10 @@ public class MxToSBOL extends Converter {
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getDisplayId(), edge);
 
 			// nothing below here is layout
-			if(layoutOnly) {
+			if (layoutOnly) {
 				return;
 			}
-			
+
 			// participants
 			mxCell source = (mxCell) edge.getSource();
 			mxCell sourceParent = null;

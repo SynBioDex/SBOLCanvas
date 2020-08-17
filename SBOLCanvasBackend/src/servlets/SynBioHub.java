@@ -262,8 +262,7 @@ public class SynBioHub extends HttpServlet {
 
 			}
 
-		} catch (SynBioHubException | SAXException | IOException | ParserConfigurationException
-				| SBOLValidationException | SBOLConversionException | TransformerFactoryConfigurationError | TransformerException | URISyntaxException e) {
+		} catch (SynBioHubException | IOException | SBOLValidationException | SBOLConversionException | TransformerFactoryConfigurationError | TransformerException | URISyntaxException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
 			IOUtils.copy(inputStream, outputStream);

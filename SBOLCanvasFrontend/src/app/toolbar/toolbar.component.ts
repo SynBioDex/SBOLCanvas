@@ -6,9 +6,9 @@ import { SaveGraphComponent } from '../save-graph/save-graph.component';
 import { LoadGraphComponent } from '../load-graph/load-graph.component';
 import { UploadGraphComponent } from '../upload-graph/upload-graph.component';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
-import { ExportComponent } from '../export/export.component';
+import { ExportImageComponent } from '../export-image/export-image.component';
+import { ExportDesignComponent } from '../export-design/export-design.component';
 import { ConfirmComponent } from '../confirm/confirm.component';
-import { FuncCompSelectorComponent } from '../func-comp-selector/func-comp-selector.component';
 
 export interface SaveDialogData {
   filename: string;
@@ -80,8 +80,12 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     });
   }
 
+  openExportImageDialog(): void {
+    this.dialog.open(ExportImageComponent, {});
+  }
+
   openExportDialog(): void {
-    this.dialog.open(ExportComponent, {});
+    this.dialog.open(ExportDesignComponent, {});
   }
 
   zoomChanged($event) {
