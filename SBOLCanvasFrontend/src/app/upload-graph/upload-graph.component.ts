@@ -1,8 +1,9 @@
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
-import { MatDialogRef, MatTableDataSource, MatSort, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialogRef, MatTableDataSource, MatSort, MAT_DIALOG_DATA, MatDialog } from '@angular/material';
 import { FilesService } from '../files.service';
 import { LoginService } from '../login.service';
 import { GraphService } from '../graph.service';
+import { CollectionCreationComponent } from '../collection-creation/collection-creation.component';
 
 @Component({
   selector: 'app-upload-graph',
@@ -22,7 +23,7 @@ export class UploadGraphComponent implements OnInit {
 
   working: boolean;
 
-  constructor(private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<UploadGraphComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {
+  constructor(private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<UploadGraphComponent>, public dialog: MatDialog, @Inject(MAT_DIALOG_DATA) public data: any) {
     if(data){
       this.componentMode = data.componentMode;
     }else{
@@ -58,6 +59,10 @@ export class UploadGraphComponent implements OnInit {
     return this.collection != null && this.collection.length > 0;
   }
 
+  createCollectionCheck(){
+    return this.loginService.users[this.registry] != null;
+  }
+
   onCancelClick() {
     this.dialogRef.close();
   }
@@ -75,6 +80,13 @@ export class UploadGraphComponent implements OnInit {
       if (result) {
         this.updateCollections();
       }
+    });
+  }
+
+  onCreateCollectionClick() {
+    this.dialog.open(CollectionCreationComponent, {data: {registry: this.registry}}).afterClosed().subscribe(result => {
+      if(result)
+        this.updateCollections();
     });
   }
 

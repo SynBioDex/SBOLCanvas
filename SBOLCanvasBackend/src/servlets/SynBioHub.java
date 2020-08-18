@@ -260,6 +260,22 @@ public class SynBioHub extends HttpServlet {
 				sbhf.addToCollection(URI.create(uri), true, new ByteArrayInputStream(out.toByteArray()));
 				response.setStatus(HttpStatus.SC_CREATED);
 
+			} else if(request.getPathInfo().contentEquals("/createCollection")) {
+				String id = request.getParameter("id");
+				String version = request.getParameter("version");
+				String name = request.getParameter("name");
+				String description = request.getParameter("description");
+				String citations = request.getParameter("citations");
+				String overwrite = request.getParameter("overwrite");
+				
+				if(server == null || user == null || id == null || version == null || name == null || description == null || overwrite == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				sbhf.setUser(user);
+				sbhf.createCollection(id, version, name, description, citations, overwrite.equals("true"));
+				response.setStatus(HttpStatus.SC_CREATED);
 			}
 
 		} catch (SynBioHubException | IOException | SBOLValidationException | SBOLConversionException | TransformerFactoryConfigurationError | TransformerException | URISyntaxException e) {

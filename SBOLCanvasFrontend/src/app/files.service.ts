@@ -19,6 +19,7 @@ export class FilesService {
   private getRegistriesURL = environment.backendURL + '/SynBioHub/registries';
   private listMyCollectionsURL = environment.backendURL + '/SynBioHub/listMyCollections';
   private addToCollectionURL = environment.backendURL + '/SynBioHub/addToCollection';
+  private createCollectionURL = environment.backendURL + '/SynBioHub/createCollection';
   private listPartsURL = environment.backendURL + '/SynBioHub/listRegistryParts';
   private getPartsURL = environment.backendURL + '/SynBioHub/getRegistryPart';
   private importPartsURL = environment.backendURL + '/SynBioHub/importRegistryPart';
@@ -167,6 +168,24 @@ export class FilesService {
     params = params.append("server", server);
     params = params.append("uri", collection);
     return this.http.post(this.addToCollectionURL, mxGraphXML, { responseType: 'text', headers: headers, params: params });
+  }
+
+  createCollection(server: string, user: string, id: string, version: string, name: string, description: string, citations: string, overwrite: boolean): Observable<void>{
+    return new Observable<void>(observer => {
+      let headers = new HttpHeaders();
+      headers = headers.set("Authorization", user);
+      let params = new HttpParams();
+      params = params.append("server", server);
+      params = params.append("id", id);
+      params = params.append("version", version);
+      params = params.append("name", name);
+      params = params.append("description", description);
+      params = params.append("citations", citations);
+      params = params.append("overwrite", overwrite ? "true" : "false");
+      return this.http.post(this.createCollectionURL, "", {responseType: 'text', headers: headers, params: params }).subscribe(result => {
+        observer.next();
+      });
+    });
   }
 
 }

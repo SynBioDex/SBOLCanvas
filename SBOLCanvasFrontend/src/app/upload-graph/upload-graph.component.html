@@ -53,6 +53,7 @@
     <button mat-button [disabled]="loginDisabled()" (click)="onLoginClick()">Login</button>
     <button mat-button (click)="onCancelClick()">Cancel</button>
     <button mat-button [disabled]="!finishCheck()" (click)="onUploadClick()">Upload</button>
+    <button mat-button [disabled]="!createCollectionCheck()" (click)="onCreateCollectionClick()">Create Collection</button>
   </div>
 
 </mat-card>
