@@ -36,11 +36,12 @@ import { LoginComponent } from './login/login.component';
 import { DownloadGraphComponent } from './download-graph/download-graph.component';
 import { ErrorComponent } from './error/error.component';
 import { SearchfilterPipe } from './searchfilter.pipe';
-import { ExportComponent } from './export/export.component';
+import { ExportImageComponent } from './export-image/export-image.component';
 import { LandingPageComponent } from './landing-page/landing-page.component';
 import { TutorialComponent } from './tutorial/tutorial.component';
 import { ConfirmComponent } from './confirm/confirm.component';
 import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
+import { ExportDesignComponent } from './export-design/export-design.component';
 
 
 @NgModule({
@@ -62,11 +63,12 @@ import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-select
     DownloadGraphComponent,
     ErrorComponent,
     SearchfilterPipe,
-    ExportComponent,
+    ExportImageComponent,
     LandingPageComponent,
     TutorialComponent,
     ConfirmComponent,
     FuncCompSelectorComponent,
+    ExportDesignComponent,
   ],
   imports: [
     BrowserModule,
@@ -86,7 +88,19 @@ import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-select
     provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
     }],
   bootstrap: [AppComponent],
-  entryComponents: [ ToolbarComponent, SaveGraphComponent, LoadGraphComponent, UploadGraphComponent, DownloadGraphComponent, ExportComponent, LoginComponent, ErrorComponent, ConfirmComponent, FuncCompSelectorComponent, ColorPickerComponent ]
+  entryComponents: [ 
+    ToolbarComponent, 
+    SaveGraphComponent, 
+    LoadGraphComponent, 
+    UploadGraphComponent, 
+    DownloadGraphComponent, 
+    ExportImageComponent, 
+    ExportDesignComponent,
+    LoginComponent, 
+    ErrorComponent, 
+    ConfirmComponent, 
+    FuncCompSelectorComponent, 
+    ColorPickerComponent ]
 })
 export class AppModule {
 }

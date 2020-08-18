@@ -41,6 +41,25 @@ public class Convert extends HttpServlet {
 			} else if (request.getPathInfo().equals("/toMxGraph")) {
 				SBOLToMx converter = new SBOLToMx();
 				converter.toGraph(request.getInputStream(), response.getOutputStream());
+			} else if (request.getPathInfo().equals("/exportDesign")){
+				String format = request.getParameter("format");
+				if(format == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				
+				MxToSBOL converter = new MxToSBOL();
+				switch(format) {
+				case "GenBank":
+					converter.toGenBank(request.getInputStream(), response.getOutputStream()); break;
+				case "GFF":
+					converter.toGFF(request.getInputStream(), response.getOutputStream()); break;
+				case "Fasta":
+					converter.toFasta(request.getInputStream(), response.getOutputStream()); break;
+				case "SBOL1":
+					converter.toSBOL1(request.getInputStream(), response.getOutputStream()); break;
+				}
+				
 			} else {
 				response.setStatus(HttpStatus.SC_METHOD_NOT_ALLOWED);
 				return;

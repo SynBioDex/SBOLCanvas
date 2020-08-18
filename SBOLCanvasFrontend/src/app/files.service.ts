@@ -15,6 +15,7 @@ export class FilesService {
   private loadFilesURL = environment.backendURL + '/load';
   private toSBOLURL = environment.backendURL + '/convert/toSBOL';
   private toMxGraphURL = environment.backendURL + '/convert/toMxGraph';
+  private exportDesignURL = environment.backendURL + '/convert/exportDesign';
   private getRegistriesURL = environment.backendURL + '/SynBioHub/registries';
   private listMyCollectionsURL = environment.backendURL + '/SynBioHub/listMyCollections';
   private addToCollectionURL = environment.backendURL + '/SynBioHub/addToCollection';
@@ -44,29 +45,52 @@ export class FilesService {
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
   }
 
-  loadLocal(file: File, graphService: GraphService): Observable<void>{
-    return new Observable<void>( observer => {
+  loadLocal(file: File, graphService: GraphService): Observable<void> {
+    return new Observable<void>(observer => {
       if (typeof (FileReader) !== 'undefined') {
         const reader = new FileReader();
-  
+
         reader.onload = (e: any) => {
           this.convertToMxGraph(String(reader.result)).subscribe(result => {
             graphService.setGraphToXML(result);
             observer.next();
           });
         };
-  
+
         reader.readAsText(file);
-      }else{
+      } else {
         observer.next();
       }
     });
   }
 
   saveLocal(filename: string, contents: string): Observable<void> {
-    return new Observable<void>( observer => {
+    return new Observable<void>(observer => {
       this.convertToSBOL(contents, filename).subscribe(result => {
         var file = new File([result], filename + ".xml", { type: 'text/plain;charset=utf-8' });
+        FileSaver.saveAs(file);
+        observer.next();
+      });
+    });
+  }
+
+  exportDesign(filename: string, format: string, contents: string): Observable<void> {
+    return new Observable<void>(observer => {
+      let params = new HttpParams();
+      params = params.append("format", format);
+      let formatExtension;
+      switch (format) {
+        case "GenBank":
+          formatExtension = ".GBK"; break;
+        case "GFF":
+          formatExtension = ".GFF"; break;
+        case "Fasta":
+          formatExtension = ".fasta"; break;
+        case "SBOL1":
+          formatExtension = ".xml"; break;
+      }
+      this.http.post(this.exportDesignURL, contents, { responseType: 'text', params: params }).subscribe(result => {
+        var file = new File([result], filename + formatExtension);
         FileSaver.saveAs(file);
         observer.next();
       });
@@ -89,41 +113,41 @@ export class FilesService {
     return this.http.get(this.listMyCollectionsURL, { headers: headers, params: params });
   }
 
-  listParts(user: string, server: string, collection: string, type:string, role: string, mode:string): Observable<any>{
+  listParts(user: string, server: string, collection: string, type: string, role: string, mode: string): Observable<any> {
     let headers = new HttpHeaders();
-    if(user != null && user.length > 0)
+    if (user != null && user.length > 0)
       headers = headers.set("Authorization", user);
     let params = new HttpParams();
     params = params.append("server", server);
-    if(collection != null && collection.length > 0)
+    if (collection != null && collection.length > 0)
       params = params.append("collection", collection);
-    if(type != null && type.length > 0)
+    if (type != null && type.length > 0)
       params = params.append("type", type);
-    if(role != null && role.length > 0)
+    if (role != null && role.length > 0)
       params = params.append("role", role);
     params = params.append("mode", mode);
-    return this.http.get(this.listPartsURL, {headers: headers, params: params});
+    return this.http.get(this.listPartsURL, { headers: headers, params: params });
   };
 
-  getPart(user: string, server: string, uri: string): Observable<string>{
+  getPart(user: string, server: string, uri: string): Observable<string> {
     let headers = new HttpHeaders();
-    if(user != null && user.length > 0)
+    if (user != null && user.length > 0)
       headers = headers.set("Authorization", user);
     let params = new HttpParams();
     params = params.append("server", server);
     params = params.append("uri", uri);
-    return this.http.get(this.getPartsURL, { responseType: 'text', headers: headers, params: params});
+    return this.http.get(this.getPartsURL, { responseType: 'text', headers: headers, params: params });
   }
 
-  importPart(user: string, server:string, uri: string): Observable<string>{
+  importPart(user: string, server: string, uri: string): Observable<string> {
     let headers = new HttpHeaders();
-    if(user != null && user.length > 0)
+    if (user != null && user.length > 0)
       headers = headers.set("Authorization", user);
     let params = new HttpParams();
     params = new HttpParams();
     params = params.append("server", server);
     params = params.append("uri", uri);
-    return this.http.get(this.importPartsURL, {responseType: 'text', headers: headers, params: params});
+    return this.http.get(this.importPartsURL, { responseType: 'text', headers: headers, params: params });
   }
 
   convertToSBOL(mxGraphXML: string, filename: string): Observable<string> {

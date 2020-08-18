@@ -4,17 +4,17 @@ import { MatDialogRef } from '@angular/material';
 
 @Component({
   selector: 'app-export',
-  templateUrl: './export.component.html',
-  styleUrls: ['./export.component.css']
+  templateUrl: './export-image.component.html',
+  styleUrls: ['./export-image.component.css']
 })
-export class ExportComponent implements OnInit {
+export class ExportImageComponent implements OnInit {
 
   formats = ["PNG","GIF","JPEG","SVG"];
 
   filename: string;
   format: string;
 
-  constructor(private graphService: GraphService, public dialogRef: MatDialogRef<ExportComponent>) { }
+  constructor(private graphService: GraphService, public dialogRef: MatDialogRef<ExportImageComponent>) { }
 
   ngOnInit() {
     this.format="PNG";

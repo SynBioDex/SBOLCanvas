@@ -28,7 +28,11 @@
 
       <button mat-menu-item class="toolbar-row-button"
               [matTooltip]="'Export diagram as picture'"
-              (click)="openExportDialog()">Export</button>
+              (click)="openExportImageDialog()">Export Image</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Export design as other file formats'"
+              (click)="openExportDialog()">Export File</button>
 
        <span style="font-family:sans-serif;font-size:.8em;color:gray;">New</span>
 
