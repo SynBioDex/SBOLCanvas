@@ -43,6 +43,7 @@ import { ConfirmComponent } from './confirm/confirm.component';
 import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
 import { ExportDesignComponent } from './export-design/export-design.component';
 import { CollectionCreationComponent } from './collection-creation/collection-creation.component';
+import { CombinatorialDesignEditorComponent } from './combinatorial-design-editor/combinatorial-design-editor.component';
 
 
 @NgModule({
@@ -71,6 +72,7 @@ import { CollectionCreationComponent } from './collection-creation/collection-cr
     FuncCompSelectorComponent,
     ExportDesignComponent,
     CollectionCreationComponent,
+    CombinatorialDesignEditorComponent,
   ],
   imports: [
     BrowserModule,
@@ -103,6 +105,7 @@ import { CollectionCreationComponent } from './collection-creation/collection-cr
     ErrorComponent, 
     ConfirmComponent, 
     FuncCompSelectorComponent, 
+    CombinatorialDesignEditorComponent,
     ColorPickerComponent ]
 })
 export class AppModule {

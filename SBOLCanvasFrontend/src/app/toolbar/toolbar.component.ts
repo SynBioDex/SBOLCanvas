@@ -9,6 +9,7 @@ import { DownloadGraphComponent } from '../download-graph/download-graph.compone
 import { ExportImageComponent } from '../export-image/export-image.component';
 import { ExportDesignComponent } from '../export-design/export-design.component';
 import { ConfirmComponent } from '../confirm/confirm.component';
+import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 
 export interface SaveDialogData {
   filename: string;
@@ -120,5 +121,10 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     if(result === "Yes"){
       this.graphService.resetGraph(false);
     }
+  }
+
+  // make sure to comment out the button when preparing to make a merge request
+  testMethod(){
+    const result = this.dialog.open(CombinatorialDesignEditorComponent, {});
   }
 }
