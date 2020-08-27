@@ -19,6 +19,7 @@ export class FilesService {
   private getRegistriesURL = environment.backendURL + '/SynBioHub/registries';
   private listMyCollectionsURL = environment.backendURL + '/SynBioHub/listMyCollections';
   private addToCollectionURL = environment.backendURL + '/SynBioHub/addToCollection';
+  private importToCollectionURL = environment.backendURL + '/SynBioHub/importToCollection';
   private createCollectionURL = environment.backendURL + '/SynBioHub/createCollection';
   private listPartsURL = environment.backendURL + '/SynBioHub/listRegistryParts';
   private getPartsURL = environment.backendURL + '/SynBioHub/getRegistryPart';
@@ -87,7 +88,7 @@ export class FilesService {
           formatExtension = ".GFF"; break;
         case "Fasta":
           formatExtension = ".fasta"; break;
-        case "SBOL1":
+        default:
           formatExtension = ".xml"; break;
       }
       this.http.post(this.exportDesignURL, contents, { responseType: 'text', params: params }).subscribe(result => {
@@ -168,6 +169,29 @@ export class FilesService {
     params = params.append("server", server);
     params = params.append("uri", collection);
     return this.http.post(this.addToCollectionURL, mxGraphXML, { responseType: 'text', headers: headers, params: params });
+  }
+
+  importSBOL(file: File, server: string, collection: string, user: string){
+    return new Observable<void>(observer => {
+      if (typeof (FileReader) !== 'undefined') {
+        const reader = new FileReader();
+
+        reader.onload = (e: any) => {
+          let headers = new HttpHeaders();
+          headers = headers.set("Authorization", user);
+          let params = new HttpParams();
+          params = params.append("server", server);
+          params = params.append("uri", collection);
+          this.http.post(this.importToCollectionURL, String(reader.result), { responseType: 'text', headers: headers, params: params }).subscribe(_ => {
+            observer.next();
+          });
+        };
+
+        reader.readAsText(file);
+      } else {
+        observer.next();
+      }
+    });
   }
 
   createCollection(server: string, user: string, id: string, version: string, name: string, description: string, citations: string, overwrite: boolean): Observable<void>{

@@ -50,14 +50,16 @@ public class Convert extends HttpServlet {
 				
 				MxToSBOL converter = new MxToSBOL();
 				switch(format) {
+				case "SBOL2":
+					converter.toSBOL(request.getInputStream(), response.getOutputStream()); break;
+				case "SBOL1":
+					converter.toSBOL1(request.getInputStream(), response.getOutputStream()); break;
 				case "GenBank":
 					converter.toGenBank(request.getInputStream(), response.getOutputStream()); break;
 				case "GFF":
 					converter.toGFF(request.getInputStream(), response.getOutputStream()); break;
 				case "Fasta":
 					converter.toFasta(request.getInputStream(), response.getOutputStream()); break;
-				case "SBOL1":
-					converter.toSBOL1(request.getInputStream(), response.getOutputStream()); break;
 				}
 				
 			} else {

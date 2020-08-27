@@ -24,7 +24,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpStatus;
 import org.sbolstandard.core2.SBOLConversionException;
 import org.sbolstandard.core2.SBOLDocument;
+import org.sbolstandard.core2.SBOLReader;
 import org.sbolstandard.core2.SBOLValidationException;
+import org.sbolstandard.core2.SBOLWriter;
 import org.synbiohub.frontend.IdentifiedMetadata;
 import org.synbiohub.frontend.SearchCriteria;
 import org.synbiohub.frontend.SearchQuery;
@@ -259,7 +261,19 @@ public class SynBioHub extends HttpServlet {
 				converter.toSBOL(request.getInputStream(), out);
 				sbhf.addToCollection(URI.create(uri), true, new ByteArrayInputStream(out.toByteArray()));
 				response.setStatus(HttpStatus.SC_CREATED);
-
+			} else if(request.getPathInfo().contentEquals("/importToCollection")) {
+				if(server == null || user == null || uri == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				sbhf.setUser(user);
+				SBOLDocument document = SBOLReader.read(request.getInputStream());
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				SBOLWriter.setKeepGoing(true);
+				SBOLWriter.write(document, out);
+				sbhf.addToCollection(URI.create(uri), true, new ByteArrayInputStream(out.toByteArray()));
+				response.setStatus(HttpStatus.SC_CREATED);
 			} else if(request.getPathInfo().contentEquals("/createCollection")) {
 				String id = request.getParameter("id");
 				String version = request.getParameter("version");

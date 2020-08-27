@@ -18,6 +18,10 @@ export class UploadGraphComponent implements OnInit {
   collection: string;
   componentMode: boolean;
 
+  importMode: boolean;
+  filename: string;
+  file: File;
+
   displayedColumns: string[] = ['displayId', 'name', 'version', 'description'];
   @ViewChild(MatSort) sort: MatSort;
 
@@ -26,9 +30,12 @@ export class UploadGraphComponent implements OnInit {
   constructor(private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<UploadGraphComponent>, public dialog: MatDialog, @Inject(MAT_DIALOG_DATA) public data: any) {
     if(data){
       this.componentMode = data.componentMode;
+      this.importMode = data.importMode;
     }else{
       this.componentMode = false;
+      this.importMode = false;
     }
+    this.filename = "No file selected";
   }
 
   ngOnInit() {
@@ -56,7 +63,11 @@ export class UploadGraphComponent implements OnInit {
   }
 
   finishCheck() {
-    return this.collection != null && this.collection.length > 0;
+    if(!this.importMode){
+      return this.collection != null && this.collection.length > 0;
+    }else{
+      return this.collection != null && this.collection.length > 0 && this.filename !== "No file selected";
+    }
   }
 
   createCollectionCheck(){
@@ -75,6 +86,14 @@ export class UploadGraphComponent implements OnInit {
     });
   }
 
+  onImportClick(){
+    this.working = true;
+    this.filesService.importSBOL(this.file, this.registry, this.collection, this.loginService.users[this.registry]).subscribe(result =>{
+      this.working = false;
+      this.dialogRef.close();
+    });
+  }
+
   onLoginClick() {
     this.loginService.openLoginDialog(this.registry).subscribe(result => {
       if (result) {
@@ -88,6 +107,12 @@ export class UploadGraphComponent implements OnInit {
       if(result)
         this.updateCollections();
     });
+  }
+
+  onFileSelected(){
+    const fileInput: any = document.querySelector('#file');
+    this.filename = fileInput.files[0].name;
+    this.file = fileInput.files[0];
   }
 
   updateCollections() {

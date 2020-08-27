@@ -56,6 +56,12 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     });
   }
 
+  openImportDialog(): void {
+    this.dialog.open(UploadGraphComponent, {
+      data: {componentMode: this.graphService.isRootAComponentView(), importMode: true }
+    });
+  }
+
   openSaveDialog(): void {
     const dialogRef = this.dialog.open(SaveGraphComponent, {
       data: { filename: this.filename }
