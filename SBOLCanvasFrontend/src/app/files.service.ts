@@ -13,7 +13,6 @@ export class FilesService {
   private saveFilesURL = environment.backendURL + '/save';
   private listFilesURL = environment.backendURL + '/list';
   private loadFilesURL = environment.backendURL + '/load';
-  private toSBOLURL = environment.backendURL + '/convert/toSBOL';
   private toMxGraphURL = environment.backendURL + '/convert/toMxGraph';
   private exportDesignURL = environment.backendURL + '/convert/exportDesign';
   private getRegistriesURL = environment.backendURL + '/SynBioHub/registries';
@@ -45,35 +44,6 @@ export class FilesService {
     let params = new HttpParams();
     params = params.append("filename", filename);
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
-  }
-
-  loadLocal(file: File, graphService: GraphService): Observable<void> {
-    return new Observable<void>(observer => {
-      if (typeof (FileReader) !== 'undefined') {
-        const reader = new FileReader();
-
-        reader.onload = (e: any) => {
-          this.convertToMxGraph(String(reader.result)).subscribe(result => {
-            graphService.setGraphToXML(result);
-            observer.next();
-          });
-        };
-
-        reader.readAsText(file);
-      } else {
-        observer.next();
-      }
-    });
-  }
-
-  saveLocal(filename: string, contents: string): Observable<void> {
-    return new Observable<void>(observer => {
-      this.convertToSBOL(contents, filename).subscribe(result => {
-        var file = new File([result], filename + ".xml", { type: 'text/plain;charset=utf-8' });
-        FileSaver.saveAs(file);
-        observer.next();
-      });
-    });
   }
 
   exportDesign(filename: string, format: string, contents: string): Observable<void> {
@@ -150,12 +120,6 @@ export class FilesService {
     params = params.append("server", server);
     params = params.append("uri", uri);
     return this.http.get(this.importPartsURL, { responseType: 'text', headers: headers, params: params });
-  }
-
-  convertToSBOL(mxGraphXML: string, filename: string): Observable<string> {
-    let params = new HttpParams();
-    params = params.append("name", filename);
-    return this.http.post(this.toSBOLURL, mxGraphXML, { responseType: 'text', params: params });
   }
 
   convertToMxGraph(sbolXML: string): Observable<string> {
