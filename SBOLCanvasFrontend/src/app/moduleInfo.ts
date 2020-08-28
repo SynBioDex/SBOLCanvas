@@ -50,6 +50,8 @@ export class ModuleInfo extends Info{
             node.setAttribute("description", this.description);
         if (this.version && this.version.length > 0)
             node.setAttribute("version", this.version);
+        if (this.uriPrefix)
+            node.setAttribute("uriPrefix", this.uriPrefix);
 
         return node;
     }

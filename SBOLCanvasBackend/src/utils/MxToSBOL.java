@@ -299,11 +299,13 @@ public class MxToSBOL extends Converter {
 		for (mxCell protein : proteins) {
 			// proteins also have glyphInfos
 			GlyphInfo proteinInfo = (GlyphInfo) infoDict.get(protein.getValue());
+			if(proteinInfo.getUriPrefix() == null)
+				proteinInfo.setUriPrefix(URI_PREFIX);
 			FunctionalComponent proteinFuncComp = null;
 			if (!layoutOnly) {
 				ComponentDefinition proteinCD = document.getComponentDefinition(new URI((String) protein.getValue()));
 				if (proteinCD == null) {
-					proteinCD = document.createComponentDefinition(proteinInfo.getDisplayID(), proteinInfo.getVersion(),
+					proteinCD = document.createComponentDefinition(proteinInfo.getUriPrefix(), proteinInfo.getDisplayID(), proteinInfo.getVersion(),
 							SBOLData.types.getValue(proteinInfo.getPartType()));
 					proteinCD.setDescription(proteinInfo.getDescription());
 					proteinCD.setName(proteinInfo.getName());
