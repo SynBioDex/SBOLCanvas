@@ -30,15 +30,7 @@ public class Convert extends HttpServlet {
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
-			if (request.getPathInfo().equals("/toSBOL")) {
-				String name = request.getParameter("name");
-				if (name == null) {
-					response.setStatus(HttpStatus.SC_BAD_REQUEST);
-					return;
-				}
-				MxToSBOL converter = new MxToSBOL();
-				converter.toSBOL(request.getInputStream(), response.getOutputStream());
-			} else if (request.getPathInfo().equals("/toMxGraph")) {
+			if (request.getPathInfo().equals("/toMxGraph")) {
 				SBOLToMx converter = new SBOLToMx();
 				converter.toGraph(request.getInputStream(), response.getOutputStream());
 			} else if (request.getPathInfo().equals("/exportDesign")){
@@ -50,14 +42,16 @@ public class Convert extends HttpServlet {
 				
 				MxToSBOL converter = new MxToSBOL();
 				switch(format) {
+				case "SBOL2":
+					converter.toSBOL(request.getInputStream(), response.getOutputStream()); break;
+				case "SBOL1":
+					converter.toSBOL1(request.getInputStream(), response.getOutputStream()); break;
 				case "GenBank":
 					converter.toGenBank(request.getInputStream(), response.getOutputStream()); break;
 				case "GFF":
 					converter.toGFF(request.getInputStream(), response.getOutputStream()); break;
 				case "Fasta":
 					converter.toFasta(request.getInputStream(), response.getOutputStream()); break;
-				case "SBOL1":
-					converter.toSBOL1(request.getInputStream(), response.getOutputStream()); break;
 				}
 				
 			} else {

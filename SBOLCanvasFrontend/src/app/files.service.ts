@@ -13,12 +13,12 @@ export class FilesService {
   private saveFilesURL = environment.backendURL + '/save';
   private listFilesURL = environment.backendURL + '/list';
   private loadFilesURL = environment.backendURL + '/load';
-  private toSBOLURL = environment.backendURL + '/convert/toSBOL';
   private toMxGraphURL = environment.backendURL + '/convert/toMxGraph';
   private exportDesignURL = environment.backendURL + '/convert/exportDesign';
   private getRegistriesURL = environment.backendURL + '/SynBioHub/registries';
   private listMyCollectionsURL = environment.backendURL + '/SynBioHub/listMyCollections';
   private addToCollectionURL = environment.backendURL + '/SynBioHub/addToCollection';
+  private importToCollectionURL = environment.backendURL + '/SynBioHub/importToCollection';
   private createCollectionURL = environment.backendURL + '/SynBioHub/createCollection';
   private listPartsURL = environment.backendURL + '/SynBioHub/listRegistryParts';
   private getPartsURL = environment.backendURL + '/SynBioHub/getRegistryPart';
@@ -46,35 +46,6 @@ export class FilesService {
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
   }
 
-  loadLocal(file: File, graphService: GraphService): Observable<void> {
-    return new Observable<void>(observer => {
-      if (typeof (FileReader) !== 'undefined') {
-        const reader = new FileReader();
-
-        reader.onload = (e: any) => {
-          this.convertToMxGraph(String(reader.result)).subscribe(result => {
-            graphService.setGraphToXML(result);
-            observer.next();
-          });
-        };
-
-        reader.readAsText(file);
-      } else {
-        observer.next();
-      }
-    });
-  }
-
-  saveLocal(filename: string, contents: string): Observable<void> {
-    return new Observable<void>(observer => {
-      this.convertToSBOL(contents, filename).subscribe(result => {
-        var file = new File([result], filename + ".xml", { type: 'text/plain;charset=utf-8' });
-        FileSaver.saveAs(file);
-        observer.next();
-      });
-    });
-  }
-
   exportDesign(filename: string, format: string, contents: string): Observable<void> {
     return new Observable<void>(observer => {
       let params = new HttpParams();
@@ -87,7 +58,7 @@ export class FilesService {
           formatExtension = ".GFF"; break;
         case "Fasta":
           formatExtension = ".fasta"; break;
-        case "SBOL1":
+        default:
           formatExtension = ".xml"; break;
       }
       this.http.post(this.exportDesignURL, contents, { responseType: 'text', params: params }).subscribe(result => {
@@ -151,12 +122,6 @@ export class FilesService {
     return this.http.get(this.importPartsURL, { responseType: 'text', headers: headers, params: params });
   }
 
-  convertToSBOL(mxGraphXML: string, filename: string): Observable<string> {
-    let params = new HttpParams();
-    params = params.append("name", filename);
-    return this.http.post(this.toSBOLURL, mxGraphXML, { responseType: 'text', params: params });
-  }
-
   convertToMxGraph(sbolXML: string): Observable<string> {
     return this.http.post(this.toMxGraphURL, sbolXML, { responseType: 'text' });
   }
@@ -168,6 +133,29 @@ export class FilesService {
     params = params.append("server", server);
     params = params.append("uri", collection);
     return this.http.post(this.addToCollectionURL, mxGraphXML, { responseType: 'text', headers: headers, params: params });
+  }
+
+  importSBOL(file: File, server: string, collection: string, user: string){
+    return new Observable<void>(observer => {
+      if (typeof (FileReader) !== 'undefined') {
+        const reader = new FileReader();
+
+        reader.onload = (e: any) => {
+          let headers = new HttpHeaders();
+          headers = headers.set("Authorization", user);
+          let params = new HttpParams();
+          params = params.append("server", server);
+          params = params.append("uri", collection);
+          this.http.post(this.importToCollectionURL, String(reader.result), { responseType: 'text', headers: headers, params: params }).subscribe(_ => {
+            observer.next();
+          });
+        };
+
+        reader.readAsText(file);
+      } else {
+        observer.next();
+      }
+    });
   }
 
   createCollection(server: string, user: string, id: string, version: string, name: string, description: string, citations: string, overwrite: boolean): Observable<void>{

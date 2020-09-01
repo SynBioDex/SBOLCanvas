@@ -27,8 +27,6 @@ import {GraphService} from './graph.service';
 // Color Picker imports.
 import {MccColorPickerModule} from 'material-community-components';
 import {MetadataService} from './metadata.service';
-import { SaveGraphComponent } from './save-graph/save-graph.component';
-import { LoadGraphComponent } from './load-graph/load-graph.component';
 import { BannerComponent } from './banner/banner.component';
 import { ColorPickerComponent } from './color-picker/color-picker.component';
 import { UploadGraphComponent } from './upload-graph/upload-graph.component';
@@ -55,8 +53,6 @@ import { CombinatorialDesignEditorComponent } from './combinatorial-design-edito
     DesignMenuComponent,
     InfoEditorComponent,
     HomeComponent,
-    SaveGraphComponent,
-    LoadGraphComponent,
     BannerComponent,
     ColorPickerComponent,
     UploadGraphComponent,
@@ -94,8 +90,6 @@ import { CombinatorialDesignEditorComponent } from './combinatorial-design-edito
   bootstrap: [AppComponent],
   entryComponents: [ 
     ToolbarComponent, 
-    SaveGraphComponent, 
-    LoadGraphComponent, 
     UploadGraphComponent, 
     DownloadGraphComponent, 
     ExportImageComponent, 

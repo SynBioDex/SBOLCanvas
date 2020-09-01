@@ -12,7 +12,7 @@ export class ExportDesignComponent implements OnInit {
 
   working: boolean = false;
 
-  formats = ["GenBank", "GFF", "Fasta", "SBOL1"];
+  formats = ["SBOL2", "SBOL1", "GenBank", "GFF", "Fasta"];
 
   filename: string;
   format: string;
@@ -20,7 +20,7 @@ export class ExportDesignComponent implements OnInit {
   constructor(private graphService: GraphService, private filesService: FilesService, public dialogRef: MatDialogRef<ExportDesignComponent>) { }
 
   ngOnInit() {
-    this.format="SBOL1";
+    this.format=this.formats[0];
   }
 
   onExportClick(){
