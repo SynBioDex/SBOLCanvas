@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { MatTableDataSource } from '@angular/material';
+import { MatTableDataSource, MatDialogRef } from '@angular/material';
 
 @Component({
   selector: 'app-combinatorial-design-editor',
@@ -16,11 +16,17 @@ export class CombinatorialDesignEditorComponent implements OnInit {
   
   combinatorialInfo = {displayID: "testID", name: "testName", description: "testDescription"};
   
+  displayedColumns: string[] = ['type', 'displayId', 'name', 'version', 'description'];
   parts = new MatTableDataSource([]);
 
+  selectedRow;
 
-  constructor() {
-    this.parts.data = [{type: "something", displayID:"Something", name:"testName", version:"1", description:"Test description"}];
+  constructor(public dialogRef: MatDialogRef<CombinatorialDesignEditorComponent>) {
+    this.parts.data = [{type: "something", displayID:"Something", name:"testName", version:"1", description:"Test description"},
+     {type: "type2", displayID:"something2", name:"Testname2", version:"1", description:"TestDescription2"},
+     {type: "type2", displayID:"something2", name:"Testname3", version:"1", description:"TestDescription2"},
+     {type: "type2", displayID:"something2", name:"Testname4", version:"1", description:"TestDescription2"},
+     {type: "type2", displayID:"something2", name:"Testname5", version:"1", description:"TestDescription2"}];
   }
 
   ngOnInit() {
@@ -39,11 +45,13 @@ export class CombinatorialDesignEditorComponent implements OnInit {
   }
 
   onRowClick(row: any){
-
+    this.selectedRow = row;
   }
 
   highlightRow(row: any){
-
+    if (this.selectedRow)
+      return row === this.selectedRow;
+    return false;
   }
 
   onAddVariantClick(){
@@ -51,15 +59,23 @@ export class CombinatorialDesignEditorComponent implements OnInit {
   }
 
   onCancelClick(){
-
+    this.dialogRef.close();
   }
 
   isRowSelected(){
-
+    return this.selectedRow != null;
   }
 
   onRemoveClick(){
-
+    for (let i = 0; i < this.parts.data.length; i++){
+      if(this.parts.data[i] === this.selectedRow){
+        this.parts.data.splice(i, 1);
+        // splice doesn't trigger a change update
+        this.parts.data = this.parts.data;
+        this.selectedRow = null;
+        break;
+      }
+    }
   }
 
   onSaveClick(){
