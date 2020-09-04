@@ -226,7 +226,7 @@ export class GraphBase {
             let glyphDict = cell0.value;
 
             // check for format conditions
-            if ((cell.isCircuitContainer() && cell.getParent().isModuleView() || cell.isMolecularSpeciesGlyph()) && cell.getGeometry().height == 0) {
+            if (((cell.isCircuitContainer() && cell.getParent().isModuleView()) || cell.isMolecularSpeciesGlyph() || cell.isModule()) && cell.getGeometry().height == 0) {
                 GraphBase.unFormatedCells.add(cell.getParent().getId());
             }
 
