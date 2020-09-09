@@ -18,6 +18,10 @@ public class Converter {
 	public static final String URI_PREFIX = "https://sbolcanvas.org/";
 	public static final String ANN_PREFIX = "SBOLCanvas";
 
+	// data constants
+	public static final int INFO_DICT_INDEX = 0;
+	public static final int COMBINATORIAL_DICT_INDEX = 1;
+	
 	// style constants
 	protected static final String STYLE_CIRCUIT_CONTAINER = "circuitContainer";
 	protected static final String STYLE_BACKBONE = "backbone";

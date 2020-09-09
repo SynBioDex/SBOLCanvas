@@ -3,7 +3,7 @@ import { GlyphInfo } from './glyphInfo';
 import { mxGraphView } from 'src/mxgraph';
 import { GraphService } from './graph.service';
 import { Info } from './info';
-import { mx } from './graph-base';
+import { mx, GraphBase } from './graph-base';
 
 /**
  * Contains all the custom edit objects necessary for mxGraph.
@@ -78,17 +78,17 @@ export class GraphEdits {
         execute() {
             if (this.previousInfo == null) {
                 // if the previous was null, then the dictionary didn't have an entry before so remove it
-                delete this.cell0.value[this.info.getFullURI()];
+                delete this.cell0.value[GraphBase.INFO_DICT_INDEX][this.info.getFullURI()];
                 this.previousInfo = this.info;
                 this.info = null;
             } else if (this.info == null) {
                 // if the current one is null, then it was removed, so re-add it
-                this.cell0.value[this.previousInfo.getFullURI()] = this.previousInfo;
+                this.cell0.value[GraphBase.INFO_DICT_INDEX][this.previousInfo.getFullURI()] = this.previousInfo;
                 this.info = this.previousInfo;
                 this.previousInfo = null;
             } else {
                 // some information was changed, so update it
-                this.cell0.value[this.info.getFullURI()] = this.previousInfo;
+                this.cell0.value[GraphBase.INFO_DICT_INDEX][this.info.getFullURI()] = this.previousInfo;
                 const tmpInfo = this.info;
                 this.info = this.previousInfo;
                 this.previousInfo = tmpInfo;

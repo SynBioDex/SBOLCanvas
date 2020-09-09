@@ -17,6 +17,7 @@ import { environment } from 'src/environments/environment';
 import { Info } from './info';
 import { ModuleInfo } from './moduleInfo';
 import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
+import { CombinatorialInfo } from './combinatorialInfo';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -31,8 +32,12 @@ export class GraphHelpers extends GraphBase {
 
         // initalize the GlyphInfoDictionary
         const cell0 = this.graph.getModel().getCell(0);
-        const glyphDict = [];
-        this.graph.getModel().setValue(cell0, glyphDict);
+        const infoDict = [];
+        const combinatorialDict = [];
+        var dataContainer = [];
+        dataContainer[GraphBase.INFO_DICT_INDEX] = infoDict;
+        dataContainer[GraphBase.COMBINATORIAL_DICT_INDEX] = combinatorialDict;
+        this.graph.getModel().setValue(cell0, dataContainer);
 
         // initalize the root view cell of the graph
         const cell1 = this.graph.getModel().getCell(1);
@@ -1497,7 +1502,7 @@ export class GraphHelpers extends GraphBase {
      */
     protected updateInfoDict(info: Info) {
         const cell0 = this.graph.getModel().getCell(0);
-        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[info.getFullURI()]));
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[GraphBase.INFO_DICT_INDEX][info.getFullURI()]));
     }
 
     /**
@@ -1505,7 +1510,7 @@ export class GraphHelpers extends GraphBase {
      */
     protected removeFromInfoDict(glyphURI: string) {
         const cell0 = this.graph.getModel().getCell(0);
-        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[glyphURI]));
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.INFO_DICT_INDEX][glyphURI]));
     }
 
     /**
@@ -1521,7 +1526,7 @@ export class GraphHelpers extends GraphBase {
      */
     protected getFromInfoDict(glyphURI: string): Info {
         const cell0 = this.graph.getModel().getCell(0);
-        return cell0.value[glyphURI];
+        return cell0.value[GraphBase.INFO_DICT_INDEX][glyphURI];
     }
 
     protected initLabelDrawing() {

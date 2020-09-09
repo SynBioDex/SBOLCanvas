@@ -86,7 +86,9 @@ public class SBOLToMx extends Converter {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		model.setMaintainEdgeParent(false);
 		mxCell cell0 = (mxCell) model.getCell("0");
-		cell0.setValue(infoDict);
+		ArrayList<Object> dataContainer = new ArrayList<Object>();
+		dataContainer.add(INFO_DICT_INDEX, infoDict);
+		cell0.setValue(dataContainer);
 
 		layoutHelper = new LayoutHelper(document, graph);
 

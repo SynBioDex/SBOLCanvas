@@ -174,7 +174,9 @@ public class MxToSBOL extends Converter {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
-		infoDict = (Hashtable<String, Info>) ((mxCell) model.getCell("0")).getValue();
+		mxCell cell0 = (mxCell) model.getCell("0");
+		ArrayList<Object> dataContainer = (ArrayList<Object>)cell0.getValue();
+		infoDict = (Hashtable<String, Info>) dataContainer.get(INFO_DICT_INDEX);
 
 		enforceChildOrdering(model, graph);
 

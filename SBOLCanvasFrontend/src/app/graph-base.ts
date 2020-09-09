@@ -24,6 +24,9 @@ export class GraphBase {
 
     // static variables
     // Constants
+    static readonly INFO_DICT_INDEX = 0;
+    static readonly COMBINATORIAL_DICT_INDEX = 1;
+
     static readonly sequenceFeatureGlyphWidth = 50;
     static readonly sequenceFeatureGlyphHeight = 100;
     static readonly interactionPortWidth = 10;
@@ -223,7 +226,7 @@ export class GraphBase {
             while (cell0.getId() != "0") {
                 cell0 = cell0.parent;
             }
-            let glyphDict = cell0.value;
+            let glyphDict = cell0.value[GraphBase.INFO_DICT_INDEX];
 
             // check for format conditions
             if (((cell.isCircuitContainer() && cell.getParent().isModuleView()) || cell.isMolecularSpeciesGlyph() || cell.isModule()) && cell.getGeometry().height == 0) {
