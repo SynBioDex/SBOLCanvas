@@ -26,6 +26,7 @@ import javax.xml.transform.stream.StreamResult;
 import org.sbolstandard.core2.Annotation;
 import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
+import org.sbolstandard.core2.ComponentInstance;
 import org.sbolstandard.core2.FunctionalComponent;
 import org.sbolstandard.core2.Identified;
 import org.sbolstandard.core2.Interaction;
@@ -58,13 +59,13 @@ import data.ModuleInfo;
 
 public class SBOLToMx extends Converter {
 
-	HashMap<FunctionalComponent, mxCell> funcCompToCell;
-	HashMap<FunctionalComponent, FunctionalComponent> mappings;
+	HashMap<ComponentInstance, mxCell> compToCell;
+	HashMap<FunctionalComponent, ComponentInstance> mappings;
 
 	public SBOLToMx() {
 		infoDict = new Hashtable<String, Info>();
-		funcCompToCell = new HashMap<FunctionalComponent, mxCell>();
-		mappings = new HashMap<FunctionalComponent, FunctionalComponent>();
+		compToCell = new HashMap<ComponentInstance, mxCell>();
+		mappings = new HashMap<FunctionalComponent, ComponentInstance>();
 	}
 
 	public void toGraph(InputStream sbolStream, OutputStream graphStream)
@@ -162,7 +163,7 @@ public class SBOLToMx extends Converter {
 				for (MapsTo mapsTo : mapsTos) {
 					FunctionalComponent mappedFC = modDef.getFunctionalComponent(mapsTo.getLocalIdentity());
 					notMappedFCs.remove(mappedFC);
-					mappings.put((FunctionalComponent) mapsTo.getLocal(), (FunctionalComponent) mapsTo.getRemote());
+					mappings.put((FunctionalComponent) mapsTo.getLocal(), (ComponentInstance) mapsTo.getRemote());
 				}
 			}
 		}
@@ -199,7 +200,7 @@ public class SBOLToMx extends Converter {
 					protien = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 							0, STYLE_MOLECULAR_SPECIES);
 				}
-				funcCompToCell.put(funcComp, protien);
+				compToCell.put(funcComp, protien);
 				GlyphInfo info = genGlyphInfo(compDef);
 				infoDict.put(info.getFullURI(), info);
 				handledCompDefs.add(compDef);
@@ -219,7 +220,7 @@ public class SBOLToMx extends Converter {
 				container = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
 						0, STYLE_CIRCUIT_CONTAINER);
 			}
-			funcCompToCell.put(funcComp, container);
+			compToCell.put(funcComp, container);
 			mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), compDef.getDisplayId());
 			if (backbone != null) {
 				if (backbone.getStyle() != null)
@@ -265,7 +266,7 @@ public class SBOLToMx extends Converter {
 				// store the cell so we can use it in interactions
 				for (MapsTo mapsTo : funcComp.getMapsTos()) {
 					if (mapsTo.getLocalDefinition().equals(glyphComponent.getDefinition())) {
-						funcCompToCell.put((FunctionalComponent) mapsTo.getLocal(), glyphCell);
+						compToCell.put((FunctionalComponent) mapsTo.getLocal(), glyphCell);
 						break;
 					}
 				}
@@ -289,7 +290,7 @@ public class SBOLToMx extends Converter {
 
 			// store the cell so we can use it in interactions
 			for (MapsTo mapsTo : module.getMapsTos()) {
-				funcCompToCell.put((FunctionalComponent) mapsTo.getLocal(), moduleCell);
+				compToCell.put((FunctionalComponent) mapsTo.getLocal(), moduleCell);
 			}
 		}
 
@@ -405,17 +406,17 @@ public class SBOLToMx extends Converter {
 			for (int i = 0; i < participations.length; i++) {
 				// theoretically more than 2, but we currently only support 2
 				if (participations[i].getRoles().contains(sourceType)) {
-					mxCell source = funcCompToCell.get(participations[i].getParticipant());
+					mxCell source = compToCell.get(participations[i].getParticipant());
 					edge.setSource(source);
 					if (source.getStyle().contains(STYLE_MODULE)) {
-						mxCell referenced = funcCompToCell.get(mappings.get(participations[i].getParticipant()));
+						mxCell referenced = compToCell.get(mappings.get(participations[i].getParticipant()));
 						((InteractionInfo) edge.getValue()).setFromURI(referenced.getValue()+"_"+referenced.getId());
 					}
 				} else if (participations[i].getRoles().contains(targetType)) {
-					mxCell target = funcCompToCell.get(participations[i].getParticipant());
+					mxCell target = compToCell.get(participations[i].getParticipant());
 					edge.setTarget(target);
 					if (target.getStyle().contains(STYLE_MODULE)) {
-						mxCell referenced = funcCompToCell.get(mappings.get(participations[i].getParticipant()));
+						mxCell referenced = compToCell.get(mappings.get(participations[i].getParticipant()));
 						((InteractionInfo) edge.getValue()).setToURI(referenced.getValue()+"_"+referenced.getId());
 					}
 				}
