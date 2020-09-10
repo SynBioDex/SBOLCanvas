@@ -6,6 +6,10 @@ export class CombinatorialInfo extends Info{
     version: string;
 
 
+    getTemplateURI(): string {
+        return this.templateURI;
+    }
+
     makeCopy(): Info {
         const copy: CombinatorialInfo = new CombinatorialInfo();
         copy.displayID = this.displayID;

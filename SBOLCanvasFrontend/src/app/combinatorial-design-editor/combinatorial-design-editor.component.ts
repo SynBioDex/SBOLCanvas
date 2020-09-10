@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { MatTableDataSource, MatDialogRef } from '@angular/material';
+import { Component, OnInit, Inject } from '@angular/core';
+import { MatTableDataSource, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 
 @Component({
   selector: 'app-combinatorial-design-editor',
@@ -19,9 +19,12 @@ export class CombinatorialDesignEditorComponent implements OnInit {
   displayedColumns: string[] = ['type', 'displayId', 'name', 'version', 'description'];
   parts = new MatTableDataSource([]);
 
+  componentURI: string;
+  parentURI: string;
+
   selectedRow;
 
-  constructor(public dialogRef: MatDialogRef<CombinatorialDesignEditorComponent>) {
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any, public dialogRef: MatDialogRef<CombinatorialDesignEditorComponent>) {
     this.parts.data = [{type: "something", displayID:"Something", name:"testName", version:"1", description:"Test description"},
      {type: "type2", displayID:"something2", name:"Testname2", version:"1", description:"TestDescription2"},
      {type: "type2", displayID:"something2", name:"Testname3", version:"1", description:"TestDescription2"},
@@ -30,6 +33,9 @@ export class CombinatorialDesignEditorComponent implements OnInit {
   }
 
   ngOnInit() {
+    if(this.data){
+
+    }
   }
 
   setOperator(event: any){

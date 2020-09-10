@@ -58,6 +58,7 @@ export class GraphEdits {
         cell0: mxCell;
         info: Info;
         previousInfo: Info;
+        dictionaryIndex;
 
         /**
          * If info is null, removes previous from the dictionary.
@@ -67,28 +68,29 @@ export class GraphEdits {
          * @param info The info you want to put in the dictionary (or null if removing)
          * @param previousInfo The info that is already there (or null if adding)
          */
-        constructor(cell0: string, info: Info, previousInfo: Info) {
+        constructor(cell0: string, info: Info, previousInfo: Info, dictionaryIndex = GraphBase.INFO_DICT_INDEX) {
             this.cell0 = cell0;
             // store them in reverse so the execute performs the action the first time
             this.info = previousInfo;
             this.previousInfo = info;
+            this.dictionaryIndex = dictionaryIndex;
         }
 
         // Execute is called for both un-doing and re-doing
         execute() {
             if (this.previousInfo == null) {
                 // if the previous was null, then the dictionary didn't have an entry before so remove it
-                delete this.cell0.value[GraphBase.INFO_DICT_INDEX][this.info.getFullURI()];
+                delete this.cell0.value[this.dictionaryIndex][this.info.getFullURI()];
                 this.previousInfo = this.info;
                 this.info = null;
             } else if (this.info == null) {
                 // if the current one is null, then it was removed, so re-add it
-                this.cell0.value[GraphBase.INFO_DICT_INDEX][this.previousInfo.getFullURI()] = this.previousInfo;
+                this.cell0.value[this.dictionaryIndex][this.previousInfo.getFullURI()] = this.previousInfo;
                 this.info = this.previousInfo;
                 this.previousInfo = null;
             } else {
                 // some information was changed, so update it
-                this.cell0.value[GraphBase.INFO_DICT_INDEX][this.info.getFullURI()] = this.previousInfo;
+                this.cell0.value[this.dictionaryIndex][this.info.getFullURI()] = this.previousInfo;
                 const tmpInfo = this.info;
                 this.info = this.previousInfo;
                 this.previousInfo = tmpInfo;

@@ -32,6 +32,22 @@ export class GraphService extends GraphHelpers {
     this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
   }
 
+  getSelectedParentURI(): string {
+    let selected = this.graph.getSelectionCells();
+    if(selected.length != 1){
+      return null;
+    }
+    return this.getParentInfo(selected[0]).getFullURI();
+  }
+
+  isSelectedAGlyph(): boolean {
+    let selected = this.graph.getSelectionCells();
+    if (selected.length != 1) {
+      return false;
+    }
+    return selected[0].isSequenceFeatureGlyph();
+  }
+
   isRootAComponentView(): boolean {
     return this.viewStack[0].isComponentView();
   }

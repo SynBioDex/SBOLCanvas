@@ -8,6 +8,7 @@ import { MatSelectChange, MatDialog } from '@angular/material';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
+import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 
 
 @Component({
@@ -161,6 +162,19 @@ export class InfoEditorComponent implements OnInit {
         import: true,
         moduleMode: moduleMode,
         info: moduleMode ? null : this.glyphInfo
+      }
+    });
+  }
+
+  isCombinatorialPossible(): boolean {
+    return this.graphService.isSelectedAGlyph();
+  }
+
+  openCombinatorialDialog(){
+    this.dialog.open(CombinatorialDesignEditorComponent, {
+      data: {
+        parent: this.graphService.getSelectedParentURI(),
+        component: this.glyphInfo.getFullURI()
       }
     });
   }

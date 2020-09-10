@@ -1526,7 +1526,40 @@ export class GraphHelpers extends GraphBase {
      */
     protected getFromInfoDict(glyphURI: string): Info {
         const cell0 = this.graph.getModel().getCell(0);
-        return cell0.value[GraphBase.INFO_DICT_INDEX][glyphURI];
+        return cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI];
+    }
+
+    /**
+     * Updates an Combinatorial object
+     * NOTE: Should only be used if the fullURI is the same
+     */
+    protected updateCombinatorialDict(info: CombinatorialInfo) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][info.getTemplateURI()], GraphBase.COMBINATORIAL_DICT_INDEX));
+    }
+
+    /**
+     * Remove a combinatorial object from the dictionary
+     */
+    protected removeFromCombinatorialDict(glyphURI: string) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI], GraphBase.COMBINATORIAL_DICT_INDEX));
+    }
+
+    /**
+     * Add a combinatorial object to the dictionary
+     */
+    protected addToCombinatorialDict(info: Info) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null, GraphBase.COMBINATORIAL_DICT_INDEX));
+    }
+
+    /**
+     * Get the CombinatorialInfo that targets the given glyphURI from the dictionary
+     */
+    protected getFromCombinatorialDict(glyphURI: string): Info {
+        const cell0 = this.graph.getModel().getCell(0);
+        return cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI];
     }
 
     protected initLabelDrawing() {
