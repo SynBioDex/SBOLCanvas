@@ -41,6 +41,7 @@ import { ConfirmComponent } from './confirm/confirm.component';
 import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
 import { ExportDesignComponent } from './export-design/export-design.component';
 import { CollectionCreationComponent } from './collection-creation/collection-creation.component';
+import { LoadGraphComponent } from './load-graph/load-graph.component';
 
 
 @NgModule({
@@ -67,6 +68,7 @@ import { CollectionCreationComponent } from './collection-creation/collection-cr
     FuncCompSelectorComponent,
     ExportDesignComponent,
     CollectionCreationComponent,
+    LoadGraphComponent,
   ],
   imports: [
     BrowserModule,
@@ -97,7 +99,8 @@ import { CollectionCreationComponent } from './collection-creation/collection-cr
     ErrorComponent, 
     ConfirmComponent, 
     FuncCompSelectorComponent, 
-    ColorPickerComponent ]
+    ColorPickerComponent,
+    LoadGraphComponent ]
 })
 export class AppModule {
 }
