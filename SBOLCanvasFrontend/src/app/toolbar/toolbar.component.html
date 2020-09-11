@@ -19,6 +19,10 @@
       <span style="font-family:sans-serif;font-size:.8em;color:gray;">Local Device</span>
 
       <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Load module from xml'"
+              (click)="openLoadDialog()">Load</button>
+
+      <button mat-menu-item class="toolbar-row-button"
               [matTooltip]="'Load a file into a SynBioHub collection'"
               (click)="openImportDialog()">Import</button>
 
