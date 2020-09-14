@@ -4,13 +4,14 @@ export class CombinatorialInfo extends Info{
 
     templateURI: string;    
     version: string;
+    variableComponents = [];
 
 
     getTemplateURI(): string {
         return this.templateURI;
     }
 
-    makeCopy(): Info {
+    makeCopy(): CombinatorialInfo {
         const copy: CombinatorialInfo = new CombinatorialInfo();
         copy.displayID = this.displayID;
         copy.uriPrefix = this.uriPrefix;

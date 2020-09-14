@@ -9,6 +9,7 @@ import { DownloadGraphComponent } from '../download-graph/download-graph.compone
 import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
+import { CombinatorialInfo } from '../combinatorialInfo';
 
 
 @Component({
@@ -171,12 +172,7 @@ export class InfoEditorComponent implements OnInit {
   }
 
   openCombinatorialDialog(){
-    this.dialog.open(CombinatorialDesignEditorComponent, {
-      data: {
-        parent: this.graphService.getSelectedParentURI(),
-        component: this.glyphInfo.getFullURI()
-      }
-    });
+    this.dialog.open(CombinatorialDesignEditorComponent);
   }
 
   /**

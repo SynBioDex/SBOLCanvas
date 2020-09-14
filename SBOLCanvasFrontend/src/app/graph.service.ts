@@ -20,6 +20,8 @@ import { GraphHelpers } from './graph-helpers';
 import { StyleInfo } from './style-info';
 import { ModuleInfo } from './moduleInfo';
 import { Info } from './info';
+import { CombinatorialDesignEditorComponent } from './combinatorial-design-editor/combinatorial-design-editor.component';
+import { CombinatorialInfo } from './combinatorialInfo';
 
 @Injectable({
   providedIn: 'root'
@@ -30,14 +32,6 @@ export class GraphService extends GraphHelpers {
     super(dialog, metadataService, glyphService);
 
     this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
-  }
-
-  getSelectedParentURI(): string {
-    let selected = this.graph.getSelectionCells();
-    if(selected.length != 1){
-      return null;
-    }
-    return this.getParentInfo(selected[0]).getFullURI();
   }
 
   isSelectedAGlyph(): boolean {
@@ -352,9 +346,9 @@ export class GraphService extends GraphHelpers {
       }
 
       // remove interactions with modules if the item it connects to is being removed
-      for(let selectedCell of selectedCells){
-        if(selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()){
-          this.updateInteractions(selectedCell.getValue()+"_"+selectedCell.getId(), null);
+      for (let selectedCell of selectedCells) {
+        if (selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()) {
+          this.updateInteractions(selectedCell.getValue() + "_" + selectedCell.getId(), null);
         }
       }
 
@@ -1217,22 +1211,22 @@ export class GraphService extends GraphHelpers {
         }
 
         // top level circuit containers need to be synced to get the changes before the trim
-        if(selectedCell.isCircuitContainer()){
-          let previousReference = selectedCell.getValue()+"_"+selectedCell.getId();
+        if (selectedCell.isCircuitContainer()) {
+          let previousReference = selectedCell.getValue() + "_" + selectedCell.getId();
           let selectedParent = selectedCell.getParent();
           let selectedIndex = selectedParent.getIndex(selectedCell);
           this.graph.getModel().setValue(selectedCell, newCell.getValue());
           const viewCell = this.graph.getModel().getCell(newCell.getValue());
-          if(viewCell.children){
-            for(let viewChild of viewCell.children){
-              if(viewChild.isCircuitContainer()){
+          if (viewCell.children) {
+            for (let viewChild of viewCell.children) {
+              if (viewChild.isCircuitContainer()) {
                 this.syncCircuitContainer(viewChild);
                 break;
               }
             }
           }
           selectedCell = selectedParent.children[selectedIndex];
-          this.updateInteractions(previousReference, newCell.getValue()+"_"+selectedCell.getId());
+          this.updateInteractions(previousReference, newCell.getValue() + "_" + selectedCell.getId());
         }
 
         if (GraphBase.unFormatedCells.size > 0) {
@@ -1299,4 +1293,5 @@ export class GraphService extends GraphHelpers {
   public setComponentDefinitionMode(componentMode: boolean) {
     this.metadataService.setComponentDefinitionMode(componentMode);
   }
+
 }

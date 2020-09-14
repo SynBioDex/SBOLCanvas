@@ -1,9 +1,12 @@
 
 export class VariableComponentInfo {
     uri: string;
-    type: string;
     displayID: string;
-    name: string;
     version: string;
+    variable: string;
+    operator: string;
+    type: string;
+    name: string;
     description: string;
+    variants: [];
 }

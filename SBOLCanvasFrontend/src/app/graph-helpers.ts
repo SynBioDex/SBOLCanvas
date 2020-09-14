@@ -961,6 +961,15 @@ export class GraphHelpers extends GraphBase {
                 this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy());
             }
         }
+
+        // combinatorial info
+        if(cell && cell.isSequenceFeatureGlyph()){
+            let combinatorialInfo: CombinatorialInfo = this.getFromCombinatorialDict(cell.getParent().value);
+            if(!combinatorialInfo){
+                combinatorialInfo = new CombinatorialInfo();
+            }
+            this.metadataService.setSelectedCombinatorialInfo(combinatorialInfo.makeCopy());
+        }
     }
 
     nullifyMetadata() {
@@ -1526,7 +1535,7 @@ export class GraphHelpers extends GraphBase {
      */
     protected getFromInfoDict(glyphURI: string): Info {
         const cell0 = this.graph.getModel().getCell(0);
-        return cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI];
+        return cell0.value[GraphBase.INFO_DICT_INDEX][glyphURI];
     }
 
     /**
@@ -1549,7 +1558,7 @@ export class GraphHelpers extends GraphBase {
     /**
      * Add a combinatorial object to the dictionary
      */
-    protected addToCombinatorialDict(info: Info) {
+    protected addToCombinatorialDict(info: CombinatorialInfo) {
         const cell0 = this.graph.getModel().getCell(0);
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null, GraphBase.COMBINATORIAL_DICT_INDEX));
     }
@@ -1557,7 +1566,7 @@ export class GraphHelpers extends GraphBase {
     /**
      * Get the CombinatorialInfo that targets the given glyphURI from the dictionary
      */
-    protected getFromCombinatorialDict(glyphURI: string): Info {
+    protected getFromCombinatorialDict(glyphURI: string): CombinatorialInfo {
         const cell0 = this.graph.getModel().getCell(0);
         return cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI];
     }
