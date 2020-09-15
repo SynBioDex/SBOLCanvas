@@ -4,8 +4,7 @@ import { MatDialogRef, MatSort, MatTableDataSource, MAT_DIALOG_DATA } from '@ang
 import { FilesService } from '../files.service';
 import { GraphService } from '../graph.service';
 import { MetadataService } from '../metadata.service';
-import { forkJoin, Observable, Subscription } from 'rxjs';
-import { GlyphInfo } from '../glyphInfo';
+import { forkJoin, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-download-graph',
@@ -13,6 +12,20 @@ import { GlyphInfo } from '../glyphInfo';
   styleUrls: ['./download-graph.component.css']
 })
 export class DownloadGraphComponent implements OnInit {
+
+  // modes
+  static readonly DOWNLOAD_MODE = 1;
+  static readonly IMPORT_MODE = 2;
+  static readonly SELECT_MODE = 3;
+  mode;
+
+  // types
+  static readonly MODULE_AND_COMPONENT_TYPE = 1;
+  static readonly MODULE_TYPE = 2;
+  static readonly COMPONENT_TYPE = 3;
+  static readonly LAYOUT_TYPE = 4;
+  static readonly COMBINATORIAL_TYPE = 5;
+  type;
 
   static collectionType = "collection";
   static moduleType = "module definition";
@@ -30,9 +43,6 @@ export class DownloadGraphComponent implements OnInit {
   partRole: string;
   partRefine: string;
 
-  import: boolean;
-  moduleMode: boolean;
-
   partRequest: Subscription;
 
   parts = new MatTableDataSource([]);
@@ -48,15 +58,15 @@ export class DownloadGraphComponent implements OnInit {
   ngOnInit() {
     this.working = true;
     if (this.data != null) {
-      if (this.data.import != null) {
-        this.import = this.data.import;
+      if (this.data.mode != null) {
+        this.mode = this.data.mode;
       } else {
-        this.import = false;
+        this.mode = DownloadGraphComponent.DOWNLOAD_MODE;
       }
-      if (this.data.moduleMode != null) {
-        this.moduleMode = this.data.moduleMode;
+      if (this.data.type != null) {
+        this.type = this.data.type;
       } else {
-        this.moduleMode = false;
+        this.type = DownloadGraphComponent.MODULE_AND_COMPONENT_TYPE;
       }
       if (this.data.info != null) {
         this.partType = this.data.info.partType;
@@ -82,7 +92,7 @@ export class DownloadGraphComponent implements OnInit {
         });
       }
     } else {
-      this.import = false;
+      this.mode = DownloadGraphComponent.DOWNLOAD_MODE;
       this.filesService.getRegistries().subscribe(registries => {
         this.registries = registries;
         this.working = false;
@@ -189,7 +199,7 @@ export class DownloadGraphComponent implements OnInit {
 
   downloadComponent() {
     this.working = true;
-    if (this.import) {
+    if (this.mode == DownloadGraphComponent.IMPORT_MODE) {
       this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
         this.graphService.setSelectedToXML(xml);
         this.working = false;
@@ -206,7 +216,7 @@ export class DownloadGraphComponent implements OnInit {
 
   downloadModule() {
     this.working = true;
-    if (this.import) {
+    if (this.mode == DownloadGraphComponent.IMPORT_MODE) {
       this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
         this.graphService.setSelectedToXML(xml);
         this.working = false;
@@ -246,7 +256,7 @@ export class DownloadGraphComponent implements OnInit {
     if (this.registry != null) {
       this.working = true;
       this.parts.data = [];
-      if (this.import && !this.moduleMode) {
+      if (this.mode == DownloadGraphComponent.IMPORT_MODE && this.type != DownloadGraphComponent.MODULE_TYPE) {
         // collection and components
         let roleOrRefine = this.partRefine != null && this.partRefine.length > 0 ? this.partRefine : this.partRole;
         this.partRequest = forkJoin(
@@ -265,7 +275,7 @@ export class DownloadGraphComponent implements OnInit {
           this.parts.data = partCache;
           this.working = false;
         })
-      } else if(this.import && this.moduleMode){
+      } else if(this.mode == DownloadGraphComponent.IMPORT_MODE && this.type == DownloadGraphComponent.MODULE_TYPE){
         // collections and modules
         this.partRequest = forkJoin(
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
