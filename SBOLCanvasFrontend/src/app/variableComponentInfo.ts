@@ -1,12 +1,16 @@
+import { GlyphInfo } from './glyphInfo';
 
 export class VariableComponentInfo {
     uri: string;
-    displayID: string;
-    version: string;
     variable: string;
     operator: string;
-    type: string;
-    name: string;
-    description: string;
-    variants: [];
+    variants: GlyphInfo[] = [];
+
+    constructor(variable: string){
+        this.variable = variable;
+    }
+
+    addVariant(info: GlyphInfo){
+        this.variants.push(info);
+    }
 }

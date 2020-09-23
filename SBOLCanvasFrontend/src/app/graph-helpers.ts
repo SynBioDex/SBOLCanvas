@@ -967,6 +967,7 @@ export class GraphHelpers extends GraphBase {
             let combinatorialInfo: CombinatorialInfo = this.getFromCombinatorialDict(cell.getParent().value);
             if(!combinatorialInfo){
                 combinatorialInfo = new CombinatorialInfo();
+                combinatorialInfo.setTemplateURI(cell.getParent().value);
             }
             this.metadataService.setSelectedCombinatorialInfo(combinatorialInfo.makeCopy());
         }

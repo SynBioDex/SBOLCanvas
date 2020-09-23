@@ -5,6 +5,7 @@ import { FilesService } from '../files.service';
 import { GraphService } from '../graph.service';
 import { MetadataService } from '../metadata.service';
 import { forkJoin, Subscription } from 'rxjs';
+import { ThrowStmt } from '@angular/compiler';
 
 @Component({
   selector: 'app-download-graph',
@@ -30,6 +31,9 @@ export class DownloadGraphComponent implements OnInit {
   static collectionType = "collection";
   static moduleType = "module definition";
   static componentType = "component definition";
+
+  // This is so we can use static variables in the html checks
+  classRef = DownloadGraphComponent;
 
   registries: string[];
   registry: string;
@@ -159,6 +163,10 @@ export class DownloadGraphComponent implements OnInit {
     }
   }
 
+  onSelectClick(){
+    this.dialogRef.close(this.partRow);
+  }
+
   updateRefinements() {
     this.working = true;
     this.metadataService.loadRefinements(this.partRole).subscribe(refinements => {
@@ -191,9 +199,17 @@ export class DownloadGraphComponent implements OnInit {
       this.collection = row.uri;
       this.updateParts();
     } else if (row.type === DownloadGraphComponent.componentType) {
-      this.downloadComponent();
+      if(this.mode == DownloadGraphComponent.SELECT_MODE){
+        this.onSelectClick();
+      }else{
+        this.downloadComponent();
+      }
     } else if (row.type === DownloadGraphComponent.moduleType) {
-      this.downloadModule();
+      if(this.mode == DownloadGraphComponent.SELECT_MODE){
+        this.onSelectClick();
+      }else{
+        this.downloadModule();
+      }
     }
   }
 
@@ -256,7 +272,7 @@ export class DownloadGraphComponent implements OnInit {
     if (this.registry != null) {
       this.working = true;
       this.parts.data = [];
-      if (this.mode == DownloadGraphComponent.IMPORT_MODE && this.type != DownloadGraphComponent.MODULE_TYPE) {
+      if (this.type == DownloadGraphComponent.COMPONENT_TYPE) {
         // collection and components
         let roleOrRefine = this.partRefine != null && this.partRefine.length > 0 ? this.partRefine : this.partRole;
         this.partRequest = forkJoin(
@@ -275,7 +291,7 @@ export class DownloadGraphComponent implements OnInit {
           this.parts.data = partCache;
           this.working = false;
         })
-      } else if(this.mode == DownloadGraphComponent.IMPORT_MODE && this.type == DownloadGraphComponent.MODULE_TYPE){
+      } else if(this.type == DownloadGraphComponent.MODULE_TYPE){
         // collections and modules
         this.partRequest = forkJoin(
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
@@ -293,7 +309,7 @@ export class DownloadGraphComponent implements OnInit {
           this.parts.data = partCache;
           this.working = false;
         });
-      }else {
+      }else{
         // collection, modules, and components
         this.partRequest = forkJoin(
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
