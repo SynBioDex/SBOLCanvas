@@ -839,10 +839,29 @@ export class GraphService extends GraphHelpers {
         this.graph.getModel().execute(interactionEdit);
         return;
       }
+
     } finally {
       this.graph.getModel().endUpdate();
       this.graph.refresh(selectedCell);
       //this.updateAngularMetadata(this.graph.getSelectionCells());
+    }
+  }
+
+  /**
+   * Sets the combinatorial info associated to the selected cell
+   * @param info 
+   * @param prevURI 
+   */
+  setSelectedCombinatorialInfo(info: CombinatorialInfo, prevURI: string) {
+    const selectedCell = this.graph.getSelectionCell();
+
+    this.graph.getModel().beginUpdate();
+    try {
+      if (info instanceof CombinatorialInfo && selectedCell.isSequenceFeatureGlyph()) {
+        this.updateSelectedCombinatorialInfo(info, prevURI);
+      }
+    } finally {
+      this.graph.getModel().endUpdate();
     }
   }
 

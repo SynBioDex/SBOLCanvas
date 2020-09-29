@@ -5,6 +5,8 @@ import { VariableComponentInfo } from './variableComponentInfo';
 
 export class CombinatorialInfo extends Info{
 
+    static counter: number = 0;
+
     templateURI: string;    
     version: string;
     variableComponents = [];
@@ -12,8 +14,13 @@ export class CombinatorialInfo extends Info{
     name: string;
     description: string;
 
+    constructor(){
+        super();
+        this.displayID = 'combinatorial' + (CombinatorialInfo.counter++);
+    }
+
     addVariableComponentInfo(variableComponentInfo: VariableComponentInfo){
-        this.variableComponents[variableComponentInfo.variable]
+        this.variableComponents[variableComponentInfo.variable] = variableComponentInfo;
     }
 
     getVariableComponentInfo(variable: string): VariableComponentInfo {
@@ -30,6 +37,7 @@ export class CombinatorialInfo extends Info{
 
     makeCopy(): CombinatorialInfo {
         const copy: CombinatorialInfo = new CombinatorialInfo();
+        copy.templateURI = this.templateURI;
         copy.displayID = this.displayID;
         copy.uriPrefix = this.uriPrefix;
         copy.strategy = this.strategy;
@@ -39,6 +47,7 @@ export class CombinatorialInfo extends Info{
     }
 
     copyDataFrom(info: CombinatorialInfo) {
+        this.templateURI = info.templateURI;
         this.displayID = info.displayID;
         this.uriPrefix = info.uriPrefix;
         this.strategy = info.strategy;

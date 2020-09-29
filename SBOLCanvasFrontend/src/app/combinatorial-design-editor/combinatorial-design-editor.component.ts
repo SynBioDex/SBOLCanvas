@@ -3,6 +3,7 @@ import { MatTableDataSource, MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@a
 import { CombinatorialInfo } from '../combinatorialInfo';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { GlyphInfo } from '../glyphInfo';
+import { GraphService } from '../graph.service';
 import { MetadataService } from '../metadata.service';
 import { VariableComponentInfo } from '../variableComponentInfo';
 
@@ -17,6 +18,7 @@ export class CombinatorialDesignEditorComponent implements OnInit {
 
   strategies = ['None', 'Enumerate', 'Sample'];
 
+  prevURI: string; // have to store the previous uri, as there is no way to know what it used to be in the graphHelpers
   combinatorialInfo: CombinatorialInfo;
   variableComponentInfo: VariableComponentInfo;
   componentInfo: GlyphInfo;
@@ -26,7 +28,7 @@ export class CombinatorialDesignEditorComponent implements OnInit {
 
   selectedRow;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private metadataService: MetadataService, public dialog: MatDialog, public dialogRef: MatDialogRef<CombinatorialDesignEditorComponent>) {
+  constructor(private graphService: GraphService, private metadataService: MetadataService, public dialog: MatDialog, public dialogRef: MatDialogRef<CombinatorialDesignEditorComponent>) {
     this.parts.data = [];
 
     this.metadataService.selectedCombinatorialInfo.subscribe(combinatorialInfo => this.combinatorialInfoUpdated(combinatorialInfo));
@@ -110,7 +112,8 @@ export class CombinatorialDesignEditorComponent implements OnInit {
   }
 
   onSaveClick() {
-
+    this.graphService.setSelectedCombinatorialInfo(this.combinatorialInfo, this.prevURI);
+    this.dialogRef.close();
   }
 
   /**
@@ -129,6 +132,7 @@ export class CombinatorialDesignEditorComponent implements OnInit {
     if(!this.combinatorialInfo.strategy){
       this.combinatorialInfo.strategy = this.strategies[0];
     }
+    this.prevURI = this.combinatorialInfo.getFullURI();
     this.setupPartsData();
   }
 
