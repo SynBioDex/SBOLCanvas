@@ -43,6 +43,9 @@ export class CombinatorialInfo extends Info{
         copy.strategy = this.strategy;
         copy.name = this.name;
         copy.description = this.description;
+        for(let key in this.variableComponents){
+            copy.variableComponents[key] = this.variableComponents[key].makeCopy();
+        }
         return copy;
     }
 
@@ -53,6 +56,10 @@ export class CombinatorialInfo extends Info{
         this.strategy = info.strategy;
         this.name = info.name;
         this.description = info.description;
+        this.variableComponents = [];
+        for(let key in info.variableComponents){
+            this.variableComponents[key] = info.variableComponents[key].makeCopy()
+        }
     }
 
     encode(enc: any) {

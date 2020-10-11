@@ -22,6 +22,7 @@ import { ModuleInfo } from './moduleInfo';
 import { Info } from './info';
 import { CombinatorialDesignEditorComponent } from './combinatorial-design-editor/combinatorial-design-editor.component';
 import { CombinatorialInfo } from './combinatorialInfo';
+import { ErrorComponent } from './error/error.component';
 
 @Injectable({
   providedIn: 'root'
@@ -355,6 +356,7 @@ export class GraphService extends GraphHelpers {
       this.editor.execute('delete');
 
       this.trimUnreferencedCells();
+      this.trimUnreferencedCombinatorials();
 
       // sync circuit containers
       for (let circuitContainer of circuitContainers) {

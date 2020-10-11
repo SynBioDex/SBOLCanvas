@@ -601,7 +601,7 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().beginUpdate();
         try {
             // ownership change
-            if(info.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(info.displayID)){
+            if (info.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(info.displayID)) {
                 return;
             }
 
@@ -609,15 +609,16 @@ export class GraphHelpers extends GraphBase {
             info.uriPrefix = environment.baseURI;
 
             // check for duplicate and error
-            if (this.isDuplicateURI(info.getFullURI())){
-                return;
+            let conflictCombinatorial = this.getFromCombinatorialDict(info.getFullURI());
+            if (conflictCombinatorial && conflictCombinatorial.templateURI != info.templateURI) {
+                this.dialog.open(ErrorComponent, { data: "The part " + info.getFullURI() + " already exists as a Combinatorial, and points to a different Component Definition!" });
             }
 
             // store
-            if(prevURI != info.getFullURI()){
+            if (prevURI != info.getFullURI()) {
                 this.removeFromCombinatorialDict(prevURI);
                 this.addToCombinatorialDict(info);
-            }else{
+            } else {
                 this.updateCombinatorialDict(info);
             }
         } finally {
@@ -631,12 +632,12 @@ export class GraphHelpers extends GraphBase {
             this.dialog.open(ErrorComponent, { data: "The part " + newURI + " already exists as a ModuleDefinition!" });
             return true;
         }
-        if(conflictInfo && conflictInfo instanceof GlyphInfo){
+        if (conflictInfo && conflictInfo instanceof GlyphInfo) {
             this.dialog.open(ErrorComponent, { data: "The part " + newURI + " already exists as a ComponentDefinition!" });
             return true;
         }
         let conflictCombinatorial = this.getFromCombinatorialDict(newURI);
-        if(conflictCombinatorial){
+        if (conflictCombinatorial) {
             this.dialog.open(ErrorComponent, { data: "The part " + newURI + " already exists as a Combinatorial!" });
         }
         return false;
@@ -1182,6 +1183,31 @@ export class GraphHelpers extends GraphBase {
 
     }
 
+    protected trimUnreferencedCombinatorials() {
+        const cell0 = this.graph.getModel().getCell("0");
+        let toRemove = [];
+        for (let combKey in cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX]) {
+            let templateExists = false;
+            const combinatorial = cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][combKey];
+            for (let cellKey in this.graph.getModel().cells) {
+                const cell = this.graph.getModel().cells[cellKey];
+                if (!cell.isCircuitContainer())
+                    continue;
+                if (cell.getValue() == combinatorial.templateURI) {
+                    templateExists = true;
+                    break;
+                }
+            }
+            if (!templateExists) {
+                toRemove.push(combinatorial);
+            }
+        }
+
+        for (let combinatorial of toRemove) {
+            this.removeFromCombinatorialDict(combinatorial.getFullURI())
+        }
+    }
+
     protected getCoupledGlyphs(glyphURI: string): mxCell[] {
         const coupledCells = [];
         for (let key in this.graph.getModel().cells) {
@@ -1594,12 +1620,7 @@ export class GraphHelpers extends GraphBase {
      */
     protected removeFromCombinatorialDict(glyphURI: string) {
         const cell0 = this.graph.getModel().getCell(0);
-        for (let combinatorialInfo of cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX]) {
-            if (combinatorialInfo.templateURI == glyphURI) {
-                this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, combinatorialInfo, GraphBase.COMBINATORIAL_DICT_INDEX));
-                break;
-            }
-        }
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI], GraphBase.COMBINATORIAL_DICT_INDEX));
     }
 
     /**
@@ -1622,10 +1643,10 @@ export class GraphHelpers extends GraphBase {
      * Gets the CombinatorialInfo that has the given templateURI
      * @param templateURI - The templateURI to search for
      */
-    protected getCombinatorialWithTemplate(templateURI: string){
+    protected getCombinatorialWithTemplate(templateURI: string) {
         const cell0 = this.graph.getModel().getCell(0);
-        for(let key in cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX]){
-            if(cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][key].templateURI === templateURI){
+        for (let key in cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX]) {
+            if (cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][key].templateURI === templateURI) {
                 return cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][key];
             }
         }
