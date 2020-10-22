@@ -34,9 +34,14 @@
 
     <table mat-table [dataSource]="parts" matSort>
 
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+        <td mat-cell *matCellDef="let element">{{element.type}}</td>
+      </ng-container>
+
       <ng-container matColumnDef="displayId">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Display Id</th>
-        <td mat-cell *matCellDef="let element">{{element.displayID}}</td>
+        <td mat-cell *matCellDef="let element">{{element.displayId}}</td>
       </ng-container>
 
       <ng-container matColumnDef="name">

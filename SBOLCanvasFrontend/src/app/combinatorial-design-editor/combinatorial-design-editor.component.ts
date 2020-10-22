@@ -1,9 +1,10 @@
-import { Component, OnInit, Inject, ChangeDetectorRef } from '@angular/core';
-import { MatTableDataSource, MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material';
+import { Component, OnInit } from '@angular/core';
+import { MatTableDataSource, MatDialogRef, MatDialog } from '@angular/material';
 import { CombinatorialInfo } from '../combinatorialInfo';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { GlyphInfo } from '../glyphInfo';
 import { GraphService } from '../graph.service';
+import { IdentifiedInfo } from '../identifiedInfo';
 import { MetadataService } from '../metadata.service';
 import { VariableComponentInfo } from '../variableComponentInfo';
 
@@ -23,7 +24,7 @@ export class CombinatorialDesignEditorComponent implements OnInit {
   variableComponentInfo: VariableComponentInfo;
   componentInfo: GlyphInfo;
 
-  displayedColumns: string[] = ['displayId', 'name', 'version', 'description'];
+  displayedColumns: string[] = ['type', 'displayId', 'name', 'version', 'description'];
   parts = new MatTableDataSource([]);
 
   selectedRow;
@@ -79,14 +80,7 @@ export class CombinatorialDesignEditorComponent implements OnInit {
     }).afterClosed().subscribe(result => {
       if(!result)
         return;
-      // load the result into a GlyphInfo so it can be decoded by the backend easily
-      let info = new GlyphInfo();
-      info.displayID = result.displayId;
-      info.version = result.version;
-      info.description = result.description;
-      info.name = result.name;
-      info.uriPrefix = result.uri.substring(0,result.uri.indexOf("/"+result.displayId))
-      this.variableComponentInfo.addVariant(info);
+      this.variableComponentInfo.addVariant(result);
       // The table doesn't update without this
       this.parts.data = this.variableComponentInfo.variants;
     });

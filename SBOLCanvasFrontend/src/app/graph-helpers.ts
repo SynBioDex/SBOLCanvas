@@ -105,7 +105,7 @@ export class GraphHelpers extends GraphBase {
 
             if (oldGlyphURI != newGlyphURI) {
                 // check for module definition conflict
-                if (this.isDuplicateURI(newGlyphURI)) {
+                if (this.isDuplicateURI(newGlyphURI, true)) {
                     return;
                 }
 
@@ -626,13 +626,13 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
-    protected isDuplicateURI(newURI: string): boolean {
+    protected isDuplicateURI(newURI: string, ignoreComponents: boolean = false): boolean {
         let conflictInfo = this.getFromInfoDict(newURI);
         if (conflictInfo && conflictInfo instanceof ModuleInfo) {
             this.dialog.open(ErrorComponent, { data: "The part " + newURI + " already exists as a ModuleDefinition!" });
             return true;
         }
-        if (conflictInfo && conflictInfo instanceof GlyphInfo) {
+        if (!ignoreComponents && conflictInfo && conflictInfo instanceof GlyphInfo) {
             this.dialog.open(ErrorComponent, { data: "The part " + newURI + " already exists as a ComponentDefinition!" });
             return true;
         }

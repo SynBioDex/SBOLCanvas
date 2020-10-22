@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import * as FileSaver from 'file-saver';
 import { GraphService } from './graph.service';
+import { IdentifiedInfo } from './identifiedInfo';
 
 @Injectable({
   providedIn: 'root'
@@ -85,7 +86,7 @@ export class FilesService {
     return this.http.get(this.listMyCollectionsURL, { headers: headers, params: params });
   }
 
-  listParts(user: string, server: string, collection: string, type: string, role: string, mode: string): Observable<any> {
+  listParts(user: string, server: string, collection: string, type: string, role: string, mode: string): Observable<IdentifiedInfo[]> {
     let headers = new HttpHeaders();
     if (user != null && user.length > 0)
       headers = headers.set("Authorization", user);
@@ -98,7 +99,7 @@ export class FilesService {
     if (role != null && role.length > 0)
       params = params.append("role", role);
     params = params.append("mode", mode);
-    return this.http.get(this.listPartsURL, { headers: headers, params: params });
+    return this.http.get<IdentifiedInfo[]>(this.listPartsURL, { headers: headers, params: params });
   };
 
   getPart(user: string, server: string, uri: string): Observable<string> {

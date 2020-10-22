@@ -6,6 +6,7 @@ import { GraphService } from '../graph.service';
 import { MetadataService } from '../metadata.service';
 import { forkJoin, Subscription } from 'rxjs';
 import { ThrowStmt } from '@angular/compiler';
+import { IdentifiedInfo } from '../identifiedInfo';
 
 @Component({
   selector: 'app-download-graph',
@@ -57,7 +58,7 @@ export class DownloadGraphComponent implements OnInit {
 
   working: boolean;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent>) { }
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent, IdentifiedInfo>) { }
 
   ngOnInit() {
     this.working = true;
@@ -113,7 +114,7 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   finishCheck(): boolean {
-    return this.partRow != null;
+    return this.partRow && this.partRow.type != DownloadGraphComponent.collectionType;
   }
 
   applyFilter(filterValue: string) {
@@ -155,6 +156,16 @@ export class DownloadGraphComponent implements OnInit {
     this.dialogRef.close();
   }
 
+  onEnterCollectionClick(){
+    this.history.push(this.partRow);
+    this.partRow = null;
+    this.updateParts();
+  }
+
+  enterCollectionEnabled(): boolean {
+    return this.partRow && this.partRow.type === DownloadGraphComponent.collectionType;
+  }
+
   onDownloadClick() {
     if (this.partRow.type === DownloadGraphComponent.moduleType) {
       this.downloadModule();
@@ -165,6 +176,10 @@ export class DownloadGraphComponent implements OnInit {
 
   onSelectClick(){
     this.dialogRef.close(this.partRow);
+  }
+
+  selectCheck(){
+    return this.partRow && (this.partRow.type == DownloadGraphComponent.componentType || this.partRow.type == DownloadGraphComponent.collectionType);
   }
 
   updateRefinements() {
@@ -185,7 +200,7 @@ export class DownloadGraphComponent implements OnInit {
 
   onRowClick(row: any) {
     if (row.type === DownloadGraphComponent.collectionType) {
-      this.partRow = null;
+      this.partRow = row;
       this.collection = row.uri;
     }
     if (row.type === DownloadGraphComponent.componentType || row.type === DownloadGraphComponent.moduleType) {
@@ -197,6 +212,7 @@ export class DownloadGraphComponent implements OnInit {
     if (row.type === DownloadGraphComponent.collectionType) {
       this.history.push(row);
       this.collection = row.uri;
+      this.partRow = null;
       this.updateParts();
     } else if (row.type === DownloadGraphComponent.componentType) {
       if(this.mode == DownloadGraphComponent.SELECT_MODE){
@@ -251,7 +267,7 @@ export class DownloadGraphComponent implements OnInit {
     this.partRow = null;
     let found = false;
     for (let i = 0; i < this.history.length; i++) {
-      if (this.history[i].uri === collection) {
+      if (this.history[i] === collection) {
         this.history.length = i + 1;
         found = true;
         break;

@@ -1,10 +1,12 @@
+import { CombinatorialInfo } from './combinatorialInfo';
 import { GlyphInfo } from './glyphInfo';
+import { IdentifiedInfo } from './identifiedInfo';
 
 export class VariableComponentInfo {
     uri: string;
     variable: string;
     operator: string;
-    variants: GlyphInfo[] = [];
+    variants: IdentifiedInfo[] = [];
 
     constructor(variable: string){
         this.variable = variable;
@@ -20,7 +22,12 @@ export class VariableComponentInfo {
         return copy;
     }
 
-    addVariant(info: GlyphInfo){
+    addVariant(info: IdentifiedInfo){
+        // avoid duplicates
+        for(let variant of this.variants){
+            if(variant.uri == info.uri)
+                return;
+        }
         this.variants.push(info);
     }
 }
