@@ -3,7 +3,7 @@ package data;
 public class VariableComponentInfo {
 
 	private String uri;
-	private String variable;
+	private String cellID;
 	private String operator;
 	private IdentifiedInfo[] variants;
 
@@ -15,12 +15,12 @@ public class VariableComponentInfo {
 		this.uri = uri;
 	}
 
-	public String getVariable() {
-		return variable;
+	public String getCellID() {
+		return cellID;
 	}
 
-	public void setVariable(String variable) {
-		this.variable = variable;
+	public void setCellID(String cellID) {
+		this.cellID = cellID;
 	}
 
 	public String getOperator() {

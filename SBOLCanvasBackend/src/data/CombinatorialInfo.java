@@ -57,7 +57,7 @@ public class CombinatorialInfo extends Info {
 		this.variableComponents = variableComponents;
 	}
 
-	String getFullURI() {
+	public String getFullURI() {
 		String fullURI = this.uriPrefix + '/' + this.displayID;
 		if (this.version != null && this.version.length() > 0) {
 			fullURI += '/' + this.version;

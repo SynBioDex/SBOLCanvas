@@ -1,5 +1,3 @@
-import { variable } from '@angular/compiler/src/output/output_ast';
-import { GlyphInfo } from './glyphInfo';
 import { Info } from './info';
 import { VariableComponentInfo } from './variableComponentInfo';
 
@@ -9,10 +7,10 @@ export class CombinatorialInfo extends Info{
 
     templateURI: string;    
     version: string;
-    variableComponents = [];
     strategy: string;
     name: string;
     description: string;
+    variableComponents = [];
 
     constructor(){
         super();
@@ -20,7 +18,7 @@ export class CombinatorialInfo extends Info{
     }
 
     addVariableComponentInfo(variableComponentInfo: VariableComponentInfo){
-        this.variableComponents[variableComponentInfo.variable] = variableComponentInfo;
+        this.variableComponents[variableComponentInfo.cellID] = variableComponentInfo;
     }
 
     getVariableComponentInfo(variable: string): VariableComponentInfo {
@@ -37,9 +35,10 @@ export class CombinatorialInfo extends Info{
 
     makeCopy(): CombinatorialInfo {
         const copy: CombinatorialInfo = new CombinatorialInfo();
-        copy.templateURI = this.templateURI;
         copy.displayID = this.displayID;
         copy.uriPrefix = this.uriPrefix;
+        copy.templateURI = this.templateURI;
+        copy.version = this.version;
         copy.strategy = this.strategy;
         copy.name = this.name;
         copy.description = this.description;
@@ -50,9 +49,10 @@ export class CombinatorialInfo extends Info{
     }
 
     copyDataFrom(info: CombinatorialInfo) {
-        this.templateURI = info.templateURI;
         this.displayID = info.displayID;
         this.uriPrefix = info.uriPrefix;
+        this.templateURI = info.templateURI;
+        this.version = info.version;
         this.strategy = info.strategy;
         this.name = info.name;
         this.description = info.description;
@@ -64,7 +64,14 @@ export class CombinatorialInfo extends Info{
 
     encode(enc: any) {
         let node = enc.document.createElement('CombinatorialInfo');
+        node.setAttribute("displayID", this.displayID);
+        node.setAttribute("uriPrefix", this.uriPrefix);
         node.setAttribute("templateURI", this.templateURI);
+        node.setAttribute("version", this.version);
+        node.setAttribute("strategy", this.strategy);
+        node.setAttribute("name", this.name);
+        node.setAttribute("description", this.description);
+        node.addChild
     }
 
     getFullURI(): string {

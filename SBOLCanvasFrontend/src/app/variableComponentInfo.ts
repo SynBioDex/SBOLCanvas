@@ -1,19 +1,17 @@
-import { CombinatorialInfo } from './combinatorialInfo';
-import { GlyphInfo } from './glyphInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 
 export class VariableComponentInfo {
     uri: string;
-    variable: string;
+    cellID: string;
     operator: string;
     variants: IdentifiedInfo[] = [];
 
-    constructor(variable: string){
-        this.variable = variable;
+    constructor(cellID: string){
+        this.cellID = cellID;
     }
 
     makeCopy(): VariableComponentInfo {
-        const copy: VariableComponentInfo = new VariableComponentInfo(this.variable);
+        const copy: VariableComponentInfo = new VariableComponentInfo(this.cellID);
         copy.uri = this.uri;
         copy.operator = this.operator;
         for(let variant of this.variants){

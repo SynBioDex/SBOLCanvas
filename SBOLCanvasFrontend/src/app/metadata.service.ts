@@ -6,7 +6,6 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import {InteractionInfo} from "./interactionInfo";
 import {StyleInfo} from './style-info';
-import {Style} from '@angular/cli/lib/config/schema';
 import { ModuleInfo } from './moduleInfo';
 import { CombinatorialInfo } from './combinatorialInfo';
 

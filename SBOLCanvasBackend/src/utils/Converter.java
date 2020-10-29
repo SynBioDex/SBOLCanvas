@@ -10,6 +10,7 @@ import org.sbolstandard.core2.SystemsBiologyOntology;
 
 import com.mxgraph.io.mxCodecRegistry;
 
+import data.CombinatorialInfo;
 import data.Info;
 
 public class Converter {
@@ -41,6 +42,7 @@ public class Converter {
 	};
 
 	protected Hashtable<String, Info> infoDict;
+	protected Hashtable<String, CombinatorialInfo> combinatorialDict;
 	protected LayoutHelper layoutHelper;
 
 	protected static URI getParticipantType(boolean source, Set<URI> interactionTypes) {

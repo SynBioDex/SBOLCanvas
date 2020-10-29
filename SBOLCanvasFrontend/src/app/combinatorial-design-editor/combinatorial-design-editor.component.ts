@@ -80,7 +80,15 @@ export class CombinatorialDesignEditorComponent implements OnInit {
     }).afterClosed().subscribe(result => {
       if(!result)
         return;
-      this.variableComponentInfo.addVariant(result);
+      // for some reason if we don't load it into a IdentifiedInfo it is considered 'Object'
+      let identifiedInfo = new IdentifiedInfo();
+      identifiedInfo.description = result.description;
+      identifiedInfo.displayId = result.displayID;
+      identifiedInfo.name = result.name;
+      identifiedInfo.type = result.type;
+      identifiedInfo.uri = result.uri;
+      identifiedInfo.version = result.version;
+      this.variableComponentInfo.addVariant(identifiedInfo);
       // The table doesn't update without this
       this.parts.data = this.variableComponentInfo.variants;
     });
@@ -134,9 +142,9 @@ export class CombinatorialDesignEditorComponent implements OnInit {
     // make sure we have both the componentInfo and combinatorialInfo before doing this
     if(!this.componentInfo || !this.combinatorialInfo)
       return;
-    this.variableComponentInfo = this.combinatorialInfo.getVariableComponentInfo(this.componentInfo.getFullURI());
+    this.variableComponentInfo = this.combinatorialInfo.getVariableComponentInfo(this.graphService.getSelectedCellID());
     if(!this.variableComponentInfo){
-      this.variableComponentInfo = new VariableComponentInfo(this.componentInfo.getFullURI());
+      this.variableComponentInfo = new VariableComponentInfo(this.graphService.getSelectedCellID());
       this.variableComponentInfo.operator = this.operators[1];
       this.combinatorialInfo.addVariableComponentInfo(this.variableComponentInfo);
     }

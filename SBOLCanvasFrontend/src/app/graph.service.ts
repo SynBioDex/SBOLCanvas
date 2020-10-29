@@ -20,9 +20,7 @@ import { GraphHelpers } from './graph-helpers';
 import { StyleInfo } from './style-info';
 import { ModuleInfo } from './moduleInfo';
 import { Info } from './info';
-import { CombinatorialDesignEditorComponent } from './combinatorial-design-editor/combinatorial-design-editor.component';
 import { CombinatorialInfo } from './combinatorialInfo';
-import { ErrorComponent } from './error/error.component';
 
 @Injectable({
   providedIn: 'root'
@@ -45,6 +43,14 @@ export class GraphService extends GraphHelpers {
 
   isRootAComponentView(): boolean {
     return this.viewStack[0].isComponentView();
+  }
+
+  getSelectedCellID(): string {
+    let selected = this.graph.getSelectionCells();
+    if(selected.length != 1){
+      return null;
+    }
+    return selected[0].getId();
   }
 
   /**
@@ -1277,8 +1283,12 @@ export class GraphService extends GraphHelpers {
 
     // initalize the GlyphInfoDictionary
     const cell0 = this.graph.getModel().getCell(0);
-    const glyphDict = [];
-    this.graph.getModel().setValue(cell0, glyphDict);
+    const infoDict = [];
+    const combinatorialDict = [];
+    var dataContainer = [];
+    dataContainer[GraphBase.INFO_DICT_INDEX] = infoDict;
+    dataContainer[GraphBase.COMBINATORIAL_DICT_INDEX] = combinatorialDict;
+    this.graph.getModel().setValue(cell0, dataContainer);
 
     const cell1 = this.graph.getModel().getCell(1);
     let rootViewCell;
