@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { GraphService } from '../graph.service';
 import { MatDialogRef } from '@angular/material';
 import { FilesService } from '../files.service';
+import { LoginService } from '../login.service';
 
 @Component({
   selector: 'app-export-design',
@@ -17,7 +18,7 @@ export class ExportDesignComponent implements OnInit {
   filename: string;
   format: string;
 
-  constructor(private graphService: GraphService, private filesService: FilesService, public dialogRef: MatDialogRef<ExportDesignComponent>) { }
+  constructor(private graphService: GraphService, private loginService: LoginService, private filesService: FilesService, public dialogRef: MatDialogRef<ExportDesignComponent>) { }
 
   ngOnInit() {
     this.format=this.formats[0];
@@ -25,7 +26,7 @@ export class ExportDesignComponent implements OnInit {
 
   onExportClick(){
     this.working = true;
-    this.filesService.exportDesign(this.filename, this.format, this.graphService.getGraphXML()).subscribe(_ => {
+    this.filesService.exportDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe(_ => {
       this.working = false;
       this.dialogRef.close();
     });

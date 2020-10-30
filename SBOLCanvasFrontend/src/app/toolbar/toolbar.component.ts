@@ -99,6 +99,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
   // make sure to comment out the button when preparing to make a merge request
   testMethod(){
-    const result = this.dialog.open(CombinatorialDesignEditorComponent, {});
+    this.dialog.open(DownloadGraphComponent);
   }
 }

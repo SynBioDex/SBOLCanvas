@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
@@ -174,6 +175,40 @@ public class SynBioHub extends HttpServlet {
 
 				body = gson.toJson(results.toArray(new IdentifiedMetadata[0]));
 
+			} else if (request.getPathInfo().equals("/listLayouts")) {
+				//TODO come back to me
+			} else if (request.getPathInfo().equals("/listCombinatorials")) {
+				String template = request.getParameter("template");
+				
+				ArrayList<IdentifiedMetadata> results = new ArrayList<IdentifiedMetadata>();
+				
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				sbhf.setUser(user);
+				/*String result = sbhf.sparqlQuery("PREFIX sbol: <http://sbols.org/v2#>\n"
+						+ "select ?s \n"
+						+ "FROM <https://synbiohub.org/user/randoom97>\n"
+						+ "where {\n"
+						+ " ?s sbol:template <"+template+">\n"
+						+ "}");
+				
+				body = result;*/
+				
+				SearchQuery query = new SearchQuery();
+				
+				SearchCriteria objectTypeCriteria = new SearchCriteria();
+				objectTypeCriteria.setKey("objectType");
+				objectTypeCriteria.setValue("CombinatorialDerivation");
+				query.addCriteria(objectTypeCriteria);
+				
+				SearchCriteria sbolTagCriteria = new SearchCriteria();
+				sbolTagCriteria.setKey("template");
+				sbolTagCriteria.setValue(template);
+				query.addCriteria(sbolTagCriteria);
+				
+				results.addAll(sbhf.search(query));
+				
+				body = gson.toJson(results.toArray(new IdentifiedMetadata[0]));
+				
 			} else if (request.getPathInfo().equals("/getRegistryPart")) {
 				String uri = request.getParameter("uri");
 				if (uri == null) {
@@ -254,9 +289,16 @@ public class SynBioHub extends HttpServlet {
 					response.setStatus(HttpStatus.SC_BAD_REQUEST);
 					return;
 				}
+				HashMap<String, String> userTokens = new HashMap<String, String>();
+				String[] servers = user.split(",");
+				for(String serverInf : servers) {
+					String[] tokens = serverInf.split(" ");
+					userTokens.put(tokens[0], tokens[1]);
+				}
+				
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-				sbhf.setUser(user);
-				MxToSBOL converter = new MxToSBOL(user);
+				sbhf.setUser(userTokens.get(server));
+				MxToSBOL converter = new MxToSBOL(userTokens);
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				converter.toSBOL(request.getInputStream(), out);
 				sbhf.addToCollection(URI.create(uri), true, new ByteArrayInputStream(out.toByteArray()));

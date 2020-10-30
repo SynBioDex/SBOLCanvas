@@ -241,6 +241,13 @@ export class DownloadGraphComponent implements OnInit {
       this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
         this.graphService.setGraphToXML(xml);
         this.working = false;
+        // get combinatorials for the part
+        this.filesService.listCombinatorials(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(result => {
+          if(result.length > 0){
+            // prompt selection of combinatorial
+            
+          }
+        });
         this.dialogRef.close();
       });
     }

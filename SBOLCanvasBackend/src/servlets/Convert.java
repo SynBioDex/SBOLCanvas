@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
@@ -34,13 +35,26 @@ public class Convert extends HttpServlet {
 				SBOLToMx converter = new SBOLToMx();
 				converter.toGraph(request.getInputStream(), response.getOutputStream());
 			} else if (request.getPathInfo().equals("/exportDesign")){
+				// setup the userTokens
+				String authString = request.getHeader("Authorization");
+				if(authString == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				HashMap<String, String> userTokens = new HashMap<String, String>();
+				String[] servers = authString.split(",");
+				for(String server : servers) {
+					String[] tokens = server.split(" ");
+					userTokens.put(tokens[0], tokens[1]);
+				}
+				
 				String format = request.getParameter("format");
 				if(format == null) {
 					response.setStatus(HttpStatus.SC_BAD_REQUEST);
 					return;
 				}
 				
-				MxToSBOL converter = new MxToSBOL();
+				MxToSBOL converter = new MxToSBOL(userTokens);
 				switch(format) {
 				case "SBOL2":
 					converter.toSBOL(request.getInputStream(), response.getOutputStream()); break;

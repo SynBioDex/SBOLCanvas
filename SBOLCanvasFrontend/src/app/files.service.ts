@@ -3,7 +3,6 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import * as FileSaver from 'file-saver';
-import { GraphService } from './graph.service';
 import { IdentifiedInfo } from './identifiedInfo';
 
 @Injectable({
@@ -22,6 +21,7 @@ export class FilesService {
   private importToCollectionURL = environment.backendURL + '/SynBioHub/importToCollection';
   private createCollectionURL = environment.backendURL + '/SynBioHub/createCollection';
   private listPartsURL = environment.backendURL + '/SynBioHub/listRegistryParts';
+  private listCombinatorialsURL = environment.backendURL + '/SynBioHub/listCombinatorials';
   private getPartsURL = environment.backendURL + '/SynBioHub/getRegistryPart';
   private importPartsURL = environment.backendURL + '/SynBioHub/importRegistryPart';
 
@@ -47,8 +47,10 @@ export class FilesService {
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
   }
 
-  exportDesign(filename: string, format: string, contents: string): Observable<void> {
+  exportDesign(users: {}, filename: string, format: string, contents: string): Observable<void> {
     return new Observable<void>(observer => {
+      let headers = new HttpHeaders();
+      headers = headers.set("Authorization", this.usersToStringArr(users));
       let params = new HttpParams();
       params = params.append("format", format);
       let formatExtension;
@@ -62,7 +64,7 @@ export class FilesService {
         default:
           formatExtension = ".xml"; break;
       }
-      this.http.post(this.exportDesignURL, contents, { responseType: 'text', params: params }).subscribe(result => {
+      this.http.post(this.exportDesignURL, contents, { headers: headers, responseType: 'text', params: params }).subscribe(result => {
         var file = new File([result], filename + formatExtension);
         FileSaver.saveAs(file);
         observer.next();
@@ -70,8 +72,8 @@ export class FilesService {
     });
   }
 
-  async saveRemote(server: string, collection: string, user: string, contents: string) {
-    await this.uploadSBOL(contents, server, collection, user).toPromise();
+  async saveRemote(server: string, collection: string, users: {}, contents: string) {
+    await this.uploadSBOL(contents, server, collection, users).toPromise();
   }
 
   getRegistries(): Observable<any> {
@@ -102,6 +104,16 @@ export class FilesService {
     return this.http.get<IdentifiedInfo[]>(this.listPartsURL, { headers: headers, params: params });
   };
 
+  listCombinatorials(user: string, server: string, template: string){
+    let headers = new HttpHeaders();
+    if(user != null && user.length > 0)
+      headers = headers.set("Authorization", user);
+    let params = new HttpParams();
+    params = params.append("server", server);
+    params = params.append("template", template);
+    return this.http.get<string>(this.listCombinatorialsURL, { headers: headers, params: params });
+  }
+
   getPart(user: string, server: string, uri: string): Observable<string> {
     let headers = new HttpHeaders();
     if (user != null && user.length > 0)
@@ -127,9 +139,9 @@ export class FilesService {
     return this.http.post(this.toMxGraphURL, sbolXML, { responseType: 'text' });
   }
 
-  uploadSBOL(mxGraphXML: string, server: string, collection: string, user: string) {
+  uploadSBOL(mxGraphXML: string, server: string, collection: string, users: {}) {
     let headers = new HttpHeaders();
-    headers = headers.set("Authorization", user);
+    headers = headers.set("Authorization", this.usersToStringArr(users));
     let params = new HttpParams();
     params = params.append("server", server);
     params = params.append("uri", collection);
@@ -175,6 +187,14 @@ export class FilesService {
         observer.next();
       });
     });
+  }
+
+  private usersToStringArr(users: {}): string[] {
+    let usersStringArr: string[] = [];
+    for(let key in users){
+      usersStringArr.push(key+" "+users[key]);
+    }
+    return usersStringArr;
   }
 
 }

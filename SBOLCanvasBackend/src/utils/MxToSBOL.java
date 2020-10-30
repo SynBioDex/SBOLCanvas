@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -43,6 +44,7 @@ import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.sbolstandard.core2.TopLevel;
 import org.sbolstandard.core2.VariableComponent;
 import org.synbiohub.frontend.SynBioHubException;
+import org.synbiohub.frontend.SynBioHubFrontend;
 import org.w3c.dom.Document;
 
 import com.mxgraph.io.mxCodec;
@@ -125,16 +127,16 @@ public class MxToSBOL extends Converter {
 		}
 	};
 
-	private String userToken;
+	private HashMap<String, String> userTokens;
 
 	public MxToSBOL() {
 		this(null);
 	}
 
-	public MxToSBOL(String userToken) {
+	public MxToSBOL(HashMap<String, String> userTokens) {
 		infoDict = new Hashtable<String, Info>();
 		combinatorialDict = new Hashtable<String, CombinatorialInfo>();
-		this.userToken = userToken;
+		this.userTokens = userTokens;
 	}
 
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
@@ -195,6 +197,18 @@ public class MxToSBOL extends Converter {
 		document.setDefaultURIprefix(URI_PREFIX);
 		document.setComplete(true);
 		document.setCreateDefaults(true);
+		
+		// add registries
+		for(String key : userTokens.keySet()) {
+			SynBioHubFrontend registry = document.addRegistry(key);
+			registry.setUser(userTokens.get(key));
+		}
+		// TODO come back when fetching collections from multiple registries works
+//		for(String registry : SBOLData.registries) {
+//			document.addRegistry(registry);
+//			if(userTokens.containsKey(registry))
+//				document.getRegistry(registry).setUser(userTokens.get(registry));
+//		}
 
 		layoutHelper = new LayoutHelper(document, graph);
 
@@ -309,9 +323,7 @@ public class MxToSBOL extends Converter {
 		boolean layoutOnly = false;
 		for (String registry : SBOLData.registries) {
 			if (modInfo.getUriPrefix().contains(registry)
-					&& (userToken != null || modInfo.getUriPrefix().contains("/public/"))) {
-				document.addRegistry(registry);
-				document.getRegistry(registry).setUser(userToken);
+					&& (userTokens.containsKey(registry) || modInfo.getUriPrefix().contains("/public/"))) {
 				layoutOnly = true;
 				break;
 			}
@@ -394,9 +406,7 @@ public class MxToSBOL extends Converter {
 		// if the uri is one of the synbiohub ones, skip the object
 		for (String registry : SBOLData.registries) {
 			if (glyphInfo.getUriPrefix().contains(registry)
-					&& (userToken != null || glyphInfo.getUriPrefix().contains("/public/"))) {
-				document.addRegistry(registry);
-				document.getRegistry(registry).setUser(userToken);
+					&& (userTokens.containsKey(registry) || glyphInfo.getUriPrefix().contains("/public/"))) {
 				return;
 			}
 		}
@@ -495,9 +505,7 @@ public class MxToSBOL extends Converter {
 		boolean layoutOnly = false;
 		for (String registry : SBOLData.registries) {
 			if (modDefInfo.getUriPrefix().contains(registry)
-					&& (userToken != null || modDefInfo.getUriPrefix().contains("/public/"))) {
-				document.addRegistry(registry);
-				document.getRegistry(registry).setUser(userToken);
+					&& (userTokens.containsKey(registry) || modDefInfo.getUriPrefix().contains("/public/"))) {
 				layoutOnly = true;
 				break;
 			}
@@ -692,16 +700,6 @@ public class MxToSBOL extends Converter {
 			Component component = components.get(variableCell.getParent().getIndex(variableCell)-1);
 			VariableComponent varComp = combDer.createVariableComponent(component.getDisplayId()+"_VariableComponent", operator, component.getIdentity());
 			for(IdentifiedInfo idInfo : varCompInfo.getVariants()) {
-				
-				for (String registry : SBOLData.registries) {
-					if (idInfo.getUri().contains(registry)) {
-						document.addRegistry(registry);
-						if(userToken != null)
-							document.getRegistry(registry).setUser(userToken);
-						break;
-					}
-				}
-				
 				switch(idInfo.getType()) {
 				case "collection":
 					varComp.addVariantCollection(URI.create(idInfo.getUri()));
