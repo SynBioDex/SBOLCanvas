@@ -1,12 +1,13 @@
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
 import { LoginService } from '../login.service';
-import { MatDialogRef, MatSort, MatTableDataSource, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialog, MatDialogRef, MatSort, MatTableDataSource, MAT_DIALOG_DATA } from '@angular/material';
 import { FilesService } from '../files.service';
 import { GraphService } from '../graph.service';
 import { MetadataService } from '../metadata.service';
 import { forkJoin, Subscription } from 'rxjs';
 import { ThrowStmt } from '@angular/compiler';
 import { IdentifiedInfo } from '../identifiedInfo';
+import { FuncCompSelectorComponent } from '../func-comp-selector/func-comp-selector.component';
 
 @Component({
   selector: 'app-download-graph',
@@ -58,7 +59,7 @@ export class DownloadGraphComponent implements OnInit {
 
   working: boolean;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent, IdentifiedInfo>) { }
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private dialog: MatDialog, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent, IdentifiedInfo>) { }
 
   ngOnInit() {
     this.working = true;
@@ -242,13 +243,26 @@ export class DownloadGraphComponent implements OnInit {
         this.graphService.setGraphToXML(xml);
         this.working = false;
         // get combinatorials for the part
-        this.filesService.listCombinatorials(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(result => {
-          if(result.length > 0){
+        this.filesService.listCombinatorials(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(combResult => {
+          if(combResult.length > 0){
             // prompt selection of combinatorial
-            
+            this.dialog.open(FuncCompSelectorComponent, {
+              data: {
+                mode: FuncCompSelectorComponent.COMBINATORIAL_MODE,
+                options: combResult
+              }
+            }).afterClosed().subscribe(selectResult => {
+              if(selectResult){
+                this.working = true;
+                // let combinatorials = this.filesService.getCombinatorials(this.loginService.users[this.registry], this.registry, selectResult)
+                // this.graphService.addCombinatorial()
+              }
+              this.dialogRef.close();
+            });
+          } else {
+            this.dialogRef.close();
           }
         });
-        this.dialogRef.close();
       });
     }
   }

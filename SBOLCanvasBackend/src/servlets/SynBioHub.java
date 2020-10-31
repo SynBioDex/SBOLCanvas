@@ -184,14 +184,6 @@ public class SynBioHub extends HttpServlet {
 				
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
-				/*String result = sbhf.sparqlQuery("PREFIX sbol: <http://sbols.org/v2#>\n"
-						+ "select ?s \n"
-						+ "FROM <https://synbiohub.org/user/randoom97>\n"
-						+ "where {\n"
-						+ " ?s sbol:template <"+template+">\n"
-						+ "}");
-				
-				body = result;*/
 				
 				SearchQuery query = new SearchQuery();
 				
