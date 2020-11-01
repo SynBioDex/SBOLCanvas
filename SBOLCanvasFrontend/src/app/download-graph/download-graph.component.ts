@@ -230,7 +230,7 @@ export class DownloadGraphComponent implements OnInit {
     }
   }
 
-  downloadComponent() {
+  async downloadComponent() {
     this.working = true;
     if (this.mode == DownloadGraphComponent.IMPORT_MODE) {
       this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
@@ -239,31 +239,32 @@ export class DownloadGraphComponent implements OnInit {
         this.dialogRef.close();
       });
     } else {
-      this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
-        this.graphService.setGraphToXML(xml);
-        this.working = false;
-        // get combinatorials for the part
-        this.filesService.listCombinatorials(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(combResult => {
-          if(combResult.length > 0){
-            // prompt selection of combinatorial
-            this.dialog.open(FuncCompSelectorComponent, {
-              data: {
-                mode: FuncCompSelectorComponent.COMBINATORIAL_MODE,
-                options: combResult
-              }
-            }).afterClosed().subscribe(selectResult => {
-              if(selectResult){
-                this.working = true;
-                // let combinatorials = this.filesService.getCombinatorials(this.loginService.users[this.registry], this.registry, selectResult)
-                // this.graphService.addCombinatorial()
-              }
-              this.dialogRef.close();
-            });
-          } else {
-            this.dialogRef.close();
+      // check for combinatorials
+      let combResult = await this.filesService.listCombinatorials(this.loginService.users[this.registry], this.registry, this.partRow.uri).toPromise();
+      let combinatorial;
+      if(combResult.length > 0){
+        combinatorial = await this.dialog.open(FuncCompSelectorComponent, {
+          data: {
+            mode: FuncCompSelectorComponent.COMBINATORIAL_MODE,
+            options: combResult
           }
-        });
-      });
+        }).afterClosed().toPromise();
+      }
+
+      // get xml
+      let xml;
+      if(combinatorial){
+        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri, combinatorial.uri).toPromise();
+      }else{
+        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).toPromise();
+      }
+
+      // set xml;
+      this.graphService.setGraphToXML(xml);
+      
+      // close dialog
+      this.working = false;
+      this.dialogRef.close();
     }
   }
 

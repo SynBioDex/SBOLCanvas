@@ -616,7 +616,8 @@ export class GraphHelpers extends GraphBase {
 
             // store
             if (prevURI != info.getFullURI()) {
-                this.removeFromCombinatorialDict(prevURI);
+                if(this.getFromCombinatorialDict(prevURI))
+                    this.removeFromCombinatorialDict(prevURI);
                 this.addToCombinatorialDict(info);
             } else {
                 this.updateCombinatorialDict(info);

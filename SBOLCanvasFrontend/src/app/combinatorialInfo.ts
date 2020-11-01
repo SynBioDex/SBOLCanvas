@@ -64,14 +64,31 @@ export class CombinatorialInfo extends Info{
 
     encode(enc: any) {
         let node = enc.document.createElement('CombinatorialInfo');
-        node.setAttribute("displayID", this.displayID);
-        node.setAttribute("uriPrefix", this.uriPrefix);
-        node.setAttribute("templateURI", this.templateURI);
-        node.setAttribute("version", this.version);
-        node.setAttribute("strategy", this.strategy);
-        node.setAttribute("name", this.name);
-        node.setAttribute("description", this.description);
-        node.addChild
+        if(this.displayID)
+            node.setAttribute("displayID", this.displayID);
+        if(this.uriPrefix)
+            node.setAttribute("uriPrefix", this.uriPrefix);
+        if(this.templateURI)
+            node.setAttribute("templateURI", this.templateURI);
+        if(this.version)
+            node.setAttribute("version", this.version);
+        if(this.strategy)
+            node.setAttribute("strategy", this.strategy);
+        if(this.name)
+            node.setAttribute("name", this.name);
+        if(this.description)
+            node.setAttribute("description", this.description);
+        if(this.variableComponents){
+            let varCompsNode = enc.document.createElement('Array');
+            varCompsNode.setAttribute("as", 'variableComponents');
+            for (let key in this.variableComponents) {
+                let varCompNode = enc.encode(this.variableComponents[key]);
+                varCompNode.setAttribute("as", this.variableComponents[key].cellID);
+                varCompsNode.appendChild(varCompNode);
+            }
+            node.appendChild(varCompsNode);
+        }
+        return node;
     }
 
     getFullURI(): string {

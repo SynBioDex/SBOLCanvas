@@ -9,6 +9,8 @@ import javax.xml.namespace.QName;
 import org.sbolstandard.core2.SystemsBiologyOntology;
 
 import com.mxgraph.io.mxCodecRegistry;
+import com.mxgraph.model.mxCell;
+import com.mxgraph.model.mxGraphModel.Filter;
 
 import data.CombinatorialInfo;
 import data.Info;
@@ -45,6 +47,66 @@ public class Converter {
 	protected Hashtable<String, CombinatorialInfo> combinatorialDict;
 	protected LayoutHelper layoutHelper;
 
+	/**
+	 * Filters mxCells that contain "textBox" in the style string
+	 */
+	static Filter textBoxFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_TEXTBOX);
+		}
+	};
+
+	/**
+	 * Filters mxCells that contain "protein" in the style string
+	 */
+	static Filter proteinFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_MOLECULAR_SPECIES);
+		}
+	};
+
+	/**
+	 * 
+	 */
+	static Filter moduleFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_MODULE);
+		}
+	};
+
+	/**
+	 * Filters mxCells that contain "circuitContainer" in the style string
+	 */
+	static Filter containerFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER);
+		}
+	};
+
+	/**
+	 * Filters mxCells that contain "backbone" in the style string
+	 */
+	static Filter backboneFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_BACKBONE);
+		}
+	};
+
+	/**
+	 * Filters mxCells that contain "sequenceFeatureGlyph" in the style string
+	 */
+	static Filter sequenceFeatureFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE);
+		}
+	};
+	
 	protected static URI getParticipantType(boolean source, Set<URI> interactionTypes) {
 		if (interactionTypes.contains(SystemsBiologyOntology.BIOCHEMICAL_REACTION)) {
 			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;

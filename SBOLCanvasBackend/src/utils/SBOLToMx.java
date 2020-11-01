@@ -7,6 +7,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -24,6 +25,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.sbolstandard.core2.Annotation;
+import org.sbolstandard.core2.Collection;
+import org.sbolstandard.core2.CombinatorialDerivation;
 import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.ComponentInstance;
@@ -33,6 +36,7 @@ import org.sbolstandard.core2.Interaction;
 import org.sbolstandard.core2.Location;
 import org.sbolstandard.core2.MapsTo;
 import org.sbolstandard.core2.ModuleDefinition;
+import org.sbolstandard.core2.OperatorType;
 import org.sbolstandard.core2.Module;
 import org.sbolstandard.core2.OrientationType;
 import org.sbolstandard.core2.Participation;
@@ -42,6 +46,8 @@ import org.sbolstandard.core2.SBOLReader;
 import org.sbolstandard.core2.SBOLValidationException;
 import org.sbolstandard.core2.Sequence;
 import org.sbolstandard.core2.SequenceAnnotation;
+import org.sbolstandard.core2.StrategyType;
+import org.sbolstandard.core2.VariableComponent;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
@@ -52,10 +58,13 @@ import com.mxgraph.util.mxConstants;
 import com.mxgraph.view.mxGraph;
 
 import data.CanvasAnnotation;
+import data.CombinatorialInfo;
 import data.Info;
 import data.GlyphInfo;
+import data.IdentifiedInfo;
 import data.InteractionInfo;
 import data.ModuleInfo;
+import data.VariableComponentInfo;
 
 public class SBOLToMx extends Converter {
 
@@ -64,6 +73,7 @@ public class SBOLToMx extends Converter {
 
 	public SBOLToMx() {
 		infoDict = new Hashtable<String, Info>();
+		combinatorialDict = new Hashtable<String, CombinatorialInfo>();
 		compToCell = new HashMap<ComponentInstance, mxCell>();
 		mappings = new HashMap<FunctionalComponent, ComponentInstance>();
 	}
@@ -79,7 +89,13 @@ public class SBOLToMx extends Converter {
 	public void toGraph(SBOLDocument document, OutputStream graphStream)
 			throws IOException, ParserConfigurationException, TransformerException, SBOLValidationException,
 			SAXException, URISyntaxException {
+		toGraph(document, null, graphStream);
 
+	}
+
+	public void toGraph(SBOLDocument document, SBOLDocument combDocument, OutputStream graphStream)
+			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException, URISyntaxException,
+			TransformerFactoryConfigurationError, TransformerException {
 		document.setDefaultURIprefix(URI_PREFIX);
 
 		// set up the graph and glyphdict
@@ -89,6 +105,7 @@ public class SBOLToMx extends Converter {
 		mxCell cell0 = (mxCell) model.getCell("0");
 		ArrayList<Object> dataContainer = new ArrayList<Object>();
 		dataContainer.add(INFO_DICT_INDEX, infoDict);
+		dataContainer.add(COMBINATORIAL_DICT_INDEX, combinatorialDict);
 		cell0.setValue(dataContainer);
 
 		layoutHelper = new LayoutHelper(document, graph);
@@ -110,9 +127,10 @@ public class SBOLToMx extends Converter {
 		for (ModuleDefinition modDef : document.getModuleDefinitions()) {
 			handledCompDefs.addAll(createModuleView(document, graph, modDef));
 		}
-		
-		// link interactions after all modules have been created, as the internal references can cross modules
-		for(ModuleDefinition modDef : document.getModuleDefinitions()) {
+
+		// link interactions after all modules have been created, as the internal
+		// references can cross modules
+		for (ModuleDefinition modDef : document.getModuleDefinitions()) {
 			setupModuleInteractions(document, graph, modDef);
 		}
 
@@ -121,6 +139,14 @@ public class SBOLToMx extends Converter {
 		compDefs.removeAll(handledCompDefs);
 		for (ComponentDefinition compDef : compDefs) {
 			createComponentView(document, graph, compDef);
+		}
+
+		if (combDocument != null) {
+			Set<CombinatorialDerivation> derivations = combDocument.getCombinatorialDerivations();
+			for (CombinatorialDerivation derivation : derivations) {
+				combinatorialDict.put(derivation.getIdentity().toString(),
+						genCombinatorialInfo(graph, model, derivation));
+			}
 		}
 
 		// convert the objects to the graph xml
@@ -412,14 +438,15 @@ public class SBOLToMx extends Converter {
 					edge.setSource(source);
 					if (source.getStyle().contains(STYLE_MODULE)) {
 						mxCell referenced = compToCell.get(mappings.get(participations[i].getParticipant()));
-						((InteractionInfo) edge.getValue()).setFromURI(referenced.getValue()+"_"+referenced.getId());
+						((InteractionInfo) edge.getValue())
+								.setFromURI(referenced.getValue() + "_" + referenced.getId());
 					}
 				} else if (participations[i].getRoles().contains(targetType)) {
 					mxCell target = compToCell.get(participations[i].getParticipant());
 					edge.setTarget(target);
 					if (target.getStyle().contains(STYLE_MODULE)) {
 						mxCell referenced = compToCell.get(mappings.get(participations[i].getParticipant()));
-						((InteractionInfo) edge.getValue()).setToURI(referenced.getValue()+"_"+referenced.getId());
+						((InteractionInfo) edge.getValue()).setToURI(referenced.getValue() + "_" + referenced.getId());
 					}
 				}
 			}
@@ -505,6 +532,96 @@ public class SBOLToMx extends Converter {
 		info.setDisplayID(interaction.getDisplayId());
 		info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
 		return info;
+	}
+
+	private CombinatorialInfo genCombinatorialInfo(mxGraph graph, mxGraphModel model, CombinatorialDerivation combDer)
+			throws SBOLValidationException {
+		CombinatorialInfo combInfo = new CombinatorialInfo();
+		combInfo.setDescription(combDer.getDescription());
+		combInfo.setDisplayID(combDer.getDisplayId());
+		combInfo.setName(combDer.getName());
+		if (combDer.getStrategy() == null) {
+			combInfo.setStrategy("None");
+		} else if (combDer.getStrategy().equals(StrategyType.ENUMERATE)) {
+			combInfo.setStrategy("Enumerate");
+		} else if (combDer.getStrategy().equals(StrategyType.SAMPLE)) {
+			combInfo.setStrategy("Sample");
+		} else {
+			combInfo.setStrategy("None");
+		}
+		combInfo.setTemplateURI(combDer.getTemplateURI().toString());
+		combInfo.setUriPrefix(getURIPrefix(combDer));
+		combInfo.setVersion(combDer.getVersion());
+
+		Hashtable<String, VariableComponentInfo> varCompInfos = new Hashtable<String, VariableComponentInfo>();
+		for (VariableComponent varComp : combDer.getVariableComponents()) {
+			VariableComponentInfo varCompInfo = genVariableComponentInfo(graph, model, combDer.getTemplate(), varComp);
+			varCompInfos.put(varCompInfo.getCellID(), varCompInfo);
+		}
+		combInfo.setVariableComponents(varCompInfos);
+
+		return combInfo;
+	}
+
+	private VariableComponentInfo genVariableComponentInfo(mxGraph graph, mxGraphModel model,
+			ComponentDefinition template, VariableComponent varComp) throws SBOLValidationException {
+		VariableComponentInfo varCompInfo = new VariableComponentInfo();
+		if (varComp.getOperator().equals(OperatorType.ZEROORONE)) {
+			varCompInfo.setOperator("Zero Or One");
+		} else if (varComp.getOperator().equals(OperatorType.ZEROORMORE)) {
+			varCompInfo.setOperator("Zero Or More");
+		} else if (varComp.getOperator().equals(OperatorType.ONEORMORE)) {
+			varCompInfo.setOperator("One Or More");
+		} else {
+			varCompInfo.setOperator("One");
+		}
+
+		// determine which cell it was pointing at
+		mxCell viewCell = (mxCell) model.getCell(template.getIdentity().toString());
+		List<Component> components = template.getSortedComponents();
+		int index = components.indexOf(varComp.getVariable());
+
+		Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
+		mxCell[] containerChildren = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+				.toArray(mxCell[]::new);
+		mxCell container = containerChildren[0];
+		mxCell compCell = (mxCell) container.getChildAt(index);
+		varCompInfo.setCellID(compCell.getId());
+
+		ArrayList<IdentifiedInfo> variants = new ArrayList<IdentifiedInfo>();
+		for (ComponentDefinition compDef : varComp.getVariants()) {
+			IdentifiedInfo info = new IdentifiedInfo();
+			info.setType("component definition");
+			info.setDescription(compDef.getDescription());
+			info.setDisplayId(compDef.getDisplayId());
+			info.setName(compDef.getName());
+			info.setUri(compDef.getIdentity().toString());
+			info.setVersion(compDef.getVersion());
+			variants.add(info);
+		}
+		for (Collection collection : varComp.getVariantCollections()) {
+			IdentifiedInfo info = new IdentifiedInfo();
+			info.setType("collection");
+			info.setDescription(collection.getDescription());
+			info.setDisplayId(collection.getDisplayId());
+			info.setName(collection.getName());
+			info.setUri(collection.getIdentity().toString());
+			info.setVersion(collection.getVersion());
+			variants.add(info);
+		}
+		for (CombinatorialDerivation combDer : varComp.getVariantDerivations()) {
+			IdentifiedInfo info = new IdentifiedInfo();
+			info.setType("collection");
+			info.setDescription(combDer.getDescription());
+			info.setDisplayId(combDer.getDisplayId());
+			info.setName(combDer.getName());
+			info.setUri(combDer.getIdentity().toString());
+			info.setVersion(combDer.getVersion());
+			variants.add(info);
+		}
+		varCompInfo.setVariants(variants.toArray(new IdentifiedInfo[0]));
+
+		return varCompInfo;
 	}
 
 	/**

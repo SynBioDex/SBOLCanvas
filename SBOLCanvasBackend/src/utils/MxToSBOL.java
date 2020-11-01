@@ -50,7 +50,6 @@ import org.w3c.dom.Document;
 import com.mxgraph.io.mxCodec;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGraphModel;
-import com.mxgraph.model.mxGraphModel.Filter;
 import com.mxgraph.util.mxConstants;
 import com.mxgraph.util.mxUtils;
 import com.mxgraph.util.mxXmlUtils;
@@ -66,66 +65,6 @@ import data.VariableComponentInfo;
 import data.CombinatorialInfo;
 
 public class MxToSBOL extends Converter {
-
-	/**
-	 * Filters mxCells that contain "textBox" in the style string
-	 */
-	static Filter textBoxFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_TEXTBOX);
-		}
-	};
-
-	/**
-	 * Filters mxCells that contain "protein" in the style string
-	 */
-	static Filter proteinFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_MOLECULAR_SPECIES);
-		}
-	};
-
-	/**
-	 * 
-	 */
-	static Filter moduleFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_MODULE);
-		}
-	};
-
-	/**
-	 * Filters mxCells that contain "circuitContainer" in the style string
-	 */
-	static Filter containerFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER);
-		}
-	};
-
-	/**
-	 * Filters mxCells that contain "backbone" in the style string
-	 */
-	static Filter backboneFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_BACKBONE);
-		}
-	};
-
-	/**
-	 * Filters mxCells that contain "sequenceFeatureGlyph" in the style string
-	 */
-	static Filter sequenceFeatureFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE);
-		}
-	};
 
 	private HashMap<String, String> userTokens;
 
@@ -187,7 +126,13 @@ public class MxToSBOL extends Converter {
 		mxCell cell0 = (mxCell) model.getCell("0");
 		ArrayList<Object> dataContainer = (ArrayList<Object>)cell0.getValue();
 		infoDict = (Hashtable<String, Info>) dataContainer.get(INFO_DICT_INDEX);
-		combinatorialDict = (Hashtable<String, CombinatorialInfo>) dataContainer.get(COMBINATORIAL_DICT_INDEX);
+		if(dataContainer.get(COMBINATORIAL_DICT_INDEX) instanceof ArrayList) {
+			for(CombinatorialInfo combInfo : (ArrayList<CombinatorialInfo>) dataContainer.get(COMBINATORIAL_DICT_INDEX)) {
+				combinatorialDict.put(combInfo.getFullURI(), combInfo);
+			}
+		}else {
+			combinatorialDict = (Hashtable<String, CombinatorialInfo>) dataContainer.get(COMBINATORIAL_DICT_INDEX);			
+		}
 
 		// cells may show up in the child array not based on their x location
 		enforceChildOrdering(model, graph);
@@ -677,7 +622,7 @@ public class MxToSBOL extends Converter {
 		List<Component> components = template.getSortedComponents();
 		
 		// create the variable components
-		for(VariableComponentInfo varCompInfo : combInfo.getVariableComponents()) {
+		for(VariableComponentInfo varCompInfo : combInfo.getVariableComponents().values()) {
 			// figure out what the operator is
 			OperatorType operator = null;
 			switch(varCompInfo.getOperator()) {

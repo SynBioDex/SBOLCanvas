@@ -6,8 +6,9 @@ export class VariableComponentInfo {
     operator: string;
     variants: IdentifiedInfo[] = [];
 
-    constructor(cellID: string){
-        this.cellID = cellID;
+    constructor(cellID?: string){
+        if(cellID)
+            this.cellID = cellID;
     }
 
     makeCopy(): VariableComponentInfo {

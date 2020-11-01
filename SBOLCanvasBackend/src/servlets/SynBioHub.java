@@ -207,6 +207,8 @@ public class SynBioHub extends HttpServlet {
 					response.setStatus(HttpStatus.SC_BAD_REQUEST);
 					return;
 				}
+				
+				String combinatorial = request.getParameter("combinatorial");
 
 				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
 				sbhf.setUser(user);
@@ -220,7 +222,12 @@ public class SynBioHub extends HttpServlet {
 					document = sbhf.getSBOL(URI.create(uri), true);
 				}
 				
-				converter.toGraph(document, response.getOutputStream());
+				SBOLDocument combDocument = null;
+				if(combinatorial != null) {
+					combDocument = sbhf.getSBOL(URI.create(combinatorial), true);
+				}
+				
+				converter.toGraph(document, combDocument, response.getOutputStream());
 				response.setStatus(HttpStatus.SC_OK);
 				return;
 			}else if(request.getPathInfo().equals("/importRegistryPart")) {

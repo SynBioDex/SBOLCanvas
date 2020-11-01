@@ -1,5 +1,7 @@
 package data;
 
+import java.util.Hashtable;
+
 public class CombinatorialInfo extends Info {
 
 	private String templateURI;
@@ -7,7 +9,7 @@ public class CombinatorialInfo extends Info {
 	private String strategy;
 	private String name;
 	private String description;
-	private VariableComponentInfo[] variableComponents;
+	private Hashtable<String, VariableComponentInfo> variableComponents;
 
 	public String getTemplateURI() {
 		return templateURI;
@@ -49,11 +51,11 @@ public class CombinatorialInfo extends Info {
 		this.description = description;
 	}
 
-	public VariableComponentInfo[] getVariableComponents() {
+	public Hashtable<String, VariableComponentInfo> getVariableComponents() {
 		return variableComponents;
 	}
 
-	public void setVariableComponents(VariableComponentInfo[] variableComponents) {
+	public void setVariableComponents(Hashtable<String, VariableComponentInfo> variableComponents) {
 		this.variableComponents = variableComponents;
 	}
 

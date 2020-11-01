@@ -104,7 +104,7 @@ export class FilesService {
     return this.http.get<IdentifiedInfo[]>(this.listPartsURL, { headers: headers, params: params });
   };
 
-  listCombinatorials(user: string, server: string, template: string){
+  listCombinatorials(user: string, server: string, template: string): Observable<any>{
     let headers = new HttpHeaders();
     if(user != null && user.length > 0)
       headers = headers.set("Authorization", user);
@@ -114,11 +114,13 @@ export class FilesService {
     return this.http.get<string>(this.listCombinatorialsURL, { headers: headers, params: params });
   }
 
-  getPart(user: string, server: string, uri: string): Observable<string> {
+  getPart(user: string, server: string, uri: string, combinatorial?: string): Observable<string> {
     let headers = new HttpHeaders();
     if (user != null && user.length > 0)
       headers = headers.set("Authorization", user);
     let params = new HttpParams();
+    if(combinatorial)
+      params = params.append("combinatorial", combinatorial);
     params = params.append("server", server);
     params = params.append("uri", uri);
     return this.http.get(this.getPartsURL, { responseType: 'text', headers: headers, params: params });
