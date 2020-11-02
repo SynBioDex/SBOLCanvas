@@ -25,6 +25,10 @@ export class CombinatorialInfo extends Info{
         return this.variableComponents[variable];
     }
 
+    removeVariableComponentInfo(variable: string){
+        delete this.variableComponents[variable];
+    }
+
     setTemplateURI(templateURI: string){
         this.templateURI = templateURI;
     }

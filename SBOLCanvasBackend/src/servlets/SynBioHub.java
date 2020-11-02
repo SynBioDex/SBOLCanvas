@@ -245,6 +245,9 @@ public class SynBioHub extends HttpServlet {
 				SBOLDocument document;
 				try {
 					document = sbhf.getSBOL(URI.create(layoutURI), true);
+					if(document == null) {
+						document = sbhf.getSBOL(URI.create(uri), true);
+					}
 				}catch(SynBioHubException e) {
 					document = sbhf.getSBOL(URI.create(uri), true);
 				}
