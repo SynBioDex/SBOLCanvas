@@ -46,9 +46,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   openDownloadDialog(): void{
-    this.dialog.open(DownloadGraphComponent, {
-      data: null
-    });
+    this.dialog.open(DownloadGraphComponent);
   }
 
   openImportDialog(): void {
@@ -107,5 +105,10 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     if(result === "Yes"){
       this.graphService.resetGraph(false);
     }
+  }
+
+  // make sure to comment out the button when preparing to make a merge request
+  testMethod(){
+    this.dialog.open(DownloadGraphComponent);
   }
 }

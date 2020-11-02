@@ -80,7 +80,7 @@ export class UploadGraphComponent implements OnInit {
 
   onUploadClick() {
     this.working = true;
-    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.registry, this.collection, this.loginService.users[this.registry]).subscribe(result => {
+    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.registry, this.collection, this.loginService.users).subscribe(result => {
       this.working = false;
       this.dialogRef.close();
     });

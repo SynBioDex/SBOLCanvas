@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -19,6 +20,7 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import org.sbolstandard.core2.AccessType;
 import org.sbolstandard.core2.Annotation;
+import org.sbolstandard.core2.CombinatorialDerivation;
 import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.DirectionType;
@@ -26,6 +28,7 @@ import org.sbolstandard.core2.FunctionalComponent;
 import org.sbolstandard.core2.GenericTopLevel;
 import org.sbolstandard.core2.Interaction;
 import org.sbolstandard.core2.ModuleDefinition;
+import org.sbolstandard.core2.OperatorType;
 import org.sbolstandard.core2.Module;
 import org.sbolstandard.core2.OrientationType;
 import org.sbolstandard.core2.RefinementType;
@@ -36,15 +39,17 @@ import org.sbolstandard.core2.SBOLValidationException;
 import org.sbolstandard.core2.SBOLWriter;
 import org.sbolstandard.core2.Sequence;
 import org.sbolstandard.core2.SequenceAnnotation;
+import org.sbolstandard.core2.StrategyType;
 import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.sbolstandard.core2.TopLevel;
+import org.sbolstandard.core2.VariableComponent;
 import org.synbiohub.frontend.SynBioHubException;
+import org.synbiohub.frontend.SynBioHubFrontend;
 import org.w3c.dom.Document;
 
 import com.mxgraph.io.mxCodec;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGraphModel;
-import com.mxgraph.model.mxGraphModel.Filter;
 import com.mxgraph.util.mxConstants;
 import com.mxgraph.util.mxUtils;
 import com.mxgraph.util.mxXmlUtils;
@@ -53,80 +58,24 @@ import com.mxgraph.view.mxGraph;
 import data.CanvasAnnotation;
 import data.Info;
 import data.GlyphInfo;
+import data.IdentifiedInfo;
 import data.InteractionInfo;
 import data.ModuleInfo;
+import data.VariableComponentInfo;
+import data.CombinatorialInfo;
 
 public class MxToSBOL extends Converter {
 
-	/**
-	 * Filters mxCells that contain "textBox" in the style string
-	 */
-	static Filter textBoxFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_TEXTBOX);
-		}
-	};
-
-	/**
-	 * Filters mxCells that contain "protein" in the style string
-	 */
-	static Filter proteinFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_MOLECULAR_SPECIES);
-		}
-	};
-
-	/**
-	 * 
-	 */
-	static Filter moduleFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_MODULE);
-		}
-	};
-
-	/**
-	 * Filters mxCells that contain "circuitContainer" in the style string
-	 */
-	static Filter containerFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER);
-		}
-	};
-
-	/**
-	 * Filters mxCells that contain "backbone" in the style string
-	 */
-	static Filter backboneFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_BACKBONE);
-		}
-	};
-
-	/**
-	 * Filters mxCells that contain "sequenceFeatureGlyph" in the style string
-	 */
-	static Filter sequenceFeatureFilter = new Filter() {
-		@Override
-		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE);
-		}
-	};
-
-	private String userToken;
+	private HashMap<String, String> userTokens;
 
 	public MxToSBOL() {
 		this(null);
 	}
 
-	public MxToSBOL(String userToken) {
+	public MxToSBOL(HashMap<String, String> userTokens) {
 		infoDict = new Hashtable<String, Info>();
-		this.userToken = userToken;
+		combinatorialDict = new Hashtable<String, CombinatorialInfo>();
+		this.userTokens = userTokens;
 	}
 
 	public void toSBOL(InputStream graphStream, OutputStream sbolStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
@@ -174,8 +123,18 @@ public class MxToSBOL extends Converter {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
-		infoDict = (Hashtable<String, Info>) ((mxCell) model.getCell("0")).getValue();
+		mxCell cell0 = (mxCell) model.getCell("0");
+		ArrayList<Object> dataContainer = (ArrayList<Object>)cell0.getValue();
+		infoDict = (Hashtable<String, Info>) dataContainer.get(INFO_DICT_INDEX);
+		if(dataContainer.get(COMBINATORIAL_DICT_INDEX) instanceof ArrayList) {
+			for(CombinatorialInfo combInfo : (ArrayList<CombinatorialInfo>) dataContainer.get(COMBINATORIAL_DICT_INDEX)) {
+				combinatorialDict.put(combInfo.getFullURI(), combInfo);
+			}
+		}else {
+			combinatorialDict = (Hashtable<String, CombinatorialInfo>) dataContainer.get(COMBINATORIAL_DICT_INDEX);			
+		}
 
+		// cells may show up in the child array not based on their x location
 		enforceChildOrdering(model, graph);
 
 		// create the document
@@ -183,6 +142,18 @@ public class MxToSBOL extends Converter {
 		document.setDefaultURIprefix(URI_PREFIX);
 		document.setComplete(true);
 		document.setCreateDefaults(true);
+		
+		// add registries
+		for(String key : userTokens.keySet()) {
+			SynBioHubFrontend registry = document.addRegistry(key);
+			registry.setUser(userTokens.get(key));
+		}
+		// TODO come back when fetching collections from multiple registries works
+//		for(String registry : SBOLData.registries) {
+//			document.addRegistry(registry);
+//			if(userTokens.containsKey(registry))
+//				document.getRegistry(registry).setUser(userTokens.get(registry));
+//		}
 
 		layoutHelper = new LayoutHelper(document, graph);
 
@@ -247,6 +218,16 @@ public class MxToSBOL extends Converter {
 				linkModuleDefinition(document, graph, model, viewCell);
 			}
 		}
+		
+		// create the combinatorials
+		for(CombinatorialInfo info : combinatorialDict.values()) {
+			createCombinatorial(document, graph, model, info);
+		}
+		
+		// link the combinatorials
+		for(CombinatorialInfo info : combinatorialDict.values()) {
+			linkCombinatorial(document, graph, model, info);
+		}
 
 		return document;
 	}
@@ -287,9 +268,7 @@ public class MxToSBOL extends Converter {
 		boolean layoutOnly = false;
 		for (String registry : SBOLData.registries) {
 			if (modInfo.getUriPrefix().contains(registry)
-					&& (userToken != null || modInfo.getUriPrefix().contains("/public/"))) {
-				document.addRegistry(registry);
-				document.getRegistry(registry).setUser(userToken);
+					&& (userTokens.containsKey(registry) || modInfo.getUriPrefix().contains("/public/"))) {
 				layoutOnly = true;
 				break;
 			}
@@ -372,9 +351,7 @@ public class MxToSBOL extends Converter {
 		// if the uri is one of the synbiohub ones, skip the object
 		for (String registry : SBOLData.registries) {
 			if (glyphInfo.getUriPrefix().contains(registry)
-					&& (userToken != null || glyphInfo.getUriPrefix().contains("/public/"))) {
-				document.addRegistry(registry);
-				document.getRegistry(registry).setUser(userToken);
+					&& (userTokens.containsKey(registry) || glyphInfo.getUriPrefix().contains("/public/"))) {
 				return;
 			}
 		}
@@ -437,6 +414,26 @@ public class MxToSBOL extends Converter {
 //		}
 	}
 
+	private void createCombinatorial(SBOLDocument document, mxGraph graph, mxGraphModel model, CombinatorialInfo combInfo) throws SBOLValidationException {
+		if(combInfo.getUriPrefix() == null)
+			combInfo.setUriPrefix(URI_PREFIX.substring(0,URI_PREFIX.length()-1));
+		
+		// create the combinatorial
+		CombinatorialDerivation combDer = document.createCombinatorialDerivation(combInfo.getUriPrefix(), combInfo.getDisplayID(), combInfo.getVersion(), URI.create(combInfo.getTemplateURI()));
+		
+		// set fields the constructor doesn't give access to
+		switch(combInfo.getStrategy()) {
+		case "Enumerate":
+			combDer.setStrategy(StrategyType.ENUMERATE);
+			break;
+		case "Sample":
+			combDer.setStrategy(StrategyType.SAMPLE);
+			break;
+		}
+		combDer.setName(combInfo.getName());
+		combDer.setDescription(combInfo.getDescription());
+	}
+	
 	private void linkModuleDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
 			URISyntaxException {
@@ -453,9 +450,7 @@ public class MxToSBOL extends Converter {
 		boolean layoutOnly = false;
 		for (String registry : SBOLData.registries) {
 			if (modDefInfo.getUriPrefix().contains(registry)
-					&& (userToken != null || modDefInfo.getUriPrefix().contains("/public/"))) {
-				document.addRegistry(registry);
-				document.getRegistry(registry).setUser(userToken);
+					&& (userTokens.containsKey(registry) || modDefInfo.getUriPrefix().contains("/public/"))) {
 				layoutOnly = true;
 				break;
 			}
@@ -618,6 +613,50 @@ public class MxToSBOL extends Converter {
 		}
 	}
 
+	private void linkCombinatorial(SBOLDocument document, mxGraph graph, mxGraphModel model, CombinatorialInfo combInfo) throws SBOLValidationException {
+		// pull the previously created combinatorial
+		CombinatorialDerivation combDer = document.getCombinatorialDerivation(URI.create(combInfo.getFullURI()));
+		
+		// get the template, so we can get it's components
+		ComponentDefinition template = combDer.getTemplate();
+		List<Component> components = template.getSortedComponents();
+		
+		// create the variable components
+		for(VariableComponentInfo varCompInfo : combInfo.getVariableComponents().values()) {
+			// figure out what the operator is
+			OperatorType operator = null;
+			switch(varCompInfo.getOperator()) {
+			case "Zero Or One":
+				operator = OperatorType.ZEROORONE;
+				break;
+			case "Zero Or More":
+				operator = OperatorType.ZEROORMORE;
+				break;
+			case "One Or More":
+				operator = OperatorType.ONEORMORE;
+				break;
+			default:
+				operator = OperatorType.ONE;
+			}
+			
+			// we assume that the component is at the same index as the sorted glyphs
+			// because we don't have a good way of associating glyphs to components otherwise
+			mxCell variableCell = (mxCell) model.getCell(varCompInfo.getCellID());
+			Component component = components.get(variableCell.getParent().getIndex(variableCell)-1);
+			VariableComponent varComp = combDer.createVariableComponent(component.getDisplayId()+"_VariableComponent", operator, component.getIdentity());
+			for(IdentifiedInfo idInfo : varCompInfo.getVariants()) {
+				switch(idInfo.getType()) {
+				case "collection":
+					varComp.addVariantCollection(URI.create(idInfo.getUri()));
+					break;
+				// TODO create a case for combinatorials
+				default:
+					varComp.addVariant(URI.create(idInfo.getUri()));
+				}
+			}
+		}
+	}
+	
 	private void attachTextBoxAnnotation(mxGraphModel model, mxCell viewCell, URI objectRef)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
 			URISyntaxException {

@@ -1,6 +1,7 @@
 <mat-card>
 
-  <h1 mat-dialog-title>Download</h1>
+  <h1 *ngIf="mode == classRef.SELECT_MODE" mat-dialog-title>Select</h1>
+  <h1 *ngIf="mode != classRef.SELECT_MODE" mat-dialog-title>Download</h1>
   <div class="mat-form-field-container">
     <mat-form-field>
       <mat-label>Server</mat-label>
@@ -12,7 +13,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field *ngIf="data != null && !moduleMode">
+    <mat-form-field *ngIf="data != null && type != classRef.MODULE_TYPE">
       <mat-label>Part type</mat-label>
       <mat-select id="partType" [disabled]="partTypes == null || partTypes.length < 1"
       (selectionChange)="setPartType($event.value)" value="{{partType}}">
@@ -25,7 +26,7 @@
 
     <mat-form-field>
       <mat-label>Collection</mat-label>
-      <mat-select id="collection" value="{{collection}}"
+      <mat-select id="collection" value="{{history.length > 0 ? history[history.length-1].uri : ''}}"
       (selectionChange)="changeCollection($event.value)">
         <mat-option value="">Root Collections</mat-option>
         <mat-option *ngFor="let collection of history" [value]="collection.uri">
@@ -34,7 +35,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field *ngIf="data != null && !moduleMode">
+    <mat-form-field *ngIf="data != null && type != classRef.MODULE_TYPE">
       <mat-label>Part role</mat-label>
       <mat-select id="partRole" [disabled]="partRoles == null || partRoles.length < 1"
       (selectionChange)="setPartRole($event.value)" value="{{partRole}}">
@@ -45,7 +46,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field *ngIf="data != null && !moduleMode">
+    <mat-form-field *ngIf="data != null && type != classRef.MODULE_TYPE">
       <mat-label>Role refinement</mat-label>
       <mat-select id="roleRefinement" [disabled]="roleRefinements == null || roleRefinements.length < 1"
       (selectionChange)="setPartRefinement($event.value)" value="{{partRefine}}">
@@ -101,6 +102,8 @@
   <div mat-dialog-actions>
     <button mat-button [disabled]="loginDisabled()" (click)="onLoginClick()">Login</button>
     <button mat-button (click)="onCancelClick()">Cancel</button>
-    <button mat-button [disabled]="!finishCheck()" (click)="onDownloadClick()">Download</button>
+    <button mat-button [disabled]="!enterCollectionEnabled()" (click)="onEnterCollectionClick()">Enter Collection</button>
+    <button *ngIf="mode != classRef.SELECT_MODE" mat-button [disabled]="!finishCheck()" (click)="onDownloadClick()">Download</button>
+    <button *ngIf="mode == classRef.SELECT_MODE" mat-button [disabled]="!selectCheck()" (click)="onSelectClick()">Select</button>
   </div>
 </mat-card>

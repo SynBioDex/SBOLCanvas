@@ -8,6 +8,9 @@ import { CanvasAnnotation } from './canvasAnnotation';
 import { environment } from 'src/environments/environment';
 import { ModuleInfo } from './moduleInfo';
 import { GraphEdits } from './graph-edits';
+import { CombinatorialInfo } from './combinatorialInfo';
+import { VariableComponentInfo } from './variableComponentInfo';
+import { IdentifiedInfo } from './identifiedInfo';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -24,6 +27,9 @@ export class GraphBase {
 
     // static variables
     // Constants
+    static readonly INFO_DICT_INDEX = 0;
+    static readonly COMBINATORIAL_DICT_INDEX = 1;
+
     static readonly sequenceFeatureGlyphWidth = 50;
     static readonly sequenceFeatureGlyphHeight = 100;
     static readonly interactionPortWidth = 10;
@@ -200,6 +206,39 @@ export class GraphBase {
         mx.mxCodecRegistry.register(interactionInfoCodec);
         window['InteractionInfo'] = InteractionInfo;
 
+        // combinatorial info decode
+        Object.defineProperty(CombinatorialInfo, "name", { configurable: true, value: "CombinatorialInfo"});
+        const combinatorialInfoCodec = new mx.mxObjectCodec(new CombinatorialInfo());
+        combinatorialInfoCodec.decode = function (dec, node, into){
+            const combinatorialData = new CombinatorialInfo();
+            return genericDecode(dec, node, combinatorialData);
+        }
+        combinatorialInfoCodec.encode = function (enc, object){
+            return object.encode(enc);
+        }
+        mx.mxCodecRegistry.register(combinatorialInfoCodec);
+        window['CombinatorialInfo'] = CombinatorialInfo;
+
+        // variable component info decode
+        Object.defineProperty(VariableComponentInfo, "name", { configurable: true, value: "VariableComponentInfo"});
+        const variableComponentInfoCodec = new mx.mxObjectCodec(new VariableComponentInfo());
+        variableComponentInfoCodec.decode = function (dec, node, into){
+            const variableComponentData = new VariableComponentInfo();
+            return genericDecode(dec, node, variableComponentData);
+        }
+        mx.mxCodecRegistry.register(variableComponentInfoCodec);
+        window['VariableComponentInfo'] = VariableComponentInfo;
+
+        Object.defineProperty(IdentifiedInfo, "name", { configurable: true, value: "IdentifiedInfo"});
+        const identifiedInfoCodec = new mx.mxObjectCodec(new IdentifiedInfo());
+        identifiedInfoCodec.decode = function (dec, node, into){
+            const identifiedData = new IdentifiedInfo();
+            return genericDecode(dec, node, identifiedData);
+        }
+        mx.mxCodecRegistry.register(identifiedInfoCodec);
+        window['IdentifiedInfo'] = IdentifiedInfo;
+
+        // canvas annotation
         Object.defineProperty(CanvasAnnotation, "name", { configurable: true, value: "CanvasAnnotation" });
         const canvasAnnotationCodec = new mx.mxObjectCodec(new CanvasAnnotation());
         canvasAnnotationCodec.decode = function (dec, node, into) {
@@ -223,7 +262,7 @@ export class GraphBase {
             while (cell0.getId() != "0") {
                 cell0 = cell0.parent;
             }
-            let glyphDict = cell0.value;
+            let glyphDict = cell0.value[GraphBase.INFO_DICT_INDEX];
 
             // check for format conditions
             if (((cell.isCircuitContainer() && cell.getParent().isModuleView()) || cell.isMolecularSpeciesGlyph() || cell.isModule()) && cell.getGeometry().height == 0) {

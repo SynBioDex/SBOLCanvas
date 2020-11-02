@@ -6,8 +6,8 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import {InteractionInfo} from "./interactionInfo";
 import {StyleInfo} from './style-info';
-import {Style} from '@angular/cli/lib/config/schema';
 import { ModuleInfo } from './moduleInfo';
+import { CombinatorialInfo } from './combinatorialInfo';
 
 @Injectable({
   providedIn: 'root'
@@ -49,6 +49,10 @@ export class MetadataService {
   // Module info
   private moduleInfoSource = new BehaviorSubject(null);
   selectedModuleInfo = this.moduleInfoSource.asObservable();
+
+  // Combinatorial info
+  private combinatorialInfoSource = new BehaviorSubject(null);
+  selectedCombinatorialInfo = this.combinatorialInfoSource.asObservable();
 
   // Style Info
   private styleInfoSource = new BehaviorSubject(new StyleInfo([]));
@@ -96,6 +100,10 @@ export class MetadataService {
 
   setSelectedModuleInfo(newInfo: ModuleInfo) {
     this.moduleInfoSource.next(newInfo);
+  }
+
+  setSelectedCombinatorialInfo(newInfo: CombinatorialInfo){
+    this.combinatorialInfoSource.next(newInfo);
   }
 
   setComponentDefinitionMode(newSetting: boolean) {

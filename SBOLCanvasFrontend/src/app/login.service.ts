@@ -19,7 +19,7 @@ export class LoginService {
   public users: {} = {};
 
   constructor(private http: HttpClient, public dialog: MatDialog) {
-
+    
   }
 
   openLoginDialog(registry: string): Observable<any>{

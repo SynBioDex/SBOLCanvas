@@ -8,8 +8,15 @@ import { MAT_DIALOG_DATA, MatTableDataSource, MatDialogRef } from '@angular/mate
 })
 export class FuncCompSelectorComponent implements OnInit {
 
+  public static readonly FUNCTIONAL_COMPONENT_MODE = 1;
+  public static readonly COMBINATORIAL_MODE = 2;
+
+  // This is so we can use static variables in the html checks
+  classRef = FuncCompSelectorComponent;
+
+  mode;
   options = new MatTableDataSource([]);
-  displayedColumns: string[] = ['displayID', 'name'];
+  displayedColumns: string[] = ['displayId', 'name'];
   from: string = "";
   selection: any;
 
@@ -17,7 +24,17 @@ export class FuncCompSelectorComponent implements OnInit {
 
   ngOnInit() {
     if(this.data){
-      this.from = this.data.from;
+      if(this.data.mode){
+        this.mode = this.data.mode;
+      }else{
+        this.mode = FuncCompSelectorComponent.FUNCTIONAL_COMPONENT_MODE;
+      }
+
+      if(this.mode == FuncCompSelectorComponent.COMBINATORIAL_MODE){
+        this.displayedColumns = ['displayId', 'name', 'version', 'description'];
+      }else{
+        this.from = this.data.from;
+      }
       this.options.data = this.data.options;
     }
   }

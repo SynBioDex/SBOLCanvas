@@ -17,6 +17,7 @@ import { environment } from 'src/environments/environment';
 import { Info } from './info';
 import { ModuleInfo } from './moduleInfo';
 import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
+import { CombinatorialInfo } from './combinatorialInfo';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -31,8 +32,12 @@ export class GraphHelpers extends GraphBase {
 
         // initalize the GlyphInfoDictionary
         const cell0 = this.graph.getModel().getCell(0);
-        const glyphDict = [];
-        this.graph.getModel().setValue(cell0, glyphDict);
+        const infoDict = [];
+        const combinatorialDict = [];
+        var dataContainer = [];
+        dataContainer[GraphBase.INFO_DICT_INDEX] = infoDict;
+        dataContainer[GraphBase.COMBINATORIAL_DICT_INDEX] = combinatorialDict;
+        this.graph.getModel().setValue(cell0, dataContainer);
 
         // initalize the root view cell of the graph
         const cell1 = this.graph.getModel().getCell(1);
@@ -55,9 +60,9 @@ export class GraphHelpers extends GraphBase {
 
     protected getParentInfo(cell: mxCell): GlyphInfo {
         let glyphInfo;
-        if(cell.isCircuitContainer() || cell.isModule()){
+        if (cell.isCircuitContainer() || cell.isModule()) {
             glyphInfo = this.getFromInfoDict(cell.getParent().getId());
-        }else if (cell.isViewCell()) {
+        } else if (cell.isViewCell()) {
             if (this.viewStack.length > 1) {
                 // has a parent that might need to change
                 glyphInfo = this.getFromInfoDict(this.selectionStack[this.selectionStack.length - 1].getParent().getValue());
@@ -100,9 +105,7 @@ export class GraphHelpers extends GraphBase {
 
             if (oldGlyphURI != newGlyphURI) {
                 // check for module definition conflict
-                let conflictInfo = this.getFromInfoDict(newGlyphURI);
-                if (conflictInfo && !(conflictInfo instanceof GlyphInfo)) {
-                    this.dialog.open(ErrorComponent, { data: "The part " + newGlyphURI + " already exists as a ModuleDefinition!" });
+                if (this.isDuplicateURI(newGlyphURI, true)) {
                     return;
                 }
 
@@ -306,7 +309,7 @@ export class GraphHelpers extends GraphBase {
                     }
                 }
 
-                this.updateInteractions(oldGlyphURI+"_"+selectedCell.getId(), newGlyphURI+"_"+selectedCell.getId());
+                this.updateInteractions(oldGlyphURI + "_" + selectedCell.getId(), newGlyphURI + "_" + selectedCell.getId());
 
                 // update the ownership
                 if (selectedCell.isCircuitContainer() || selectedCell.isViewCell()) {
@@ -405,7 +408,7 @@ export class GraphHelpers extends GraphBase {
                     }
                 }
 
-                this.updateInteractions(oldGlyphURI+"_"+selectedCell.getId(), newGlyphURI+"_"+selectedCell.getId());
+                this.updateInteractions(oldGlyphURI + "_" + selectedCell.getId(), newGlyphURI + "_" + selectedCell.getId());
 
             } else {
                 this.updateInfoDict(info);
@@ -450,10 +453,8 @@ export class GraphHelpers extends GraphBase {
                     return;
                 }
 
-                // check for component definition conflict
-                let conflictInfo = this.getFromInfoDict(newModuleURI);
-                if (conflictInfo && !(conflictInfo instanceof ModuleInfo)) {
-                    this.dialog.open(ErrorComponent, { data: "The part " + newModuleURI + " already exists as a ComponentDefinition!" });
+                // check for uri conflict
+                if (this.isDuplicateURI(newModuleURI)) {
                     return;
                 }
 
@@ -596,6 +597,53 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    protected async updateSelectedCombinatorialInfo(this: GraphService, info: CombinatorialInfo, prevURI: string) {
+        this.graph.getModel().beginUpdate();
+        try {
+            // ownership change
+            if (info.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(info.displayID)) {
+                return;
+            }
+
+            // change ownership
+            info.uriPrefix = environment.baseURI;
+
+            // check for duplicate and error
+            let conflictCombinatorial = this.getFromCombinatorialDict(info.getFullURI());
+            if (conflictCombinatorial && conflictCombinatorial.templateURI != info.templateURI) {
+                this.dialog.open(ErrorComponent, { data: "The part " + info.getFullURI() + " already exists as a Combinatorial, and points to a different Component Definition!" });
+            }
+
+            // store
+            if (prevURI != info.getFullURI()) {
+                if(this.getFromCombinatorialDict(prevURI))
+                    this.removeFromCombinatorialDict(prevURI);
+                this.addToCombinatorialDict(info);
+            } else {
+                this.updateCombinatorialDict(info);
+            }
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+    }
+
+    protected isDuplicateURI(newURI: string, ignoreComponents: boolean = false): boolean {
+        let conflictInfo = this.getFromInfoDict(newURI);
+        if (conflictInfo && conflictInfo instanceof ModuleInfo) {
+            this.dialog.open(ErrorComponent, { data: "The part " + newURI + " already exists as a ModuleDefinition!" });
+            return true;
+        }
+        if (!ignoreComponents && conflictInfo && conflictInfo instanceof GlyphInfo) {
+            this.dialog.open(ErrorComponent, { data: "The part " + newURI + " already exists as a ComponentDefinition!" });
+            return true;
+        }
+        let conflictCombinatorial = this.getFromCombinatorialDict(newURI);
+        if (conflictCombinatorial) {
+            this.dialog.open(ErrorComponent, { data: "The part " + newURI + " already exists as a Combinatorial!" });
+        }
+        return false;
+    }
+
     /**
      * Call after any change to a circuit container to make sure module level strands are synced with their view cells.
      * I had hoped to avoid this with view cells, but because module containers can be aliased, a change in one should update the other.
@@ -655,7 +703,7 @@ export class GraphHelpers extends GraphBase {
                     continue;
                 let interactions = this.graph.getModel().getChildEdges(viewCell);
                 for (let interaction of interactions) {
-                    if(!newReference){
+                    if (!newReference) {
                         this.graph.getModel().remove(interaction);
                         continue;
                     }
@@ -956,6 +1004,16 @@ export class GraphHelpers extends GraphBase {
                 this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy());
             }
         }
+
+        // combinatorial info
+        if (cell && cell.isSequenceFeatureGlyph()) {
+            let combinatorialInfo: CombinatorialInfo = this.getCombinatorialWithTemplate(cell.getParent().value);
+            if (!combinatorialInfo) {
+                combinatorialInfo = new CombinatorialInfo();
+                combinatorialInfo.templateURI = cell.getParent().value;
+            }
+            this.metadataService.setSelectedCombinatorialInfo(combinatorialInfo.makeCopy());
+        }
     }
 
     nullifyMetadata() {
@@ -979,23 +1037,23 @@ export class GraphHelpers extends GraphBase {
         var second = new mx.mxFastOrganicLayout(this.graph);
 
         var layout = new mx.mxCompositeLayout(this.graph, [first, second], first);
-        if(viewCells){
-            for(let viewCellId of Array.from(viewCells.values())){
+        if (viewCells) {
+            for (let viewCellId of Array.from(viewCells.values())) {
                 const viewCell = this.graph.getModel().getCell(viewCellId);
                 layout.execute(viewCell);
                 // remove the noEdgeStyle from newly formatted edges
-                if(viewCell.children){
-                    for(let viewChild of viewCell.children){
-                        if(viewChild.isEdge()){
+                if (viewCell.children) {
+                    for (let viewChild of viewCell.children) {
+                        if (viewChild.isEdge()) {
                             viewChild.setStyle(viewChild.getStyle().replace("noEdgeStyle=1;", ""));
                         }
                     }
                 }
             }
-        }else{
+        } else {
             layout.execute(this.graph.getDefaultParent());
-            for(let viewChild of this.graph.getDefualtParent().children){
-                if(viewChild.isEdge()){
+            for (let viewChild of this.graph.getDefualtParent().children) {
+                if (viewChild.isEdge()) {
                     viewChild.setStyle(viewChild.getStyle().replace("noEdgeStyle=1;", ""));
                 }
             }
@@ -1126,6 +1184,31 @@ export class GraphHelpers extends GraphBase {
 
     }
 
+    protected trimUnreferencedCombinatorials() {
+        const cell0 = this.graph.getModel().getCell("0");
+        let toRemove = [];
+        for (let combKey in cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX]) {
+            let templateExists = false;
+            const combinatorial = cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][combKey];
+            for (let cellKey in this.graph.getModel().cells) {
+                const cell = this.graph.getModel().cells[cellKey];
+                if (!cell.isCircuitContainer())
+                    continue;
+                if (cell.getValue() == combinatorial.templateURI) {
+                    templateExists = true;
+                    break;
+                }
+            }
+            if (!templateExists) {
+                toRemove.push(combinatorial);
+            }
+        }
+
+        for (let combinatorial of toRemove) {
+            this.removeFromCombinatorialDict(combinatorial.getFullURI())
+        }
+    }
+
     protected getCoupledGlyphs(glyphURI: string): mxCell[] {
         const coupledCells = [];
         for (let key in this.graph.getModel().cells) {
@@ -1218,13 +1301,13 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().remove(viewCell);
 
         // check if any of the children's viewcells have other parents
-        if(viewCell.children){
-            for(let viewChild of viewCell.children){
-                if(viewChild.isModule() && this.getCoupledModules(viewChild.value).length == 0){
+        if (viewCell.children) {
+            for (let viewChild of viewCell.children) {
+                if (viewChild.isModule() && this.getCoupledModules(viewChild.value).length == 0) {
                     this.removeViewCell(this.graph.getModel().getCell(viewChild.value));
-                }else if(viewChild.isCircuitContainer()){
-                    for(let containerChild of viewChild.children){
-                        if(containerChild.isSequenceFeatureGlyph() && this.getCoupledGlyphs(containerChild.value).length == 0)
+                } else if (viewChild.isCircuitContainer()) {
+                    for (let containerChild of viewChild.children) {
+                        if (containerChild.isSequenceFeatureGlyph() && this.getCoupledGlyphs(containerChild.value).length == 0)
                             this.removeViewCell(this.graph.getModel().getCell(containerChild.value));
                     }
                 }
@@ -1302,9 +1385,9 @@ export class GraphHelpers extends GraphBase {
                 for (let key in this.graph.getModel().cells) {
                     const cell = this.graph.getModel().cells[key];
                     if (cell.value === checking) {
-                        let previousReference = cell.getValue()+"_"+cell.getId();
+                        let previousReference = cell.getValue() + "_" + cell.getId();
                         this.graph.getModel().setValue(cell, glyphInfo.getFullURI());
-                        this.updateInteractions(previousReference, cell.getValue()+"_"+cell.getId());
+                        this.updateInteractions(previousReference, cell.getValue() + "_" + cell.getId());
                         if (cell.isSequenceFeatureGlyph()) {
                             let toAdd = cell.getParent().getParent();
                             if (toAdd.isComponentView() && !checked.has(toAdd.getId())) {
@@ -1497,7 +1580,7 @@ export class GraphHelpers extends GraphBase {
      */
     protected updateInfoDict(info: Info) {
         const cell0 = this.graph.getModel().getCell(0);
-        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[info.getFullURI()]));
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[GraphBase.INFO_DICT_INDEX][info.getFullURI()]));
     }
 
     /**
@@ -1505,7 +1588,7 @@ export class GraphHelpers extends GraphBase {
      */
     protected removeFromInfoDict(glyphURI: string) {
         const cell0 = this.graph.getModel().getCell(0);
-        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[glyphURI]));
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.INFO_DICT_INDEX][glyphURI]));
     }
 
     /**
@@ -1521,7 +1604,53 @@ export class GraphHelpers extends GraphBase {
      */
     protected getFromInfoDict(glyphURI: string): Info {
         const cell0 = this.graph.getModel().getCell(0);
-        return cell0.value[glyphURI];
+        return cell0.value[GraphBase.INFO_DICT_INDEX][glyphURI];
+    }
+
+    /**
+     * Updates an Combinatorial object
+     * NOTE: Should only be used if the fullURI is the same
+     */
+    protected updateCombinatorialDict(info: CombinatorialInfo) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][info.getFullURI()], GraphBase.COMBINATORIAL_DICT_INDEX));
+    }
+
+    /**
+     * Remove a combinatorial object from the dictionary
+     */
+    protected removeFromCombinatorialDict(glyphURI: string) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI], GraphBase.COMBINATORIAL_DICT_INDEX));
+    }
+
+    /**
+     * Add a combinatorial object to the dictionary
+     */
+    protected addToCombinatorialDict(info: CombinatorialInfo) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null, GraphBase.COMBINATORIAL_DICT_INDEX));
+    }
+
+    /**
+     * Get the CombinatorialInfo that targets the given glyphURI from the dictionary
+     */
+    protected getFromCombinatorialDict(glyphURI: string): CombinatorialInfo {
+        const cell0 = this.graph.getModel().getCell(0);
+        return cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI];
+    }
+
+    /**
+     * Gets the CombinatorialInfo that has the given templateURI
+     * @param templateURI - The templateURI to search for
+     */
+    protected getCombinatorialWithTemplate(templateURI: string) {
+        const cell0 = this.graph.getModel().getCell(0);
+        for (let key in cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX]) {
+            if (cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][key].templateURI === templateURI) {
+                return cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][key];
+            }
+        }
     }
 
     protected initLabelDrawing() {

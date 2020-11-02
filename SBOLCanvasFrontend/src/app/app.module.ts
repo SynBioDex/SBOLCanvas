@@ -41,6 +41,7 @@ import { ConfirmComponent } from './confirm/confirm.component';
 import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
 import { ExportDesignComponent } from './export-design/export-design.component';
 import { CollectionCreationComponent } from './collection-creation/collection-creation.component';
+import { CombinatorialDesignEditorComponent } from './combinatorial-design-editor/combinatorial-design-editor.component';
 import { LoadGraphComponent } from './load-graph/load-graph.component';
 
 
@@ -68,6 +69,7 @@ import { LoadGraphComponent } from './load-graph/load-graph.component';
     FuncCompSelectorComponent,
     ExportDesignComponent,
     CollectionCreationComponent,
+    CombinatorialDesignEditorComponent,
     LoadGraphComponent,
   ],
   imports: [
@@ -99,6 +101,7 @@ import { LoadGraphComponent } from './load-graph/load-graph.component';
     ErrorComponent, 
     ConfirmComponent, 
     FuncCompSelectorComponent, 
+    CombinatorialDesignEditorComponent,
     ColorPickerComponent,
     LoadGraphComponent ]
 })

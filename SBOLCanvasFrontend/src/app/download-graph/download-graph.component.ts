@@ -1,11 +1,13 @@
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
 import { LoginService } from '../login.service';
-import { MatDialogRef, MatSort, MatTableDataSource, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialog, MatDialogRef, MatSort, MatTableDataSource, MAT_DIALOG_DATA } from '@angular/material';
 import { FilesService } from '../files.service';
 import { GraphService } from '../graph.service';
 import { MetadataService } from '../metadata.service';
-import { forkJoin, Observable, Subscription } from 'rxjs';
-import { GlyphInfo } from '../glyphInfo';
+import { forkJoin, Subscription } from 'rxjs';
+import { ThrowStmt } from '@angular/compiler';
+import { IdentifiedInfo } from '../identifiedInfo';
+import { FuncCompSelectorComponent } from '../func-comp-selector/func-comp-selector.component';
 
 @Component({
   selector: 'app-download-graph',
@@ -14,9 +16,26 @@ import { GlyphInfo } from '../glyphInfo';
 })
 export class DownloadGraphComponent implements OnInit {
 
+  // modes
+  static readonly DOWNLOAD_MODE = 1;
+  static readonly IMPORT_MODE = 2;
+  static readonly SELECT_MODE = 3;
+  mode;
+
+  // types
+  static readonly MODULE_AND_COMPONENT_TYPE = 1;
+  static readonly MODULE_TYPE = 2;
+  static readonly COMPONENT_TYPE = 3;
+  static readonly LAYOUT_TYPE = 4;
+  static readonly COMBINATORIAL_TYPE = 5;
+  type;
+
   static collectionType = "collection";
   static moduleType = "module definition";
   static componentType = "component definition";
+
+  // This is so we can use static variables in the html checks
+  classRef = DownloadGraphComponent;
 
   registries: string[];
   registry: string;
@@ -30,9 +49,6 @@ export class DownloadGraphComponent implements OnInit {
   partRole: string;
   partRefine: string;
 
-  import: boolean;
-  moduleMode: boolean;
-
   partRequest: Subscription;
 
   parts = new MatTableDataSource([]);
@@ -43,20 +59,20 @@ export class DownloadGraphComponent implements OnInit {
 
   working: boolean;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent>) { }
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private dialog: MatDialog, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent, IdentifiedInfo>) { }
 
   ngOnInit() {
     this.working = true;
     if (this.data != null) {
-      if (this.data.import != null) {
-        this.import = this.data.import;
+      if (this.data.mode != null) {
+        this.mode = this.data.mode;
       } else {
-        this.import = false;
+        this.mode = DownloadGraphComponent.DOWNLOAD_MODE;
       }
-      if (this.data.moduleMode != null) {
-        this.moduleMode = this.data.moduleMode;
+      if (this.data.type != null) {
+        this.type = this.data.type;
       } else {
-        this.moduleMode = false;
+        this.type = DownloadGraphComponent.MODULE_AND_COMPONENT_TYPE;
       }
       if (this.data.info != null) {
         this.partType = this.data.info.partType;
@@ -82,7 +98,7 @@ export class DownloadGraphComponent implements OnInit {
         });
       }
     } else {
-      this.import = false;
+      this.mode = DownloadGraphComponent.DOWNLOAD_MODE;
       this.filesService.getRegistries().subscribe(registries => {
         this.registries = registries;
         this.working = false;
@@ -99,7 +115,7 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   finishCheck(): boolean {
-    return this.partRow != null;
+    return this.partRow && this.partRow.type != DownloadGraphComponent.collectionType;
   }
 
   applyFilter(filterValue: string) {
@@ -141,12 +157,30 @@ export class DownloadGraphComponent implements OnInit {
     this.dialogRef.close();
   }
 
+  onEnterCollectionClick(){
+    this.history.push(this.partRow);
+    this.partRow = null;
+    this.updateParts();
+  }
+
+  enterCollectionEnabled(): boolean {
+    return this.partRow && this.partRow.type === DownloadGraphComponent.collectionType;
+  }
+
   onDownloadClick() {
     if (this.partRow.type === DownloadGraphComponent.moduleType) {
       this.downloadModule();
     } else if (this.partRow.type === DownloadGraphComponent.componentType) {
       this.downloadComponent();
     }
+  }
+
+  onSelectClick(){
+    this.dialogRef.close(this.partRow);
+  }
+
+  selectCheck(){
+    return this.partRow && (this.partRow.type == DownloadGraphComponent.componentType || this.partRow.type == DownloadGraphComponent.collectionType);
   }
 
   updateRefinements() {
@@ -167,7 +201,7 @@ export class DownloadGraphComponent implements OnInit {
 
   onRowClick(row: any) {
     if (row.type === DownloadGraphComponent.collectionType) {
-      this.partRow = null;
+      this.partRow = row;
       this.collection = row.uri;
     }
     if (row.type === DownloadGraphComponent.componentType || row.type === DownloadGraphComponent.moduleType) {
@@ -179,34 +213,64 @@ export class DownloadGraphComponent implements OnInit {
     if (row.type === DownloadGraphComponent.collectionType) {
       this.history.push(row);
       this.collection = row.uri;
+      this.partRow = null;
       this.updateParts();
     } else if (row.type === DownloadGraphComponent.componentType) {
-      this.downloadComponent();
+      if(this.mode == DownloadGraphComponent.SELECT_MODE){
+        this.onSelectClick();
+      }else{
+        this.downloadComponent();
+      }
     } else if (row.type === DownloadGraphComponent.moduleType) {
-      this.downloadModule();
+      if(this.mode == DownloadGraphComponent.SELECT_MODE){
+        this.onSelectClick();
+      }else{
+        this.downloadModule();
+      }
     }
   }
 
-  downloadComponent() {
+  async downloadComponent() {
     this.working = true;
-    if (this.import) {
+    if (this.mode == DownloadGraphComponent.IMPORT_MODE) {
       this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
         this.graphService.setSelectedToXML(xml);
         this.working = false;
         this.dialogRef.close();
       });
     } else {
-      this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
-        this.graphService.setGraphToXML(xml);
-        this.working = false;
-        this.dialogRef.close();
-      });
+      // check for combinatorials
+      let combResult = await this.filesService.listCombinatorials(this.loginService.users[this.registry], this.registry, this.partRow.uri).toPromise();
+      let combinatorial;
+      if(combResult.length > 0){
+        combinatorial = await this.dialog.open(FuncCompSelectorComponent, {
+          data: {
+            mode: FuncCompSelectorComponent.COMBINATORIAL_MODE,
+            options: combResult
+          }
+        }).afterClosed().toPromise();
+      }
+
+      // get xml
+      let xml;
+      if(combinatorial){
+        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri, combinatorial.uri).toPromise();
+      }else{
+        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).toPromise();
+      }
+
+      // set xml;
+      this.graphService.setGraphToXML(xml);
+      
+      // close dialog
+      this.working = false;
+      this.dialogRef.close();
     }
   }
 
   downloadModule() {
     this.working = true;
-    if (this.import) {
+    if (this.mode == DownloadGraphComponent.IMPORT_MODE) {
       this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
         this.graphService.setSelectedToXML(xml);
         this.working = false;
@@ -225,7 +289,7 @@ export class DownloadGraphComponent implements OnInit {
     this.partRow = null;
     let found = false;
     for (let i = 0; i < this.history.length; i++) {
-      if (this.history[i].uri === collection) {
+      if (this.history[i] === collection) {
         this.history.length = i + 1;
         found = true;
         break;
@@ -246,7 +310,7 @@ export class DownloadGraphComponent implements OnInit {
     if (this.registry != null) {
       this.working = true;
       this.parts.data = [];
-      if (this.import && !this.moduleMode) {
+      if (this.type == DownloadGraphComponent.COMPONENT_TYPE) {
         // collection and components
         let roleOrRefine = this.partRefine != null && this.partRefine.length > 0 ? this.partRefine : this.partRole;
         this.partRequest = forkJoin(
@@ -265,7 +329,7 @@ export class DownloadGraphComponent implements OnInit {
           this.parts.data = partCache;
           this.working = false;
         })
-      } else if(this.import && this.moduleMode){
+      } else if(this.type == DownloadGraphComponent.MODULE_TYPE){
         // collections and modules
         this.partRequest = forkJoin(
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
@@ -283,7 +347,7 @@ export class DownloadGraphComponent implements OnInit {
           this.parts.data = partCache;
           this.working = false;
         });
-      }else {
+      }else{
         // collection, modules, and components
         this.partRequest = forkJoin(
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),

@@ -20,6 +20,7 @@ import { GraphHelpers } from './graph-helpers';
 import { StyleInfo } from './style-info';
 import { ModuleInfo } from './moduleInfo';
 import { Info } from './info';
+import { CombinatorialInfo } from './combinatorialInfo';
 
 @Injectable({
   providedIn: 'root'
@@ -32,8 +33,24 @@ export class GraphService extends GraphHelpers {
     this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
   }
 
+  isSelectedAGlyph(): boolean {
+    let selected = this.graph.getSelectionCells();
+    if (selected.length != 1) {
+      return false;
+    }
+    return selected[0].isSequenceFeatureGlyph();
+  }
+
   isRootAComponentView(): boolean {
     return this.viewStack[0].isComponentView();
+  }
+
+  getSelectedCellID(): string {
+    let selected = this.graph.getSelectionCells();
+    if(selected.length != 1){
+      return null;
+    }
+    return selected[0].getId();
   }
 
   /**
@@ -336,15 +353,16 @@ export class GraphService extends GraphHelpers {
       }
 
       // remove interactions with modules if the item it connects to is being removed
-      for(let selectedCell of selectedCells){
-        if(selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()){
-          this.updateInteractions(selectedCell.getValue()+"_"+selectedCell.getId(), null);
+      for (let selectedCell of selectedCells) {
+        if (selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()) {
+          this.updateInteractions(selectedCell.getValue() + "_" + selectedCell.getId(), null);
         }
       }
 
       this.editor.execute('delete');
 
       this.trimUnreferencedCells();
+      this.trimUnreferencedCombinatorials();
 
       // sync circuit containers
       for (let circuitContainer of circuitContainers) {
@@ -829,10 +847,29 @@ export class GraphService extends GraphHelpers {
         this.graph.getModel().execute(interactionEdit);
         return;
       }
+
     } finally {
       this.graph.getModel().endUpdate();
       this.graph.refresh(selectedCell);
       //this.updateAngularMetadata(this.graph.getSelectionCells());
+    }
+  }
+
+  /**
+   * Sets the combinatorial info associated to the selected cell
+   * @param info 
+   * @param prevURI 
+   */
+  setSelectedCombinatorialInfo(info: CombinatorialInfo, prevURI: string) {
+    const selectedCell = this.graph.getSelectionCell();
+
+    this.graph.getModel().beginUpdate();
+    try {
+      if (info instanceof CombinatorialInfo && selectedCell.isSequenceFeatureGlyph()) {
+        this.updateSelectedCombinatorialInfo(info, prevURI);
+      }
+    } finally {
+      this.graph.getModel().endUpdate();
     }
   }
 
@@ -1201,22 +1238,22 @@ export class GraphService extends GraphHelpers {
         }
 
         // top level circuit containers need to be synced to get the changes before the trim
-        if(selectedCell.isCircuitContainer()){
-          let previousReference = selectedCell.getValue()+"_"+selectedCell.getId();
+        if (selectedCell.isCircuitContainer()) {
+          let previousReference = selectedCell.getValue() + "_" + selectedCell.getId();
           let selectedParent = selectedCell.getParent();
           let selectedIndex = selectedParent.getIndex(selectedCell);
           this.graph.getModel().setValue(selectedCell, newCell.getValue());
           const viewCell = this.graph.getModel().getCell(newCell.getValue());
-          if(viewCell.children){
-            for(let viewChild of viewCell.children){
-              if(viewChild.isCircuitContainer()){
+          if (viewCell.children) {
+            for (let viewChild of viewCell.children) {
+              if (viewChild.isCircuitContainer()) {
                 this.syncCircuitContainer(viewChild);
                 break;
               }
             }
           }
           selectedCell = selectedParent.children[selectedIndex];
-          this.updateInteractions(previousReference, newCell.getValue()+"_"+selectedCell.getId());
+          this.updateInteractions(previousReference, newCell.getValue() + "_" + selectedCell.getId());
         }
 
         if (GraphBase.unFormatedCells.size > 0) {
@@ -1246,8 +1283,12 @@ export class GraphService extends GraphHelpers {
 
     // initalize the GlyphInfoDictionary
     const cell0 = this.graph.getModel().getCell(0);
-    const glyphDict = [];
-    this.graph.getModel().setValue(cell0, glyphDict);
+    const infoDict = [];
+    const combinatorialDict = [];
+    var dataContainer = [];
+    dataContainer[GraphBase.INFO_DICT_INDEX] = infoDict;
+    dataContainer[GraphBase.COMBINATORIAL_DICT_INDEX] = combinatorialDict;
+    this.graph.getModel().setValue(cell0, dataContainer);
 
     const cell1 = this.graph.getModel().getCell(1);
     let rootViewCell;
@@ -1283,4 +1324,5 @@ export class GraphService extends GraphHelpers {
   public setComponentDefinitionMode(componentMode: boolean) {
     this.metadataService.setComponentDefinitionMode(componentMode);
   }
+
 }

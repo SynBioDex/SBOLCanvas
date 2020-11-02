@@ -8,6 +8,7 @@ import { MatSelectChange, MatDialog } from '@angular/material';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
+import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 
 
 @Component({
@@ -158,11 +159,20 @@ export class InfoEditorComponent implements OnInit {
   openDownloadDialog(moduleMode: boolean = false) {
     this.dialog.open(DownloadGraphComponent, {
       data: {
-        import: true,
-        moduleMode: moduleMode,
+        mode: DownloadGraphComponent.IMPORT_MODE,
+        type: moduleMode ? DownloadGraphComponent.MODULE_TYPE : DownloadGraphComponent.COMPONENT_TYPE,
         info: moduleMode ? null : this.glyphInfo
       }
     });
+  }
+
+  isCombinatorialPossible(): boolean {
+    // TODO remove the check that root is a component when enumeration makes sense in module designs
+    return this.graphService.isSelectedAGlyph() && this.graphService.isRootAComponentView();
+  }
+
+  openCombinatorialDialog(){
+    this.dialog.open(CombinatorialDesignEditorComponent);
   }
 
   /**
