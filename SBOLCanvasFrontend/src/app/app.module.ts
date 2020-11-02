@@ -42,6 +42,7 @@ import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-select
 import { ExportDesignComponent } from './export-design/export-design.component';
 import { CollectionCreationComponent } from './collection-creation/collection-creation.component';
 import { CombinatorialDesignEditorComponent } from './combinatorial-design-editor/combinatorial-design-editor.component';
+import { LoadGraphComponent } from './load-graph/load-graph.component';
 
 
 @NgModule({
@@ -69,6 +70,7 @@ import { CombinatorialDesignEditorComponent } from './combinatorial-design-edito
     ExportDesignComponent,
     CollectionCreationComponent,
     CombinatorialDesignEditorComponent,
+    LoadGraphComponent,
   ],
   imports: [
     BrowserModule,
@@ -100,7 +102,8 @@ import { CombinatorialDesignEditorComponent } from './combinatorial-design-edito
     ConfirmComponent, 
     FuncCompSelectorComponent, 
     CombinatorialDesignEditorComponent,
-    ColorPickerComponent ]
+    ColorPickerComponent,
+    LoadGraphComponent ]
 })
 export class AppModule {
 }

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import * as FileSaver from 'file-saver';
 import { IdentifiedInfo } from './identifiedInfo';
+import { GraphService } from './graph.service';
 
 @Injectable({
   providedIn: 'root'
@@ -45,6 +46,25 @@ export class FilesService {
     let params = new HttpParams();
     params = params.append("filename", filename);
     return this.http.get(this.loadFilesURL, { responseType: 'text', params: params });
+  }
+
+  loadLocal(file: File, graphService: GraphService): Observable<void> {
+    return new Observable<void>(observer => {
+      if (typeof (FileReader) !== 'undefined') {
+        const reader = new FileReader();
+
+        reader.onload = (e: any) => {
+          this.convertToMxGraph(String(reader.result)).subscribe(result => {
+            graphService.setGraphToXML(result);
+            observer.next();
+          });
+        };
+
+        reader.readAsText(file);
+      } else {
+        observer.next();
+      }
+    });
   }
 
   exportDesign(users: {}, filename: string, format: string, contents: string): Observable<void> {

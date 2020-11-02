@@ -7,7 +7,7 @@ import { DownloadGraphComponent } from '../download-graph/download-graph.compone
 import { ExportImageComponent } from '../export-image/export-image.component';
 import { ExportDesignComponent } from '../export-design/export-design.component';
 import { ConfirmComponent } from '../confirm/confirm.component';
-import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
+import { LoadGraphComponent } from '../load-graph/load-graph.component';
 
 export interface SaveDialogData {
   filename: string;
@@ -73,6 +73,16 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     // if they entered nonsense the zoom doesn't change, which
     // means angular won't refresh the input box on its own
     $event.target.value = this.getZoomDisplayValue();
+  }
+
+  openLoadDialog(): void {
+    const dialogRef = this.dialog.open(LoadGraphComponent, {
+      data: { file: null }
+    });
+    this.popupOpen = true;
+    dialogRef.afterClosed().subscribe(result => {
+      this.popupOpen = false;
+    });
   }
 
   getZoomDisplayValue() {
