@@ -315,9 +315,17 @@ export class GraphService extends GraphHelpers {
     try {
       let circuitContainers = [];
       for (let cell of selectedCells) {
-        if (cell.isSequenceFeatureGlyph())
+        if (cell.isSequenceFeatureGlyph()){
           circuitContainers.push(cell.getParent());
-        else if (cell.isCircuitContainer() && this.graph.getCurrentRoot() && this.graph.getCurrentRoot().isComponentView())
+          
+          // if it's a sequence feature and it has a combinatorial, remove the variable component
+          if(cell.isSequenceFeatureGlyph()){
+            let combinatorial = this.getCombinatorialWithTemplate(cell.getParent().getValue());
+            // TODO make this undoable
+            if(combinatorial)
+              combinatorial.removeVariableComponentInfo(cell.getId());
+          }
+        } else if (cell.isCircuitContainer() && this.graph.getCurrentRoot() && this.graph.getCurrentRoot().isComponentView())
           circuitContainers.push(cell);
       }
 
@@ -351,6 +359,8 @@ export class GraphService extends GraphHelpers {
         }
         this.graph.setSelectionCells(newSelection);
       }
+
+      
 
       // remove interactions with modules if the item it connects to is being removed
       for (let selectedCell of selectedCells) {
@@ -1193,7 +1203,7 @@ export class GraphService extends GraphHelpers {
           if (this.getFromInfoDict(viewCells[i].getId()) != null) {
             this.removeFromInfoDict(viewCells[i].getId());
           }
-          this.addToInfoDict(subGlyphDict[viewCells[i].getId()]);
+          this.addToInfoDict(subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()]);
         }
 
         if (selectedCell.isSequenceFeatureGlyph()) {

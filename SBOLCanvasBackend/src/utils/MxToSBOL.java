@@ -623,6 +623,8 @@ public class MxToSBOL extends Converter {
 		
 		// create the variable components
 		for(VariableComponentInfo varCompInfo : combInfo.getVariableComponents().values()) {
+			if(varCompInfo.getCellID() == null)
+				continue;
 			// figure out what the operator is
 			OperatorType operator = null;
 			switch(varCompInfo.getOperator()) {
