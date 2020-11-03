@@ -19,6 +19,8 @@ export class CombinatorialDesignEditorComponent implements OnInit {
 
   strategies = ['None', 'Enumerate', 'Sample'];
 
+  working: boolean = false;
+
   prevURI: string; // have to store the previous uri, as there is no way to know what it used to be in the graphHelpers
   combinatorialInfo: CombinatorialInfo;
   variableComponentInfo: VariableComponentInfo;
