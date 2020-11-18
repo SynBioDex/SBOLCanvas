@@ -18,6 +18,8 @@ import { Info } from './info';
 import { ModuleInfo } from './moduleInfo';
 import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-selector.component';
 import { CombinatorialInfo } from './combinatorialInfo';
+import { VariableComponentInfo } from './variableComponentInfo';
+import { IdentifiedInfo } from './identifiedInfo';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -605,9 +607,6 @@ export class GraphHelpers extends GraphBase {
                 return;
             }
 
-            // change ownership
-            info.uriPrefix = environment.baseURI;
-
             // check for duplicate and error
             let conflictCombinatorial = this.getFromCombinatorialDict(info.getFullURI());
             if (conflictCombinatorial && conflictCombinatorial.templateURI != info.templateURI) {
@@ -616,12 +615,67 @@ export class GraphHelpers extends GraphBase {
 
             // store
             if (prevURI != info.getFullURI()) {
-                if(this.getFromCombinatorialDict(prevURI))
+                if (this.getFromCombinatorialDict(prevURI))
                     this.removeFromCombinatorialDict(prevURI);
                 this.addToCombinatorialDict(info);
             } else {
                 this.updateCombinatorialDict(info);
             }
+
+            // recurs up the selection stack
+            let previous = info;
+            for (let i = this.selectionStack.length - 1; i >= 0; i--) {
+                let parentURI = this.getParentInfo(this.selectionStack[i]).getFullURI();
+                let combinatorial = this.getCombinatorialWithTemplate(parentURI);
+                if (!combinatorial) {
+                    combinatorial = new CombinatorialInfo();
+                    combinatorial.templateURI = parentURI;
+                }
+
+                // check if we already have a link and break if we do
+                let found = false;
+                let varCompInfo = combinatorial.getVariableComponentInfo(this.selectionStack[i].getId());
+                if(!varCompInfo){
+                    // If the variable component didn't exist, we need to add one
+                    varCompInfo = new VariableComponentInfo(this.selectionStack[i].getId());
+                    combinatorial.addVariableComponentInfo(varCompInfo);
+                }
+                // find out if it had a variant that links to our component definition
+                let variant;
+                for (variant of varCompInfo.variants) {
+                    if (variant.type == "combinatorial" && variant.uri == previous.getFullURI()) {
+                        found = true;
+                        break;
+                    }
+                }
+                if(found){
+                    // if it did link, update the info, we assume that the link works all the way up the chain
+                    variant.description = previous.description;
+                    variant.displayId = previous.displayID;
+                    variant.name = previous.name;
+                    variant.uri = previous.getFullURI();
+                    variant.version = previous.version;
+                    break;
+                }else{
+                    // if it wasn't found we need to add it
+                    let variant = new IdentifiedInfo();
+                    variant.description = previous.description;
+                    variant.displayId = previous.displayID;
+                    variant.name = previous.name;
+                    variant.type = "combinatorial";
+                    variant.uri = previous.getFullURI();
+                    variant.version = previous.version;
+                    varCompInfo.addVariant(variant);
+                }
+
+                this.addToCombinatorialDict(combinatorial);
+
+                previous = combinatorial;
+            }
+
+            // change ownership
+            this.changeOwnership(info.getFullURI(), true)
+
         } finally {
             this.graph.getModel().endUpdate();
         }
@@ -1316,49 +1370,65 @@ export class GraphHelpers extends GraphBase {
     }
 
     /**
-     * Changes the uriPrefix of the passed in cell's glyph info, and any of it's parents.
+     * Changes the uriPrefix of the passed in info, and any of it's parents.
      * @param this Must be called from the graph service, as it uses public methods.
-     * @param glyphURI The cell to change ownership for.
+     * @param infoURI The cell/combinatorial to change ownership for.
      * @param fullCheck Stops at currently owned objects if false, continues until the root if true.
      */
-    protected changeOwnership(this: GraphService, glyphURI: string, fullCheck: boolean = false) {
+    protected changeOwnership(this: GraphService, infoURI: string, fullCheck: boolean = false) {
 
         this.graph.getModel().beginUpdate();
         try {
-            let glyphInfo = this.getFromInfoDict(glyphURI);
+            // component/module definition mode
+            let combinatorialMode = false;
+            let info = this.getFromInfoDict(infoURI);
+            if (!info) {
+                // combinatorial mode
+                info = this.getFromCombinatorialDict(infoURI)
+                combinatorialMode = true;
+            }
+            if (!info) {
+                console.error("Tried to change Ownership on an object that doesn't exist!");
+                return;
+            }
 
             // if we already own it, we don't need to do anything
-            if (!glyphInfo.uriPrefix || (glyphInfo.uriPrefix === environment.baseURI && !fullCheck)) {
+            if (!info.uriPrefix || (info.uriPrefix === environment.baseURI && !fullCheck)) {
                 return;
+            }
+
+            // only zoom out if the info associated will change a view cell ID
+            let zoomedCells;
+            let rootViewInfo;
+            if (!combinatorialMode) {
+                // zoom out because the current view cell may be deleted and re added with a different URI
+                // more than the direct parent's view cell may have been changed, so it's easiest to zoom all the way out (trust me, It had problems when it wasn't zooming out)
+                zoomedCells = this.selectionStack.slice();
+                for (let i = 0; i < zoomedCells.length; i++) {
+                    this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
+                }
+
+                // zoom out of the rootView
+                let rootViewId;
+                rootViewInfo;
+                if (this.graph.getCurrentRoot()) {
+                    rootViewId = this.graph.getCurrentRoot().getId();
+                    rootViewInfo = this.getFromInfoDict(rootViewId);
+                    if (rootViewInfo) {
+                        this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
+                    }
+                } else {
+                    // special case of the root getting changed before changeOwnership is called
+                    rootViewId = infoURI;
+                    rootViewInfo = this.getFromInfoDict(rootViewId);
+                }
             }
 
             // parent propogation
             let toCheck = new Set<string>();
             let checked = new Set<string>();
 
-            toCheck.add(glyphURI);
-
-            // zoom out because the current view cell may be deleted and re added with a different URI
-            // more than the direct parent's view cell may have been changed, so it's easiest to zoom all the way out (trust me, It had problems when it wasn't zooming out)
-            let zoomedCells = this.selectionStack.slice();
-            for (let i = 0; i < zoomedCells.length; i++) {
-                this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
-            }
-
-            // zoom out of the rootView
-            let rootViewId;
-            let rootViewInfo;
-            if (this.graph.getCurrentRoot()) {
-                rootViewId = this.graph.getCurrentRoot().getId();
-                rootViewInfo = this.getFromInfoDict(rootViewId);
-                if (rootViewInfo) {
-                    this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), null, this));
-                }
-            } else {
-                // special case of the root getting changed before changeOwnership is called
-                rootViewId = glyphURI;
-                rootViewInfo = this.getFromInfoDict(rootViewId);
-            }
+            toCheck.add(infoURI);
 
             while (toCheck.size > 0) {
                 let checking: string = toCheck.values().next().value;
@@ -1368,50 +1438,81 @@ export class GraphHelpers extends GraphBase {
                     continue;
                 }
 
-                // change the glyphInfo's uriPrefix
-                let glyphInfo = this.getFromInfoDict(checking).makeCopy();
-
-                glyphInfo.uriPrefix = environment.baseURI;
-                this.removeFromInfoDict(checking);
-                this.addToInfoDict(glyphInfo);
-
-                // update the viewCell
-                let viewCell = this.graph.getModel().getCell(checking);
-                if (viewCell) {
-                    this.updateViewCell(viewCell, glyphInfo.getFullURI());
+                let info;
+                if (!combinatorialMode) {
+                    info = this.getFromInfoDict(checking).makeCopy();
+                } else {
+                    info = this.getFromCombinatorialDict(checking).makeCopy();
                 }
 
-                // update any cells that referenced the viewCell and add their parents to be checked
-                for (let key in this.graph.getModel().cells) {
-                    const cell = this.graph.getModel().cells[key];
-                    if (cell.value === checking) {
-                        let previousReference = cell.getValue() + "_" + cell.getId();
-                        this.graph.getModel().setValue(cell, glyphInfo.getFullURI());
-                        this.updateInteractions(previousReference, cell.getValue() + "_" + cell.getId());
-                        if (cell.isSequenceFeatureGlyph()) {
-                            let toAdd = cell.getParent().getParent();
-                            if (toAdd.isComponentView() && !checked.has(toAdd.getId())) {
-                                // normal case
-                                toCheck.add(toAdd.getId());
-                            } else if (toAdd.isModuleView() && !checked.has(cell.getParent().getValue())) {
-                                // edge case, module view, need to check parent circuit container
-                                toCheck.add(cell.getParent().getValue());
+                info.uriPrefix = environment.baseURI;
+                if (!combinatorialMode) {
+                    this.removeFromInfoDict(checking);
+                    this.addToInfoDict(info);
+                } else {
+                    this.removeFromCombinatorialDict(checking);
+                    this.addToCombinatorialDict(info);
+                }
+
+                if (!combinatorialMode) {
+                    // update the viewCell
+                    let viewCell = this.graph.getModel().getCell(checking);
+                    if (viewCell) {
+                        this.updateViewCell(viewCell, info.getFullURI());
+                    }
+
+                    // update any cells that referenced the viewCell and add their parents to be checked
+                    for (let key in this.graph.getModel().cells) {
+                        const cell = this.graph.getModel().cells[key];
+                        if (cell.value === checking) {
+                            let previousReference = cell.getValue() + "_" + cell.getId();
+                            this.graph.getModel().setValue(cell, info.getFullURI());
+                            this.updateInteractions(previousReference, cell.getValue() + "_" + cell.getId());
+                            if (cell.isSequenceFeatureGlyph()) {
+                                let toAdd = cell.getParent().getParent();
+                                if (toAdd.isComponentView() && !checked.has(toAdd.getId())) {
+                                    // normal case
+                                    toCheck.add(toAdd.getId());
+                                } else if (toAdd.isModuleView() && !checked.has(cell.getParent().getValue())) {
+                                    // edge case, module view, need to check parent circuit container
+                                    toCheck.add(cell.getParent().getValue());
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // update any combinatorials that referenced this one and add their parents to be checked
+                    let cell0 = this.graph.getModel().getCell("0");
+                    for (let key in cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX]) {
+                        const combinatorial: CombinatorialInfo = cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][key];
+                        for (let varCompKey in combinatorial.variableComponents) {
+                            const varComp = combinatorial.variableComponents[varCompKey];
+                            for (let variant of varComp.variants) {
+                                if (variant.type == "combinatorial" && variant.uri == checking) {
+                                    variant.uri = info.getFullURI();
+                                    if (!checked.has(combinatorial.getFullURI())) {
+                                        toCheck.add(combinatorial.getFullURI());
+                                    }
+                                }
                             }
                         }
                     }
                 }
+
             }
 
-            // zoom back into the rootView
-            if (rootViewInfo) {
-                rootViewInfo = rootViewInfo.makeCopy();
-                rootViewInfo.uriPrefix = environment.baseURI;
-                let newRootViewCell = this.graph.getModel().getCell(rootViewInfo.getFullURI());
-                this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newRootViewCell, this));
-            }
-            // re zoom to fix the view
-            for (let i = 0; i < zoomedCells.length; i++) {
-                this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), zoomedCells[i], this));
+            if (!combinatorialMode) {
+                // zoom back into the rootView
+                if (rootViewInfo) {
+                    rootViewInfo = rootViewInfo.makeCopy();
+                    rootViewInfo.uriPrefix = environment.baseURI;
+                    let newRootViewCell = this.graph.getModel().getCell(rootViewInfo.getFullURI());
+                    this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newRootViewCell, this));
+                }
+                // re zoom to fix the view
+                for (let i = 0; i < zoomedCells.length; i++) {
+                    this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), zoomedCells[i], this));
+                }
             }
         } finally {
             this.graph.getModel().endUpdate();
