@@ -60,7 +60,15 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   openExportDialog(): void {
-    this.dialog.open(ExportDesignComponent, {});
+    this.dialog.open(ExportDesignComponent, {
+      data: {mode: "Export"}
+    });
+  }
+
+  openEnumerateDialog(): void {
+    this.dialog.open(ExportDesignComponent, {
+      data: {mode: "Enumerate"}
+    });
   }
 
   zoomChanged($event) {
@@ -105,6 +113,10 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     if(result === "Yes"){
       this.graphService.resetGraph(false);
     }
+  }
+
+  enumerateAvailable(){
+    return this.graphService.isRootAComponentView();
   }
 
   // make sure to comment out the button when preparing to make a merge request

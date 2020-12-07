@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { GraphService } from '../graph.service';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { FilesService } from '../files.service';
 import { LoginService } from '../login.service';
 
@@ -11,25 +11,42 @@ import { LoginService } from '../login.service';
 })
 export class ExportDesignComponent implements OnInit {
 
+  mode: string;
+
   working: boolean = false;
 
-  formats = ["SBOL2", "SBOL1", "GenBank", "GFF", "Fasta"];
+  exportFormats = ["SBOL2", "SBOL1", "GenBank", "GFF", "Fasta"];
+  enumerateFormats = ["SBOL2", "CSV"];
+  formats = [];
 
   filename: string;
   format: string;
 
-  constructor(private graphService: GraphService, private loginService: LoginService, private filesService: FilesService, public dialogRef: MatDialogRef<ExportDesignComponent>) { }
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private graphService: GraphService, private loginService: LoginService, private filesService: FilesService, public dialogRef: MatDialogRef<ExportDesignComponent>) { }
 
   ngOnInit() {
+    this.mode = this.data.mode;
+    if(this.mode == "Export"){
+      this.formats = this.exportFormats;
+    }else{
+      this.formats = this.enumerateFormats;
+    }
     this.format=this.formats[0];
   }
 
-  onExportClick(){
+  onFinishClick(){
     this.working = true;
-    this.filesService.exportDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe(_ => {
-      this.working = false;
-      this.dialogRef.close();
-    });
+    if(this.mode == "Export"){
+      this.filesService.exportDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe(_ => {
+        this.working = false;
+        this.dialogRef.close();
+      });
+    }else{
+      this.filesService.enumerateDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe(_ => {
+        this.working = false;
+        this.dialogRef.close();
+      });
+    }
   }
 
   onCancelClick(){

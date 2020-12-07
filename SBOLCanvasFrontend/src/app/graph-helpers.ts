@@ -226,6 +226,9 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     // otherwise update the view cell
                     this.updateViewCell(viewCell, newGlyphURI);
+
+                    // also move any combinatorials over to it
+                    this.updateCombinatorialTemplate(oldGlyphURI, newGlyphURI);
                 }
 
                 // update the selected glyph value
@@ -312,6 +315,9 @@ export class GraphHelpers extends GraphBase {
                 }
 
                 this.updateInteractions(oldGlyphURI + "_" + selectedCell.getId(), newGlyphURI + "_" + selectedCell.getId());
+
+                // remove the old combinatorial if oldURI no longer points to anything
+                this.trimUnreferencedCombinatorials();
 
                 // update the ownership
                 if (selectedCell.isCircuitContainer() || selectedCell.isViewCell()) {
@@ -775,6 +781,18 @@ export class GraphHelpers extends GraphBase {
             }
         } finally {
             this.graph.getModel().endUpdate();
+        }
+    }
+
+    /**
+     * 
+     */
+    protected async updateCombinatorialTemplate(oldTemplate: string, newTemplate: string){
+        let combinatorial = this.getCombinatorialWithTemplate(oldTemplate);
+        if(combinatorial){
+            this.removeFromCombinatorialDict(combinatorial.getFullURI());
+            combinatorial.templateURI = newTemplate;
+            this.addToCombinatorialDict(combinatorial);
         }
     }
 

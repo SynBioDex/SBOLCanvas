@@ -16,6 +16,7 @@ export class FilesService {
   private loadFilesURL = environment.backendURL + '/load';
   private toMxGraphURL = environment.backendURL + '/convert/toMxGraph';
   private exportDesignURL = environment.backendURL + '/convert/exportDesign';
+  private enumerateDesignURL = environment.backendURL + '/enumerate';
   private getRegistriesURL = environment.backendURL + '/SynBioHub/registries';
   private listMyCollectionsURL = environment.backendURL + '/SynBioHub/listMyCollections';
   private addToCollectionURL = environment.backendURL + '/SynBioHub/addToCollection';
@@ -85,6 +86,28 @@ export class FilesService {
           formatExtension = ".xml"; break;
       }
       this.http.post(this.exportDesignURL, contents, { headers: headers, responseType: 'text', params: params }).subscribe(result => {
+        var file = new File([result], filename + formatExtension);
+        FileSaver.saveAs(file);
+        observer.next();
+      });
+    });
+  }
+
+  enumerateDesign(users: {}, filename: string, format: string, contents: string): Observable<void> {
+    return new Observable<void>(observer => {
+      let headers = new HttpHeaders();
+      headers = headers.set("Authorization", this.usersToStringArr(users));
+      let params = new HttpParams();
+      params = params.append("format", format);
+      params = params.append("SBOLSource", "true");
+      let formatExtension;
+      switch(format){
+        case "SBOL2":
+          formatExtension = ".xml"; break;
+        case "CSV":
+          formatExtension = ".csv"; break;
+      }
+      this.http.post(this.enumerateDesignURL, contents, {headers: headers, responseType: 'text', params: params }).subscribe(result => {
         var file = new File([result], filename + formatExtension);
         FileSaver.saveAs(file);
         observer.next();
