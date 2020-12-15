@@ -77,19 +77,21 @@ export class CombinatorialDesignEditorComponent implements OnInit {
         type: DownloadGraphComponent.COMPONENT_TYPE,
         info: this.componentInfo
       }
-    }).afterClosed().subscribe(result => {
-      if(!result)
+    }).afterClosed().subscribe(results => {
+      if(!results)
         return;
       // for some reason if we don't load it into a IdentifiedInfo it is considered 'Object'
-      let identifiedInfo = new IdentifiedInfo();
-      identifiedInfo.description = result.description;
-      identifiedInfo.displayId = result.displayID;
-      identifiedInfo.name = result.name;
-      identifiedInfo.type = result.type;
-      identifiedInfo.uri = result.uri;
-      identifiedInfo.version = result.version;
-      this.variableComponentInfo.addVariant(identifiedInfo);
-      // The table doesn't update without this
+      for(let result of results){
+        let identifiedInfo = new IdentifiedInfo();
+        identifiedInfo.description = result.description;
+        identifiedInfo.displayId = result.displayID;
+        identifiedInfo.name = result.name;
+        identifiedInfo.type = result.type;
+        identifiedInfo.uri = result.uri;
+        identifiedInfo.version = result.version;
+        this.variableComponentInfo.addVariant(identifiedInfo);
+        // The table doesn't update without this
+      }
       this.parts.data = this.variableComponentInfo.variants;
     });
   }

@@ -422,13 +422,16 @@ public class MxToSBOL extends Converter {
 		CombinatorialDerivation combDer = document.createCombinatorialDerivation(combInfo.getUriPrefix(), combInfo.getDisplayID(), combInfo.getVersion(), URI.create(combInfo.getTemplateURI()));
 		
 		// set fields the constructor doesn't give access to
-		switch(combInfo.getStrategy()) {
-		case "Enumerate":
-			combDer.setStrategy(StrategyType.ENUMERATE);
-			break;
-		case "Sample":
-			combDer.setStrategy(StrategyType.SAMPLE);
-			break;
+		String strategy = combInfo.getStrategy();
+		if(strategy != null) {
+			switch(strategy) {
+			case "Enumerate":
+				combDer.setStrategy(StrategyType.ENUMERATE);
+				break;
+			case "Sample":
+				combDer.setStrategy(StrategyType.SAMPLE);
+				break;
+			}			
 		}
 		combDer.setName(combInfo.getName());
 		combDer.setDescription(combInfo.getDescription());
@@ -627,7 +630,10 @@ public class MxToSBOL extends Converter {
 				continue;
 			// figure out what the operator is
 			OperatorType operator = null;
-			switch(varCompInfo.getOperator()) {
+			String operatorString = varCompInfo.getOperator();
+			if(operatorString == null)
+				operatorString = "";
+			switch(operatorString) {
 			case "Zero Or One":
 				operator = OperatorType.ZEROORONE;
 				break;
@@ -647,13 +653,20 @@ public class MxToSBOL extends Converter {
 			Component component = components.get(variableCell.getParent().getIndex(variableCell)-1);
 			VariableComponent varComp = combDer.createVariableComponent(component.getDisplayId()+"_VariableComponent", operator, component.getIdentity());
 			for(IdentifiedInfo idInfo : varCompInfo.getVariants()) {
+				URI partURI = URI.create(idInfo.getUri());
+				addRegistry(document, partURI);
 				switch(idInfo.getType()) {
 				case "collection":
-					varComp.addVariantCollection(URI.create(idInfo.getUri()));
+					boolean complete = document.isComplete();
+					document.setComplete(false);
+					varComp.addVariantCollection(partURI);
+					document.setComplete(complete);
 					break;
-				// TODO create a case for combinatorials
+				case "combinatorial":
+					varComp.addVariantDerivation(partURI);
+					break;
 				default:
-					varComp.addVariant(URI.create(idInfo.getUri()));
+					varComp.addVariant(partURI);
 				}
 			}
 		}
@@ -716,6 +729,30 @@ public class MxToSBOL extends Converter {
 		return annotations;
 	}
 
+	/**
+	 * Adds the registry that the partURI references, if it isn't already added
+	 * @param document
+	 * @param partURI
+	 */
+	private static void addRegistry(SBOLDocument document, URI partURI) {
+		List<SynBioHubFrontend> registries = document.getRegistries();
+		// check if it's already been added
+		for(SynBioHubFrontend registry : registries) {
+			if(partURI.toString().startsWith(registry.getBackendUrl())) {
+				return;
+			}
+		}
+		
+		// it wasn't found, so we need to add it without a user token
+		// in the future when we allow registries not in the registry list, it's probably best to have the frontend send send it without a user token
+		for(String registry : SBOLData.registries) {
+			if(partURI.toString().startsWith(registry)) {
+				document.addRegistry(registry);
+				return;
+			}
+		}
+	}
+	
 	/**
 	 * Enforces that children of circuit containers start with the backbone, and are
 	 * then sorted by their x position.

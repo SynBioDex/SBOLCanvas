@@ -30,7 +30,7 @@ import org.synbiohub.frontend.SynBioHubException;
 import utils.MxToSBOL;
 
 @SuppressWarnings("serial")
-@WebServlet(urlPatterns = { "/enumerate/*" })
+@WebServlet(urlPatterns = { "/enumerate" })
 public class Enumerate extends HttpServlet {
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {

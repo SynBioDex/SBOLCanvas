@@ -37,15 +37,13 @@ public class Convert extends HttpServlet {
 			} else if (request.getPathInfo().equals("/exportDesign")){
 				// setup the userTokens
 				String authString = request.getHeader("Authorization");
-				if(authString == null) {
-					response.setStatus(HttpStatus.SC_BAD_REQUEST);
-					return;
-				}
 				HashMap<String, String> userTokens = new HashMap<String, String>();
-				String[] servers = authString.split(",");
-				for(String server : servers) {
-					String[] tokens = server.split(" ");
-					userTokens.put(tokens[0], tokens[1]);
+				if(authString != null) {
+					String[] servers = authString.split(",");
+					for(String server : servers) {
+						String[] tokens = server.split(" ");
+						userTokens.put(tokens[0], tokens[1]);
+					}
 				}
 				
 				String format = request.getParameter("format");
