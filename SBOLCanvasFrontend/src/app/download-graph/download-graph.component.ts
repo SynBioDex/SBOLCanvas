@@ -8,6 +8,7 @@ import { forkJoin, Subscription } from 'rxjs';
 import { ThrowStmt } from '@angular/compiler';
 import { IdentifiedInfo } from '../identifiedInfo';
 import { FuncCompSelectorComponent } from '../func-comp-selector/func-comp-selector.component';
+import { SelectionModel } from '@angular/cdk/collections';
 
 @Component({
   selector: 'app-download-graph',
@@ -52,20 +53,23 @@ export class DownloadGraphComponent implements OnInit {
   partRequest: Subscription;
 
   parts = new MatTableDataSource([]);
-  partRow: any;
+  selection = new SelectionModel(false, []);
 
   displayedColumns: string[] = ['type', 'displayId', 'name', 'version', 'description'];
   @ViewChild(MatSort) sort: MatSort;
 
   working: boolean;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private dialog: MatDialog, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent, IdentifiedInfo>) { }
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any, private dialog: MatDialog, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent>) { }
 
   ngOnInit() {
     this.working = true;
     if (this.data != null) {
       if (this.data.mode != null) {
         this.mode = this.data.mode;
+        if(this.mode == DownloadGraphComponent.SELECT_MODE){
+          this.selection = new SelectionModel(true, []);
+        }
       } else {
         this.mode = DownloadGraphComponent.DOWNLOAD_MODE;
       }
@@ -115,7 +119,7 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   finishCheck(): boolean {
-    return this.partRow && this.partRow.type != DownloadGraphComponent.collectionType;
+    return !this.selection.isEmpty() && this.noCollectionsSelected();
   }
 
   applyFilter(filterValue: string) {
@@ -158,29 +162,31 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   onEnterCollectionClick(){
-    this.history.push(this.partRow);
-    this.partRow = null;
+    // only allowed to get here when there is one item selected, and it's a collection
+    let row = this.selection.selected[0];
+    this.history.push(row);
+    this.selection.clear();
     this.updateParts();
   }
 
   enterCollectionEnabled(): boolean {
-    return this.partRow && this.partRow.type === DownloadGraphComponent.collectionType;
+    return this.selection.selected.length == 1 && this.selection.selected[0].type == DownloadGraphComponent.collectionType;
   }
 
   onDownloadClick() {
-    if (this.partRow.type === DownloadGraphComponent.moduleType) {
+    if(this.selection.selected[0].type == DownloadGraphComponent.moduleType){
       this.downloadModule();
-    } else if (this.partRow.type === DownloadGraphComponent.componentType) {
+    } else if (this.selection.selected[0].type == DownloadGraphComponent.componentType) {
       this.downloadComponent();
     }
   }
 
   onSelectClick(){
-    this.dialogRef.close(this.partRow);
+    this.dialogRef.close(this.selection.selected);
   }
 
   selectCheck(){
-    return this.partRow && (this.partRow.type == DownloadGraphComponent.componentType || this.partRow.type == DownloadGraphComponent.collectionType);
+    return !this.selection.isEmpty() && this.onlyComponentsAndCollectionsSelected();
   }
 
   updateRefinements() {
@@ -192,28 +198,21 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   highlightRow(row: any) {
-    if (this.partRow)
-      return row === this.partRow;
-    if (this.collection)
-      return row.uri === this.collection;
-    return false;
+    return this.selection.isSelected(row);
   }
 
   onRowClick(row: any) {
     if (row.type === DownloadGraphComponent.collectionType) {
-      this.partRow = row;
       this.collection = row.uri;
     }
-    if (row.type === DownloadGraphComponent.componentType || row.type === DownloadGraphComponent.moduleType) {
-      this.partRow = row;
-    }
+    this.selection.toggle(row);
   }
 
   onRowDoubleClick(row: any) {
     if (row.type === DownloadGraphComponent.collectionType) {
       this.history.push(row);
       this.collection = row.uri;
-      this.partRow = null;
+      this.selection.clear();
       this.updateParts();
     } else if (row.type === DownloadGraphComponent.componentType) {
       if(this.mode == DownloadGraphComponent.SELECT_MODE){
@@ -233,14 +232,14 @@ export class DownloadGraphComponent implements OnInit {
   async downloadComponent() {
     this.working = true;
     if (this.mode == DownloadGraphComponent.IMPORT_MODE) {
-      this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
+      this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri).subscribe(xml => {
         this.graphService.setSelectedToXML(xml);
         this.working = false;
         this.dialogRef.close();
       });
     } else {
       // check for combinatorials
-      let combResult = await this.filesService.listCombinatorials(this.loginService.users[this.registry], this.registry, this.partRow.uri).toPromise();
+      let combResult = await this.filesService.listCombinatorials(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri).toPromise();
       let combinatorial;
       if(combResult.length > 0){
         combinatorial = await this.dialog.open(FuncCompSelectorComponent, {
@@ -254,9 +253,9 @@ export class DownloadGraphComponent implements OnInit {
       // get xml
       let xml;
       if(combinatorial){
-        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri, combinatorial.uri).toPromise();
+        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri, combinatorial.uri).toPromise();
       }else{
-        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).toPromise();
+        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri).toPromise();
       }
 
       // set xml;
@@ -271,13 +270,13 @@ export class DownloadGraphComponent implements OnInit {
   downloadModule() {
     this.working = true;
     if (this.mode == DownloadGraphComponent.IMPORT_MODE) {
-      this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
+      this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri).subscribe(xml => {
         this.graphService.setSelectedToXML(xml);
         this.working = false;
         this.dialogRef.close();
       })
     } else {
-      this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.partRow.uri).subscribe(xml => {
+      this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri).subscribe(xml => {
         this.graphService.setGraphToXML(xml);
         this.working = false;
         this.dialogRef.close();
@@ -286,7 +285,7 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   changeCollection(collection: string) {
-    this.partRow = null;
+    this.selection.clear();
     let found = false;
     for (let i = 0; i < this.history.length; i++) {
       if (this.history[i] === collection) {
@@ -374,6 +373,24 @@ export class DownloadGraphComponent implements OnInit {
     } else {
       this.parts.data = [];
     }
+  }
+
+  protected noCollectionsSelected(){
+    for(let row of this.selection.selected){
+      if(row.type == DownloadGraphComponent.collectionType){
+        return false;
+      }
+    }
+    return true;
+  }
+
+  protected onlyComponentsAndCollectionsSelected(){
+    for(let row of this.selection.selected){
+      if(row.type != DownloadGraphComponent.componentType && row.type != DownloadGraphComponent.collectionType){
+        return false;
+      }
+    }
+    return true;
   }
 
 }
