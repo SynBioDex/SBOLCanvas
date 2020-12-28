@@ -124,6 +124,7 @@ export class GraphBase {
 
         // slightly clearer selection highlighting
         mx.mxConstants.VERTEX_SELECTION_STROKEWIDTH = 2;
+        mx.mxConstants.EDGE_SELECTION_STROKEWIDTH = 2;
 
         // Enables click-and-drag selection
         new mx.mxRubberband(this.graph);
@@ -705,6 +706,22 @@ export class GraphBase {
         interactionDegradationStyle[mx.mxConstants.STYLE_ENDARROW] = GraphBase.interactionDegradationName;
         interactionDegradationStyle[mx.mxConstants.STYLE_ENDSIZE] = 20;
         this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION + GraphBase.interactionDegradationName, interactionDegradationStyle);
+
+        // vertex selection border styles
+        mx.mxVertexHandler.prototype.getSelectionColor = function() {
+            if(this.state.cell.style.startsWith(GraphBase.STYLE_CIRCUIT_CONTAINER)){
+                // circuit container selection color
+                return '#0000ff';
+            }else{
+                // default color
+                return '#00aa00';
+            }
+        }
+
+        // edge selection border styles
+        mx.mxEdgeHandler.prototype.getSelectionColor = function() {
+            return '#00aa00';
+        }
     }
 
     /**
