@@ -11,6 +11,7 @@ import { GraphEdits } from './graph-edits';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
+import { mxRectangleShape } from 'src/mxgraph';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -638,6 +639,10 @@ export class GraphBase {
         // Sequence features need almost the same styling as molecularSpecies
         this.baseSequenceFeatureGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
         this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
+        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_INDICATOR_WIDTH] = 15;//GraphBase.sequenceFeatureGlyphWidth;
+        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_INDICATOR_HEIGHT] = 30;//GraphBase.sequenceFeatureGlyphHeight;
+        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = 'bottom';
+        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = 'center';
 
 
         const textBoxStyle = {};
@@ -652,7 +657,6 @@ export class GraphBase {
         moduleStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
         moduleStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
         moduleStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
-        moduleStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
         moduleStyle[mx.mxConstants.STYLE_EDITABLE] = false;
         moduleStyle[mx.mxConstants.STYLE_ROUNDED] = true;
         this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MODULE, moduleStyle);
@@ -727,9 +731,48 @@ export class GraphBase {
     /**
      * Loads glyph stencils and their names from the glyphService, and
      * saves them to mxGraph's shape registry
+     * Also initalizes custom mxShapes needed for indicators
      */
     initCustomShapes() {
 
+        // mxShape extensions necessary for indicators
+        mx.mxShape.prototype.spacing = 2;
+        let oldInit = mx.mxShape.prototype.init;
+        mx.mxShape.prototype.init = function(container){
+            oldInit.apply(this, arguments);
+            if(this.indicatorShape != null){
+                if(this.indicatorShape instanceof mx.mxStencil){
+                    this.indicator = new mx.mxShape(this.indicatorShape);
+                }else{
+                    this.indicator = new this.indicatorShape();
+                }
+                this.indicator.dialect = this.dialect;
+                this.indicator.init(this.node);
+            }
+        }
+        let oldRedraw = mx.mxShape.prototype.redraw;
+        mx.mxShape.prototype.redraw = function(){
+            if(this.indicator != null){
+                this.indicator.fill = this.fill;
+                this.indicator.stroke = this.stroke;
+                this.indicator.direction = this.indicatorDirection;
+            }
+
+            oldRedraw.apply(this, arguments);
+        }
+        // who knows why they only implemented this for labels
+        mx.mxShape.prototype.paintIndicator = mx.mxLabel.prototype.paintIndicator;
+        mx.mxShape.prototype.getIndicatorBounds = mx.mxLabel.prototype.getIndicatorBounds;
+        mx.mxCellRenderer.prototype.createIndicatorShape = function(state){
+            let indicatorShape = state.view.graph.getIndicatorShape(state);
+            state.shape.indicatorShape = this.getShape(indicatorShape);
+            if(!state.shape.indicatorShape){
+                state.shape.indicatorShape = mx.mxStencilRegistry.getStencil(indicatorShape);
+            }
+        }
+
+
+        // custom stencil setup
         let stencils = this.glyphService.getSequenceFeatureGlyphs();
 
         for (const name in stencils) {
@@ -746,11 +789,15 @@ export class GraphBase {
                     h /= 2;
                     y += h / 2;
                     origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
+
+                    shape.paintIndicator(canvas, x, y-(h/2), w, h*2);
                 }
             } else {
                 customStencil.drawShape = function (canvas, shape, x, y, w, h) {
                     h = h / 2;
                     origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
+
+                    shape.paintIndicator(canvas, x, y, w, h*2);
                 }
             }
 
@@ -840,6 +887,15 @@ export class GraphBase {
             };
         };
         mx.mxMarker.addMarker(GraphBase.interactionDegradationName, degradationMarkerDrawFunction);
+
+        let oldGetIndicatorShape = mx.mxGraph.prototype.getIndicatorShape;
+        mx.mxGraph.prototype.getIndicatorShape = function (state){
+            if(state.cell.isSequenceFeatureGlyph()){
+                return 'CDS (Coding Sequence)';
+            }else{
+                return oldGetIndicatorShape(state);
+            }
+        }
     }
 
     /**
