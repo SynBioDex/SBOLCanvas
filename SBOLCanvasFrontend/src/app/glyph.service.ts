@@ -70,6 +70,10 @@ export class GlyphService {
     'assets/glyph_stencils/interactions/degradation.xml',
   ];
 
+  private indicatorXMLs: string[] = [
+    'assets/glyph_stencils/indicators/composite.xml',
+  ];
+
   private utilXMLs: string[] = [
     'assets/backbone.xml',
     'assets/textBox.xml',
@@ -79,12 +83,14 @@ export class GlyphService {
   private sequenceFeatures: any = {};
   private molecularSpecies: any = {};
   private interactions: any = {};
+  private indicators: any = {};
   private utils: any = {};
 
   constructor() {
     this.loadXMLs(this.sequenceFeatureXMLs, this.sequenceFeatures);
     this.loadXMLs(this.molecularSpeciesXMLs, this.molecularSpecies);
     this.loadXMLs(this.interactionXMLs, this.interactions);
+    this.loadXMLs(this.indicatorXMLs, this.indicators);
     this.loadXMLs(this.utilXMLs, this.utils);
   }
 
@@ -136,6 +142,10 @@ export class GlyphService {
 
   getMolecularSpeciesGlyphs() {
     return this.molecularSpecies;
+  }
+
+  getIndicatorGlyphs(){
+    return this.indicators;
   }
 
   getUtilElements() {

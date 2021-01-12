@@ -11,7 +11,6 @@ import { GraphEdits } from './graph-edits';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
-import { mxRectangleShape } from 'src/mxgraph';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -57,6 +56,7 @@ export class GraphBase {
     static readonly STYLE_INTERACTION = 'interactionGlyph';
     static readonly STYLE_MODULE_VIEW = "moduleViewCell";
     static readonly STYLE_COMPONENT_VIEW = "componentViewCell";
+    static readonly STYLE_INDICATOR = "indicator";
 
     static readonly interactionControlName = 'Control';
     static readonly interactionInhibitionName = 'Inhibition';
@@ -639,8 +639,8 @@ export class GraphBase {
         // Sequence features need almost the same styling as molecularSpecies
         this.baseSequenceFeatureGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
         this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
-        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_INDICATOR_WIDTH] = 15;//GraphBase.sequenceFeatureGlyphWidth;
-        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_INDICATOR_HEIGHT] = 30;//GraphBase.sequenceFeatureGlyphHeight;
+        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_INDICATOR_WIDTH] = 46;//GraphBase.sequenceFeatureGlyphWidth;
+        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_INDICATOR_HEIGHT] = 8;//GraphBase.sequenceFeatureGlyphHeight;
         this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = 'bottom';
         this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = 'center';
 
@@ -740,36 +740,64 @@ export class GraphBase {
         let oldInit = mx.mxShape.prototype.init;
         mx.mxShape.prototype.init = function(container){
             oldInit.apply(this, arguments);
-            if(this.indicatorShape != null){
-                if(this.indicatorShape instanceof mx.mxStencil){
-                    this.indicator = new mx.mxShape(this.indicatorShape);
-                }else{
-                    this.indicator = new this.indicatorShape();
-                }
-                this.indicator.dialect = this.dialect;
-                this.indicator.init(this.node);
+            if(this.state != null && this.state.cell.isSequenceFeatureGlyph()){
+                this.composite = new mx.mxShape(mx.mxStencilRegistry.getStencil("composite"));
+                this.composite.dialect = this.dialect;
+                this.composite.init(this.node);
             }
         }
         let oldRedraw = mx.mxShape.prototype.redraw;
         mx.mxShape.prototype.redraw = function(){
-            if(this.indicator != null){
-                this.indicator.fill = this.fill;
-                this.indicator.stroke = this.stroke;
-                this.indicator.direction = this.indicatorDirection;
+            if(this.composite != null){
+                this.composite.fill = this.fill;
+                this.composite.stroke = this.stroke;
+                this.composite.direction = this.indicatorDirection;
             }
 
             oldRedraw.apply(this, arguments);
         }
         // who knows why they only implemented this for labels
-        mx.mxShape.prototype.paintIndicator = mx.mxLabel.prototype.paintIndicator;
-        mx.mxShape.prototype.getIndicatorBounds = mx.mxLabel.prototype.getIndicatorBounds;
-        mx.mxCellRenderer.prototype.createIndicatorShape = function(state){
-            let indicatorShape = state.view.graph.getIndicatorShape(state);
-            state.shape.indicatorShape = this.getShape(indicatorShape);
-            if(!state.shape.indicatorShape){
-                state.shape.indicatorShape = mx.mxStencilRegistry.getStencil(indicatorShape);
+        mx.mxShape.prototype.paintComposite = function(c, x, y, w, h) {
+            if(this.composite != null){
+                this.composite.bounds = this.getCompositeBounds(x, y, w, h);
+                this.composite.paint(c);
             }
         }
+        mx.mxShape.prototype.getCompositeBounds = function(x, y, w, h) { //mx.mxLabel.prototype.getIndicatorBounds;
+            var align = mx.mxUtils.getValue(this.style, mx.mxConstants.STYLE_IMAGE_ALIGN, mx.mxConstants.ALIGN_LEFT);
+            var valign = mx.mxUtils.getValue(this.style, mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN, mx.mxConstants.ALIGN_MIDDLE);
+            var width = mx.mxUtils.getNumber(this.style, mx.mxConstants.STYLE_INDICATOR_WIDTH, this.indicatorSize);
+            var height = mx.mxUtils.getNumber(this.style, mx.mxConstants.STYLE_INDICATOR_HEIGHT, this.indicatorSize);
+            var spacing = this.spacing + 5;		
+            
+            if (align == mx.mxConstants.ALIGN_RIGHT)
+            {
+                x += w - width - spacing;
+            }
+            else if (align == mx.mxConstants.ALIGN_CENTER)
+            {
+                x += (w - width) / 2;
+            }
+            else // default is left
+            {
+                x += spacing;
+            }
+            
+            if (valign == mx.mxConstants.ALIGN_BOTTOM)
+            {
+                y += h - height - spacing;
+            }
+            else if (valign == mx.mxConstants.ALIGN_TOP)
+            {
+                y += spacing;
+            }
+            else // default is middle
+            {
+                y += (h - height) / 2;
+            }
+            
+            return new mx.mxRectangle(x, y, width, height);
+        };
 
 
         // custom stencil setup
@@ -790,14 +818,14 @@ export class GraphBase {
                     y += h / 2;
                     origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
 
-                    shape.paintIndicator(canvas, x, y-(h/2), w, h*2);
+                    shape.paintComposite(canvas, x, y-(h/2), w, h*2);
                 }
             } else {
                 customStencil.drawShape = function (canvas, shape, x, y, w, h) {
                     h = h / 2;
                     origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
 
-                    shape.paintIndicator(canvas, x, y, w, h*2);
+                    shape.paintComposite(canvas, x, y, w, h*2);
                 }
             }
 
@@ -820,6 +848,19 @@ export class GraphBase {
             const newGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
             newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
             this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MOLECULAR_SPECIES + name, newGlyphStyle);
+        }
+
+        // indicators like composit and combinatorial
+        stencils = this.glyphService.getIndicatorGlyphs();
+        for(const name in stencils){
+            const stencil = stencils[name][0];
+            let customStencil = new mx.mxStencil(stencil.desc);
+            customStencil.aspect = "fixed";
+            mx.mxStencilRegistry.addStencil(name, customStencil);
+
+            const newIndicatorStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
+            newIndicatorStyle[mx.mxConstants.STYLE_SHAPE] = name;
+            this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INDICATOR+name, newIndicatorStyle);
         }
 
         // *** Define custom markers for edge endpoints ***
@@ -891,7 +932,7 @@ export class GraphBase {
         let oldGetIndicatorShape = mx.mxGraph.prototype.getIndicatorShape;
         mx.mxGraph.prototype.getIndicatorShape = function (state){
             if(state.cell.isSequenceFeatureGlyph()){
-                return 'CDS (Coding Sequence)';
+                return 'composite';
             }else{
                 return oldGetIndicatorShape(state);
             }
