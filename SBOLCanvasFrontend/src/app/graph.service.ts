@@ -45,6 +45,30 @@ export class GraphService extends GraphHelpers {
     return this.viewStack[0].isComponentView();
   }
 
+  isComposite(sequenceFeature): boolean {
+    if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
+      return false;
+    }
+    return sequenceFeature.getCircuitContainer(this.graph).children.length > 1;
+  }
+
+  isVariant(sequenceFeature): boolean{
+    if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
+      return false;
+    }
+    let combinatorial = this.getCombinatorialWithTemplate(sequenceFeature.getParent().value);
+    if(!combinatorial)
+      return false;
+    return combinatorial.getVariableComponentInfo(sequenceFeature.getId());
+  }
+
+  /**
+   * Forces the graph to redraw
+   */
+  repaint(){
+    this.graph.refresh();
+  }
+
   getSelectedCellID(): string {
     let selected = this.graph.getSelectionCells();
     if(selected.length != 1){

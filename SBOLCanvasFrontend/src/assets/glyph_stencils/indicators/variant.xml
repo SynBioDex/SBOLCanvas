@@ -1,0 +1,26 @@
+<shapes>
+<shape aspect="fixed" h="25" name="variant" strokewidth="inherit" w="25">
+    <connections/>
+    <foreground>
+        <strokewidth width="0.242535"/>
+        <ellipse h="5" w="5" x="0" y="0"/>
+        <fillstroke/>
+        <ellipse h="5" w="5" x="10" y="0"/>
+        <fillstroke/>
+        <ellipse h="5" w="5" x="20" y="0"/>
+        <fillstroke/>
+        <ellipse h="5" w="5" x="0" y="10"/>
+        <fillstroke/>
+        <ellipse h="5" w="5" x="10" y="10"/>
+        <fillstroke/>
+        <ellipse h="5" w="5" x="20" y="10"/>
+        <fillstroke/>
+        <ellipse h="5" w="5" x="0" y="20"/>
+        <fillstroke/>
+        <ellipse h="5" w="5" x="10" y="20"/>
+        <fillstroke/>
+        <ellipse h="5" w="5" x="20" y="20"/>
+        <fillstroke/>
+    </foreground>
+</shape>
+</shapes>

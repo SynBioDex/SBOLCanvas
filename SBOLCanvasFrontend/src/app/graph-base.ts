@@ -11,6 +11,8 @@ import { GraphEdits } from './graph-edits';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
+import { mxShape } from 'src/mxgraph';
+import { CustomShapes } from './CustomShapes';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -639,11 +641,6 @@ export class GraphBase {
         // Sequence features need almost the same styling as molecularSpecies
         this.baseSequenceFeatureGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
         this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
-        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_INDICATOR_WIDTH] = 46;//GraphBase.sequenceFeatureGlyphWidth;
-        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_INDICATOR_HEIGHT] = 8;//GraphBase.sequenceFeatureGlyphHeight;
-        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN] = 'bottom';
-        this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_IMAGE_ALIGN] = 'center';
-
 
         const textBoxStyle = {};
         textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
@@ -735,69 +732,29 @@ export class GraphBase {
      */
     initCustomShapes() {
 
-        // mxShape extensions necessary for indicators
-        mx.mxShape.prototype.spacing = 2;
-        let oldInit = mx.mxShape.prototype.init;
-        mx.mxShape.prototype.init = function(container){
-            oldInit.apply(this, arguments);
-            if(this.state != null && this.state.cell.isSequenceFeatureGlyph()){
-                this.composite = new mx.mxShape(mx.mxStencilRegistry.getStencil("composite"));
-                this.composite.dialect = this.dialect;
-                this.composite.init(this.node);
-            }
-        }
-        let oldRedraw = mx.mxShape.prototype.redraw;
-        mx.mxShape.prototype.redraw = function(){
-            if(this.composite != null){
-                this.composite.fill = this.fill;
-                this.composite.stroke = this.stroke;
-                this.composite.direction = this.indicatorDirection;
+        // Sets up the extensions of mxShape
+        CustomShapes.initalize(this);
+
+        // we need this if we intend on creating custom shapes with stencils
+        let sequenceFeatureStencils = this.glyphService.getSequenceFeatureGlyphs();
+        mx.mxCellRenderer.prototype.createShape = function(state){
+            var shape = null;
+            if(state.style != null){
+                let stencilName = state.style[mx.mxConstants.STYLE_SHAPE];
+                var stencil = mx.mxStencilRegistry.getStencil(stencilName);
+
+                if(sequenceFeatureStencils[stencilName] != null){
+                    shape = new CustomShapes.SequenceFeatureShape(stencil);
+                }else if(stencil != null){
+                    shape = new mx.mxShape(stencil);
+                }else{
+                    var ctor = this.getShapeConstructor(state);
+                    shape = new ctor();
+                }
             }
 
-            oldRedraw.apply(this, arguments);
+            return shape;
         }
-        // who knows why they only implemented this for labels
-        mx.mxShape.prototype.paintComposite = function(c, x, y, w, h) {
-            if(this.composite != null){
-                this.composite.bounds = this.getCompositeBounds(x, y, w, h);
-                this.composite.paint(c);
-            }
-        }
-        mx.mxShape.prototype.getCompositeBounds = function(x, y, w, h) { //mx.mxLabel.prototype.getIndicatorBounds;
-            var align = mx.mxUtils.getValue(this.style, mx.mxConstants.STYLE_IMAGE_ALIGN, mx.mxConstants.ALIGN_LEFT);
-            var valign = mx.mxUtils.getValue(this.style, mx.mxConstants.STYLE_IMAGE_VERTICAL_ALIGN, mx.mxConstants.ALIGN_MIDDLE);
-            var width = mx.mxUtils.getNumber(this.style, mx.mxConstants.STYLE_INDICATOR_WIDTH, this.indicatorSize);
-            var height = mx.mxUtils.getNumber(this.style, mx.mxConstants.STYLE_INDICATOR_HEIGHT, this.indicatorSize);
-            var spacing = this.spacing + 5;		
-            
-            if (align == mx.mxConstants.ALIGN_RIGHT)
-            {
-                x += w - width - spacing;
-            }
-            else if (align == mx.mxConstants.ALIGN_CENTER)
-            {
-                x += (w - width) / 2;
-            }
-            else // default is left
-            {
-                x += spacing;
-            }
-            
-            if (valign == mx.mxConstants.ALIGN_BOTTOM)
-            {
-                y += h - height - spacing;
-            }
-            else if (valign == mx.mxConstants.ALIGN_TOP)
-            {
-                y += spacing;
-            }
-            else // default is middle
-            {
-                y += (h - height) / 2;
-            }
-            
-            return new mx.mxRectangle(x, y, width, height);
-        };
 
 
         // custom stencil setup
@@ -855,7 +812,6 @@ export class GraphBase {
         for(const name in stencils){
             const stencil = stencils[name][0];
             let customStencil = new mx.mxStencil(stencil.desc);
-            customStencil.aspect = "fixed";
             mx.mxStencilRegistry.addStencil(name, customStencil);
 
             const newIndicatorStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);

@@ -310,7 +310,9 @@ export class GraphHelpers extends GraphBase {
                                     break;
                             }
                         }
-                        this.syncCircuitContainer(circuitContainer);
+                        if(circuitContainer != null){
+                            this.syncCircuitContainer(circuitContainer);
+                        }
                     }
                 }
 

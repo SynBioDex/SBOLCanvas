@@ -172,7 +172,9 @@ export class InfoEditorComponent implements OnInit {
   }
 
   openCombinatorialDialog(){
-    this.dialog.open(CombinatorialDesignEditorComponent);
+    this.dialog.open(CombinatorialDesignEditorComponent).afterClosed().subscribe( _ => {
+      this.graphService.repaint();
+    });
   }
 
   /**
