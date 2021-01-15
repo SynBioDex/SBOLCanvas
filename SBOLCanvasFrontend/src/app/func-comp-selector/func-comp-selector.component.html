@@ -18,7 +18,7 @@
           [style.background]="highlightRow(row) ? 'lightblue' : ''" (dblclick)="onRowDoubleClick(row)"></tr>
     </table>
 
-    <table *ngIf="classRef.COMBINATORIAL_MODE" mat-table [dataSource]="options" matSort>
+    <table *ngIf="mode == classRef.COMBINATORIAL_MODE" mat-table [dataSource]="options" matSort>
       <ng-container matColumnDef="displayId">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>DisplayID</th>
         <td mat-cell *matCellDef="let element">{{element.displayId}}</td>
