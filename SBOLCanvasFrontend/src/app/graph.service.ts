@@ -62,6 +62,17 @@ export class GraphService extends GraphHelpers {
     return combinatorial.getVariableComponentInfo(sequenceFeature.getId());
   }
 
+  hasSequence(sequenceFeature): boolean {
+    if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
+      return false;
+    }
+    let glyphInfo = (<GlyphInfo>this.getFromInfoDict(sequenceFeature.getValue()));
+    if(!glyphInfo || !glyphInfo.sequence || glyphInfo.sequence.length <= 0){
+      return false;
+    }
+    return true;
+  }
+
   /**
    * Forces the graph to redraw
    */
@@ -894,12 +905,15 @@ export class GraphService extends GraphHelpers {
    * @param info 
    * @param prevURI 
    */
-  setSelectedCombinatorialInfo(info: CombinatorialInfo, prevURI: string) {
+  setSelectedCombinatorialInfo(info: CombinatorialInfo, prevURI?: string) {
     const selectedCell = this.graph.getSelectionCell();
 
     this.graph.getModel().beginUpdate();
     try {
       if (info instanceof CombinatorialInfo && selectedCell.isSequenceFeatureGlyph()) {
+        if(!prevURI){
+          prevURI = info.getFullURI();
+        }
         this.updateSelectedCombinatorialInfo(info, prevURI);
       }
     } finally {

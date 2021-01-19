@@ -73,6 +73,7 @@ export class GlyphService {
   private indicatorXMLs: string[] = [
     'assets/glyph_stencils/indicators/composite.xml',
     'assets/glyph_stencils/indicators/variant.xml',
+    'assets/glyph_stencils/indicators/error.xml',
   ];
 
   private utilXMLs: string[] = [
