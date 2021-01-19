@@ -45,6 +45,41 @@ export class GraphService extends GraphHelpers {
     return this.viewStack[0].isComponentView();
   }
 
+  isComposite(sequenceFeature): boolean {
+    if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
+      return false;
+    }
+    return sequenceFeature.getCircuitContainer(this.graph).children.length > 1;
+  }
+
+  isVariant(sequenceFeature): boolean{
+    if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
+      return false;
+    }
+    let combinatorial = this.getCombinatorialWithTemplate(sequenceFeature.getParent().value);
+    if(!combinatorial)
+      return false;
+    return combinatorial.getVariableComponentInfo(sequenceFeature.getId());
+  }
+
+  hasSequence(sequenceFeature): boolean {
+    if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
+      return false;
+    }
+    let glyphInfo = (<GlyphInfo>this.getFromInfoDict(sequenceFeature.getValue()));
+    if(!glyphInfo || !glyphInfo.sequence || glyphInfo.sequence.length <= 0){
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Forces the graph to redraw
+   */
+  repaint(){
+    this.graph.refresh();
+  }
+
   getSelectedCellID(): string {
     let selected = this.graph.getSelectionCells();
     if(selected.length != 1){
@@ -870,12 +905,15 @@ export class GraphService extends GraphHelpers {
    * @param info 
    * @param prevURI 
    */
-  setSelectedCombinatorialInfo(info: CombinatorialInfo, prevURI: string) {
+  setSelectedCombinatorialInfo(info: CombinatorialInfo, prevURI?: string) {
     const selectedCell = this.graph.getSelectionCell();
 
     this.graph.getModel().beginUpdate();
     try {
       if (info instanceof CombinatorialInfo && selectedCell.isSequenceFeatureGlyph()) {
+        if(!prevURI){
+          prevURI = info.getFullURI();
+        }
         this.updateSelectedCombinatorialInfo(info, prevURI);
       }
     } finally {

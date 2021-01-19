@@ -41,12 +41,12 @@ export class CombinatorialDesignEditorComponent implements OnInit {
   ngOnInit() {
   }
 
-  setOperator(event: any) {
-    this.variableComponentInfo.operator = event.value;
+  setOperator(value: any) {
+    this.variableComponentInfo.operator = value;
   }
 
-  setStrategy(event: any) {
-    this.combinatorialInfo.strategy = event.value;
+  setStrategy(value: any) {
+    this.combinatorialInfo.strategy = value;
   }
 
   setDisplayID(event: any){

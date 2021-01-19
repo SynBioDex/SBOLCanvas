@@ -11,6 +11,8 @@ import { GraphEdits } from './graph-edits';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
+import { mxShape } from 'src/mxgraph';
+import { CustomShapes } from './CustomShapes';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -56,6 +58,7 @@ export class GraphBase {
     static readonly STYLE_INTERACTION = 'interactionGlyph';
     static readonly STYLE_MODULE_VIEW = "moduleViewCell";
     static readonly STYLE_COMPONENT_VIEW = "componentViewCell";
+    static readonly STYLE_INDICATOR = "indicator";
 
     static readonly interactionControlName = 'Control';
     static readonly interactionInhibitionName = 'Inhibition';
@@ -124,6 +127,7 @@ export class GraphBase {
 
         // slightly clearer selection highlighting
         mx.mxConstants.VERTEX_SELECTION_STROKEWIDTH = 2;
+        mx.mxConstants.EDGE_SELECTION_STROKEWIDTH = 2;
 
         // Enables click-and-drag selection
         new mx.mxRubberband(this.graph);
@@ -638,7 +642,6 @@ export class GraphBase {
         this.baseSequenceFeatureGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
         this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
 
-
         const textBoxStyle = {};
         textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
         textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
@@ -651,7 +654,6 @@ export class GraphBase {
         moduleStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
         moduleStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000';
         moduleStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000';
-        moduleStyle[mx.mxConstants.STYLE_STROKEWIDTH] = 2;
         moduleStyle[mx.mxConstants.STYLE_EDITABLE] = false;
         moduleStyle[mx.mxConstants.STYLE_ROUNDED] = true;
         this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MODULE, moduleStyle);
@@ -705,14 +707,57 @@ export class GraphBase {
         interactionDegradationStyle[mx.mxConstants.STYLE_ENDARROW] = GraphBase.interactionDegradationName;
         interactionDegradationStyle[mx.mxConstants.STYLE_ENDSIZE] = 20;
         this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION + GraphBase.interactionDegradationName, interactionDegradationStyle);
+
+        // vertex selection border styles
+        mx.mxVertexHandler.prototype.getSelectionColor = function() {
+            if(this.state.cell.style.startsWith(GraphBase.STYLE_CIRCUIT_CONTAINER)){
+                // circuit container selection color
+                return '#0000ff';
+            }else{
+                // default color
+                return '#00aa00';
+            }
+        }
+
+        // edge selection border styles
+        mx.mxEdgeHandler.prototype.getSelectionColor = function() {
+            return '#00aa00';
+        }
     }
 
     /**
      * Loads glyph stencils and their names from the glyphService, and
      * saves them to mxGraph's shape registry
+     * Also initalizes custom mxShapes needed for indicators
      */
     initCustomShapes() {
 
+        // Sets up the extensions of mxShape
+        CustomShapes.initalize(this);
+
+        // we need this if we intend on creating custom shapes with stencils
+        let sequenceFeatureStencils = this.glyphService.getSequenceFeatureGlyphs();
+        mx.mxCellRenderer.prototype.createShape = function(state){
+            var shape = null;
+            if(state.style != null){
+                let stencilName = state.style[mx.mxConstants.STYLE_SHAPE];
+                var stencil = mx.mxStencilRegistry.getStencil(stencilName);
+
+                if(sequenceFeatureStencils[stencilName] != null){
+                    shape = new CustomShapes.SequenceFeatureShape(stencil);
+                }else if(stencil != null){
+                    shape = new mx.mxShape(stencil);
+                }else{
+                    var ctor = this.getShapeConstructor(state);
+                    shape = new ctor();
+                }
+            }
+
+            return shape;
+        }
+
+
+        // custom stencil setup
         let stencils = this.glyphService.getSequenceFeatureGlyphs();
 
         for (const name in stencils) {
@@ -729,11 +774,15 @@ export class GraphBase {
                     h /= 2;
                     y += h / 2;
                     origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
+
+                    shape.paintComposite(canvas, x, y-(h/2), w, h*2);
                 }
             } else {
                 customStencil.drawShape = function (canvas, shape, x, y, w, h) {
                     h = h / 2;
                     origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
+
+                    shape.paintComposite(canvas, x, y, w, h*2);
                 }
             }
 
@@ -756,6 +805,18 @@ export class GraphBase {
             const newGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
             newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
             this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MOLECULAR_SPECIES + name, newGlyphStyle);
+        }
+
+        // indicators like composit and combinatorial
+        stencils = this.glyphService.getIndicatorGlyphs();
+        for(const name in stencils){
+            const stencil = stencils[name][0];
+            let customStencil = new mx.mxStencil(stencil.desc);
+            mx.mxStencilRegistry.addStencil(name, customStencil);
+
+            const newIndicatorStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
+            newIndicatorStyle[mx.mxConstants.STYLE_SHAPE] = name;
+            this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INDICATOR+name, newIndicatorStyle);
         }
 
         // *** Define custom markers for edge endpoints ***
@@ -823,6 +884,15 @@ export class GraphBase {
             };
         };
         mx.mxMarker.addMarker(GraphBase.interactionDegradationName, degradationMarkerDrawFunction);
+
+        let oldGetIndicatorShape = mx.mxGraph.prototype.getIndicatorShape;
+        mx.mxGraph.prototype.getIndicatorShape = function (state){
+            if(state.cell.isSequenceFeatureGlyph()){
+                return 'composite';
+            }else{
+                return oldGetIndicatorShape(state);
+            }
+        }
     }
 
     /**
