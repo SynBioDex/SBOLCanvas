@@ -62,10 +62,25 @@ export class GraphService extends GraphHelpers {
     return combinatorial.getVariableComponentInfo(sequenceFeature.getId());
   }
 
+  /**
+   * Recursively checks that all leaf children have sequences
+   * @param sequenceFeature A cell representing a sequence feature
+   */
   hasSequence(sequenceFeature): boolean {
     if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
       return false;
     }
+    // check if the child view has more than just a backbone
+    let circuitContainer = sequenceFeature.getCircuitContainer(this.graph);
+    if(circuitContainer.children.length > 1){
+      for(let child of circuitContainer.children){
+        if(child.isSequenceFeatureGlyph() && !this.hasSequence(child)){
+          return false;
+        }
+      }
+      return true;
+    }
+    // no children? we must be a leaf node, check for a sequence
     let glyphInfo = (<GlyphInfo>this.getFromInfoDict(sequenceFeature.getValue()));
     if(!glyphInfo || !glyphInfo.sequence || glyphInfo.sequence.length <= 0){
       return false;
