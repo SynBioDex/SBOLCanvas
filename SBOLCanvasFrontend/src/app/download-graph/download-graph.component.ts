@@ -209,6 +209,9 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   onRowDoubleClick(row: any) {
+    // double clicks still cause onRowClick for single clicks, so we need to make sure the double clicked row is still selected
+    this.selection.select(row);
+
     if (row.type === DownloadGraphComponent.collectionType) {
       this.history.push(row);
       this.collection = row.uri;

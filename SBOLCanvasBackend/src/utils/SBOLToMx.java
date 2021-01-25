@@ -585,7 +585,7 @@ public class SBOLToMx extends Converter {
 		mxCell[] containerChildren = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 				.toArray(mxCell[]::new);
 		mxCell container = containerChildren[0];
-		mxCell compCell = (mxCell) container.getChildAt(index);
+		mxCell compCell = (mxCell) container.getChildAt(index+1); // add one to offset from the backbone
 		varCompInfo.setCellID(compCell.getId());
 
 		ArrayList<IdentifiedInfo> variants = new ArrayList<IdentifiedInfo>();

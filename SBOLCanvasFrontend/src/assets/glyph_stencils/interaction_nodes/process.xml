@@ -1,0 +1,18 @@
+<shapes>
+<shape aspect="fixed" h="48" name="process" strokewidth="inherit" w="48" centered="True">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <miterlimit limit="4" />
+        <dashpattern pattern="none" />
+        <dashed dashed="1" />
+        <alpha alpha="1" />
+        <strokealpha alpha="1" />
+        <fillalpha alpha="1" />
+        <rect h="31.76" w="31.76" x="8.12" y="8.12" />
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>

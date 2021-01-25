@@ -78,6 +78,26 @@
     </mat-expansion-panel>
 
 
+    <!-------------------------------------    Interaction nodes panel   --------------------------------------->
+    <!-- <mat-expansion-panel [expanded]="true" *ngIf="!componentDefinitionMode &&
+            (interactionNodeDict | keyvalue | searchfilter: searchPhrase).length > 0">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Interaction Nodes
+        </mat-panel-title>
+        <mat-panel-description>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <mat-grid-list cols="4" rowHeight="60px" gutterSize="5px">
+        <mat-grid-tile *ngFor="let pair of interactionNodeDict | keyvalue | searchfilter: searchPhrase">
+          <button mat-button (click)="onInteractionNodeGlyphClicked(pair.key)" [matTooltip]="pair.key">
+            <svg #canvasElement [attr.elementType]="elementTypes.INTERACTION_NODE" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel> -->
+
+
     <!-------------------------------------    Utils panel   --------------------------------------->
     <mat-expansion-panel [expanded]="true" *ngIf="
                     (!componentDefinitionMode && stringMatches('backbone dna strand circuit', searchPhrase))
