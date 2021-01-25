@@ -36,6 +36,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   public utilsDict = {};
   public sequenceFeatureDict = {};
   public interactionsDict = {};
+  public interactionNodeDict={};
   public molecularSpeciesDict = {};
 
   public componentDefinitionMode = false;
@@ -49,6 +50,11 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
   onMolecularSpeciesGlyphClicked(name: string) {
     this.graphService.addMolecularSpecies(name);
+  }
+
+  onInteractionNodeGlyphClicked(name: string){
+    // name = name.charAt(0).toUpperCase()+name.slice(1);
+    // this.graphService.addInteractionNode(name);
   }
 
   onInteractionGlyphClicked(name: string) {
@@ -106,6 +112,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     const sequenceFeatureElts   = this.glyphService.getSequenceFeatureElements();
     const molecularSpeciesElts  = this.glyphService.getMolecularSpeciesElements();
     const interactionElts       = this.glyphService.getInteractionElements();
+    const interactionNodeElts   = this.glyphService.getInteractionNodeElements();
     const utilElts              = this.glyphService.getUtilElements();
 
     for (const name in sequenceFeatureElts) {
@@ -125,6 +132,10 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     for (const name in interactionElts) {
       const svg = interactionElts[name];
       this.interactionsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+    }
+    for(const name in interactionNodeElts){
+      const svg = interactionNodeElts[name];
+      this.interactionNodeDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
   }
 

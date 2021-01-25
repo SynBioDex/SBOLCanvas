@@ -23,6 +23,8 @@ FILL_ALL = False
 
 INF = 1000
 
+SHIFT_EXCLUDE_LIST =['rx','ry','x-axis-rotation'] #they contain x and y, but should only be scaled
+
 def main():
 	args = parse_args()
 
@@ -161,7 +163,7 @@ def shift_x_or_y_direction(shape, distance, x_or_y):
 		for child in path.getchildren():
 			for key, val in child.attrib.items():
 				val = float(val)
-				if x_or_y in key.lower():
+				if x_or_y in key.lower() and key.lower() not in SHIFT_EXCLUDE_LIST:
 					val += distance
 				child.attrib[key] = str(val)
 

@@ -70,6 +70,12 @@ export class GlyphService {
     'assets/glyph_stencils/interactions/degradation.xml',
   ];
 
+  private interactionNodeXMLs: string[] = [
+    'assets/glyph_stencils/interaction_nodes/association.xml',
+    'assets/glyph_stencils/interaction_nodes/dissociation.xml',
+    'assets/glyph_stencils/interaction_nodes/process.xml',
+  ]
+
   private indicatorXMLs: string[] = [
     'assets/glyph_stencils/indicators/composite.xml',
     'assets/glyph_stencils/indicators/variant.xml',
@@ -85,12 +91,14 @@ export class GlyphService {
   private sequenceFeatures: any = {};
   private molecularSpecies: any = {};
   private interactions: any = {};
+  private interactionNodes: any = {};
   private indicators: any = {};
   private utils: any = {};
 
   constructor() {
     this.loadXMLs(this.sequenceFeatureXMLs, this.sequenceFeatures);
     this.loadXMLs(this.molecularSpeciesXMLs, this.molecularSpecies);
+    this.loadXMLs(this.interactionNodeXMLs, this.interactionNodes);
     this.loadXMLs(this.interactionXMLs, this.interactions);
     this.loadXMLs(this.indicatorXMLs, this.indicators);
     this.loadXMLs(this.utilXMLs, this.utils);
@@ -150,12 +158,20 @@ export class GlyphService {
     return this.indicators;
   }
 
+  getInteractionNodeGlyphs(){
+    return this.interactionNodes;
+  }
+
   getUtilElements() {
     return this.getElements(this.utils)
   }
 
   getInteractionElements() {
     return this.getElements(this.interactions);
+  }
+
+  getInteractionNodeElements(){
+    return this.getElements(this.interactionNodes);
   }
 
   getMolecularSpeciesElements() {

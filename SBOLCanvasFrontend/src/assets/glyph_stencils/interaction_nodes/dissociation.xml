@@ -1,0 +1,32 @@
+<shapes>
+<shape aspect="fixed" h="48" name="dissociation" strokewidth="inherit" w="48" centered="True">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <miterlimit limit="4" />
+        <dashpattern pattern="none" />
+        <dashed dashed="1" />
+        <alpha alpha="1" />
+        <strokealpha alpha="1" />
+        <fillalpha alpha="1" />
+        <path>
+            <move x="24.47332339791356" y="8.676154992548433" />
+            <arc large-arc-flag="0.0" rx="15.832667660208646" ry="15.335678092399407" sweep-flag="1.0" x="39.88" x-axis-rotation="0.0" y="24.343159463487332" />
+            <arc large-arc-flag="0.0" rx="15.832667660208646" ry="15.335678092399407" sweep-flag="1.0" x="23.787004470938896" x-axis-rotation="0.0" y="39.32384500745157" />
+            <arc large-arc-flag="0.0" rx="15.832667660208646" ry="15.335678092399407" sweep-flag="1.0" x="8.21466467958271" x-axis-rotation="0.0" y="23.84616989567809" />
+            <arc large-arc-flag="0.0" rx="15.832667660208646" ry="15.335678092399407" sweep-flag="1.0" x="24.11833084947839" x-axis-rotation="0.0" y="8.676154992548433" />
+        </path>
+        <fillstroke />
+        <path>
+            <move x="24.33132637853949" y="14.734694485842025" />
+            <arc large-arc-flag="0.0" rx="9.584798807749628" ry="9.300804769001491" sweep-flag="1.0" x="33.655797317436665" x-axis-rotation="0.0" y="24.224828614008942" />
+            <arc large-arc-flag="0.0" rx="9.584798807749628" ry="9.300804769001491" sweep-flag="1.0" x="23.905335320417286" x-axis-rotation="0.0" y="33.312637853949326" />
+            <arc large-arc-flag="0.0" rx="9.584798807749628" ry="9.300804769001491" sweep-flag="1.0" x="14.486199701937405" x-axis-rotation="0.0" y="23.9408345752608" />
+            <arc large-arc-flag="0.0" rx="9.584798807749628" ry="9.300804769001491" sweep-flag="1.0" x="24.11833084947839" x-axis-rotation="0.0" y="14.734694485842025" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>
