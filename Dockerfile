@@ -1,4 +1,4 @@
-FROM alpine
+FROM node:13.12.0-alpine
 
 RUN apk add openjdk8 bash
 
@@ -16,7 +16,15 @@ RUN resources/build_automation/build_backend.sh
 RUN apk add --update nodejs npm
 RUN npm install -g @angular/cli
 RUN apk add git
-RUN resources/build_automation/build_frontend.sh
+
+WORKDIR ./SBOLCanvasFrontend
+RUN npm install
+RUN npm rebuild node-sass
+RUN node --max-old-space-size=8192
+RUN npm run prebuild.prod
+RUN ng build --prod --build-optimizer --vendor-chunk --progress --output-hashing=all --stats-json --source-map=true --base-href=/canvas/
+
+#RUN resources/build_automation/build_frontend.sh
 
 # New container
 FROM tomcat:9.0-jdk8-openjdk
