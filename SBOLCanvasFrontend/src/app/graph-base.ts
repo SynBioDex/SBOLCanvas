@@ -39,6 +39,9 @@ export class GraphBase {
     static readonly molecularSpeciesGlyphWidth = 50;
     static readonly molecularSpeciesGlyphHeight = 50;
 
+    static readonly interactionNodeGlyphWidth = 50;
+    static readonly interactionNodeGlyphHeight = 50;
+
     static readonly defaultTextWidth = 120;
     static readonly defaultTextHeight = 80;
 
@@ -56,6 +59,7 @@ export class GraphBase {
     static readonly STYLE_MOLECULAR_SPECIES = 'molecularSpeciesGlyph';
     static readonly STYLE_SEQUENCE_FEATURE = 'sequenceFeatureGlyph';
     static readonly STYLE_INTERACTION = 'interactionGlyph';
+    static readonly STYLE_INTERACTION_NODE = 'interactionNodeGlyph';
     static readonly STYLE_MODULE_VIEW = "moduleViewCell";
     static readonly STYLE_COMPONENT_VIEW = "componentViewCell";
     static readonly STYLE_INDICATOR = "indicator";
@@ -81,6 +85,7 @@ export class GraphBase {
 
     baseMolecularSpeciesGlyphStyle: any;
     baseSequenceFeatureGlyphStyle: any;
+    baseInteractionNodeGlyphStyle: any;
 
     // This object handles the hotkeys for the graph.
     keyHandler: any;
@@ -362,6 +367,10 @@ export class GraphBase {
             return this.isStyle(GraphBase.STYLE_SCAR);
         };
 
+        mx.mxCell.prototype.isInteractionNode = function() {
+            return this.isStyle(GraphBase.STYLE_INTERACTION_NODE);
+        }
+
         mx.mxCell.prototype.isInteraction = function () {
             return this.isStyle(GraphBase.STYLE_INTERACTION);
         }
@@ -642,6 +651,8 @@ export class GraphBase {
         this.baseSequenceFeatureGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
         this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
 
+        this.baseInteractionNodeGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
+
         const textBoxStyle = {};
         textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
         textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
@@ -807,6 +818,18 @@ export class GraphBase {
             this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MOLECULAR_SPECIES + name, newGlyphStyle);
         }
 
+        // interaction nodes are basically identical to molecular species
+        stencils = this.glyphService.getInteractionNodeGlyphs();
+        for(const name in stencils){
+            const stencil = stencils[name][0];
+            let customStencil = new mx.mxStencil(stencil.desc);
+            mx.mxStencilRegistry.addStencil(name, customStencil);
+
+            const newGlyphStyle = mx.mxUtils.clone(this.baseInteractionNodeGlyphStyle);
+            newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
+            this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION_NODE+name, newGlyphStyle);
+        }
+
         // indicators like composit and combinatorial
         stencils = this.glyphService.getIndicatorGlyphs();
         for(const name in stencils){
@@ -903,9 +926,11 @@ export class GraphBase {
         this.graph.addListener(mx.mxEvent.CONNECT_CELL, mx.mxUtils.bind(this, async function(sender, evt){
 
             // if the terminal is a module, we need to prompt what it should be changed to, otherwise just clear it
+            //TODO find the previous terminal and replace it in the toURI or fromURI
 
             let edge = evt.getProperty("edge");
             let terminal = evt.getProperty("terminal");
+            let previous = evt.getProperty("previous");
             let source = evt.getProperty("source");
 
             let cancelled = false;

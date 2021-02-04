@@ -27,6 +27,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     SEQUENCE_FEATURE: "Sequence Feature",
     MOLECULAR_SPECIES: "Molecular Species",
     INTERACTION: "Interaction",
+    INTERACTION_NODE: "Interaction Node",
   }
 
   @ViewChildren('canvasElement') canvasElements: QueryList<ElementRef>;
@@ -53,8 +54,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   onInteractionNodeGlyphClicked(name: string){
-    // name = name.charAt(0).toUpperCase()+name.slice(1);
-    // this.graphService.addInteractionNode(name);
+    name = name.charAt(0).toUpperCase()+name.slice(1);
+    this.graphService.addInteractionNode(name);
   }
 
   onInteractionGlyphClicked(name: string) {
@@ -101,6 +102,9 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
           break;
         case this.elementTypes.INTERACTION:
           this.graphService.makeInteractionDragsource(elt, elt.getAttribute('glyphStyle'));
+          break;
+        case this.elementTypes.INTERACTION_NODE:
+          this.graphService.makeInteractionNodeDragsource(elt, elt.getAttribute('glyphStyle'));
           break;
       }
     }

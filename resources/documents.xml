@@ -1,0 +1,31 @@
+<shapes name="mxGraph.Users.Logan.Documents">
+<shape aspect="variable" h="13.86" name="complex-sbgn-specification" strokewidth="inherit" w="31.76">
+    <connections/>
+    <foreground>
+        <strokecolor color="#000000"/>
+        <fillcolor color="#999999"/>
+        <strokewidth width="0.99999988"/>
+        <linejoin join="miter"/>
+        <linecap cap="butt"/>
+        <miterlimit limit="4"/>
+        <dashpattern pattern="none"/>
+        <dashed dashed="1"/>
+        <alpha alpha="1"/>
+        <strokealpha alpha="1"/>
+        <fillalpha alpha="1"/>
+        <path>
+            <move x="3.52" y="0"/>
+            <line x="0" y="3.52"/>
+            <line x="0" y="10.34"/>
+            <line x="3.52" y="13.86"/>
+            <line x="28.25" y="13.86"/>
+            <line x="31.76" y="10.34"/>
+            <line x="31.76" y="3.52"/>
+            <line x="28.25" y="0"/>
+            <line x="3.52" y="0"/>
+            <close/>
+        </path>
+        <fillstroke/>
+    </foreground>
+</shape>
+</shapes>

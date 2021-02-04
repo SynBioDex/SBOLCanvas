@@ -769,14 +769,15 @@ export class GraphHelpers extends GraphBase {
                         this.graph.getModel().remove(interaction);
                         continue;
                     }
-                    if (interaction.value.fromURI === oldReference) {
+                    let index;
+                    if ((index = interaction.value.fromURI.indexOf(oldReference)) > -1) {
                         let infoCopy = interaction.value.makeCopy();
-                        infoCopy.fromURI = newReference;
+                        infoCopy.fromURI[index] = newReference;
                         this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
                     }
-                    if (interaction.value.toURI === oldReference) {
+                    if ((index = interaction.value.toURI.indexOf(oldReference)) > -1) {
                         let infoCopy = interaction.value.makeCopy();
-                        infoCopy.toURI = newReference;
+                        infoCopy.toURI[index] = newReference;
                         this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
                     }
                 }
@@ -1072,7 +1073,7 @@ export class GraphHelpers extends GraphBase {
                 this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
             }
         }
-        else if (cell.isInteraction()) {
+        else if (cell.isInteraction() || cell.isInteractionNode()) {
             let interactionInfo = cell.value;
             if (interactionInfo) {
                 this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy());

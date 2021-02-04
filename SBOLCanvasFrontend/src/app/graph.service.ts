@@ -714,6 +714,33 @@ export class GraphService extends GraphHelpers {
     console.log(this.graph.getModel().cells);
   }
 
+  makeInteractionNodeDragsource(element, stylename){
+    const insertGlyph = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+      this.addInteractionNodeAt(stylename, x - GraphBase.interactionNodeGlyphWidth / 2, y - GraphBase.interactionNodeGlyphHeight / 2);
+    });
+    this.makeGeneralDragsource(element, insertGlyph);
+  }
+
+  addInteractionNode(name){
+    const pt = this.getDefaultNewCellCoords();
+    this.addInteractionNodeAt(name, pt.x, pt.y);
+  }
+
+  addInteractionNodeAt(name: string, x, y){
+    this.graph.getModel().beginUpdate();
+    try{
+      const interactionNodeGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, null, x, y,
+        GraphBase.interactionNodeGlyphWidth, GraphBase.interactionNodeGlyphHeight, GraphBase.STYLE_INTERACTION_NODE + name);
+      interactionNodeGlyph.setConnectable(true);
+
+      // The new glyph should be selected
+      this.graph.clearSelection();
+      this.graph.setSelectionCell(interactionNodeGlyph);
+    }finally{
+      this.graph.getModel().endUpdate();
+    }
+  }
+
   /**
    * Turns the given HTML element into a dragsource for creating interaction glyphs
    */
@@ -765,7 +792,7 @@ export class GraphService extends GraphHelpers {
           let result = await this.promptChooseFunctionalComponent(selectedCell, true);
           if (!result)
             return;
-          cell.value.fromURI = result;
+          cell.value.fromURI.push(result+"_"+cell.getId());
         }
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
@@ -777,13 +804,13 @@ export class GraphService extends GraphHelpers {
           let result = await this.promptChooseFunctionalComponent(sourceCell, true);
           if (!result)
             return;
-          cell.value.fromURI = result;
+          cell.value.fromURI.push(result+"_"+cell.getId());
         }
         if (destCell.isModule()) {
           let result = await this.promptChooseFunctionalComponent(destCell, false);
           if (!result)
             return;
-          cell.value.toURI = result;
+          cell.value.toURI.push(result+"_"+cell.getId());
         }
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);
