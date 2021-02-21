@@ -786,6 +786,7 @@ export class GraphService extends GraphHelpers {
 
     this.graph.getModel().beginUpdate();
     try {
+      let addToDictionary = true;
       let interactionInfo = new InteractionInfo();
       cell = new mx.mxCell(interactionInfo.getFullURI(), new mx.mxGeometry(x, y, 0, 0), GraphBase.STYLE_INTERACTION + name);
 
@@ -797,6 +798,9 @@ export class GraphService extends GraphHelpers {
           if (!result)
             return;
           interactionInfo.fromURI.push(result+"_"+cell.getId());
+        }else if(selectedCell.isInteractionNode()){
+          cell.value = selectedCell.value;
+          addToDictionary = false;
         }
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
@@ -809,12 +813,18 @@ export class GraphService extends GraphHelpers {
           if (!result)
             return;
           interactionInfo.fromURI.push(result+"_"+cell.getId());
+        }else if(sourceCell.isInteractionNode()){
+          cell.value = sourceCell.value;
+          addToDictionary = false;
         }
         if (destCell.isModule()) {
           let result = await this.promptChooseFunctionalComponent(destCell, false);
           if (!result)
             return;
           interactionInfo.toURI.push(result+"_"+cell.getId());
+        }else if(destCell.isInteractionNode()){
+          cell.value = destCell.value();
+          addToDictionary = false;
         }
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);
@@ -830,10 +840,16 @@ export class GraphService extends GraphHelpers {
       if (name == "Process") {
         name = "Genetic Production"
       }
-      //cell.data = new InteractionInfo();
-      interactionInfo.interactionType = name;
-
-      this.addToInteractionDict(interactionInfo);
+      
+      if(addToDictionary){
+        interactionInfo.interactionType = name;
+        this.addToInteractionDict(interactionInfo);
+      }else{
+        let info = this.getFromInteractionDict(cell.value);
+        if(info){
+          this.mutateInteractionGlyph(info.interactionType, cell);
+        }
+      }
 
       // The new glyph should be selected
       this.graph.clearSelection();

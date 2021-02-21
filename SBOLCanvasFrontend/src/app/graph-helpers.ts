@@ -701,6 +701,19 @@ export class GraphHelpers extends GraphBase {
         }
         let selectedCell = selectedCells[0];
 
+        // gather all the cells referencing this interaction
+        let cell1 = this.graph.getModel().getCell("1");
+        let cells = [];
+        for (let viewChild of cell1.children) {
+            if (viewChild.children) {
+                for (let child of viewChild.children) {
+                    if ((child.isInteraction() || child.isInteractionNode) && child.getValue() === selectedCell.getValue()) {
+                        cells.push(child);
+                    }
+                }
+            }
+        }
+
         this.graph.getModel().beginUpdate();
         try {
             let prevURI = selectedCell.value;
@@ -716,16 +729,21 @@ export class GraphHelpers extends GraphBase {
                     this.removeFromInteractionDict(prevURI);
                 this.addToInteractionDict(info);
 
-                this.graph.getModel().setValue(selectedCell, info.getFullURI());
+                for(let cell of cells){
+                    this.graph.getModel().setValue(cell, info.getFullURI());
+                }
             } else {
                 this.updateInteractionDict(info);
             }
 
-            // mutate selected cell
-            if (selectedCell.isInteraction()) {
-                this.mutateInteractionGlyph(info.interactionType);
-            } else if (selectedCell.isInteractionNode()) {
-                this.mutateInteractionNodeGlyph(info.interactionType);
+
+            // mutate the cells
+            for(let cell of cells){
+                if (cell.isInteraction()) {
+                    this.mutateInteractionGlyph(info.interactionType, cell);
+                } else if (cell.isInteractionNode()) {
+                    this.mutateInteractionNodeGlyph(info.interactionType, cell);
+                }
             }
 
         } finally {
@@ -915,24 +933,17 @@ export class GraphHelpers extends GraphBase {
        * one selected in the info menu
        * @param name
        */
-    protected mutateInteractionGlyph(name: string) {
-        const selectionCells = this.graph.getSelectionCells();
-        if (selectionCells.length != 1 || !selectionCells[0].isInteraction()) {
-            console.error("Trying to mutate too many cells!");
-            return;
-        }
-        let selectedCell = selectionCells[0];
-
+    protected mutateInteractionGlyph(name: string, cell: mxCell) {
         this.graph.getModel().beginUpdate();
         try {
 
-            if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
+            if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production" || name == "Dissociation") {
                 name = "Process";
             }
             name = GraphBase.STYLE_INTERACTION + name;
 
             // Modify the style string
-            let styleString = selectedCell.style.slice();
+            let styleString = cell.style.slice();
             if (!styleString.includes(';')) {
                 // nothing special needed, the original style only had the glyphStyleName
                 styleString = name;
@@ -947,26 +958,19 @@ export class GraphHelpers extends GraphBase {
 
             console.debug("changing interaction style to: " + styleString);
 
-            this.graph.getModel().setStyle(selectedCell, styleString);
+            this.graph.getModel().setStyle(cell, styleString);
         } finally {
             this.graph.getModel().endUpdate();
         }
     }
 
-    protected mutateInteractionNodeGlyph(name: string) {
-        const selectionCells = this.graph.getSelectionCells();
-        if (selectionCells.length != 1 || !selectionCells[0].isInteractionNode()) {
-            console.error("Trying to mutate too many cells!");
-            return;
-        }
-        let selectedCell = selectionCells[0];
-
+    protected mutateInteractionNodeGlyph(name: string, cell: mxCell) {
         this.graph.getModel().beginUpdate();
         try {
             name = GraphBase.STYLE_INTERACTION_NODE + this.interactionNodeTypeToName(name);
 
             // Modify the style string
-            let styleString = selectedCell.style.slice();
+            let styleString = cell.style.slice();
             if (!styleString.includes(';')) {
                 // nothing special needed, the original style only had the interactionNode style name
                 styleString = name;
@@ -979,7 +983,7 @@ export class GraphHelpers extends GraphBase {
                 styleString = styleString.replace(stringToReplace, name);
             }
 
-            this.graph.getModel().setStyle(selectedCell, styleString);
+            this.graph.getModel().setStyle(cell, styleString);
         } finally {
             this.graph.getModel().endUpdate();
         }
