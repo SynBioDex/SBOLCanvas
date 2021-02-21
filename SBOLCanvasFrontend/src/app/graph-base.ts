@@ -31,6 +31,7 @@ export class GraphBase {
     // Constants
     static readonly INFO_DICT_INDEX = 0;
     static readonly COMBINATORIAL_DICT_INDEX = 1;
+    static readonly INTERACTION_DICT_INDEX = 2;
 
     static readonly sequenceFeatureGlyphWidth = 50;
     static readonly sequenceFeatureGlyphHeight = 100;
@@ -1092,6 +1093,35 @@ export class GraphBase {
                 }
             }
         }));
+    }
+
+    protected interactionNodeNametoType(name: string){
+        switch(name){
+            case "association":
+                return "Non-Covalent Binding";
+            case "dissociation":
+                return "Dissociation";
+            case "process":
+                return "Process";
+        }
+    }
+
+    protected interactionNodeTypeToName(type: string){
+        switch(type){
+            case "Non-Covalent Binding":
+                return "association";
+            case "Dissociation":
+                return "dissociation";
+            case "Inhibition":
+            case "Stimulation":
+            case "Biochemical Reaction":
+            case "Degradation":
+            case "Genetic Production":
+            case "Control":
+                return "process";
+            default:
+                return "unkown";
+        }
     }
 
     protected moleculeNameToType(name: string) {

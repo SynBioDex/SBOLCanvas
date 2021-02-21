@@ -729,8 +729,11 @@ export class GraphService extends GraphHelpers {
   addInteractionNodeAt(name: string, x, y){
     this.graph.getModel().beginUpdate();
     try{
-      const interactionNodeGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, null, x, y,
+      let interactionInfo = new InteractionInfo();
+      const interactionNodeGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, interactionInfo.getFullURI(), x, y,
         GraphBase.interactionNodeGlyphWidth, GraphBase.interactionNodeGlyphHeight, GraphBase.STYLE_INTERACTION_NODE + name);
+      interactionInfo.interactionType = this.interactionNodeNametoType(name);
+      this.addToInteractionDict(interactionInfo);
       interactionNodeGlyph.setConnectable(true);
 
       // The new glyph should be selected
@@ -783,7 +786,8 @@ export class GraphService extends GraphHelpers {
 
     this.graph.getModel().beginUpdate();
     try {
-      cell = new mx.mxCell(new InteractionInfo(), new mx.mxGeometry(x, y, 0, 0), GraphBase.STYLE_INTERACTION + name);
+      let interactionInfo = new InteractionInfo();
+      cell = new mx.mxCell(interactionInfo.getFullURI(), new mx.mxGeometry(x, y, 0, 0), GraphBase.STYLE_INTERACTION + name);
 
       const selectionCells = this.graph.getSelectionCells();
       if (selectionCells.length == 1) {
@@ -792,7 +796,7 @@ export class GraphService extends GraphHelpers {
           let result = await this.promptChooseFunctionalComponent(selectedCell, true);
           if (!result)
             return;
-          cell.value.fromURI.push(result+"_"+cell.getId());
+          interactionInfo.fromURI.push(result+"_"+cell.getId());
         }
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
@@ -804,13 +808,13 @@ export class GraphService extends GraphHelpers {
           let result = await this.promptChooseFunctionalComponent(sourceCell, true);
           if (!result)
             return;
-          cell.value.fromURI.push(result+"_"+cell.getId());
+          interactionInfo.fromURI.push(result+"_"+cell.getId());
         }
         if (destCell.isModule()) {
           let result = await this.promptChooseFunctionalComponent(destCell, false);
           if (!result)
             return;
-          cell.value.toURI.push(result+"_"+cell.getId());
+          interactionInfo.toURI.push(result+"_"+cell.getId());
         }
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);
@@ -827,7 +831,9 @@ export class GraphService extends GraphHelpers {
         name = "Genetic Production"
       }
       //cell.data = new InteractionInfo();
-      cell.value.interactionType = name;
+      interactionInfo.interactionType = name;
+
+      this.addToInteractionDict(interactionInfo);
 
       // The new glyph should be selected
       this.graph.clearSelection();
@@ -928,11 +934,8 @@ export class GraphService extends GraphHelpers {
         return;
       }
 
-      if (info instanceof InteractionInfo && selectedCell.isInteraction()) {
-        let interactionEdit = new GraphEdits.interactionEdit(selectedCell, info);
-        this.mutateInteractionGlyph(info.interactionType);
-        this.graph.getModel().execute(interactionEdit);
-        return;
+      if (info instanceof InteractionInfo && (selectedCell.isInteraction() || selectedCell.isInteractionNode())) {
+        this.updateSelectedInteractionInfo(info);
       }
 
     } finally {

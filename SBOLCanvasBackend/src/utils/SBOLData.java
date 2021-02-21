@@ -92,6 +92,7 @@ public class SBOLData {
 		interactions.put("Degradation", SystemsBiologyOntology.DEGRADATION);
 		interactions.put("Genetic Production", SystemsBiologyOntology.GENETIC_PRODUCTION);
 		interactions.put("Control", SystemsBiologyOntology.CONTROL);
+		interactions.put("Dissociation", SystemsBiologyOntology.DISSOCIATION);
 		
 		registries = new HashSet<String>();
 		try {

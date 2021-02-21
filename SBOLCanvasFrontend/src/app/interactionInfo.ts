@@ -5,6 +5,8 @@ export class InteractionInfo extends Info {
   // Remember that when you change this you need to change the encode function in graph service
   static counter: number = 0;
   interactionType: string;
+  fromRole: string[];
+  toRole: string[];
   fromURI: string[];
   toURI: string[];
 

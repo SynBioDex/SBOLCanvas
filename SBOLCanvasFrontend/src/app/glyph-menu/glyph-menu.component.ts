@@ -54,7 +54,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   onInteractionNodeGlyphClicked(name: string){
-    name = name.charAt(0).toUpperCase()+name.slice(1);
+    //name = name.charAt(0).toUpperCase()+name.slice(1);
     this.graphService.addInteractionNode(name);
   }
 

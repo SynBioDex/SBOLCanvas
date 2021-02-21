@@ -20,6 +20,8 @@ import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-select
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
+import { InteractionInfo } from './interactionInfo';
+import { mxRectangleShape } from 'src/mxgraph';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -36,9 +38,11 @@ export class GraphHelpers extends GraphBase {
         const cell0 = this.graph.getModel().getCell(0);
         const infoDict = [];
         const combinatorialDict = [];
+        const interactionDict = [];
         var dataContainer = [];
         dataContainer[GraphBase.INFO_DICT_INDEX] = infoDict;
         dataContainer[GraphBase.COMBINATORIAL_DICT_INDEX] = combinatorialDict;
+        dataContainer[GraphBase.INTERACTION_DICT_INDEX] = interactionDict;
         this.graph.getModel().setValue(cell0, dataContainer);
 
         // initalize the root view cell of the graph
@@ -310,7 +314,7 @@ export class GraphHelpers extends GraphBase {
                                     break;
                             }
                         }
-                        if(circuitContainer != null){
+                        if (circuitContainer != null) {
                             this.syncCircuitContainer(circuitContainer);
                         }
                     }
@@ -643,7 +647,7 @@ export class GraphHelpers extends GraphBase {
                 // check if we already have a link and break if we do
                 let found = false;
                 let varCompInfo = combinatorial.getVariableComponentInfo(this.selectionStack[i].getId());
-                if(!varCompInfo){
+                if (!varCompInfo) {
                     // If the variable component didn't exist, we need to add one
                     varCompInfo = new VariableComponentInfo(this.selectionStack[i].getId());
                     combinatorial.addVariableComponentInfo(varCompInfo);
@@ -656,7 +660,7 @@ export class GraphHelpers extends GraphBase {
                         break;
                     }
                 }
-                if(found){
+                if (found) {
                     // if it did link, update the info, we assume that the link works all the way up the chain
                     variant.description = previous.description;
                     variant.displayId = previous.displayID;
@@ -664,7 +668,7 @@ export class GraphHelpers extends GraphBase {
                     variant.uri = previous.getFullURI();
                     variant.version = previous.version;
                     break;
-                }else{
+                } else {
                     // if it wasn't found we need to add it
                     let variant = new IdentifiedInfo();
                     variant.description = previous.description;
@@ -683,6 +687,46 @@ export class GraphHelpers extends GraphBase {
 
             // change ownership
             this.changeOwnership(info.getFullURI(), true)
+
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+    }
+
+    protected updateSelectedInteractionInfo(this: GraphService, info: InteractionInfo) {
+        let selectedCells = this.graph.getSelectionCells();
+        if (selectedCells.length > 1 || selectedCells.length < 0) {
+            console.error("Trying to change info on too many or too few cells!");
+            return;
+        }
+        let selectedCell = selectedCells[0];
+
+        this.graph.getModel().beginUpdate();
+        try {
+            let prevURI = selectedCell.value;
+            // store
+            if (prevURI != info.getFullURI()) {
+                // check for duplication and error
+                let conflictInteraction = this.getFromInteractionDict(info.getFullURI());
+                if (conflictInteraction) {
+                    this.dialog.open(ErrorComponent, { data: "The part " + info.getFullURI() + " already exists as an Interaction!" });
+                }
+
+                if (this.getFromInteractionDict(prevURI))
+                    this.removeFromInteractionDict(prevURI);
+                this.addToInteractionDict(info);
+
+                this.graph.getModel().setValue(selectedCell, info.getFullURI());
+            } else {
+                this.updateInteractionDict(info);
+            }
+
+            // mutate selected cell
+            if (selectedCell.isInteraction()) {
+                this.mutateInteractionGlyph(info.interactionType);
+            } else if (selectedCell.isInteractionNode()) {
+                this.mutateInteractionNodeGlyph(info.interactionType);
+            }
 
         } finally {
             this.graph.getModel().endUpdate();
@@ -790,9 +834,9 @@ export class GraphHelpers extends GraphBase {
     /**
      * 
      */
-    protected async updateCombinatorialTemplate(oldTemplate: string, newTemplate: string){
+    protected async updateCombinatorialTemplate(oldTemplate: string, newTemplate: string) {
         let combinatorial = this.getCombinatorialWithTemplate(oldTemplate);
-        if(combinatorial){
+        if (combinatorial) {
             this.removeFromCombinatorialDict(combinatorial.getFullURI());
             combinatorial.templateURI = newTemplate;
             this.addToCombinatorialDict(combinatorial);
@@ -873,38 +917,71 @@ export class GraphHelpers extends GraphBase {
        */
     protected mutateInteractionGlyph(name: string) {
         const selectionCells = this.graph.getSelectionCells();
+        if (selectionCells.length != 1 || !selectionCells[0].isInteraction()) {
+            console.error("Trying to mutate too many cells!");
+            return;
+        }
+        let selectedCell = selectionCells[0];
 
-        if (selectionCells.length == 1 && selectionCells[0].isInteraction()) {
-            let selectedCell = selectionCells[0];
+        this.graph.getModel().beginUpdate();
+        try {
 
-            this.graph.getModel().beginUpdate();
-            try {
-
-                if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
-                    name = "Process";
-                }
-                name = GraphBase.STYLE_INTERACTION + name;
-
-                // Modify the style string
-                let styleString = selectedCell.style.slice();
-                if (!styleString.includes(';')) {
-                    // nothing special needed, the original style only had the glyphStyleName
-                    styleString = name;
-                } else {
-                    // the string is something like "strokecolor=#000000;interactionStyleName;fillcolor=#ffffff;etc;etc;"
-                    // we only want to replace the 'glyphStyleName' bit
-                    let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION);
-                    let endIdx = styleString.indexOf(';', startIdx);
-                    let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
-                    styleString = styleString.replace(stringToReplace, name);
-                }
-
-                console.debug("changing interaction style to: " + styleString);
-
-                this.graph.getModel().setStyle(selectedCell, styleString);
-            } finally {
-                this.graph.getModel().endUpdate();
+            if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
+                name = "Process";
             }
+            name = GraphBase.STYLE_INTERACTION + name;
+
+            // Modify the style string
+            let styleString = selectedCell.style.slice();
+            if (!styleString.includes(';')) {
+                // nothing special needed, the original style only had the glyphStyleName
+                styleString = name;
+            } else {
+                // the string is something like "strokecolor=#000000;interactionStyleName;fillcolor=#ffffff;etc;etc;"
+                // we only want to replace the 'glyphStyleName' bit
+                let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION);
+                let endIdx = styleString.indexOf(';', startIdx);
+                let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
+                styleString = styleString.replace(stringToReplace, name);
+            }
+
+            console.debug("changing interaction style to: " + styleString);
+
+            this.graph.getModel().setStyle(selectedCell, styleString);
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+    }
+
+    protected mutateInteractionNodeGlyph(name: string) {
+        const selectionCells = this.graph.getSelectionCells();
+        if (selectionCells.length != 1 || !selectionCells[0].isInteractionNode()) {
+            console.error("Trying to mutate too many cells!");
+            return;
+        }
+        let selectedCell = selectionCells[0];
+
+        this.graph.getModel().beginUpdate();
+        try {
+            name = GraphBase.STYLE_INTERACTION_NODE + this.interactionNodeTypeToName(name);
+
+            // Modify the style string
+            let styleString = selectedCell.style.slice();
+            if (!styleString.includes(';')) {
+                // nothing special needed, the original style only had the interactionNode style name
+                styleString = name;
+            } else {
+                // the string is something like "strokecolor=#000000;interactionNodeStyleName;fillcolor=#ffffff;etc;etc;"
+                // we only want to replace the 'glyphStyleName' bit
+                let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION_NODE);
+                let endIdx = styleString.indexOf(';', startIdx);
+                let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
+                styleString = styleString.replace(stringToReplace, name);
+            }
+
+            this.graph.getModel().setStyle(selectedCell, styleString);
+        } finally {
+            this.graph.getModel().endUpdate();
         }
     }
 
@@ -1074,7 +1151,7 @@ export class GraphHelpers extends GraphBase {
             }
         }
         else if (cell.isInteraction() || cell.isInteractionNode()) {
-            let interactionInfo = cell.value;
+            let interactionInfo = this.getFromInteractionDict(cell.value);
             if (interactionInfo) {
                 this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy());
             }
@@ -1775,6 +1852,26 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    protected updateInteractionDict(info: InteractionInfo) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[GraphBase.INTERACTION_DICT_INDEX][info.getFullURI()], GraphBase.INTERACTION_DICT_INDEX));
+    }
+
+    protected removeFromInteractionDict(interactionURI: string) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel.execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.INTERACTION_DICT_INDEX][interactionURI], GraphBase.INTERACTION_DICT_INDEX));
+    }
+
+    protected addToInteractionDict(info: InteractionInfo) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null, GraphBase.INTERACTION_DICT_INDEX));
+    }
+
+    protected getFromInteractionDict(interactionURI: string): InteractionInfo {
+        const cell0 = this.graph.getModel().getCell(0);
+        return cell0.value[GraphBase.INTERACTION_DICT_INDEX][interactionURI];
+    }
+
     protected initLabelDrawing() {
         // label drawing
         let graphService = this;
@@ -1797,7 +1894,7 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     return info.displayID;
                 }
-            } else if (cell.isCircuitContainer()) {
+            } else if (cell.isCircuitContainer() || cell.isInteraction() || cell.isInteractionNode()) {
                 return null;
             } else {
                 return cell.value;
