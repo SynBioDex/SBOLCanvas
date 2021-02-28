@@ -14,6 +14,8 @@ export class InteractionInfo extends Info {
     super();
     this.displayID = 'Interaction' + (InteractionInfo.counter++);
     this.interactionType;
+    this.fromURI = [];
+    this.toURI = [];
   }
 
   makeCopy() {

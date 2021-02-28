@@ -927,7 +927,7 @@ export class GraphBase {
         this.graph.addListener(mx.mxEvent.CONNECT_CELL, mx.mxUtils.bind(this, async function(sender, evt){
 
             // if the terminal is a module, we need to prompt what it should be changed to, otherwise just clear it
-            //TODO find the previous terminal and replace it in the toURI or fromURI
+            //TODO figure out if the interaction info needs to be split
 
             let edge = evt.getProperty("edge");
             let terminal = evt.getProperty("terminal");
@@ -947,15 +947,36 @@ export class GraphBase {
                     }
                 }
 
-                let infoCopy = edge.value.makeCopy();
+                let infoCopy = this.getFromInteractionDict(edge.value).makeCopy();
 
-                if(source){
-                    infoCopy.fromURI = newTarget;
-                }else{
-                    infoCopy.toURI = newTarget;
+                // if the previous terminal was a module, we need to remove it's to/fromURI
+                if(previous && previous.isModule()){
+                    if(source){
+                        for(let i = 0; i < infoCopy.fromURI.length; i++){
+                            let uri = infoCopy.fromURI[i];
+                            if(uri.endsWith("_"+edge.getId())){
+                                infoCopy.fromURI.splice(i, 1);
+                                break;
+                            }
+                        }
+                    }else{
+                        for(let i = 0; i < infoCopy.toURI.length; i++){
+                            let uri = infoCopy.toURI[i];
+                            if(uri.endsWith("_"+edge.getId())){
+                                infoCopy.toURI.splice(i,1);
+                                break;
+                            }
+                        }
+                    }
                 }
 
-                sender.getModel().execute(new GraphEdits.interactionEdit(edge, infoCopy));
+                if(source){
+                    infoCopy.fromURI.push(newTarget+"_"+edge.getId());
+                }else{
+                    infoCopy.toURI.push(newTarget+"_"+edge.getId());
+                }
+
+                this.updateInteractionDict(infoCopy);
             }finally{
                 sender.getModel().endUpdate();
                 // undo has to happen after end update
