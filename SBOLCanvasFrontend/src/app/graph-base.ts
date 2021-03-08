@@ -11,7 +11,7 @@ import { GraphEdits } from './graph-edits';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
-import { mxShape } from 'src/mxgraph';
+import { mxMultiplicity, mxShape } from 'src/mxgraph';
 import { CustomShapes } from './CustomShapes';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
@@ -147,6 +147,7 @@ export class GraphBase {
         this.initStyles();
         this.initCustomShapes();
         this.initListeners();
+        this.initEdgeValidation();
     }
 
     /**
@@ -1114,6 +1115,41 @@ export class GraphBase {
                 }
             }
         }));
+    }
+
+    /**
+     * Overrides methods necessary to prevent edge connections under certain conditions.
+     */
+    protected initEdgeValidation(){
+        // We have to override this method because multiplicities only are checked when there is a source and target.
+        // Multiplicities also base their type on cell.value, not cell.style
+        let oldGetEdgeValidationError = mx.mxGraph.prototype.getEdgeValidationError;
+        mx.mxGraph.prototype.getEdgeValidationError = function(edge, source, target){
+            let result = oldGetEdgeValidationError.apply(this, arguments);
+
+            // will only be null if there wasn't already a condition preventing a connection
+            if(result != null){
+                return result;
+            }
+
+            // certain edge types can't connect to interaction nodes
+            if(((source && source.isInteractionNode()) || (target && target.isInteractionNode())) &&
+            (edge.isStyle('Control') || edge.isStyle('Inhibition') || edge.isStyle('Stimulation'))){
+                return 'Edge type dissallowed to connect to an interaction node.';
+            }
+
+            // prevent degredation from using anything as a target
+            if(edge.isStyle('Degradation') && target){
+                return 'Degradation isn\'t allowed target anything.';
+            }
+
+            // prevent interaction nodes from chaining
+            if(source && target && source.isInteractionNode() && target.isInteractionNode()){
+                return 'Interaction nodes aren\'t allowed to connect.';
+            }
+            
+            return null;
+        }
     }
 
     protected interactionNodeNametoType(name: string){
