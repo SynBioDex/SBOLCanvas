@@ -729,7 +729,7 @@ export class GraphHelpers extends GraphBase {
                     this.removeFromInteractionDict(prevURI);
                 this.addToInteractionDict(info);
 
-                for(let cell of cells){
+                for (let cell of cells) {
                     this.graph.getModel().setValue(cell, info.getFullURI());
                 }
             } else {
@@ -738,7 +738,7 @@ export class GraphHelpers extends GraphBase {
 
 
             // mutate the cells
-            for(let cell of cells){
+            for (let cell of cells) {
                 if (cell.isInteraction()) {
                     this.mutateInteractionGlyph(info.interactionType, cell);
                 } else if (cell.isInteractionNode()) {
@@ -1365,6 +1365,46 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    protected trimUnreferencedInfos() {
+        const cell0 = this.graph.getModel().getCell("0");
+        // accumulate all the references
+        let foundInfos = {};
+        let foundInteractions = {};
+        for (let cellKey in this.graph.getModel().cells) {
+            const cell = this.graph.getModel().cells[cellKey];
+            if (cell.isCircuitContainer() || cell.isSequenceFeatureGlyph() || cell.isModule() || cell.isMolecularSpeciesGlyph()) {
+                foundInfos[cell.value] = ""; // the value doesn't matter, as we just want to keep track of the key
+            }
+            if (cell.isViewCell()) {
+                foundInfos[cell.getId()] = "";
+            }
+            if (cell.isInteractionNode() || cell.isInteraction()) {
+                foundInteractions[cell.value] = "";
+            }
+        }
+        // detect missing references
+        let infosToRemove = [];
+        for (let dictKey in cell0.value[GraphBase.INFO_DICT_INDEX]) {
+            if (!(dictKey in foundInfos)){
+                infosToRemove.push(dictKey);
+            }
+        }
+        let interactionsToRemove = [];
+        for(let dictKey in cell0.value[GraphBase.INTERACTION_DICT_INDEX]){
+            if(!(dictKey in foundInteractions)){
+                interactionsToRemove.push(dictKey);
+            }
+        }
+        // remove references
+        for(let infoURI of infosToRemove){
+            this.removeFromInfoDict(infoURI);
+        }
+        for(let interactionURI of interactionsToRemove){
+            this.removeFromInteractionDict(interactionURI);
+        }
+
+    }
+
     protected getCoupledGlyphs(glyphURI: string): mxCell[] {
         const coupledCells = [];
         for (let key in this.graph.getModel().cells) {
@@ -1863,7 +1903,7 @@ export class GraphHelpers extends GraphBase {
 
     protected removeFromInteractionDict(interactionURI: string) {
         const cell0 = this.graph.getModel().getCell(0);
-        this.graph.getModel.execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.INTERACTION_DICT_INDEX][interactionURI], GraphBase.INTERACTION_DICT_INDEX));
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.INTERACTION_DICT_INDEX][interactionURI], GraphBase.INTERACTION_DICT_INDEX));
     }
 
     protected addToInteractionDict(info: InteractionInfo) {
@@ -1973,5 +2013,9 @@ export class GraphHelpers extends GraphBase {
         }
 
         return childViewCell;
+    }
+
+    protected showError(message: string) {
+        this.dialog.open(ErrorComponent, { data: message });
     }
 }

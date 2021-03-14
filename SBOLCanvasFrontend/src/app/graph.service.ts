@@ -423,6 +423,7 @@ export class GraphService extends GraphHelpers {
 
       this.trimUnreferencedCells();
       this.trimUnreferencedCombinatorials();
+      this.trimUnreferencedInfos();
 
       // sync circuit containers
       for (let circuitContainer of circuitContainers) {
@@ -792,13 +793,22 @@ export class GraphService extends GraphHelpers {
 
       const selectionCells = this.graph.getSelectionCells();
       if (selectionCells.length == 1) {
+        // one cell is selected, set the edges source
         const selectedCell = this.graph.getSelectionCell();
+        // check for any restrictions on valid edges
+        let error = this.graph.getEdgeValidationError(cell, selectedCell, null);
+        if(error){
+          this.showError(error);
+          return;
+        }
         if (selectedCell.isModule()) {
+          // if the cell is a module, we need to prompt what subpart we want to connect to
           let result = await this.promptChooseFunctionalComponent(selectedCell, true);
           if (!result)
             return;
           interactionInfo.fromURI.push(result+"_"+cell.getId());
         }else if(selectedCell.isInteractionNode()){
+          // if the source is a interaction node, we want to inherit it's information
           cell.value = selectedCell.value;
           addToDictionary = false;
         }
@@ -806,23 +816,34 @@ export class GraphService extends GraphHelpers {
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), selectedCell, null);
       } else if (selectionCells.length == 2) {
+        // two cells were selected, set the first one as the source, and the second as the target
         const sourceCell = selectionCells[0];
         const destCell = selectionCells[1];
+        // check for restrictions on the edge
+        let error = this.graph.getEdgeValidationError(cell, sourceCell, destCell);
+        if(error){
+          this.showError(error);
+          return;
+        }
         if (sourceCell.isModule()) {
+          // prompt for the subpart to keep track of
           let result = await this.promptChooseFunctionalComponent(sourceCell, true);
           if (!result)
             return;
           interactionInfo.fromURI.push(result+"_"+cell.getId());
         }else if(sourceCell.isInteractionNode()){
+          // inherit the information 
           cell.value = sourceCell.value;
           addToDictionary = false;
         }
         if (destCell.isModule()) {
+          // prompt for the subpart to keep track of
           let result = await this.promptChooseFunctionalComponent(destCell, false);
           if (!result)
             return;
           interactionInfo.toURI.push(result+"_"+cell.getId());
         }else if(destCell.isInteractionNode()){
+          // inherit the information
           cell.value = destCell.value();
           addToDictionary = false;
         }
