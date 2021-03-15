@@ -39,6 +39,15 @@ public class Data extends HttpServlet {
 				body = gson.toJson(SBOLData.getRefinement(parent));
 			} else if (request.getPathInfo().equals("/interactions")) {
 				body = gson.toJson(SBOLData.getInteractions());
+			}else if (request.getPathInfo().equals("/interactionRoles")) {
+				body = gson.toJson(SBOLData.getInteractionRoles());
+			}else if (request.getPathInfo().equals("/interactionRoleRefine")) {
+				String parent = request.getParameter("parent");
+				if(parent == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				body = gson.toJson(SBOLData.getInteractionRoleRefinement(parent));
 			}
 
 			// write it to the response body

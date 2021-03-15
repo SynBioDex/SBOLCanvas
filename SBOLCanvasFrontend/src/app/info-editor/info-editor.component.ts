@@ -9,6 +9,7 @@ import { DownloadGraphComponent } from '../download-graph/download-graph.compone
 import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
+import { ThrowStmt } from '@angular/compiler';
 
 
 @Component({
@@ -26,6 +27,9 @@ export class InfoEditorComponent implements OnInit {
   partRoles: string[];
   partRefinements: string[]; // these depend on role
   interactionTypes: string[];
+  interactionRoles: {};
+  interactionSourceRefinements: String[];
+  interactionTargetRefinements: String[];
 
   // TODO get these from the backend
   encodings: string[];
@@ -44,6 +48,7 @@ export class InfoEditorComponent implements OnInit {
     this.getTypes();
     this.getRoles();
     this.getInteractions();
+    this.getInteractionRoles();
   }
 
   getTypes() {
@@ -60,6 +65,18 @@ export class InfoEditorComponent implements OnInit {
 
   getInteractions() {
     this.metadataService.loadInteractions().subscribe(interactions => this.interactionTypes = interactions);
+  }
+
+  getInteractionRoles(){
+    this.metadataService.loadInteractionRoles().subscribe(interactionRoles => this.interactionRoles = interactionRoles);
+  }
+
+  getInteractionSourceRefinements(sourceRole: string){
+    this.metadataService.loadInteractionRoleRefinements(sourceRole).subscribe(sourceRefinements => this.interactionSourceRefinements = sourceRefinements);
+  }
+
+  getInteractionTargetRefinements(targetRole: string){
+    this.metadataService.loadInteractionRoleRefinements(targetRole).subscribe(targetRefinements => this.interactionTargetRefinements = targetRefinements);
   }
 
   dropDownChange(event: MatSelectChange) {
@@ -88,6 +105,8 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'interactionType': {
         this.interactionInfo.interactionType = event.value;
+        this.getInteractionSourceRefinements(event.value);
+        this.getInteractionTargetRefinements(event.value);
         break;
       } default: {
         console.log('Unexpected id encountered in info menu dropdown = ' + id);
@@ -210,6 +229,15 @@ export class InfoEditorComponent implements OnInit {
    */
   interactionInfoUpdated(interactionInfo: InteractionInfo) {
     this.interactionInfo = interactionInfo;
+    if(interactionInfo != null){
+      if(interactionInfo.interactionType != null){
+        this.getInteractionSourceRefinements(this.interactionRoles[interactionInfo.interactionType][0]);
+        this.getInteractionTargetRefinements(this.interactionRoles[interactionInfo.interactionType][1]);
+      }else{
+        this.interactionSourceRefinements = [];
+        this.interactionTargetRefinements = [];
+      }
+    }
     // this needs to be called because we may have gotten here from an async function
     // an async function doesn't update the view for some reason
     this.changeDetector.detectChanges();
@@ -235,6 +263,16 @@ export class InfoEditorComponent implements OnInit {
 
   importedDesign(): boolean {
     return !this.localDesign() && !this.synBioHubDesign();
+  }
+
+  getSourceInteractionRole(){
+    let sourceRole = this.interactionRoles[this.interactionInfo.interactionType][0];
+    return sourceRole ? sourceRole : "NA";
+  }
+
+  getTargetInteractionRole(){
+    let targetRole = this.interactionRoles[this.interactionInfo.interactionType][1];
+    return targetRole ? targetRole : "NA";
   }
 
 }

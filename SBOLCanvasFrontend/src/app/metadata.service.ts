@@ -37,6 +37,8 @@ export class MetadataService {
   private rolesURL = environment.backendURL + '/data/roles';
   private refinementsURL = environment.backendURL + '/data/refine';
   private interactionsURL = environment.backendURL + '/data/interactions';
+  private interactionRolesURL = environment.backendURL + '/data/interactionRoles';
+  private interactionRoleRefinementURL = environment.backendURL + '/data/interactionRoleRefine';
 
   // Glyph Info
   private glyphInfoSource = new BehaviorSubject(null);
@@ -84,6 +86,16 @@ export class MetadataService {
 
   loadInteractions() : Observable<any> {
     return this.http.get(this.interactionsURL);
+  }
+
+  loadInteractionRoles() : Observable<any> {
+    return this.http.get(this.interactionRolesURL);
+  }
+
+  loadInteractionRoleRefinements(parent: string): Observable<any> {
+    let params = new HttpParams();
+    params = params.append("parent", parent);
+    return this.http.get(this.interactionRoleRefinementURL, {params: params});
   }
 
   setSelectedStyleInfo(newInfo: StyleInfo) {

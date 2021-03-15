@@ -17,17 +17,22 @@ import org.synbiohub.frontend.WebOfRegistriesData;
 public class SBOLData {
 
 	private static SequenceOntology so;
+	private static SystemsBiologyOntology sbo;
 	
 	public static BiMap<String, URI> types;
 	public static BiMap<String, URI> roles;
 	public static BiMap<String, URI> refinements;
 	public static HashMap<URI, URI> parents;
 	public static BiMap<String, URI> interactions;
+	public static BiMap<String, URI> interactionRoles;
+	public static HashMap<URI, URI> interactionSourceRoles;
+	public static HashMap<URI, URI> interactionTargetRoles;
 	public static HashSet<String> registries;
 	
 	
 	static {
 		so = new SequenceOntology();
+		sbo = new SystemsBiologyOntology();
 		
 		types = new BiMap<String, URI>();
 		types.put("Complex", ComponentDefinition.COMPLEX);
@@ -94,6 +99,36 @@ public class SBOLData {
 		interactions.put("Control", SystemsBiologyOntology.CONTROL);
 		interactions.put("Dissociation", SystemsBiologyOntology.DISSOCIATION);
 		
+		interactionRoles = new BiMap<String, URI>();
+		interactionRoles.put("Inhibitor", SystemsBiologyOntology.INHIBITOR);
+		interactionRoles.put("Inhibited", SystemsBiologyOntology.INHIBITED);
+		interactionRoles.put("Stimulator", SystemsBiologyOntology.STIMULATOR);
+		interactionRoles.put("Stimulated", SystemsBiologyOntology.STIMULATED);
+		interactionRoles.put("Reactant", SystemsBiologyOntology.REACTANT);
+		interactionRoles.put("Product", SystemsBiologyOntology.PRODUCT);
+		interactionRoles.put("Modifier", SystemsBiologyOntology.MODIFIER);
+		interactionRoles.put("Modified", SystemsBiologyOntology.MODIFIED);
+		interactionRoles.put("Template", SystemsBiologyOntology.TEMPLATE);
+		
+		interactionTargetRoles = new HashMap<URI, URI>();
+		interactionTargetRoles.put(SystemsBiologyOntology.INHIBITION, SystemsBiologyOntology.INHIBITED);
+		interactionTargetRoles.put(SystemsBiologyOntology.STIMULATION, SystemsBiologyOntology.STIMULATED);
+		interactionTargetRoles.put(SystemsBiologyOntology.BIOCHEMICAL_REACTION, SystemsBiologyOntology.PRODUCT);
+		interactionTargetRoles.put(SystemsBiologyOntology.NON_COVALENT_BINDING, SystemsBiologyOntology.PRODUCT);
+		interactionTargetRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.PRODUCT);
+		interactionTargetRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIED);
+		interactionTargetRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.PRODUCT);
+		
+		interactionSourceRoles = new HashMap<URI, URI>();
+		interactionSourceRoles.put(SystemsBiologyOntology.INHIBITION, SystemsBiologyOntology.INHIBITOR);
+		interactionSourceRoles.put(SystemsBiologyOntology.STIMULATION, SystemsBiologyOntology.STIMULATOR);
+		interactionSourceRoles.put(SystemsBiologyOntology.BIOCHEMICAL_REACTION, SystemsBiologyOntology.REACTANT);
+		interactionSourceRoles.put(SystemsBiologyOntology.NON_COVALENT_BINDING, SystemsBiologyOntology.REACTANT);
+		interactionSourceRoles.put(SystemsBiologyOntology.DEGRADATION, SystemsBiologyOntology.REACTANT);
+		interactionSourceRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.REACTANT);
+		interactionSourceRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIER);
+		interactionSourceRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.REACTANT);
+		
 		registries = new HashSet<String>();
 		try {
 			for(WebOfRegistriesData registry : SynBioHubFrontend.getRegistries()) {
@@ -105,18 +140,31 @@ public class SBOLData {
 		
 	}
 	
+	/**
+	 * Returns the top type names for component definitions.
+	 * @return
+	 */
 	public static String[] getTypes() {
 		String[] typeNames = types.keys().toArray(new String[0]);
 		Arrays.sort(typeNames);
 		return typeNames;
 	}
 
+	/**
+	 * Returns the top role names for component definitions.
+	 * @return
+	 */
 	public static String[] getRoles() {
 		String[] roleNames = roles.keys().toArray(new String[0]);
 		Arrays.sort(roleNames);
 		return roleNames;
 	}
 	
+	/**
+	 * Returns all children SO terms of the parent SO term.
+	 * @param parentName - The parent name to find all children of
+	 * @return
+	 */
 	public static String[] getRefinement(String parentName){
 		if(parentName == null || parentName.equals("")) {
 			parentName = "NGA (No Glyph Assigned)";
@@ -129,10 +177,40 @@ public class SBOLData {
 		return refinementNames.toArray(new String[0]);	
 	}
 	
+	/**
+	 * Returns all children SBO terms of the parent SBO term.
+	 * @param parentName - The parent name to find all children of
+	 * @return
+	 */
+	public static String[] getInteractionRoleRefinement(String parentName) {
+		Set<String> refinementNames = sbo.getDescendantNamesOf(parentName);
+		if(refinementNames == null) {
+			return new String[0];
+		}
+		return refinementNames.toArray(new String[0]);
+	}
+	
+	/**
+	 * Returns a sorted list of interaction names
+	 */
 	public static String[] getInteractions() {
 		String[] interactionNames = interactions.keys().toArray(new String[0]);
 		Arrays.sort(interactionNames);
 		return interactionNames;
+	}
+	
+	/**
+	 * Returns a hashmap of interaction name to valid roles (roles[0] = source role, roles[1] = target role)
+	 */
+	public static HashMap<String, String[]> getInteractionRoles(){
+		HashMap<String, String[]> result = new HashMap<String, String[]>();
+		for(URI interactionURI : interactions.values()) {
+			String[] roles = new String[2];
+			roles[0] = interactionRoles.getKey(interactionSourceRoles.get(interactionURI));
+			roles[1] = interactionRoles.getKey(interactionTargetRoles.get(interactionURI));
+			result.put(interactions.getKey(interactionURI), roles);
+		}
+		return result;
 	}
 
 }

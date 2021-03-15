@@ -102,6 +102,28 @@
     </mat-select>
   </mat-form-field>
 
+  <mat-label>Source Role: {{getSourceInteractionRole()}}</mat-label>
+
+  <mat-form-field *ngIf="interactionSourceRefinements && interactionSourceRefinements.length > 0">
+    <mat-label>Source Refinement</mat-label>
+    <mat-select id="interactionSourceRefinement" value={{interactionInfo.sourceRefinement[graphService.getSelectedCellID()]}} (selectionChange)="dropDownChange($event)">
+      <mat-option *ngFor="let refinment of interactionSourceRefinements" [value]="refinement">
+        {{refinement}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-label>Target Role: {{getTargetInteractionRole()}}</mat-label>
+
+  <mat-form-field *ngIf="interactionTargetRefinements && interactionTargetRefinements.length > 0">
+    <mat-label>Target Refinement</mat-label>
+    <mat-select id="interactionTargetRefinement" value={{interactionInfo.targetRefinement[graphService.getSelectedCellID()]}} (selectionChange)="dropDownChange($event)">
+      <mat-option *ngFor="let refinment of interactionTargetRefinements" [value]="refinemnt">
+        {{refinement}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  
   <mat-form-field>
     <input matInput id="displayID" placeholder="Display ID" value="{{ interactionInfo.displayID }}" (change)="inputChange($event)">
   </mat-form-field>
