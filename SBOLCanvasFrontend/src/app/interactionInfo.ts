@@ -7,8 +7,8 @@ export class InteractionInfo extends Info {
   interactionType: string;
   sourceRefinement: {};
   targetRefinement: {};
-  fromURI: string[];
-  toURI: string[];
+  fromURI: {};
+  toURI: {};
 
   constructor() {
     super();
@@ -16,24 +16,44 @@ export class InteractionInfo extends Info {
     this.interactionType;
     this.sourceRefinement = {};
     this.targetRefinement = {};
-    this.fromURI = [];
-    this.toURI = [];
+    this.fromURI = {};
+    this.toURI = {};
   }
 
   makeCopy() {
     const copy: InteractionInfo = new InteractionInfo();
     copy.displayID = this.displayID;
     copy.interactionType = this.interactionType;
-    copy.fromURI = this.fromURI;
-    copy.toURI = this.toURI;
+    for(let key in this.sourceRefinement){
+      copy.sourceRefinement[key] = this.sourceRefinement[key];
+    }
+    for(let key in this.targetRefinement){
+      copy.targetRefinement[key] = this.targetRefinement[key];
+    }
+    for(let key in this.fromURI){
+      copy.fromURI[key] = this.fromURI[key];
+    }
+    for(let key in this.toURI){
+      copy.toURI[key] = this.toURI[key];
+    }
     return copy;
   }
 
   copyDataFrom(other: InteractionInfo) {
     this.displayID = other.displayID;
     this.interactionType = other.interactionType;
-    this.fromURI = other.fromURI;
-    this.toURI = other.toURI;
+    for(let key in other.sourceRefinement){
+      this.sourceRefinement[key] = other.sourceRefinement[key];
+    }
+    for(let key in other.targetRefinement){
+      this.targetRefinement[key] = other.targetRefinement[key];
+    }
+    for(let key in other.fromURI){
+      this.fromURI[key] = other.fromURI[key];
+    }
+    for(let key in other.toURI){
+      this.toURI[key] = other.toURI[key];
+    }
   }
 
   getFullURI() {

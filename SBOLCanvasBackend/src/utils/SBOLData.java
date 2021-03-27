@@ -183,9 +183,17 @@ public class SBOLData {
 	 * @return
 	 */
 	public static String[] getInteractionRoleRefinement(String parentName) {
-		Set<String> refinementNames = sbo.getDescendantNamesOf(parentName);
-		if(refinementNames == null) {
+		if(parentName == null || parentName.contentEquals("")) {
 			return new String[0];
+		}
+		URI parentURI = interactionRoles.getValue(parentName);
+		if(parentURI == null) {
+			return new String[0];
+		}
+		Set<String> refinementNames = new TreeSet<String>();
+		Set<URI> descendants = sbo.getDescendantURIsOf(parentURI);
+		for(URI uri : descendants) {
+			refinementNames.add(sbo.getName(uri));
 		}
 		return refinementNames.toArray(new String[0]);
 	}

@@ -21,7 +21,6 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { InteractionInfo } from './interactionInfo';
-import { mxRectangleShape } from 'src/mxgraph';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -827,21 +826,33 @@ export class GraphHelpers extends GraphBase {
                     continue;
                 let interactions = this.graph.getModel().getChildEdges(viewCell);
                 for (let interaction of interactions) {
+                    let interactionInfo = this.getFromInteractionDict(interaction.value).makeCopy();
+                    // remove an edge if the new reference is null, and this specific edge had it's old reference
                     if (!newReference) {
-                        this.graph.getModel().remove(interaction);
+                        if(interactionInfo.fromURI[interaction.getId()] == oldReference){
+                            delete interactionInfo.fromURI[interaction.getId()];
+                            this.updateInteractionDict(interactionInfo);
+                            this.graph.getModel().remove(interaction);
+                        }
+                        if(interactionInfo.toURI[interaction.getId()] == oldReference){
+                            delete interactionInfo.toURI[interaction.getId()];
+                            this.updateInteractionDict(interactionInfo);
+                            this.graph.getModel().remove(interaction);
+                        }
                         continue;
                     }
-                    let index;
-                    if ((index = interaction.value.fromURI.indexOf(oldReference)) > -1) {
-                        let infoCopy = interaction.value.makeCopy();
-                        infoCopy.fromURI[index] = newReference;
-                        this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
+                    // replace any interaction references that reference the oldReference
+                    for(let key in interactionInfo.fromURI){
+                        if(interactionInfo.fromURI[key] == oldReference){
+                            interactionInfo.fromURI[key] = newReference;
+                        }
                     }
-                    if ((index = interaction.value.toURI.indexOf(oldReference)) > -1) {
-                        let infoCopy = interaction.value.makeCopy();
-                        infoCopy.toURI[index] = newReference;
-                        this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
+                    for(let key in interactionInfo.toURI){
+                        if(interactionInfo.toURI[key] == oldReference){
+                            interactionInfo.toURI[key] = newReference;
+                        }
                     }
+                    this.updateInteractionDict(interactionInfo);
                 }
             }
         } finally {
@@ -1385,21 +1396,21 @@ export class GraphHelpers extends GraphBase {
         // detect missing references
         let infosToRemove = [];
         for (let dictKey in cell0.value[GraphBase.INFO_DICT_INDEX]) {
-            if (!(dictKey in foundInfos)){
+            if (!(dictKey in foundInfos)) {
                 infosToRemove.push(dictKey);
             }
         }
         let interactionsToRemove = [];
-        for(let dictKey in cell0.value[GraphBase.INTERACTION_DICT_INDEX]){
-            if(!(dictKey in foundInteractions)){
+        for (let dictKey in cell0.value[GraphBase.INTERACTION_DICT_INDEX]) {
+            if (!(dictKey in foundInteractions)) {
                 interactionsToRemove.push(dictKey);
             }
         }
         // remove references
-        for(let infoURI of infosToRemove){
+        for (let infoURI of infosToRemove) {
             this.removeFromInfoDict(infoURI);
         }
-        for(let interactionURI of interactionsToRemove){
+        for (let interactionURI of interactionsToRemove) {
             this.removeFromInteractionDict(interactionURI);
         }
 

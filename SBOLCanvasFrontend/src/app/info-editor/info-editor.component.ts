@@ -27,6 +27,7 @@ export class InfoEditorComponent implements OnInit {
   partRoles: string[];
   partRefinements: string[]; // these depend on role
   interactionTypes: string[];
+  filteredInteractionTypes: string[];
   interactionRoles: {};
   interactionSourceRefinements: String[];
   interactionTargetRefinements: String[];
@@ -67,15 +68,15 @@ export class InfoEditorComponent implements OnInit {
     this.metadataService.loadInteractions().subscribe(interactions => this.interactionTypes = interactions);
   }
 
-  getInteractionRoles(){
+  getInteractionRoles() {
     this.metadataService.loadInteractionRoles().subscribe(interactionRoles => this.interactionRoles = interactionRoles);
   }
 
-  getInteractionSourceRefinements(sourceRole: string){
+  getInteractionSourceRefinements(sourceRole: string) {
     this.metadataService.loadInteractionRoleRefinements(sourceRole).subscribe(sourceRefinements => this.interactionSourceRefinements = sourceRefinements);
   }
 
-  getInteractionTargetRefinements(targetRole: string){
+  getInteractionTargetRefinements(targetRole: string) {
     this.metadataService.loadInteractionRoleRefinements(targetRole).subscribe(targetRefinements => this.interactionTargetRefinements = targetRefinements);
   }
 
@@ -108,6 +109,14 @@ export class InfoEditorComponent implements OnInit {
         this.getInteractionSourceRefinements(event.value);
         this.getInteractionTargetRefinements(event.value);
         break;
+      }
+      case 'interactionSourceRefinement': {
+        this.interactionInfo.sourceRefinement[this.graphService.getSelectedCellID()] = event.value;
+        break;
+      }
+      case 'interactionTargetRefinement': {
+        this.interactionInfo.targetRefinement[this.graphService.getSelectedCellID()] = event.value;
+        break;
       } default: {
         console.log('Unexpected id encountered in info menu dropdown = ' + id);
         break;
@@ -131,29 +140,29 @@ export class InfoEditorComponent implements OnInit {
           this.glyphInfo.displayID = replaced;
         } else if (this.interactionInfo != null) {
           this.interactionInfo.displayID = replaced;
-        } else if (this.moduleInfo){
+        } else if (this.moduleInfo) {
           this.moduleInfo.displayID = replaced;
         }
         break;
       }
       case 'name': {
-        if(this.glyphInfo)
+        if (this.glyphInfo)
           this.glyphInfo.name = event.target.value;
-        else if(this.moduleInfo)
+        else if (this.moduleInfo)
           this.moduleInfo.name = event.target.value;
         break;
       }
       case 'description': {
-        if(this.glyphInfo)
+        if (this.glyphInfo)
           this.glyphInfo.description = event.target.value;
-        else if(this.moduleInfo)
+        else if (this.moduleInfo)
           this.moduleInfo.description = event.target.value;
         break;
       }
       case 'version': {
-        if(this.glyphInfo)
+        if (this.glyphInfo)
           this.glyphInfo.version = event.target.value;
-        else if(this.moduleInfo)
+        else if (this.moduleInfo)
           this.moduleInfo.version = event.target.value;
         break;
       }
@@ -170,7 +179,7 @@ export class InfoEditorComponent implements OnInit {
       this.graphService.setSelectedCellInfo(this.glyphInfo);
     } else if (this.interactionInfo != null) {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
-    } else if (this.moduleInfo != null){
+    } else if (this.moduleInfo != null) {
       this.graphService.setSelectedCellInfo(this.moduleInfo);
     }
   }
@@ -190,8 +199,8 @@ export class InfoEditorComponent implements OnInit {
     return this.graphService.isSelectedAGlyph() && this.graphService.isRootAComponentView();
   }
 
-  openCombinatorialDialog(){
-    this.dialog.open(CombinatorialDesignEditorComponent).afterClosed().subscribe( _ => {
+  openCombinatorialDialog() {
+    this.dialog.open(CombinatorialDesignEditorComponent).afterClosed().subscribe(_ => {
       this.graphService.repaint();
     });
   }
@@ -217,7 +226,7 @@ export class InfoEditorComponent implements OnInit {
   /**
    * Updates both the module info in the form and in the graph.
    */
-  moduleInfoUpdated(moduleInfo: ModuleInfo){
+  moduleInfoUpdated(moduleInfo: ModuleInfo) {
     this.moduleInfo = moduleInfo;
     // this needs to be called because we may have gotten here from an async function
     // an async function doesn't update the view for some reason
@@ -229,33 +238,42 @@ export class InfoEditorComponent implements OnInit {
    */
   interactionInfoUpdated(interactionInfo: InteractionInfo) {
     this.interactionInfo = interactionInfo;
-    if(interactionInfo != null){
-      if(interactionInfo.interactionType != null){
+    if (interactionInfo != null) {
+      if (interactionInfo.interactionType != null) {
         this.getInteractionSourceRefinements(this.interactionRoles[interactionInfo.interactionType][0]);
         this.getInteractionTargetRefinements(this.interactionRoles[interactionInfo.interactionType][1]);
-      }else{
+      } else {
         this.interactionSourceRefinements = [];
         this.interactionTargetRefinements = [];
       }
+
+      // filter valid interaction types
+      this.filteredInteractionTypes = [];
+      for (let type of this.interactionTypes) {
+        if (this.graphService.isInteractionTypeAllowed(type)) {
+          this.filteredInteractionTypes.push(type);
+        }
+      }
     }
+
     // this needs to be called because we may have gotten here from an async function
     // an async function doesn't update the view for some reason
     this.changeDetector.detectChanges();
   }
 
   localDesign(): boolean {
-    if(this.glyphInfo)
+    if (this.glyphInfo)
       return this.glyphInfo.uriPrefix === environment.baseURI;
-    else if(this.moduleInfo)
+    else if (this.moduleInfo)
       return this.moduleInfo.uriPrefix === environment.baseURI;
     return true;
   }
 
   synBioHubDesign(): boolean {
     for (let registry of this.registries) {
-      if(this.glyphInfo && this.glyphInfo.uriPrefix && this.glyphInfo.uriPrefix.startsWith(registry))
+      if (this.glyphInfo && this.glyphInfo.uriPrefix && this.glyphInfo.uriPrefix.startsWith(registry))
         return true;
-      if(this.moduleInfo && this.moduleInfo.uriPrefix && this.moduleInfo.uriPrefix.startsWith(registry))
+      if (this.moduleInfo && this.moduleInfo.uriPrefix && this.moduleInfo.uriPrefix.startsWith(registry))
         return true;
     }
     return false;
@@ -265,14 +283,22 @@ export class InfoEditorComponent implements OnInit {
     return !this.localDesign() && !this.synBioHubDesign();
   }
 
-  getSourceInteractionRole(){
+  getSourceInteractionRole() {
     let sourceRole = this.interactionRoles[this.interactionInfo.interactionType][0];
     return sourceRole ? sourceRole : "NA";
   }
 
-  getTargetInteractionRole(){
+  getTargetInteractionRole() {
     let targetRole = this.interactionRoles[this.interactionInfo.interactionType][1];
     return targetRole ? targetRole : "NA";
+  }
+
+  hasSourceRefinements(): boolean {
+    return this.interactionSourceRefinements && this.interactionSourceRefinements.length > 0;
+  }
+
+  hasTargetRefinements(): boolean {
+    return this.interactionTargetRefinements && this.interactionTargetRefinements.length > 0;
   }
 
 }

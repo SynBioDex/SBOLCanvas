@@ -96,29 +96,29 @@
   <mat-form-field>
     <mat-label>Interaction Type</mat-label>
     <mat-select id="interactionType" value="{{interactionInfo.interactionType}}" (selectionChange)="dropDownChange($event)">
-      <mat-option *ngFor="let type of interactionTypes" [value]="type">
+      <mat-option *ngFor="let type of filteredInteractionTypes" [value]="type">
         {{type}}
       </mat-option>
     </mat-select>
   </mat-form-field>
 
-  <mat-label>Source Role: {{getSourceInteractionRole()}}</mat-label>
+  <mat-label *ngIf="graphService.isSelectedSourceEdge()">Source Role: {{getSourceInteractionRole()}}</mat-label>
 
-  <mat-form-field *ngIf="interactionSourceRefinements && interactionSourceRefinements.length > 0">
+  <mat-form-field *ngIf="hasSourceRefinements() && graphService.isSelectedSourceEdge()">
     <mat-label>Source Refinement</mat-label>
     <mat-select id="interactionSourceRefinement" value={{interactionInfo.sourceRefinement[graphService.getSelectedCellID()]}} (selectionChange)="dropDownChange($event)">
-      <mat-option *ngFor="let refinment of interactionSourceRefinements" [value]="refinement">
+      <mat-option *ngFor="let refinement of interactionSourceRefinements" [value]="refinement">
         {{refinement}}
       </mat-option>
     </mat-select>
   </mat-form-field>
 
-  <mat-label>Target Role: {{getTargetInteractionRole()}}</mat-label>
+  <mat-label *ngIf="graphService.isSelectedTargetEdge()">Target Role: {{getTargetInteractionRole()}}</mat-label>
 
-  <mat-form-field *ngIf="interactionTargetRefinements && interactionTargetRefinements.length > 0">
+  <mat-form-field *ngIf="hasTargetRefinements() && graphService.isSelectedTargetEdge()">
     <mat-label>Target Refinement</mat-label>
     <mat-select id="interactionTargetRefinement" value={{interactionInfo.targetRefinement[graphService.getSelectedCellID()]}} (selectionChange)="dropDownChange($event)">
-      <mat-option *ngFor="let refinment of interactionTargetRefinements" [value]="refinemnt">
+      <mat-option *ngFor="let refinement of interactionTargetRefinements" [value]="refinement">
         {{refinement}}
       </mat-option>
     </mat-select>

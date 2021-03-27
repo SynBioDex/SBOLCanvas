@@ -46,20 +46,65 @@ export class GraphService extends GraphHelpers {
   }
 
   isComposite(sequenceFeature): boolean {
-    if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
+    if (!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()) {
       return false;
     }
     return sequenceFeature.getCircuitContainer(this.graph).children.length > 1;
   }
 
-  isVariant(sequenceFeature): boolean{
-    if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
+  isVariant(sequenceFeature): boolean {
+    if (!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()) {
       return false;
     }
     let combinatorial = this.getCombinatorialWithTemplate(sequenceFeature.getParent().value);
-    if(!combinatorial)
+    if (!combinatorial)
       return false;
     return combinatorial.getVariableComponentInfo(sequenceFeature.getId());
+  }
+
+  /**
+   * Given the interaction type, checks the selected cells source and target to see if it's allowed.
+   * @param interactionType 
+   * @returns 
+   */
+  isInteractionTypeAllowed(interactionType: string): boolean {
+    let selected = this.graph.getSelectionCells();
+    if (selected.length > 1 || selected.length == 0 || (!selected[0].isInteraction() && !selected[0].isInteractionNode)) {
+      return false;
+    }
+
+    if (selected[0].isInteraction()) {
+      let result = this.validateInteraction(interactionType, selected[0].source, selected[0].target);
+      if (result == null || result == '') {
+        return true;
+      }else{
+        return false;
+      }
+    }
+
+    if (selected[0].isInteractionNode()) {
+      return interactionType == "Biochemical Reaction" || interactionType == "Dissociation" || interactionType == "Genetic Production" || interactionType == "Non-Covalent Binding";
+    }
+
+    return false;
+  }
+
+  isSelectedTargetEdge(): boolean{
+    let selected = this.graph.getSelectionCells();
+    if(selected.lengh > 1 || selected.length == 0 || !selected[0].isInteraction()){
+      return false;
+    }
+
+    return selected[0].target == null || !selected[0].target.isInteractionNode();
+  }
+
+  isSelectedSourceEdge(): boolean{
+    let selected = this.graph.getSelectionCells();
+    if(selected.lengh > 1 || selected.length == 0 || !selected[0].isInteraction()){
+      return false;
+    }
+
+    return selected[0].source == null || !selected[0].source.isInteractionNode();
   }
 
   /**
@@ -67,14 +112,14 @@ export class GraphService extends GraphHelpers {
    * @param sequenceFeature A cell representing a sequence feature
    */
   hasSequence(sequenceFeature): boolean {
-    if(!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()){
+    if (!sequenceFeature || !sequenceFeature.isSequenceFeatureGlyph()) {
       return false;
     }
     // check if the child view has more than just a backbone
     let circuitContainer = sequenceFeature.getCircuitContainer(this.graph);
-    if(circuitContainer.children.length > 1){
-      for(let child of circuitContainer.children){
-        if(child.isSequenceFeatureGlyph() && !this.hasSequence(child)){
+    if (circuitContainer.children.length > 1) {
+      for (let child of circuitContainer.children) {
+        if (child.isSequenceFeatureGlyph() && !this.hasSequence(child)) {
           return false;
         }
       }
@@ -82,7 +127,7 @@ export class GraphService extends GraphHelpers {
     }
     // no children? we must be a leaf node, check for a sequence
     let glyphInfo = (<GlyphInfo>this.getFromInfoDict(sequenceFeature.getValue()));
-    if(!glyphInfo || !glyphInfo.sequence || glyphInfo.sequence.length <= 0){
+    if (!glyphInfo || !glyphInfo.sequence || glyphInfo.sequence.length <= 0) {
       return false;
     }
     return true;
@@ -91,13 +136,13 @@ export class GraphService extends GraphHelpers {
   /**
    * Forces the graph to redraw
    */
-  repaint(){
+  repaint() {
     this.graph.refresh();
   }
 
   getSelectedCellID(): string {
     let selected = this.graph.getSelectionCells();
-    if(selected.length != 1){
+    if (selected.length != 1) {
       return null;
     }
     return selected[0].getId();
@@ -365,14 +410,14 @@ export class GraphService extends GraphHelpers {
     try {
       let circuitContainers = [];
       for (let cell of selectedCells) {
-        if (cell.isSequenceFeatureGlyph()){
+        if (cell.isSequenceFeatureGlyph()) {
           circuitContainers.push(cell.getParent());
-          
+
           // if it's a sequence feature and it has a combinatorial, remove the variable component
-          if(cell.isSequenceFeatureGlyph()){
+          if (cell.isSequenceFeatureGlyph()) {
             let combinatorial = this.getCombinatorialWithTemplate(cell.getParent().getValue());
             // TODO make this undoable
-            if(combinatorial)
+            if (combinatorial)
               combinatorial.removeVariableComponentInfo(cell.getId());
           }
         } else if (cell.isCircuitContainer() && this.graph.getCurrentRoot() && this.graph.getCurrentRoot().isComponentView())
@@ -410,7 +455,7 @@ export class GraphService extends GraphHelpers {
         this.graph.setSelectionCells(newSelection);
       }
 
-      
+
 
       // remove interactions with modules if the item it connects to is being removed
       for (let selectedCell of selectedCells) {
@@ -715,21 +760,21 @@ export class GraphService extends GraphHelpers {
     console.log(this.graph.getModel().cells);
   }
 
-  makeInteractionNodeDragsource(element, stylename){
+  makeInteractionNodeDragsource(element, stylename) {
     const insertGlyph = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
       this.addInteractionNodeAt(stylename, x - GraphBase.interactionNodeGlyphWidth / 2, y - GraphBase.interactionNodeGlyphHeight / 2);
     });
     this.makeGeneralDragsource(element, insertGlyph);
   }
 
-  addInteractionNode(name){
+  addInteractionNode(name) {
     const pt = this.getDefaultNewCellCoords();
     this.addInteractionNodeAt(name, pt.x, pt.y);
   }
 
-  addInteractionNodeAt(name: string, x, y){
+  addInteractionNodeAt(name: string, x, y) {
     this.graph.getModel().beginUpdate();
-    try{
+    try {
       let interactionInfo = new InteractionInfo();
       const interactionNodeGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, interactionInfo.getFullURI(), x, y,
         GraphBase.interactionNodeGlyphWidth, GraphBase.interactionNodeGlyphHeight, GraphBase.STYLE_INTERACTION_NODE + name);
@@ -740,7 +785,7 @@ export class GraphService extends GraphHelpers {
       // The new glyph should be selected
       this.graph.clearSelection();
       this.graph.setSelectionCell(interactionNodeGlyph);
-    }finally{
+    } finally {
       this.graph.getModel().endUpdate();
     }
   }
@@ -793,11 +838,12 @@ export class GraphService extends GraphHelpers {
 
       const selectionCells = this.graph.getSelectionCells();
       if (selectionCells.length == 1) {
+
         // one cell is selected, set the edges source
         const selectedCell = this.graph.getSelectionCell();
         // check for any restrictions on valid edges
         let error = this.graph.getEdgeValidationError(cell, selectedCell, null);
-        if(error){
+        if (error) {
           this.showError(error);
           return;
         }
@@ -806,8 +852,8 @@ export class GraphService extends GraphHelpers {
           let result = await this.promptChooseFunctionalComponent(selectedCell, true);
           if (!result)
             return;
-          interactionInfo.fromURI.push(result+"_"+cell.getId());
-        }else if(selectedCell.isInteractionNode()){
+          interactionInfo.fromURI[this.graph.getModel().nextId] = result;
+        } else if (selectedCell.isInteractionNode()) {
           // if the source is a interaction node, we want to inherit it's information
           cell.value = selectedCell.value;
           addToDictionary = false;
@@ -815,40 +861,50 @@ export class GraphService extends GraphHelpers {
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), selectedCell, null);
+
       } else if (selectionCells.length == 2) {
+
         // two cells were selected, set the first one as the source, and the second as the target
         const sourceCell = selectionCells[0];
         const destCell = selectionCells[1];
         // check for restrictions on the edge
         let error = this.graph.getEdgeValidationError(cell, sourceCell, destCell);
-        if(error){
+        if (error) {
           this.showError(error);
           return;
         }
+        // check source or target are interaction nodes to couple with them before making modifications to the interaction
+        // don't worry, edge validation rules prevent both from being interaction nodes.
+        if(sourceCell.isInteractionNode()){
+          // inherit the information 
+          cell.value = sourceCell.value;
+          addToDictionary = false;
+          interactionInfo = this.getFromInteractionDict(sourceCell.value).makeCopy();
+        }
+        if(destCell.isInteractionNode()){
+          // inherit the information
+          cell.value = destCell.value;
+          addToDictionary = false;
+          interactionInfo = this.getFromInteractionDict(destCell.value).makeCopy();
+        }
+
         if (sourceCell.isModule()) {
           // prompt for the subpart to keep track of
           let result = await this.promptChooseFunctionalComponent(sourceCell, true);
           if (!result)
             return;
-          interactionInfo.fromURI.push(result+"_"+cell.getId());
-        }else if(sourceCell.isInteractionNode()){
-          // inherit the information 
-          cell.value = sourceCell.value;
-          addToDictionary = false;
+          interactionInfo.fromURI[this.graph.getModel().nextId] = result;
         }
         if (destCell.isModule()) {
           // prompt for the subpart to keep track of
           let result = await this.promptChooseFunctionalComponent(destCell, false);
           if (!result)
             return;
-          interactionInfo.toURI.push(result+"_"+cell.getId());
-        }else if(destCell.isInteractionNode()){
-          // inherit the information
-          cell.value = destCell.value();
-          addToDictionary = false;
+          interactionInfo.toURI[this.graph.getModel().nextId] = result;
         }
         cell.edge = true;
         this.graph.addEdge(cell, this.graph.getCurrentRoot(), sourceCell, destCell);
+
       } else {
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y + GraphBase.defaultInteractionSize), true);
         cell.geometry.setTerminalPoint(new mx.mxPoint(x + GraphBase.defaultInteractionSize, y), false);
@@ -861,15 +917,13 @@ export class GraphService extends GraphHelpers {
       if (name == "Process") {
         name = "Genetic Production"
       }
-      
-      if(addToDictionary){
+
+      if (addToDictionary) {
         interactionInfo.interactionType = name;
         this.addToInteractionDict(interactionInfo);
-      }else{
-        let info = this.getFromInteractionDict(cell.value);
-        if(info){
-          this.mutateInteractionGlyph(info.interactionType, cell);
-        }
+      } else {
+        this.updateInteractionDict(interactionInfo);
+        this.mutateInteractionGlyph(interactionInfo.interactionType, cell);
       }
 
       // The new glyph should be selected
@@ -993,7 +1047,7 @@ export class GraphService extends GraphHelpers {
     this.graph.getModel().beginUpdate();
     try {
       if (info instanceof CombinatorialInfo && selectedCell.isSequenceFeatureGlyph()) {
-        if(!prevURI){
+        if (!prevURI) {
           prevURI = info.getFullURI();
         }
         this.updateSelectedCombinatorialInfo(info, prevURI);

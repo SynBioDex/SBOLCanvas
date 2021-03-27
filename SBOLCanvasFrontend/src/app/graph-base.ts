@@ -7,11 +7,9 @@ import { GlyphService } from './glyph.service';
 import { CanvasAnnotation } from './canvasAnnotation';
 import { environment } from 'src/environments/environment';
 import { ModuleInfo } from './moduleInfo';
-import { GraphEdits } from './graph-edits';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
-import { mxMultiplicity, mxShape } from 'src/mxgraph';
 import { CustomShapes } from './CustomShapes';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
@@ -949,6 +947,26 @@ export class GraphBase {
 
                 // previous terminal was an interaction node, we need to decouple from it
                 if (previous && previous.isInteractionNode()) {
+                    // remove any refinements with this edge from original
+                    let sourceRefinement = infoCopy.sourceRefinement[edge.getId()];
+                    let targetRefinement = infoCopy.targetRefinement[edge.getId()];
+                    delete infoCopy.sourceRefinement[edge.getId()];
+                    delete infoCopy.targetRefinement[edge.getId()];
+                    this.updateInteractionDict(infoCopy);
+                    infoCopy = infoCopy.makeCopy(); // shouldn't modify the original copy anymore, or we mess up the history
+
+                    // remove all refinements from the copy
+                    infoCopy.sourceRefinement = {};
+                    infoCopy.targetRefinement = {};
+
+                    // add back refinements relating to ours
+                    if(sourceRefinement){
+                        infoCopy.sourceRefinement[edge.getId()] = sourceRefinement;
+                    }
+                    if(targetRefinement){
+                        infoCopy.targetRefinement[edge.getId()] = targetRefinement;
+                    }
+
                     // make a dummy info so we can steal it's id
                     let dummyInfo = new InteractionInfo();
                     infoCopy.displayID = dummyInfo.displayID;
@@ -959,21 +977,9 @@ export class GraphBase {
                 // if the previous terminal was a module, we need to remove it's to/fromURI
                 if (previous && previous.isModule()) {
                     if (source) {
-                        for (let i = 0; i < infoCopy.fromURI.length; i++) {
-                            let uri = infoCopy.fromURI[i];
-                            if (uri.endsWith("_" + edge.getId())) {
-                                infoCopy.fromURI.splice(i, 1);
-                                break;
-                            }
-                        }
+                        delete infoCopy.fromURI[edge.getId()];
                     } else {
-                        for (let i = 0; i < infoCopy.toURI.length; i++) {
-                            let uri = infoCopy.toURI[i];
-                            if (uri.endsWith("_" + edge.getId())) {
-                                infoCopy.toURI.splice(i, 1);
-                                break;
-                            }
-                        }
+                        delete infoCopy.toURI[edge.getId()];
                     }
                 }
 
@@ -985,18 +991,22 @@ export class GraphBase {
                     
                     // duplicate over the nescessary info
                     // module targets
-                    for(let fromURI in infoCopy.fromURI){
-                        if(fromURI.endsWith("_"+edge.getId())){
-                            nodeInfo.fromURI.push(fromURI);
-                        }
+                    if(infoCopy.fromURI[edge.getId()]){
+                        nodeInfo.fromURI[edge.getId()] = infoCopy.fromURI[edge.getId()];
                     }
-                    for(let toURI in infoCopy.toURI){
-                        if(toURI.endsWith("_"+edge.getId())){
-                            nodeInfo.toURI.push(toURI);
-                        }
+                    if(infoCopy.toURI[edge.getId()]){
+                        nodeInfo.toURI[edge.getId()] = infoCopy.toURI[edge.getId()];
                     }
 
-                    // TODO edge role/type
+                    // edge refinements
+                    let sourceRefinement = infoCopy.sourceRefinement[edge.getId()];
+                    if(sourceRefinement){
+                        nodeInfo.sourceRefinement[edge.getId()] = sourceRefinement;
+                    }
+                    let targetRefinement = infoCopy.targetRefinement[edge.getId()];
+                    if(targetRefinement){
+                        nodeInfo.targetRefinement[edge.getId()] = targetRefinement;
+                    }
 
                     // if the previous wasn't an interaction node, then we need to remove the info from the dictionary
                     if(!previous || !previous.isInteractionNode()){
@@ -1008,9 +1018,9 @@ export class GraphBase {
 
                 if (newTarget) {
                     if (source) {
-                        infoCopy.fromURI.push(newTarget + "_" + edge.getId());
+                        infoCopy.fromURI[edge.getId()] = newTarget;
                     } else {
-                        infoCopy.toURI.push(newTarget + "_" + edge.getId());
+                        infoCopy.toURI[edge.getId()] = newTarget;
                     }
                 }
 
@@ -1163,6 +1173,7 @@ export class GraphBase {
         // We have to override this method because multiplicities only are checked when there is a source and target.
         // Multiplicities also base their type on cell.value, not cell.style
         let oldGetEdgeValidationError = mx.mxGraph.prototype.getEdgeValidationError;
+        let validateInteractionRef = this.validateInteraction;
         mx.mxGraph.prototype.getEdgeValidationError = function (edge, source, target) {
             let result = oldGetEdgeValidationError.apply(this, arguments);
 
@@ -1171,29 +1182,42 @@ export class GraphBase {
                 return result;
             }
 
-            // certain edge types can't connect to interaction nodes
-            if (((source && source.isInteractionNode()) || (target && target.isInteractionNode())) &&
-                (edge.isStyle('Control') || edge.isStyle('Inhibition') || edge.isStyle('Stimulation'))) {
-                return 'Edge type dissallowed to connect to an interaction node.';
-            }
+            let styleString = edge.style.slice();
+            let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION)+GraphBase.STYLE_INTERACTION.length;
+            let endIdx = styleString.indexOf(';', startIdx);
+            endIdx = endIdx > 0 ? endIdx : styleString.length;
+            let interactionType = styleString.slice(startIdx, endIdx);
 
-            // prevent degredation from using anything as a target
-            if (edge.isStyle('Degradation') && target) {
-                return 'Degradation isn\'t allowed target anything.';
-            }
+            let validationMessage = validateInteractionRef(interactionType, source, target);
 
-            // prevent degredation from having anything but a molecular species as a source
-            if (edge.isStyle('Degradation') && source && !source.isMolecularSpeciesGlyph()) {
-                return 'Degredation is only allowed molecular species as a source.';
-            }
-
-            // prevent interaction nodes from chaining
-            if (source && target && source.isInteractionNode() && target.isInteractionNode()) {
-                return 'Interaction nodes aren\'t allowed to connect.';
-            }
-
-            return null;
+            return validationMessage;
         }
+    }
+
+    protected validateInteraction(interactionType: string, source: mxCell, target: mxCell) {
+
+        // certain edge types can't connect to interaction nodes
+        if (((source && source.isInteractionNode()) || (target && target.isInteractionNode())) &&
+            (interactionType == 'Control' || interactionType == 'Inhibition' || interactionType == 'Stimulation')) {
+            return 'Edge type dissallowed to connect to an interaction node.';
+        }
+
+        // prevent degredation from using anything as a target
+        if (interactionType == 'Degradation' && target) {
+            return 'Degradation isn\'t allowed target anything.';
+        }
+
+        // prevent degredation from having anything but a molecular species as a source
+        if (interactionType == 'Degradation' && source && !source.isMolecularSpeciesGlyph()) {
+            return 'Degredation is only allowed molecular species as a source.';
+        }
+
+        // prevent interaction nodes from chaining
+        if (source && target && source.isInteractionNode() && target.isInteractionNode()) {
+            return 'Interaction nodes aren\'t allowed to connect.';
+        }
+
+        return null;
     }
 
     protected interactionNodeNametoType(name: string) {
