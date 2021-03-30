@@ -220,5 +220,9 @@ public class SBOLData {
 		}
 		return result;
 	}
+	
+	public static URI getInteractionRoleRefinementFromName(String name) {
+		return sbo.getURIbyName(name);
+	}
 
 }

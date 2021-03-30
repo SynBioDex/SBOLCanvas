@@ -1,5 +1,7 @@
 package data;
 
+import java.util.Hashtable;
+
 import utils.Converter;
 
 public class InteractionInfo extends Info {
@@ -8,24 +10,10 @@ public class InteractionInfo extends Info {
 	private String interactionType;
 	private String fromParticipationType;
 	private String toParticipationType;
-	private String fromURI;
-	private String toURI;
-	
-	public String getFromURI() {
-		return fromURI;
-	}
-
-	public void setFromURI(String fromURI) {
-		this.fromURI = fromURI;
-	}
-
-	public String getToURI() {
-		return toURI;
-	}
-
-	public void setToURI(String toURI) {
-		this.toURI = toURI;
-	}
+	private Hashtable<String, String> sourceRefinement;
+	private Hashtable<String, String> targetRefinement;
+	private Hashtable<String, String> fromURI;
+	private Hashtable<String, String> toURI;
 
 	public String getDisplayID() {
 		return displayID;
@@ -61,5 +49,37 @@ public class InteractionInfo extends Info {
 	
 	public String getFullURI() {
 		return Converter.URI_PREFIX+'/'+this.displayID;
+	}
+	
+	public Hashtable<String, String> getSourceRefinement() {
+		return sourceRefinement;
+	}
+
+	public void setSourceRefinement(Hashtable<String, String> sourceRefinement) {
+		this.sourceRefinement = sourceRefinement;
+	}
+
+	public Hashtable<String, String> getTargetRefinement() {
+		return targetRefinement;
+	}
+
+	public void setTargetRefinement(Hashtable<String, String> targetRefinement) {
+		this.targetRefinement = targetRefinement;
+	}
+
+	public Hashtable<String, String> getFromURI() {
+		return fromURI;
+	}
+
+	public void setFromURI(Hashtable<String, String> fromURI) {
+		this.fromURI = fromURI;
+	}
+
+	public Hashtable<String, String> getToURI() {
+		return toURI;
+	}
+
+	public void setToURI(Hashtable<String, String> toURI) {
+		this.toURI = toURI;
 	}
 }

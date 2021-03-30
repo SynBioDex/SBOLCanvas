@@ -75,6 +75,7 @@ public class MxToSBOL extends Converter {
 	public MxToSBOL(HashMap<String, String> userTokens) {
 		infoDict = new Hashtable<String, Info>();
 		combinatorialDict = new Hashtable<String, CombinatorialInfo>();
+		interactionDict = new Hashtable<String, InteractionInfo>();
 		this.userTokens = userTokens;
 	}
 
@@ -133,6 +134,7 @@ public class MxToSBOL extends Converter {
 		}else {
 			combinatorialDict = (Hashtable<String, CombinatorialInfo>) dataContainer.get(COMBINATORIAL_DICT_INDEX);			
 		}
+		interactionDict = (Hashtable<String, InteractionInfo>) dataContainer.get(INTERACTION_DICT_INDEX);
 
 		// cells may show up in the child array not based on their x location
 		enforceChildOrdering(model, graph);
@@ -148,12 +150,6 @@ public class MxToSBOL extends Converter {
 			SynBioHubFrontend registry = document.addRegistry(key);
 			registry.setUser(userTokens.get(key));
 		}
-		// TODO come back when fetching collections from multiple registries works
-//		for(String registry : SBOLData.registries) {
-//			document.addRegistry(registry);
-//			if(userTokens.containsKey(registry))
-//				document.getRegistry(registry).setUser(userTokens.get(registry));
-//		}
 
 		layoutHelper = new LayoutHelper(document, graph);
 
@@ -440,10 +436,23 @@ public class MxToSBOL extends Converter {
 	private void linkModuleDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
 			URISyntaxException {
-		mxCell[] edges = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, false, true)).toArray(mxCell[]::new);
 		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
 				.toArray(mxCell[]::new);
 		mxCell[] modules = Arrays.stream(mxGraphModel.filterCells(viewChildren, moduleFilter)).toArray(mxCell[]::new);
+		mxCell[] interactionNodes = Arrays.stream(mxGraphModel.filterCells(viewChildren, interactionNodeFilter)).toArray(mxCell[]::new);
+		
+		// filter out all edges that connect to interaction nodes
+		ArrayList<mxCell> uniqueInteractionCells = new ArrayList<mxCell>();
+		for(mxCell edge : Arrays.stream(mxGraphModel.getChildCells(model, viewCell, false, true)).toArray(mxCell[]::new)) {
+			if(((mxCell) edge.getSource()).getStyle().contains(STYLE_INTERACTION_NODE) || ((mxCell) edge.getTarget()).getStyle().contains(STYLE_INTERACTION_NODE)) {
+				continue;
+			}
+			uniqueInteractionCells.add(edge);
+		}
+		for(mxCell interactionNode : interactionNodes) {
+			uniqueInteractionCells.add(interactionNode);
+		}
+		mxCell[] interactionCells = uniqueInteractionCells.toArray(new mxCell[0]);
 
 		ModuleDefinition modDef = document.getModuleDefinition(URI.create((String) viewCell.getId()));
 
@@ -472,78 +481,48 @@ public class MxToSBOL extends Converter {
 		}
 
 		// edges to interactions
-		for (mxCell edge : edges) {
-
-			// interaction
-			InteractionInfo intInfo = (InteractionInfo) edge.getValue();
+		for(mxCell interactionCell : interactionCells) {
+			InteractionInfo intInfo = interactionDict.get(interactionCell.getValue());
 			Interaction interaction = null;
-			if (!layoutOnly) {
-				interaction = modDef.createInteraction(intInfo.getDisplayID(),
-						SBOLData.interactions.getValue(intInfo.getInteractionType()));
-			} else {
+			if(!layoutOnly) {
+				interaction = modDef.createInteraction(intInfo.getDisplayID(), SBOLData.interactions.getValue(intInfo.getInteractionType()));
+			}else {
 				Set<Interaction> interactions = modDef.getInteractions();
 				// find the interaction with the correct identity
-				for (Interaction inter : interactions) {
-					if (inter.getIdentity().toString().equals((String) intInfo.getFullURI())) {
+				for(Interaction inter : interactions) {
+					if(inter.getIdentity().toString().equals((String) intInfo.getFullURI())){
 						interaction = inter;
+						break;
 					}
 				}
 			}
-			layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getDisplayId(), edge);
-
-			// nothing below here is layout
-			if (layoutOnly) {
+			layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getDisplayId(), interactionCell);
+			if(interactionCell.getStyle().contains(STYLE_INTERACTION_NODE)) {
+				mxCell[] interactionEdges = Arrays.stream(mxGraphModel.getEdges(model, interactionCell)).toArray(mxCell[]::new);
+				for(mxCell interactionEdge : interactionEdges) {
+					layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getDisplayId(), interactionEdge);
+				}
+			}
+			
+			// No layout stuff below this part
+			if(layoutOnly) {
 				return;
 			}
-
-			// participants
-			mxCell source = (mxCell) edge.getSource();
-			mxCell sourceParent = null;
-			mxCell target = (mxCell) edge.getTarget();
-			mxCell targetParent = null;
-			GlyphInfo sourceInfo = null;
-			GlyphInfo targetInfo = null;
-			if (source != null && source.getStyle().contains(STYLE_MODULE)) {
-				String fromCellID = intInfo.getFromURI().substring(intInfo.getFromURI().lastIndexOf("_") + 1);
-				String fromID = intInfo.getFromURI().substring(0, intInfo.getFromURI().lastIndexOf("_"));
-				sourceInfo = (GlyphInfo) infoDict.get(fromID);
-				sourceParent = source;
-				// get the actual source part (child of the module)
-				source = (mxCell) model.getCell(fromCellID);
-			} else if (source != null) {
-				sourceInfo = (GlyphInfo) infoDict.get(source.getValue());
-				sourceParent = (mxCell) source.getParent();
+			
+			// populate sources and targets
+			if(interactionCell.getStyle().contains(STYLE_INTERACTION_NODE)) {
+				// multiple sources/targets
+				mxCell[] interactionEdges = Arrays.stream(mxGraphModel.getEdges(model, interactionCell)).toArray(mxCell[]::new);
+				for(mxCell interactionEdge : interactionEdges) {
+					boolean isSource = !interactionEdge.getSource().equals(interactionCell);
+					addParticipant(document, model, modDef, interaction, isSource, intInfo, interactionEdge);
+				}
+			}else {
+				// single source/target
+				addParticipant(document, model, modDef, interaction, true, intInfo, interactionCell);
+				addParticipant(document, model, modDef, interaction, false, intInfo, interactionCell);
 			}
-			if (target != null && target.getStyle().contains(STYLE_MODULE)) {
-				String toCellID = intInfo.getToURI().substring(intInfo.getToURI().lastIndexOf("_") + 1);
-				String toID = intInfo.getToURI().substring(0, intInfo.getToURI().lastIndexOf("_"));
-				targetInfo = (GlyphInfo) infoDict.get(toID);
-				targetParent = target;
-				// get the actual target part (child of the module)
-				target = (mxCell) model.getCell(toCellID);
-			} else if (target != null) {
-				targetInfo = (GlyphInfo) infoDict.get(target.getValue());
-				targetParent = (mxCell) target.getParent();
-			}
-
-			// source participant
-			if (source != null) {
-				FunctionalComponent sourceFC = getOrCreateParticipant(document, modDef, sourceInfo, source,
-						sourceParent);
-				interaction.createParticipation(sourceInfo.getDisplayID() + "_" + source.getId(),
-						sourceFC.getIdentity(), getParticipantType(true, interaction.getTypes()));
-			}
-
-			// target participant
-			if (target != null) {
-				FunctionalComponent targetFC = getOrCreateParticipant(document, modDef, targetInfo, target,
-						targetParent);
-				interaction.createParticipation(targetInfo.getDisplayID() + "_" + target.getId(),
-						targetFC.getIdentity(), getParticipantType(false, interaction.getTypes()));
-			}
-
 		}
-
 	}
 
 	private void linkComponentDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model,
@@ -824,7 +803,49 @@ public class MxToSBOL extends Converter {
 
 	}
 
-	private FunctionalComponent getOrCreateParticipant(SBOLDocument document, ModuleDefinition modDef,
+	private void addParticipant(SBOLDocument document, mxGraphModel model, ModuleDefinition modDef, Interaction interaction, boolean isSource, InteractionInfo intInfo, mxCell interactionEdge) throws SBOLValidationException {
+		mxCell participantCell = null;
+		mxCell participantParentCell = null;
+		GlyphInfo participantInfo = null;
+		if(isSource) {
+			participantCell = (mxCell) interactionEdge.getSource();
+		}else {
+			participantCell = (mxCell) interactionEdge.getTarget();
+		}
+		
+		// get the necessary info to generate a participant
+		if(participantCell != null && participantCell.getStyle().contains(STYLE_MODULE)) {
+			String subPartURI = null;
+			if(isSource) {
+				subPartURI = intInfo.getFromURI().get(interactionEdge.getId());
+			} else {
+				subPartURI = intInfo.getToURI().get(interactionEdge.getId());
+			}
+			String subPartCellID = subPartURI.substring(subPartURI.lastIndexOf("_")+1);
+			String subPartID = subPartURI.substring(0, subPartURI.lastIndexOf("_"));
+			participantInfo = (GlyphInfo) infoDict.get(subPartID);
+			participantParentCell = participantCell;
+			participantCell = (mxCell) model.getCell(subPartCellID);
+		}else if (participantCell != null) {
+			participantInfo = (GlyphInfo) infoDict.get(participantCell.getValue());
+			participantParentCell = (mxCell) participantCell.getParent();
+		}
+		if(participantCell != null) {
+			FunctionalComponent participantFC = getOrCreateParticipantFC(document, modDef, participantInfo, participantCell, participantParentCell);
+			URI participantRole = getParticipantType(isSource, interaction.getTypes());
+			// extract the role refinment if there is one
+			if(isSource) {
+				String refinementName = intInfo.getSourceRefinement().get(interactionEdge.getId());
+				participantRole = SBOLData.getInteractionRoleRefinementFromName(refinementName);
+			}else {
+				String refinementName = intInfo.getTargetRefinement().get(interactionEdge.getId());
+				participantRole = SBOLData.getInteractionRoleRefinementFromName(refinementName);
+			}
+			interaction.createParticipation(participantInfo.getDisplayID()+"_"+participantCell.getId(), participantFC.getIdentity(), participantRole);
+		}
+	}
+	
+	private FunctionalComponent getOrCreateParticipantFC(SBOLDocument document, ModuleDefinition modDef,
 			GlyphInfo partInfo, mxCell part, mxCell parent) throws SBOLValidationException {
 		FunctionalComponent sourceFC = modDef.getFunctionalComponent(partInfo.getDisplayID() + "_" + part.getId());
 

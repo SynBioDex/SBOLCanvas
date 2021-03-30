@@ -14,6 +14,7 @@ import com.mxgraph.model.mxGraphModel.Filter;
 
 import data.CombinatorialInfo;
 import data.Info;
+import data.InteractionInfo;
 
 public class Converter {
 
@@ -24,6 +25,7 @@ public class Converter {
 	// data constants
 	public static final int INFO_DICT_INDEX = 0;
 	public static final int COMBINATORIAL_DICT_INDEX = 1;
+	public static final int INTERACTION_DICT_INDEX = 2;
 	
 	// style constants
 	protected static final String STYLE_CIRCUIT_CONTAINER = "circuitContainer";
@@ -37,6 +39,7 @@ public class Converter {
 	protected static final String STYLE_INTERACTION = "interactionGlyph";
 	protected static final String STYLE_MODULE_VIEW = "moduleViewCell";
 	protected static final String STYLE_COMPONENT_VIEW = "componentViewCell";
+	protected static final String STYLE_INTERACTION_NODE = "interactionNodeGlyph";
 
 	static {
 		// Necessary for encoding/decoding GlyphInfo and InteractionInfo
@@ -45,6 +48,7 @@ public class Converter {
 
 	protected Hashtable<String, Info> infoDict;
 	protected Hashtable<String, CombinatorialInfo> combinatorialDict;
+	protected Hashtable<String, InteractionInfo> interactionDict;
 	protected LayoutHelper layoutHelper;
 
 	/**
@@ -104,6 +108,13 @@ public class Converter {
 		@Override
 		public boolean filter(Object arg0) {
 			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE);
+		}
+	};
+	
+	static Filter interactionNodeFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_INTERACTION_NODE);
 		}
 	};
 	
