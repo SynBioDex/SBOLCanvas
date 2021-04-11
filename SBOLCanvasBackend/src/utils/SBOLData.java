@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.sbolstandard.core2.ComponentDefinition;
+import org.sbolstandard.core2.Participation;
 import org.sbolstandard.core2.SequenceOntology;
 import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.synbiohub.frontend.SynBioHubException;
@@ -223,6 +224,22 @@ public class SBOLData {
 	
 	public static URI getInteractionRoleRefinementFromName(String name) {
 		return sbo.getURIbyName(name);
+	}
+	
+	public static String getInteractionRoleRefinementName(URI refinement) {
+		return sbo.getName(refinement);
+	}
+	
+	public static boolean isSourceParticipant(Participation participant) {
+		for(URI sourceRole : interactionSourceRoles.keySet()) {
+			Set<URI> participantRoles = participant.getRoles();
+			for(URI partRole : participantRoles) {
+				if(sbo.isDescendantOf(partRole, sourceRole)) {
+					return true;
+				}				
+			}
+		}
+		return false;
 	}
 
 }

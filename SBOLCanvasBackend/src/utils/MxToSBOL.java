@@ -31,6 +31,7 @@ import org.sbolstandard.core2.ModuleDefinition;
 import org.sbolstandard.core2.OperatorType;
 import org.sbolstandard.core2.Module;
 import org.sbolstandard.core2.OrientationType;
+import org.sbolstandard.core2.Participation;
 import org.sbolstandard.core2.RefinementType;
 import org.sbolstandard.core2.RestrictionType;
 import org.sbolstandard.core2.SBOLConversionException;
@@ -497,10 +498,10 @@ public class MxToSBOL extends Converter {
 				}
 			}
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getDisplayId(), interactionCell);
-			if(interactionCell.getStyle().contains(STYLE_INTERACTION_NODE)) {
+			if(interactionCell.getStyle().contains(STYLE_INTERACTION_NODE) && layoutOnly) {
 				mxCell[] interactionEdges = Arrays.stream(mxGraphModel.getEdges(model, interactionCell)).toArray(mxCell[]::new);
 				for(mxCell interactionEdge : interactionEdges) {
-					layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getDisplayId(), interactionEdge);
+					attachEdgeToParticipant(document, model, modDef, interaction, layoutOnly, intInfo, interactionEdge);
 				}
 			}
 			
@@ -803,6 +804,40 @@ public class MxToSBOL extends Converter {
 
 	}
 
+	private void attachEdgeToParticipant(SBOLDocument document, mxGraphModel model, ModuleDefinition modDef, Interaction interaction, boolean isSource, InteractionInfo intInfo, mxCell interactionEdge) throws URISyntaxException, SBOLValidationException {
+		mxCell participantCell = null;
+		GlyphInfo participantInfo = null;
+		if(isSource) {
+			participantCell = (mxCell) interactionEdge.getSource();
+		}else {
+			participantCell = (mxCell) interactionEdge.getTarget();
+		}
+		
+		// get the necessary info to generate a participant
+		if(participantCell != null && participantCell.getStyle().contains(STYLE_MODULE)) {
+			String subPartURI = null;
+			if(isSource) {
+				subPartURI = intInfo.getFromURI().get(interactionEdge.getId());
+			} else {
+				subPartURI = intInfo.getToURI().get(interactionEdge.getId());
+			}
+			String subPartCellID = subPartURI.substring(subPartURI.lastIndexOf("_")+1);
+			String subPartID = subPartURI.substring(0, subPartURI.lastIndexOf("_"));
+			participantInfo = (GlyphInfo) infoDict.get(subPartID);
+			participantCell = (mxCell) model.getCell(subPartCellID);
+		}else if (participantCell != null) {
+			participantInfo = (GlyphInfo) infoDict.get(participantCell.getValue());
+		}
+		Set<Participation> participations = interaction.getParticipations();
+		for(Participation participation : participations) {
+			FunctionalComponent funcComp = participation.getParticipant();
+			if(funcComp.getDefinitionURI().equals(new URI(participantInfo.getFullURI()))) {
+				// probably needs something to identify duplicate parts with separate mapstos, but we're getting close to sbol3 where that shouldn't be a problem
+				layoutHelper.addGraphicalNode(modDef.getIdentity(), participation.getDisplayId(), interactionEdge);
+			}
+		}
+	}
+	
 	private void addParticipant(SBOLDocument document, mxGraphModel model, ModuleDefinition modDef, Interaction interaction, boolean isSource, InteractionInfo intInfo, mxCell interactionEdge) throws SBOLValidationException {
 		mxCell participantCell = null;
 		mxCell participantParentCell = null;
@@ -841,7 +876,11 @@ public class MxToSBOL extends Converter {
 				String refinementName = intInfo.getTargetRefinement().get(interactionEdge.getId());
 				participantRole = SBOLData.getInteractionRoleRefinementFromName(refinementName);
 			}
-			interaction.createParticipation(participantInfo.getDisplayID()+"_"+participantCell.getId(), participantFC.getIdentity(), participantRole);
+			Participation participation = interaction.createParticipation(participantInfo.getDisplayID()+"_"+participantCell.getId(), participantFC.getIdentity(), participantRole);
+			if((isSource && interactionEdge.getTarget() != null && interactionEdge.getTarget().getStyle().contains(STYLE_INTERACTION_NODE)) || 
+					(!isSource && interactionEdge.getSource() != null && interactionEdge.getSource().getStyle().contains(STYLE_INTERACTION_NODE))) {
+				layoutHelper.addGraphicalNode(modDef.getIdentity(), participation.getDisplayId(), interactionEdge);
+			}
 		}
 	}
 	

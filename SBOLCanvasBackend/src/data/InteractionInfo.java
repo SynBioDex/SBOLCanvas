@@ -15,6 +15,13 @@ public class InteractionInfo extends Info {
 	private Hashtable<String, String> fromURI;
 	private Hashtable<String, String> toURI;
 
+	public InteractionInfo() {
+		sourceRefinement = new Hashtable<String, String>();
+		targetRefinement = new Hashtable<String, String>();
+		fromURI = new Hashtable<String, String>();
+		toURI = new Hashtable<String, String>();
+	}
+	
 	public String getDisplayID() {
 		return displayID;
 	}

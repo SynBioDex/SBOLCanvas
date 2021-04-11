@@ -158,6 +158,8 @@ export class GraphBase {
         window['mxPoint'] = mx.mxPoint;
         window['mxCell'] = mx.mxCell;
 
+        let graphBaseRef = this; // for use in overide methods where you need one of the helpers here
+
         let genericDecode = function (dec, node, into) {
             const meta = node;
             if (meta != null) {
@@ -272,9 +274,10 @@ export class GraphBase {
                 cell0 = cell0.parent;
             }
             let glyphDict = cell0.value[GraphBase.INFO_DICT_INDEX];
+            let interactionDict = cell0.value[GraphBase.INTERACTION_DICT_INDEX];
 
             // check for format conditions
-            if (((cell.isCircuitContainer() && cell.getParent().isModuleView()) || cell.isMolecularSpeciesGlyph() || cell.isModule()) && cell.getGeometry().height == 0) {
+            if (((cell.isCircuitContainer() && cell.getParent().isModuleView()) || cell.isMolecularSpeciesGlyph() || cell.isModule() || cell.isInteractionNode()) && cell.getGeometry().height == 0) {
                 GraphBase.unFormatedCells.add(cell.getParent().getId());
             }
 
@@ -287,6 +290,10 @@ export class GraphBase {
                 else if (cell.style.includes(GraphBase.STYLE_SEQUENCE_FEATURE) && !cell.style.includes(glyphDict[cell.value].partRole))
                     reconstructCellStyle = true;
                 else if (cell.style === GraphBase.STYLE_MOLECULAR_SPECIES || cell.style.includes(GraphBase.STYLE_MOLECULAR_SPECIES + ";"))
+                    reconstructCellStyle = true;
+                else if (cell.style === GraphBase.STYLE_INTERACTION || cell.style.includes(GraphBase.STYLE_INTERACTION+";"))
+                    reconstructCellStyle = true;
+                else if (cell.style === GraphBase.STYLE_INTERACTION_NODE || cell.style.includes(GraphBase.STYLE_INTERACTION_NODE+";"))
                     reconstructCellStyle = true;
             }
 
@@ -313,16 +320,27 @@ export class GraphBase {
                         cell.geometry.width = GraphBase.molecularSpeciesGlyphWidth;
                         cell.geometry.height = GraphBase.molecularSpeciesGlyphHeight;
                     }
-                } else if (cell.value instanceof InteractionInfo) {
-                    // interaction
-                    let name = cell.value.interactionType;
-                    if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
-                        name = "Process";
-                    }
-                    if (!cell.style) {
-                        cell.style = GraphBase.STYLE_INTERACTION + name;
-                    } else {
-                        cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION, GraphBase.STYLE_INTERACTION + name);
+                } else if (interactionDict[cell.value] != null) {
+                    let intInfo = interactionDict[cell.value];
+                    if(cell.isVertex()){
+                        // interaction node
+                        let name = graphBaseRef.interactionNodeTypeToName(intInfo.interactionType);
+                        if(!cell.style){
+                            cell.style = GraphBase.STYLE_INTERACTION_NODE+name;
+                        }else{
+                            cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION_NODE, GraphBase.STYLE_INTERACTION_NODE + name);
+                        }
+                    }else{
+                        // interaction
+                        let name = intInfo.interactionType;
+                        if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
+                            name = "Process";
+                        }
+                        if (!cell.style) {
+                            cell.style = GraphBase.STYLE_INTERACTION + name;
+                        } else {
+                            cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION, GraphBase.STYLE_INTERACTION + name);
+                        }
                     }
                 }
             }
