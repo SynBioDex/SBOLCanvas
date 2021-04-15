@@ -27,3 +27,8 @@ a {
   color: #000090;
 }
 
+img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
