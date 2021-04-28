@@ -251,15 +251,12 @@ export class GraphService extends GraphHelpers {
             console.debug("turning east");
           }
         } else if (cell.isInteraction()) {
-          const src = cell.source;
-          const dest = cell.target;
-          let newEdge = this.graph.addEdge(cell, null, dest, src);
-          // reverse the info to/from
-          let newInfo = newEdge.value.makeCopy();
-          let tmpTo = newInfo.to;
-          newInfo.to = newInfo.from;
-          newInfo.from = tmpTo;
-          this.graph.getModel().execute(new GraphEdits.interactionEdit(newEdge, newInfo));
+          this.flipInteractionEdge(cell);
+        }else if (cell.isInteractionNode()){
+          let edges = this.graph.getModel().getEdges(cell);
+          for(let edge of edges){
+            this.flipInteractionEdge(edge);
+          }
         }
       }
 
@@ -857,6 +854,7 @@ export class GraphService extends GraphHelpers {
           // if the source is a interaction node, we want to inherit it's information
           cell.value = selectedCell.value;
           addToDictionary = false;
+          interactionInfo = this.getFromInteractionDict(selectedCell.value).makeCopy()
         }
         cell.geometry.setTerminalPoint(new mx.mxPoint(x, y - GraphBase.defaultInteractionSize), false);
         cell.edge = true;

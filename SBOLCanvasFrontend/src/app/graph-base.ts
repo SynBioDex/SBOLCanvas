@@ -1281,6 +1281,8 @@ export class GraphBase {
                 return "RNA molecule";
             case "replacement-glyph":
                 return "All_types";
+            case "complex":
+                return "Complex";
             default:
                 return "Protein";
         }
@@ -1300,6 +1302,8 @@ export class GraphBase {
                 return "ssNA";
             case "All_types":
                 return "replacement-glyph";
+            case "Complex":
+                return "complex";
             default:
                 return "NGA (No Glyph Assigned Molecular Species)";
         }

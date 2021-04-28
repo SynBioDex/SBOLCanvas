@@ -457,7 +457,12 @@ public class SBOLToMx extends Converter {
 						interactionEdge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
 					}
 					interactionEdge.setValue(intInfo.getFullURI());
-					setInteractionEndpoints(document, interaction, participation, source, interactionCell);
+					setInteractionEndpoints(document, interaction, participation, source, interactionEdge);
+					if(source) {
+						interactionEdge.setTarget(interactionCell);
+					}else {
+						interactionEdge.setSource(interactionCell);
+					}
 				}else{
 					setInteractionEndpoints(document, interaction, participation, source, interactionCell);
 				}

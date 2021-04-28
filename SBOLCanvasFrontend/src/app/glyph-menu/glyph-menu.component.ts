@@ -7,10 +7,8 @@
 import {Component, OnInit, AfterViewInit, ViewChildren, QueryList, ElementRef, ViewEncapsulation} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {GlyphService} from '../glyph.service';
-import {SearchfilterPipe} from '../searchfilter.pipe';
 import {DomSanitizer} from '@angular/platform-browser';
 import {MetadataService} from '../metadata.service';
-import {register} from 'ts-node';
 
 @Component({
   selector: 'app-glyph-menu',
@@ -130,6 +128,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
       this.utilsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
     for (const name in molecularSpeciesElts) {
+      if(name == "replacement-glyph") // Shouldn't be possible to add in canvas, only loaded
+        continue;
       const svg = molecularSpeciesElts[name];
       this.molecularSpeciesDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
@@ -138,6 +138,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
       this.interactionsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
     for(const name in interactionNodeElts){
+      if(name == "replacement-glyph") // Shouldn't be possible to add in canvas, only loaded
+        continue;
       const svg = interactionNodeElts[name];
       this.interactionNodeDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }

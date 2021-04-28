@@ -231,10 +231,10 @@ public class SBOLData {
 	}
 	
 	public static boolean isSourceParticipant(Participation participant) {
-		for(URI sourceRole : interactionSourceRoles.keySet()) {
+		for(URI sourceRole : interactionSourceRoles.values()) {
 			Set<URI> participantRoles = participant.getRoles();
 			for(URI partRole : participantRoles) {
-				if(sbo.isDescendantOf(partRole, sourceRole)) {
+				if(partRole.equals(sourceRole) || sbo.isDescendantOf(partRole, sourceRole)) {
 					return true;
 				}				
 			}

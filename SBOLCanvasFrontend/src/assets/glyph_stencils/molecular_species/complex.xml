@@ -1,5 +1,5 @@
 <shapes>
-<shape aspect="fixed" h="48" name="complex-sbgn-specification" strokewidth="inherit" w="48" centered="True">
+<shape aspect="fixed" h="48" name="complex" strokewidth="inherit" w="48" centered="True">
     <connections />
     <foreground>
         <strokewidth width="2.88" />

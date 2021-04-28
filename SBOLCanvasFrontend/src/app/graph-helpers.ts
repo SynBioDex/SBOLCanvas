@@ -21,6 +21,7 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { InteractionInfo } from './interactionInfo';
+import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -1826,6 +1827,44 @@ export class GraphHelpers extends GraphBase {
             }
         }
         return false;
+    }
+
+    protected flipInteractionEdge(cell){
+        if(!cell.isInteraction()){
+            console.error("flipInteraction attempted on something other than an interaction!");
+            return;
+        }
+        const src = cell.source;
+        const dest = cell.target;
+        this.graph.getModel().setTerminals(cell, dest, src);
+        // fix the geometry if either was null
+        let sourcePoint = cell.geometry.getTerminalPoint(true);
+        let targetPoint = cell.geometry.getTerminalPoint(false);
+        cell.geometry.setTerminalPoint(null, true);
+        cell.geometry.setTerminalPoint(null, false);
+        if(sourcePoint){
+            cell.geometry.setTerminalPoint(sourcePoint, false);
+        }
+        if(targetPoint){
+            cell.geometry.setTerminalPoint(targetPoint, true);
+        }
+        // reverse the info to/from
+        let newInfo = this.getFromInteractionDict(cell.value).makeCopy();
+        let oldTo = newInfo.toURI[cell.id];
+        let oldFrom = newInfo.toURI[cell.id];
+        delete newInfo.toURI[cell.id];
+        delete newInfo.fromURI[cell.id];
+        if(oldTo){
+            newInfo.fromURI[cell.id] = oldTo;
+        }
+        if(oldFrom){
+            newInfo.toURI[cell.id] = oldFrom;
+        }
+        // nuke the refinemnets, as source refinements don't match target refinements
+        delete newInfo.sourceRefinement[cell.id];
+        delete newInfo.targetRefinement[cell.id];
+        this.updateInteractionDict(newInfo);
+        this.updateAngularMetadata(this.graph.getSelectionCells());
     }
 
     /**

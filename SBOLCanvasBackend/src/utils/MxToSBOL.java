@@ -871,12 +871,15 @@ public class MxToSBOL extends Converter {
 			// extract the role refinment if there is one
 			if(isSource) {
 				String refinementName = intInfo.getSourceRefinement().get(interactionEdge.getId());
-				participantRole = SBOLData.getInteractionRoleRefinementFromName(refinementName);
+				if(refinementName != null)
+					participantRole = SBOLData.getInteractionRoleRefinementFromName(refinementName);
 			}else {
 				String refinementName = intInfo.getTargetRefinement().get(interactionEdge.getId());
-				participantRole = SBOLData.getInteractionRoleRefinementFromName(refinementName);
+				if(refinementName != null)
+					participantRole = SBOLData.getInteractionRoleRefinementFromName(refinementName);
 			}
-			Participation participation = interaction.createParticipation(participantInfo.getDisplayID()+"_"+participantCell.getId(), participantFC.getIdentity(), participantRole);
+			// Issue with display id causing duplicate references in layout
+			Participation participation = interaction.createParticipation(intInfo.getDisplayID()+"_"+interaction.getParticipations().size(), participantFC.getIdentity(), participantRole);
 			if((isSource && interactionEdge.getTarget() != null && interactionEdge.getTarget().getStyle().contains(STYLE_INTERACTION_NODE)) || 
 					(!isSource && interactionEdge.getSource() != null && interactionEdge.getSource().getStyle().contains(STYLE_INTERACTION_NODE))) {
 				layoutHelper.addGraphicalNode(modDef.getIdentity(), participation.getDisplayId(), interactionEdge);

@@ -119,8 +119,9 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     return this.graphService.isRootAComponentView();
   }
 
-  // make sure to comment out the button when preparing to make a merge request
+  // make sure to comment out the button in the html when preparing to make a merge request
   testMethod(){
-    this.dialog.open(DownloadGraphComponent);
+    this.graphService.addMolecularSpecies("replacement-glyph");
+    this.graphService.addInteractionNode("replacement-glyph");
   }
 }
