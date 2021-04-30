@@ -1,0 +1,24 @@
+name: Build Docker Images
+
+on:
+  push:
+    branches: [ final ]
+  workflow_dispatch:
+  
+jobs:
+  build-and-push:
+    name: Build image and push to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      name: Checkout source code
+    - name: Build the Docker image
+      run: |
+        docker build . --tag randoom97/sbolcanvas:latest
+    - uses: azure/docker-login@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Push the image to Docker Hub
+      run: |
+        docker push randoom97/sbolcanvas:latest
