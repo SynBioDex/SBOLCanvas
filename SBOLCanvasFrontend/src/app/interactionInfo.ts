@@ -20,6 +20,7 @@ export class InteractionInfo extends Info {
   makeCopy() {
     const copy: InteractionInfo = new InteractionInfo();
     copy.displayID = this.displayID;
+    copy.uriPrefix = this.uriPrefix;
     copy.interactionType = this.interactionType;
     for(let key in this.sourceRefinement){
       copy.sourceRefinement[key] = this.sourceRefinement[key];
@@ -38,6 +39,7 @@ export class InteractionInfo extends Info {
 
   copyDataFrom(other: InteractionInfo) {
     this.displayID = other.displayID;
+    this.uriPrefix = other.uriPrefix;
     this.interactionType = other.interactionType;
     for(let key in other.sourceRefinement){
       this.sourceRefinement[key] = other.sourceRefinement[key];
@@ -54,7 +56,7 @@ export class InteractionInfo extends Info {
   }
 
   getFullURI() {
-    return environment.baseURI + '/' + this.displayID;
+    return this.uriPrefix + '/' + this.displayID;
   }
 
   encode(enc: any) {
@@ -63,6 +65,8 @@ export class InteractionInfo extends Info {
       node.setAttribute("displayID", this.displayID);
     if (this.interactionType)
       node.setAttribute("interactionType", this.interactionType);
+    if(this.uriPrefix)
+      node.setAttribute("uriPrefix", this.uriPrefix);
     if(this.sourceRefinement){
       let sourceRefinementNode = enc.document.createElement('Array');
       sourceRefinementNode.setAttribute("as", "sourceRefinement");

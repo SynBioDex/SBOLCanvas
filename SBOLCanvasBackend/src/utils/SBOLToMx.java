@@ -433,7 +433,7 @@ public class SBOLToMx extends Converter {
 				interactionCell = (mxCell) model.add(rootViewCell, interactionCell, 0);
 			} else {
 				if (hasNode)
-					interactionCell = (mxCell) graph.insertVertex(rootViewCell, null, null, 0, 0, 0, 0);
+					interactionCell = (mxCell) graph.insertVertex(rootViewCell, null, null, 0, 0, 0, 0, STYLE_INTERACTION_NODE);
 				else
 					interactionCell = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
 			}
@@ -579,6 +579,7 @@ public class SBOLToMx extends Converter {
 		InteractionInfo info = new InteractionInfo();
 		info.setDisplayID(interaction.getDisplayId());
 		info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
+		info.setUriPrefix(getURIPrefix(interaction));
 		return info;
 	}
 

@@ -300,7 +300,14 @@ export class GraphBase {
             // reconstruct the cell style
             if (reconstructCellStyle) {
                 if (glyphDict[cell.value] != null) {
-                    if (glyphDict[cell.value].partType === 'DNA region') {
+                    if(glyphDict[cell.value] instanceof ModuleInfo){
+                        // module
+                        if(!cell.style){
+                            cell.style = GraphBase.STYLE_MODULE;
+                        }
+                        cell.geometry.width = GraphBase.defaultModuleWidth;
+                        cell.geometry.height = GraphBase.defaultModuleHeight;
+                    } else if (glyphDict[cell.value] instanceof GlyphInfo && glyphDict[cell.value].partType === 'DNA region') {
                         // sequence feature
                         if (!cell.style) {
                             cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole;
@@ -311,7 +318,7 @@ export class GraphBase {
                             cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth;
                         if (cell.geometry.height == 0)
                             cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
-                    } else {
+                    } else if(glyphDict[cell.value] instanceof GlyphInfo){
                         // molecular species
                         if (!cell.style)
                             cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
@@ -330,6 +337,8 @@ export class GraphBase {
                         }else{
                             cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION_NODE, GraphBase.STYLE_INTERACTION_NODE + name);
                         }
+                        cell.geometry.width = GraphBase.interactionNodeGlyphWidth;
+                        cell.geometry.height = GraphBase.interactionNodeGlyphHeight;
                     }else{
                         // interaction
                         let name = intInfo.interactionType;
@@ -1213,6 +1222,11 @@ export class GraphBase {
     }
 
     protected validateInteraction(interactionType: string, source: mxCell, target: mxCell) {
+
+        // edges can't connect to edges
+        if((source && source.isEdge()) || (target && target.isEdge())){
+            return "Edges are dissallowed to connect to edges.";
+        }
 
         // certain edge types can't connect to interaction nodes
         if (((source && source.isInteractionNode()) || (target && target.isInteractionNode())) &&

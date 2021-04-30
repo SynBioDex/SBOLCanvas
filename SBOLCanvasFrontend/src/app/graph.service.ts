@@ -1229,6 +1229,8 @@ export class GraphService extends GraphHelpers {
     this.trimUnreferencedCells();
 
     this.editor.undoManager.clear();
+
+    this.graph.refresh(); // for some reason unformatted edges don't render correctly the first time without this
   }
 
   /**
@@ -1376,6 +1378,115 @@ export class GraphService extends GraphHelpers {
             this.removeFromInfoDict(viewCells[i].getId());
           }
           this.addToInfoDict(subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()]);
+
+          // add any molecular species or interactions to the info dict
+          for(let child of viewClone.children){
+            if(child.isMolecularSpeciesGlyph()){
+              if(this.getFromInfoDict(child.value) != null){
+                this.removeFromInfoDict(child.value);
+              }
+              this.addToInfoDict(subGlyphDict[GraphBase.INFO_DICT_INDEX][child.value]);
+            }else if(child.isInteractionNode()){
+              if(this.getFromInteractionDict(child.value) != null){
+                this.removeFromInteractionDict(child.value);
+              }
+              this.addToInteractionDict(subGlyphDict[GraphBase.INTERACTION_DICT_INDEX][child.value]);
+            }else if(child.isInteraction()){
+              // if either end is an interaction node, we don't need to bother
+              if((child.source && child.source.isInteractionNode()) || (child.target && child.target.isInteractionNode())){
+                continue;
+              }
+              if(this.getFromInteractionDict(child.value) != null){
+                this.removeFromInteractionDict(child.value);
+              }
+              this.addToInteractionDict(subGlyphDict[GraphBase.INTERACTION_DICT_INDEX][child.value]);
+            }
+          }
+        }
+
+        // relink the interactions now that their ID's have likely changed
+        for(let i = 1; i < viewCells.length; i++){
+          let viewClone = this.graph.getModel().getCell(viewCells[i].getId());
+          for(let j = 0; j < viewClone.children.length; j++){
+            // for now it seems that cloning the cell keeps the child order in tact
+            let child = viewClone.children[j];
+            let originalChild = viewCells[i].children[j];
+            if(child.isInteractionNode()){
+              // copy to new dict as new id's may conflict with old
+              let newTo = []
+              let newFrom = []
+              let newSource = []
+              let newTarget = []
+              let infoCopy = this.getFromInteractionDict(child.value).makeCopy();
+              for(let k = 0; k < child.edges.length; k++){
+                let edge = child.edges[k];
+                let originalEdge = originalChild.edges[k];
+                if(infoCopy.toURI[originalEdge.getId()]){
+                  // find the original cell
+                  let cellRef = infoCopy.toURI[originalEdge.getId()];
+                  let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_")+1));
+                  let oldParentView = oldCell.getParent();
+                  let newParentView = this.graph.getModel().getCell(oldParentView.getId());
+                  // replace with the new id
+                  newTo[edge.getId()] = cellRef.substring(0,cellRef.lastIndexOf("_")+1)+newParentView.children[oldParentView.getIndex(oldCell)].getId();
+                }
+                if(infoCopy.fromURI[originalEdge.getId()]){
+                  // find the original cell
+                  let cellRef = infoCopy.fromURI[originalEdge.getId()];
+                  let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_")+1));
+                  let oldParentView = oldCell.getParent();
+                  let newParentView = this.graph.getModel().getCell(oldParentView.getId());
+                  // replace with the new id
+                  newFrom[edge.getId()] = cellRef.substring(0,cellRef.lastIndexOf("_")+1)+newParentView.children[oldParentView.getIndex(oldCell)].getId();
+                }
+                if(infoCopy.sourceRefinement[originalEdge.getId()]){
+                  newSource[edge.getId()] = infoCopy.sourceRefinement[originalEdge.getId()];
+                }
+                if(infoCopy.targetRefinement[originalEdge.getId()]){
+                  newTarget[edge.getId()] = infoCopy.targetRefinement[originalEdge.getId()];
+                }
+              }
+              infoCopy.toURI = newTo;
+              infoCopy.fromURI = newFrom;
+              infoCopy.sourceRefinement = newSource;
+              infoCopy.targetRefinement = newTarget;
+              this.updateInteractionDict(infoCopy);
+            }
+            if(child.isInteraction()){
+              // skip edges connected to interaction nodes
+              if((child.source && child.source.isInteractionNode()) || (child.target && child.target.isInteractionNode())){
+                continue;
+              }
+              let infoCopy = this.getFromInteractionDict(child.value).makeCopy();
+              if(infoCopy.fromURI[originalChild.getId()]){
+                let cellRef = infoCopy.fromURI[originalChild.getId()];
+                delete infoCopy.fromURI[originalChild.getId()];
+                let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_")+1));
+                let oldParentView = oldCell.getParent();
+                let newParentView = this.graph.getModel().getCell(oldParentView.getId());
+                infoCopy.fromURI[child.getId()] = cellRef.substring(0,cellRef.lastIndexOf("_")+1)+newParentView.children[oldParentView.getIndex(oldCell)].getId();;
+              }
+              if(infoCopy.toURI[originalChild.getId()]){
+                let cellRef = infoCopy.toURI[originalChild.getId()];
+                delete infoCopy.toURI[originalChild.getId()];
+                let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_")+1));
+                let oldParentView = oldCell.getParent();
+                let newParentView = this.graph.getModel().getCell(oldParentView.getId());
+                infoCopy.toURI[child.getId()] = cellRef.substring(0,cellRef.lastIndexOf("_")+1)+newParentView.children[oldParentView.getIndex(oldCell)].getId();;
+              }
+              if(infoCopy.sourceRefinement[originalChild.getId()]){
+                let value = infoCopy.sourceRefinement[originalChild.getId()];
+                delete infoCopy.sourceRefinement[originalChild.getId()];
+                infoCopy.sourceRefinement[child.getId()] = value;
+              }
+              if(infoCopy.targetRefinement[originalChild.getId()]){
+                let value = infoCopy.targetRefinement[originalChild.getId()];
+                delete infoCopy.targetRefinement[originalChild.getId()];
+                infoCopy.targetRefinement[child.getId()] = value;
+              }
+              this.updateInteractionDict(infoCopy);
+            }
+          }
         }
 
         if (selectedCell.isSequenceFeatureGlyph()) {

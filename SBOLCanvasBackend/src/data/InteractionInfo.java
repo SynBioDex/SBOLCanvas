@@ -2,8 +2,6 @@ package data;
 
 import java.util.Hashtable;
 
-import utils.Converter;
-
 public class InteractionInfo extends Info {
 
 	private String displayID;
@@ -54,10 +52,6 @@ public class InteractionInfo extends Info {
 		this.toParticipationType = toParticipationType;
 	}
 	
-	public String getFullURI() {
-		return Converter.URI_PREFIX+'/'+this.displayID;
-	}
-	
 	public Hashtable<String, String> getSourceRefinement() {
 		return sourceRefinement;
 	}
@@ -88,5 +82,9 @@ public class InteractionInfo extends Info {
 
 	public void setToURI(Hashtable<String, String> toURI) {
 		this.toURI = toURI;
+	}
+	
+	public String getFullURI() {
+		return this.uriPrefix + '/' + this.displayID;
 	}
 }
