@@ -1,0 +1,25 @@
+name: Build Newest Release Docker Image
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-push:
+    name: Build image and push to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      name: Checkout source code
+    - name: Build the Docker image
+      run: |
+        RELEASE=$(echo $GITHUB_REF | cut -d'/' -f 3)
+        docker build . --tag synbiohub/sbolcanvas:$RELEASE
+    - uses: azure/docker-login@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Push the image to Docker Hub
+      run: |
+        RELEASE=$(echo $GITHUB_REF | cut -d'/' -f 3)
+        docker push synbiohub/sbolcanvas:$RELEASE
