@@ -20,6 +20,8 @@ import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-select
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
+import { InteractionInfo } from './interactionInfo';
+import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -36,9 +38,11 @@ export class GraphHelpers extends GraphBase {
         const cell0 = this.graph.getModel().getCell(0);
         const infoDict = [];
         const combinatorialDict = [];
+        const interactionDict = [];
         var dataContainer = [];
         dataContainer[GraphBase.INFO_DICT_INDEX] = infoDict;
         dataContainer[GraphBase.COMBINATORIAL_DICT_INDEX] = combinatorialDict;
+        dataContainer[GraphBase.INTERACTION_DICT_INDEX] = interactionDict;
         this.graph.getModel().setValue(cell0, dataContainer);
 
         // initalize the root view cell of the graph
@@ -310,7 +314,7 @@ export class GraphHelpers extends GraphBase {
                                     break;
                             }
                         }
-                        if(circuitContainer != null){
+                        if (circuitContainer != null) {
                             this.syncCircuitContainer(circuitContainer);
                         }
                     }
@@ -643,7 +647,7 @@ export class GraphHelpers extends GraphBase {
                 // check if we already have a link and break if we do
                 let found = false;
                 let varCompInfo = combinatorial.getVariableComponentInfo(this.selectionStack[i].getId());
-                if(!varCompInfo){
+                if (!varCompInfo) {
                     // If the variable component didn't exist, we need to add one
                     varCompInfo = new VariableComponentInfo(this.selectionStack[i].getId());
                     combinatorial.addVariableComponentInfo(varCompInfo);
@@ -656,7 +660,7 @@ export class GraphHelpers extends GraphBase {
                         break;
                     }
                 }
-                if(found){
+                if (found) {
                     // if it did link, update the info, we assume that the link works all the way up the chain
                     variant.description = previous.description;
                     variant.displayId = previous.displayID;
@@ -664,7 +668,7 @@ export class GraphHelpers extends GraphBase {
                     variant.uri = previous.getFullURI();
                     variant.version = previous.version;
                     break;
-                }else{
+                } else {
                     // if it wasn't found we need to add it
                     let variant = new IdentifiedInfo();
                     variant.description = previous.description;
@@ -683,6 +687,64 @@ export class GraphHelpers extends GraphBase {
 
             // change ownership
             this.changeOwnership(info.getFullURI(), true)
+
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+    }
+
+    protected updateSelectedInteractionInfo(this: GraphService, info: InteractionInfo) {
+        let selectedCells = this.graph.getSelectionCells();
+        if (selectedCells.length > 1 || selectedCells.length < 0) {
+            console.error("Trying to change info on too many or too few cells!");
+            return;
+        }
+        let selectedCell = selectedCells[0];
+
+        // gather all the cells referencing this interaction
+        let cell1 = this.graph.getModel().getCell("1");
+        let cells = [];
+        for (let viewChild of cell1.children) {
+            if (viewChild.children) {
+                for (let child of viewChild.children) {
+                    if ((child.isInteraction() || child.isInteractionNode) && child.getValue() === selectedCell.getValue()) {
+                        cells.push(child);
+                    }
+                }
+            }
+        }
+
+        this.graph.getModel().beginUpdate();
+        try {
+            let prevURI = selectedCell.value;
+            // store
+            if (prevURI != info.getFullURI()) {
+                // check for duplication and error
+                let conflictInteraction = this.getFromInteractionDict(info.getFullURI());
+                if (conflictInteraction) {
+                    this.dialog.open(ErrorComponent, { data: "The part " + info.getFullURI() + " already exists as an Interaction!" });
+                }
+
+                if (this.getFromInteractionDict(prevURI))
+                    this.removeFromInteractionDict(prevURI);
+                this.addToInteractionDict(info);
+
+                for (let cell of cells) {
+                    this.graph.getModel().setValue(cell, info.getFullURI());
+                }
+            } else {
+                this.updateInteractionDict(info);
+            }
+
+
+            // mutate the cells
+            for (let cell of cells) {
+                if (cell.isInteraction()) {
+                    this.mutateInteractionGlyph(info.interactionType, cell);
+                } else if (cell.isInteractionNode()) {
+                    this.mutateInteractionNodeGlyph(info.interactionType, cell);
+                }
+            }
 
         } finally {
             this.graph.getModel().endUpdate();
@@ -765,20 +827,33 @@ export class GraphHelpers extends GraphBase {
                     continue;
                 let interactions = this.graph.getModel().getChildEdges(viewCell);
                 for (let interaction of interactions) {
+                    let interactionInfo = this.getFromInteractionDict(interaction.value).makeCopy();
+                    // remove an edge if the new reference is null, and this specific edge had it's old reference
                     if (!newReference) {
-                        this.graph.getModel().remove(interaction);
+                        if(interactionInfo.fromURI[interaction.getId()] == oldReference){
+                            delete interactionInfo.fromURI[interaction.getId()];
+                            this.updateInteractionDict(interactionInfo);
+                            this.graph.getModel().remove(interaction);
+                        }
+                        if(interactionInfo.toURI[interaction.getId()] == oldReference){
+                            delete interactionInfo.toURI[interaction.getId()];
+                            this.updateInteractionDict(interactionInfo);
+                            this.graph.getModel().remove(interaction);
+                        }
                         continue;
                     }
-                    if (interaction.value.fromURI === oldReference) {
-                        let infoCopy = interaction.value.makeCopy();
-                        infoCopy.fromURI = newReference;
-                        this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
+                    // replace any interaction references that reference the oldReference
+                    for(let key in interactionInfo.fromURI){
+                        if(interactionInfo.fromURI[key] == oldReference){
+                            interactionInfo.fromURI[key] = newReference;
+                        }
                     }
-                    if (interaction.value.toURI === oldReference) {
-                        let infoCopy = interaction.value.makeCopy();
-                        infoCopy.toURI = newReference;
-                        this.graph.getModel().execute(new GraphEdits.interactionEdit(interaction, infoCopy));
+                    for(let key in interactionInfo.toURI){
+                        if(interactionInfo.toURI[key] == oldReference){
+                            interactionInfo.toURI[key] = newReference;
+                        }
                     }
+                    this.updateInteractionDict(interactionInfo);
                 }
             }
         } finally {
@@ -789,9 +864,9 @@ export class GraphHelpers extends GraphBase {
     /**
      * 
      */
-    protected async updateCombinatorialTemplate(oldTemplate: string, newTemplate: string){
+    protected async updateCombinatorialTemplate(oldTemplate: string, newTemplate: string) {
         let combinatorial = this.getCombinatorialWithTemplate(oldTemplate);
-        if(combinatorial){
+        if (combinatorial) {
             this.removeFromCombinatorialDict(combinatorial.getFullURI());
             combinatorial.templateURI = newTemplate;
             this.addToCombinatorialDict(combinatorial);
@@ -870,40 +945,59 @@ export class GraphHelpers extends GraphBase {
        * one selected in the info menu
        * @param name
        */
-    protected mutateInteractionGlyph(name: string) {
-        const selectionCells = this.graph.getSelectionCells();
+    protected mutateInteractionGlyph(name: string, cell: mxCell) {
+        this.graph.getModel().beginUpdate();
+        try {
 
-        if (selectionCells.length == 1 && selectionCells[0].isInteraction()) {
-            let selectedCell = selectionCells[0];
-
-            this.graph.getModel().beginUpdate();
-            try {
-
-                if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
-                    name = "Process";
-                }
-                name = GraphBase.STYLE_INTERACTION + name;
-
-                // Modify the style string
-                let styleString = selectedCell.style.slice();
-                if (!styleString.includes(';')) {
-                    // nothing special needed, the original style only had the glyphStyleName
-                    styleString = name;
-                } else {
-                    // the string is something like "strokecolor=#000000;interactionStyleName;fillcolor=#ffffff;etc;etc;"
-                    // we only want to replace the 'glyphStyleName' bit
-                    let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION);
-                    let endIdx = styleString.indexOf(';', startIdx);
-                    let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
-                    styleString = styleString.replace(stringToReplace, name);
-                }
-
-                console.debug("changing interaction style to: " + styleString);
-
-                this.graph.getModel().setStyle(selectedCell, styleString);
-            } finally {
-                this.graph.getModel().endUpdate();
+            if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production" || name == "Dissociation") {
+                name = "Process";
             }
+            name = GraphBase.STYLE_INTERACTION + name;
+
+            // Modify the style string
+            let styleString = cell.style.slice();
+            if (!styleString.includes(';')) {
+                // nothing special needed, the original style only had the glyphStyleName
+                styleString = name;
+            } else {
+                // the string is something like "strokecolor=#000000;interactionStyleName;fillcolor=#ffffff;etc;etc;"
+                // we only want to replace the 'glyphStyleName' bit
+                let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION);
+                let endIdx = styleString.indexOf(';', startIdx);
+                let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
+                styleString = styleString.replace(stringToReplace, name);
+            }
+
+            console.debug("changing interaction style to: " + styleString);
+
+            this.graph.getModel().setStyle(cell, styleString);
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+    }
+
+    protected mutateInteractionNodeGlyph(name: string, cell: mxCell) {
+        this.graph.getModel().beginUpdate();
+        try {
+            name = GraphBase.STYLE_INTERACTION_NODE + this.interactionNodeTypeToName(name);
+
+            // Modify the style string
+            let styleString = cell.style.slice();
+            if (!styleString.includes(';')) {
+                // nothing special needed, the original style only had the interactionNode style name
+                styleString = name;
+            } else {
+                // the string is something like "strokecolor=#000000;interactionNodeStyleName;fillcolor=#ffffff;etc;etc;"
+                // we only want to replace the 'glyphStyleName' bit
+                let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION_NODE);
+                let endIdx = styleString.indexOf(';', startIdx);
+                let stringToReplace = styleString.slice(startIdx, endIdx - startIdx);
+                styleString = styleString.replace(stringToReplace, name);
+            }
+
+            this.graph.getModel().setStyle(cell, styleString);
+        } finally {
+            this.graph.getModel().endUpdate();
         }
     }
 
@@ -1072,8 +1166,8 @@ export class GraphHelpers extends GraphBase {
                 this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
             }
         }
-        else if (cell.isInteraction()) {
-            let interactionInfo = cell.value;
+        else if (cell.isInteraction() || cell.isInteractionNode()) {
+            let interactionInfo = this.getFromInteractionDict(cell.value);
             if (interactionInfo) {
                 this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy());
             }
@@ -1281,6 +1375,46 @@ export class GraphHelpers extends GraphBase {
         for (let combinatorial of toRemove) {
             this.removeFromCombinatorialDict(combinatorial.getFullURI())
         }
+    }
+
+    protected trimUnreferencedInfos() {
+        const cell0 = this.graph.getModel().getCell("0");
+        // accumulate all the references
+        let foundInfos = {};
+        let foundInteractions = {};
+        for (let cellKey in this.graph.getModel().cells) {
+            const cell = this.graph.getModel().cells[cellKey];
+            if (cell.isCircuitContainer() || cell.isSequenceFeatureGlyph() || cell.isModule() || cell.isMolecularSpeciesGlyph()) {
+                foundInfos[cell.value] = ""; // the value doesn't matter, as we just want to keep track of the key
+            }
+            if (cell.isViewCell()) {
+                foundInfos[cell.getId()] = "";
+            }
+            if (cell.isInteractionNode() || cell.isInteraction()) {
+                foundInteractions[cell.value] = "";
+            }
+        }
+        // detect missing references
+        let infosToRemove = [];
+        for (let dictKey in cell0.value[GraphBase.INFO_DICT_INDEX]) {
+            if (!(dictKey in foundInfos)) {
+                infosToRemove.push(dictKey);
+            }
+        }
+        let interactionsToRemove = [];
+        for (let dictKey in cell0.value[GraphBase.INTERACTION_DICT_INDEX]) {
+            if (!(dictKey in foundInteractions)) {
+                interactionsToRemove.push(dictKey);
+            }
+        }
+        // remove references
+        for (let infoURI of infosToRemove) {
+            this.removeFromInfoDict(infoURI);
+        }
+        for (let interactionURI of interactionsToRemove) {
+            this.removeFromInteractionDict(interactionURI);
+        }
+
     }
 
     protected getCoupledGlyphs(glyphURI: string): mxCell[] {
@@ -1695,6 +1829,44 @@ export class GraphHelpers extends GraphBase {
         return false;
     }
 
+    protected flipInteractionEdge(cell){
+        if(!cell.isInteraction()){
+            console.error("flipInteraction attempted on something other than an interaction!");
+            return;
+        }
+        const src = cell.source;
+        const dest = cell.target;
+        this.graph.getModel().setTerminals(cell, dest, src);
+        // fix the geometry if either was null
+        let sourcePoint = cell.geometry.getTerminalPoint(true);
+        let targetPoint = cell.geometry.getTerminalPoint(false);
+        cell.geometry.setTerminalPoint(null, true);
+        cell.geometry.setTerminalPoint(null, false);
+        if(sourcePoint){
+            cell.geometry.setTerminalPoint(sourcePoint, false);
+        }
+        if(targetPoint){
+            cell.geometry.setTerminalPoint(targetPoint, true);
+        }
+        // reverse the info to/from
+        let newInfo = this.getFromInteractionDict(cell.value).makeCopy();
+        let oldTo = newInfo.toURI[cell.id];
+        let oldFrom = newInfo.toURI[cell.id];
+        delete newInfo.toURI[cell.id];
+        delete newInfo.fromURI[cell.id];
+        if(oldTo){
+            newInfo.fromURI[cell.id] = oldTo;
+        }
+        if(oldFrom){
+            newInfo.toURI[cell.id] = oldFrom;
+        }
+        // nuke the refinemnets, as source refinements don't match target refinements
+        delete newInfo.sourceRefinement[cell.id];
+        delete newInfo.targetRefinement[cell.id];
+        this.updateInteractionDict(newInfo);
+        this.updateAngularMetadata(this.graph.getSelectionCells());
+    }
+
     /**
      * Updates an Info object
      * NOTE: Should only be used if the glyphURI is the same
@@ -1774,6 +1946,26 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    protected updateInteractionDict(info: InteractionInfo) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[GraphBase.INTERACTION_DICT_INDEX][info.getFullURI()], GraphBase.INTERACTION_DICT_INDEX));
+    }
+
+    protected removeFromInteractionDict(interactionURI: string) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.INTERACTION_DICT_INDEX][interactionURI], GraphBase.INTERACTION_DICT_INDEX));
+    }
+
+    protected addToInteractionDict(info: InteractionInfo) {
+        const cell0 = this.graph.getModel().getCell(0);
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null, GraphBase.INTERACTION_DICT_INDEX));
+    }
+
+    protected getFromInteractionDict(interactionURI: string): InteractionInfo {
+        const cell0 = this.graph.getModel().getCell(0);
+        return cell0.value[GraphBase.INTERACTION_DICT_INDEX][interactionURI];
+    }
+
     protected initLabelDrawing() {
         // label drawing
         let graphService = this;
@@ -1796,7 +1988,7 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     return info.displayID;
                 }
-            } else if (cell.isCircuitContainer()) {
+            } else if (cell.isCircuitContainer() || cell.isInteraction() || cell.isInteractionNode()) {
                 return null;
             } else {
                 return cell.value;
@@ -1871,5 +2063,9 @@ export class GraphHelpers extends GraphBase {
         }
 
         return childViewCell;
+    }
+
+    protected showError(message: string) {
+        this.dialog.open(ErrorComponent, { data: message });
     }
 }

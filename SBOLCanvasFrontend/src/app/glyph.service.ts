@@ -60,6 +60,7 @@ export class GlyphService {
     'assets/glyph_stencils/molecular_species/small-molecule.xml',
     'assets/glyph_stencils/molecular_species/no-glyph-assigned-ms.xml',
     'assets/glyph_stencils/molecular_species/replacement-glyph.xml',
+    'assets/glyph_stencils/molecular_species/complex.xml',
   ];
 
   private interactionXMLs: string[] = [
@@ -74,6 +75,7 @@ export class GlyphService {
     'assets/glyph_stencils/interaction_nodes/association.xml',
     'assets/glyph_stencils/interaction_nodes/dissociation.xml',
     'assets/glyph_stencils/interaction_nodes/process.xml',
+    'assets/glyph_stencils/molecular_species/replacement-glyph.xml',
   ]
 
   private indicatorXMLs: string[] = [

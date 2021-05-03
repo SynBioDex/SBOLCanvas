@@ -74,6 +74,7 @@ public class SBOLToMx extends Converter {
 	public SBOLToMx() {
 		infoDict = new Hashtable<String, Info>();
 		combinatorialDict = new Hashtable<String, CombinatorialInfo>();
+		interactionDict = new Hashtable<String, InteractionInfo>();
 		compToCell = new HashMap<ComponentInstance, mxCell>();
 		mappings = new HashMap<FunctionalComponent, ComponentInstance>();
 	}
@@ -106,6 +107,7 @@ public class SBOLToMx extends Converter {
 		ArrayList<Object> dataContainer = new ArrayList<Object>();
 		dataContainer.add(INFO_DICT_INDEX, infoDict);
 		dataContainer.add(COMBINATORIAL_DICT_INDEX, combinatorialDict);
+		dataContainer.add(INTERACTION_DICT_INDEX, interactionDict);
 		cell0.setValue(dataContainer);
 
 		layoutHelper = new LayoutHelper(document, graph);
@@ -415,41 +417,87 @@ public class SBOLToMx extends Converter {
 		// interactions
 		Set<Interaction> interactions = modDef.getInteractions();
 		for (Interaction interaction : interactions) {
-			mxCell edge = layoutHelper.getGraphicalObject(modDef.getIdentity(), interaction.getDisplayId());
-			if (edge != null) {
-				if (edge.getStyle() != null)
-					edge.setStyle(STYLE_INTERACTION + ";" + edge.getStyle());
-				else
-					edge.setStyle(STYLE_INTERACTION);
-				edge = (mxCell) model.add(rootViewCell, edge, 0);
-			} else {
-				edge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
-			}
-			edge.setValue(genInteractionInfo(interaction));
-
-			URI targetType = getParticipantType(false, interaction.getTypes());
-			URI sourceType = getParticipantType(true, interaction.getTypes());
-
 			Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
-			for (int i = 0; i < participations.length; i++) {
-				// theoretically more than 2, but we currently only support 2
-				if (participations[i].getRoles().contains(sourceType)) {
-					mxCell source = compToCell.get(participations[i].getParticipant());
-					edge.setSource(source);
-					if (source.getStyle().contains(STYLE_MODULE)) {
-						mxCell referenced = compToCell.get(mappings.get(participations[i].getParticipant()));
-						((InteractionInfo) edge.getValue())
-								.setFromURI(referenced.getValue() + "_" + referenced.getId());
+			boolean hasNode = participations.length > 2;
+			mxCell interactionCell = layoutHelper.getGraphicalObject(modDef.getIdentity(), interaction.getDisplayId());
+			if (interactionCell != null) {
+				if (interactionCell.getStyle() != null)
+					if (hasNode)
+						interactionCell.setStyle(STYLE_INTERACTION_NODE + ";" + interactionCell.getStyle());
+					else
+						interactionCell.setStyle(STYLE_INTERACTION + ";" + interactionCell.getStyle());
+				else if (hasNode)
+					interactionCell.setStyle(STYLE_INTERACTION_NODE);
+				else
+					interactionCell.setStyle(STYLE_INTERACTION);
+				interactionCell = (mxCell) model.add(rootViewCell, interactionCell, 0);
+			} else {
+				if (hasNode)
+					interactionCell = (mxCell) graph.insertVertex(rootViewCell, null, null, 0, 0, 0, 0, STYLE_INTERACTION_NODE);
+				else
+					interactionCell = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
+			}
+			InteractionInfo intInfo = genInteractionInfo(interaction);
+			interactionDict.put(intInfo.getFullURI(), intInfo);
+			interactionCell.setValue(intInfo.getFullURI());
+
+			for(Participation participation : participations) {
+				// determine if the participation is a source or target
+				boolean source = SBOLData.isSourceParticipant(participation);
+				// pull the interaction edge from the participation if connected to an interaction node or create a new one
+				if(hasNode) {
+					mxCell interactionEdge = layoutHelper.getGraphicalObject(modDef.getIdentity(), participation.getDisplayId());
+					if (interactionEdge != null) {
+						if (interactionEdge.getStyle() != null)
+							interactionEdge.setStyle(STYLE_INTERACTION + ";" + interactionEdge.getStyle());
+						else
+							interactionEdge.setStyle(STYLE_INTERACTION);
+						interactionEdge = (mxCell) model.add(rootViewCell, interactionEdge, 0);
+					} else {
+						interactionEdge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
 					}
-				} else if (participations[i].getRoles().contains(targetType)) {
-					mxCell target = compToCell.get(participations[i].getParticipant());
-					edge.setTarget(target);
-					if (target.getStyle().contains(STYLE_MODULE)) {
-						mxCell referenced = compToCell.get(mappings.get(participations[i].getParticipant()));
-						((InteractionInfo) edge.getValue()).setToURI(referenced.getValue() + "_" + referenced.getId());
+					interactionEdge.setValue(intInfo.getFullURI());
+					setInteractionEndpoints(document, interaction, participation, source, interactionEdge);
+					if(source) {
+						interactionEdge.setTarget(interactionCell);
+					}else {
+						interactionEdge.setSource(interactionCell);
 					}
+				}else{
+					setInteractionEndpoints(document, interaction, participation, source, interactionCell);
 				}
 			}
+			
+		}
+	}
+
+	private void setInteractionEndpoints(SBOLDocument document, Interaction interaction, Participation participation,
+			boolean source, mxCell interactionEdge) {
+		URI endpointType = getParticipantType(source, interaction.getTypes());
+
+		mxCell endpoint = compToCell.get(participation.getParticipant());
+		InteractionInfo intInfo = interactionDict.get(interactionEdge.getValue());
+		// set the cell source/target
+		if(source)
+			interactionEdge.setSource(endpoint);
+		else
+			interactionEdge.setTarget(endpoint);
+		// set the source/target refinement
+		if(!participation.getRoles().contains(endpointType)) {
+			// take the first one as the refinement
+			URI partRefinement = participation.getRoles().toArray(new URI[0])[0];
+			if(source)
+				intInfo.getSourceRefinement().put(interactionEdge.getId(), SBOLData.getInteractionRoleRefinementName(partRefinement));
+			else
+				intInfo.getTargetRefinement().put(interactionEdge.getId(), SBOLData.getInteractionRoleRefinementName(partRefinement));
+		}
+		// set the to/fromURI if needed
+		if (endpoint.getStyle().contains(STYLE_MODULE)) {
+			mxCell referenced = compToCell.get(mappings.get(participation.getParticipant()));
+			if(source)
+				intInfo.getFromURI().put(interactionEdge.getId(), referenced.getValue()+"_"+referenced.getId());
+			else
+				intInfo.getToURI().put(interactionEdge.getId(), referenced.getValue()+"_"+referenced.getId());
 		}
 	}
 
@@ -531,6 +579,7 @@ public class SBOLToMx extends Converter {
 		InteractionInfo info = new InteractionInfo();
 		info.setDisplayID(interaction.getDisplayId());
 		info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
+		info.setUriPrefix(getURIPrefix(interaction));
 		return info;
 	}
 
@@ -585,7 +634,7 @@ public class SBOLToMx extends Converter {
 		mxCell[] containerChildren = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 				.toArray(mxCell[]::new);
 		mxCell container = containerChildren[0];
-		mxCell compCell = (mxCell) container.getChildAt(index+1); // add one to offset from the backbone
+		mxCell compCell = (mxCell) container.getChildAt(index + 1); // add one to offset from the backbone
 		varCompInfo.setCellID(compCell.getId());
 
 		ArrayList<IdentifiedInfo> variants = new ArrayList<IdentifiedInfo>();

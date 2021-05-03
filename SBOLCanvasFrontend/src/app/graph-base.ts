@@ -7,11 +7,9 @@ import { GlyphService } from './glyph.service';
 import { CanvasAnnotation } from './canvasAnnotation';
 import { environment } from 'src/environments/environment';
 import { ModuleInfo } from './moduleInfo';
-import { GraphEdits } from './graph-edits';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
-import { mxShape } from 'src/mxgraph';
 import { CustomShapes } from './CustomShapes';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
@@ -31,6 +29,7 @@ export class GraphBase {
     // Constants
     static readonly INFO_DICT_INDEX = 0;
     static readonly COMBINATORIAL_DICT_INDEX = 1;
+    static readonly INTERACTION_DICT_INDEX = 2;
 
     static readonly sequenceFeatureGlyphWidth = 50;
     static readonly sequenceFeatureGlyphHeight = 100;
@@ -38,6 +37,9 @@ export class GraphBase {
 
     static readonly molecularSpeciesGlyphWidth = 50;
     static readonly molecularSpeciesGlyphHeight = 50;
+
+    static readonly interactionNodeGlyphWidth = 50;
+    static readonly interactionNodeGlyphHeight = 50;
 
     static readonly defaultTextWidth = 120;
     static readonly defaultTextHeight = 80;
@@ -56,6 +58,7 @@ export class GraphBase {
     static readonly STYLE_MOLECULAR_SPECIES = 'molecularSpeciesGlyph';
     static readonly STYLE_SEQUENCE_FEATURE = 'sequenceFeatureGlyph';
     static readonly STYLE_INTERACTION = 'interactionGlyph';
+    static readonly STYLE_INTERACTION_NODE = 'interactionNodeGlyph';
     static readonly STYLE_MODULE_VIEW = "moduleViewCell";
     static readonly STYLE_COMPONENT_VIEW = "componentViewCell";
     static readonly STYLE_INDICATOR = "indicator";
@@ -81,6 +84,7 @@ export class GraphBase {
 
     baseMolecularSpeciesGlyphStyle: any;
     baseSequenceFeatureGlyphStyle: any;
+    baseInteractionNodeGlyphStyle: any;
 
     // This object handles the hotkeys for the graph.
     keyHandler: any;
@@ -141,6 +145,7 @@ export class GraphBase {
         this.initStyles();
         this.initCustomShapes();
         this.initListeners();
+        this.initEdgeValidation();
     }
 
     /**
@@ -152,6 +157,8 @@ export class GraphBase {
         window['mxGeometry'] = mx.mxGeometry;
         window['mxPoint'] = mx.mxPoint;
         window['mxCell'] = mx.mxCell;
+
+        let graphBaseRef = this; // for use in overide methods where you need one of the helpers here
 
         let genericDecode = function (dec, node, into) {
             const meta = node;
@@ -187,11 +194,11 @@ export class GraphBase {
         // Module info encode/decode
         Object.defineProperty(ModuleInfo, "name", { configurable: true, value: "ModuleInfo" });
         const moduleInfoCodec = new mx.mxObjectCodec(new ModuleInfo());
-        moduleInfoCodec.decode = function(dec, node, into){
+        moduleInfoCodec.decode = function (dec, node, into) {
             const moduleData = new ModuleInfo();
             return genericDecode(dec, node, moduleData);
         }
-        moduleInfoCodec.encode = function(enc, object){
+        moduleInfoCodec.encode = function (enc, object) {
             return object.encode(enc);
         }
         mx.mxCodecRegistry.register(moduleInfoCodec);
@@ -211,31 +218,31 @@ export class GraphBase {
         window['InteractionInfo'] = InteractionInfo;
 
         // combinatorial info decode
-        Object.defineProperty(CombinatorialInfo, "name", { configurable: true, value: "CombinatorialInfo"});
+        Object.defineProperty(CombinatorialInfo, "name", { configurable: true, value: "CombinatorialInfo" });
         const combinatorialInfoCodec = new mx.mxObjectCodec(new CombinatorialInfo());
-        combinatorialInfoCodec.decode = function (dec, node, into){
+        combinatorialInfoCodec.decode = function (dec, node, into) {
             const combinatorialData = new CombinatorialInfo();
             return genericDecode(dec, node, combinatorialData);
         }
-        combinatorialInfoCodec.encode = function (enc, object){
+        combinatorialInfoCodec.encode = function (enc, object) {
             return object.encode(enc);
         }
         mx.mxCodecRegistry.register(combinatorialInfoCodec);
         window['CombinatorialInfo'] = CombinatorialInfo;
 
         // variable component info decode
-        Object.defineProperty(VariableComponentInfo, "name", { configurable: true, value: "VariableComponentInfo"});
+        Object.defineProperty(VariableComponentInfo, "name", { configurable: true, value: "VariableComponentInfo" });
         const variableComponentInfoCodec = new mx.mxObjectCodec(new VariableComponentInfo());
-        variableComponentInfoCodec.decode = function (dec, node, into){
+        variableComponentInfoCodec.decode = function (dec, node, into) {
             const variableComponentData = new VariableComponentInfo();
             return genericDecode(dec, node, variableComponentData);
         }
         mx.mxCodecRegistry.register(variableComponentInfoCodec);
         window['VariableComponentInfo'] = VariableComponentInfo;
 
-        Object.defineProperty(IdentifiedInfo, "name", { configurable: true, value: "IdentifiedInfo"});
+        Object.defineProperty(IdentifiedInfo, "name", { configurable: true, value: "IdentifiedInfo" });
         const identifiedInfoCodec = new mx.mxObjectCodec(new IdentifiedInfo());
-        identifiedInfoCodec.decode = function (dec, node, into){
+        identifiedInfoCodec.decode = function (dec, node, into) {
             const identifiedData = new IdentifiedInfo();
             return genericDecode(dec, node, identifiedData);
         }
@@ -267,9 +274,10 @@ export class GraphBase {
                 cell0 = cell0.parent;
             }
             let glyphDict = cell0.value[GraphBase.INFO_DICT_INDEX];
+            let interactionDict = cell0.value[GraphBase.INTERACTION_DICT_INDEX];
 
             // check for format conditions
-            if (((cell.isCircuitContainer() && cell.getParent().isModuleView()) || cell.isMolecularSpeciesGlyph() || cell.isModule()) && cell.getGeometry().height == 0) {
+            if (((cell.isCircuitContainer() && cell.getParent().isModuleView()) || cell.isMolecularSpeciesGlyph() || cell.isModule() || cell.isInteractionNode()) && cell.getGeometry().height == 0) {
                 GraphBase.unFormatedCells.add(cell.getParent().getId());
             }
 
@@ -283,12 +291,23 @@ export class GraphBase {
                     reconstructCellStyle = true;
                 else if (cell.style === GraphBase.STYLE_MOLECULAR_SPECIES || cell.style.includes(GraphBase.STYLE_MOLECULAR_SPECIES + ";"))
                     reconstructCellStyle = true;
+                else if (cell.style === GraphBase.STYLE_INTERACTION || cell.style.includes(GraphBase.STYLE_INTERACTION+";"))
+                    reconstructCellStyle = true;
+                else if (cell.style === GraphBase.STYLE_INTERACTION_NODE || cell.style.includes(GraphBase.STYLE_INTERACTION_NODE+";"))
+                    reconstructCellStyle = true;
             }
 
             // reconstruct the cell style
             if (reconstructCellStyle) {
                 if (glyphDict[cell.value] != null) {
-                    if (glyphDict[cell.value].partType === 'DNA region') {
+                    if(glyphDict[cell.value] instanceof ModuleInfo){
+                        // module
+                        if(!cell.style){
+                            cell.style = GraphBase.STYLE_MODULE;
+                        }
+                        cell.geometry.width = GraphBase.defaultModuleWidth;
+                        cell.geometry.height = GraphBase.defaultModuleHeight;
+                    } else if (glyphDict[cell.value] instanceof GlyphInfo && glyphDict[cell.value].partType === 'DNA region') {
                         // sequence feature
                         if (!cell.style) {
                             cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole;
@@ -299,7 +318,7 @@ export class GraphBase {
                             cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth;
                         if (cell.geometry.height == 0)
                             cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
-                    } else {
+                    } else if(glyphDict[cell.value] instanceof GlyphInfo){
                         // molecular species
                         if (!cell.style)
                             cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
@@ -308,16 +327,29 @@ export class GraphBase {
                         cell.geometry.width = GraphBase.molecularSpeciesGlyphWidth;
                         cell.geometry.height = GraphBase.molecularSpeciesGlyphHeight;
                     }
-                } else if (cell.value instanceof InteractionInfo) {
-                    // interaction
-                    let name = cell.value.interactionType;
-                    if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
-                        name = "Process";
-                    }
-                    if (!cell.style) {
-                        cell.style = GraphBase.STYLE_INTERACTION + name;
-                    } else {
-                        cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION, GraphBase.STYLE_INTERACTION + name);
+                } else if (interactionDict[cell.value] != null) {
+                    let intInfo = interactionDict[cell.value];
+                    if(cell.isVertex()){
+                        // interaction node
+                        let name = graphBaseRef.interactionNodeTypeToName(intInfo.interactionType);
+                        if(!cell.style){
+                            cell.style = GraphBase.STYLE_INTERACTION_NODE+name;
+                        }else{
+                            cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION_NODE, GraphBase.STYLE_INTERACTION_NODE + name);
+                        }
+                        cell.geometry.width = GraphBase.interactionNodeGlyphWidth;
+                        cell.geometry.height = GraphBase.interactionNodeGlyphHeight;
+                    }else{
+                        // interaction
+                        let name = intInfo.interactionType;
+                        if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
+                            name = "Process";
+                        }
+                        if (!cell.style) {
+                            cell.style = GraphBase.STYLE_INTERACTION + name;
+                        } else {
+                            cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION, GraphBase.STYLE_INTERACTION + name);
+                        }
                     }
                 }
             }
@@ -361,6 +393,10 @@ export class GraphBase {
         mx.mxCell.prototype.isScar = function () {
             return this.isStyle(GraphBase.STYLE_SCAR);
         };
+
+        mx.mxCell.prototype.isInteractionNode = function () {
+            return this.isStyle(GraphBase.STYLE_INTERACTION_NODE);
+        }
 
         mx.mxCell.prototype.isInteraction = function () {
             return this.isStyle(GraphBase.STYLE_INTERACTION);
@@ -642,6 +678,8 @@ export class GraphBase {
         this.baseSequenceFeatureGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
         this.baseSequenceFeatureGlyphStyle[mx.mxConstants.STYLE_PORT_CONSTRAINT] = [mx.mxConstants.DIRECTION_NORTH, mx.mxConstants.DIRECTION_SOUTH];
 
+        this.baseInteractionNodeGlyphStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
+
         const textBoxStyle = {};
         textBoxStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_LABEL;
         textBoxStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
@@ -709,18 +747,18 @@ export class GraphBase {
         this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION + GraphBase.interactionDegradationName, interactionDegradationStyle);
 
         // vertex selection border styles
-        mx.mxVertexHandler.prototype.getSelectionColor = function() {
-            if(this.state.cell.style.startsWith(GraphBase.STYLE_CIRCUIT_CONTAINER)){
+        mx.mxVertexHandler.prototype.getSelectionColor = function () {
+            if (this.state.cell.style.startsWith(GraphBase.STYLE_CIRCUIT_CONTAINER)) {
                 // circuit container selection color
                 return '#0000ff';
-            }else{
+            } else {
                 // default color
                 return '#00aa00';
             }
         }
 
         // edge selection border styles
-        mx.mxEdgeHandler.prototype.getSelectionColor = function() {
+        mx.mxEdgeHandler.prototype.getSelectionColor = function () {
             return '#00aa00';
         }
     }
@@ -737,17 +775,17 @@ export class GraphBase {
 
         // we need this if we intend on creating custom shapes with stencils
         let sequenceFeatureStencils = this.glyphService.getSequenceFeatureGlyphs();
-        mx.mxCellRenderer.prototype.createShape = function(state){
+        mx.mxCellRenderer.prototype.createShape = function (state) {
             var shape = null;
-            if(state.style != null){
+            if (state.style != null) {
                 let stencilName = state.style[mx.mxConstants.STYLE_SHAPE];
                 var stencil = mx.mxStencilRegistry.getStencil(stencilName);
 
-                if(sequenceFeatureStencils[stencilName] != null){
+                if (sequenceFeatureStencils[stencilName] != null) {
                     shape = new CustomShapes.SequenceFeatureShape(stencil);
-                }else if(stencil != null){
+                } else if (stencil != null) {
                     shape = new mx.mxShape(stencil);
-                }else{
+                } else {
                     var ctor = this.getShapeConstructor(state);
                     shape = new ctor();
                 }
@@ -775,14 +813,14 @@ export class GraphBase {
                     y += h / 2;
                     origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
 
-                    shape.paintComposite(canvas, x, y-(h/2), w, h*2);
+                    shape.paintComposite(canvas, x, y - (h / 2), w, h * 2);
                 }
             } else {
                 customStencil.drawShape = function (canvas, shape, x, y, w, h) {
                     h = h / 2;
                     origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
 
-                    shape.paintComposite(canvas, x, y, w, h*2);
+                    shape.paintComposite(canvas, x, y, w, h * 2);
                 }
             }
 
@@ -807,16 +845,28 @@ export class GraphBase {
             this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MOLECULAR_SPECIES + name, newGlyphStyle);
         }
 
+        // interaction nodes are basically identical to molecular species
+        stencils = this.glyphService.getInteractionNodeGlyphs();
+        for (const name in stencils) {
+            const stencil = stencils[name][0];
+            let customStencil = new mx.mxStencil(stencil.desc);
+            mx.mxStencilRegistry.addStencil(name, customStencil);
+
+            const newGlyphStyle = mx.mxUtils.clone(this.baseInteractionNodeGlyphStyle);
+            newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
+            this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INTERACTION_NODE + name, newGlyphStyle);
+        }
+
         // indicators like composit and combinatorial
         stencils = this.glyphService.getIndicatorGlyphs();
-        for(const name in stencils){
+        for (const name in stencils) {
             const stencil = stencils[name][0];
             let customStencil = new mx.mxStencil(stencil.desc);
             mx.mxStencilRegistry.addStencil(name, customStencil);
 
             const newIndicatorStyle = mx.mxUtils.clone(this.baseMolecularSpeciesGlyphStyle);
             newIndicatorStyle[mx.mxConstants.STYLE_SHAPE] = name;
-            this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INDICATOR+name, newIndicatorStyle);
+            this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_INDICATOR + name, newIndicatorStyle);
         }
 
         // *** Define custom markers for edge endpoints ***
@@ -886,10 +936,10 @@ export class GraphBase {
         mx.mxMarker.addMarker(GraphBase.interactionDegradationName, degradationMarkerDrawFunction);
 
         let oldGetIndicatorShape = mx.mxGraph.prototype.getIndicatorShape;
-        mx.mxGraph.prototype.getIndicatorShape = function (state){
-            if(state.cell.isSequenceFeatureGlyph()){
+        mx.mxGraph.prototype.getIndicatorShape = function (state) {
+            if (state.cell.isSequenceFeatureGlyph()) {
                 return 'composite';
-            }else{
+            } else {
                 return oldGetIndicatorShape(state);
             }
         }
@@ -900,37 +950,109 @@ export class GraphBase {
      */
     initListeners() {
         // edge movement
-        this.graph.addListener(mx.mxEvent.CONNECT_CELL, mx.mxUtils.bind(this, async function(sender, evt){
-
-            // if the terminal is a module, we need to prompt what it should be changed to, otherwise just clear it
-
+        this.graph.addListener(mx.mxEvent.CONNECT_CELL, mx.mxUtils.bind(this, async function (sender, evt) {
             let edge = evt.getProperty("edge");
-            let terminal = evt.getProperty("terminal");
-            let source = evt.getProperty("source");
+            let terminal = evt.getProperty("terminal"); // The cell that's either source or dest
+            let previous = evt.getProperty("previous"); // The previous terminal cell
+            let source = evt.getProperty("source"); // boolean, true if terminal is the new source
 
             let cancelled = false;
 
-            try{
+            try {
                 sender.getModel().beginUpdate();
+                // new terminal is a module, prompt for the sub part to keep track of
                 let newTarget = null;
-                if(terminal != null && terminal.isModule()){
+                if (terminal != null && terminal.isModule()) {
                     newTarget = await this.promptChooseFunctionalComponent(terminal, source);
-                    if(!newTarget){
+                    if (!newTarget) {
                         cancelled = true;
                         return;
                     }
                 }
 
-                let infoCopy = edge.value.makeCopy();
+                let infoCopy = this.getFromInteractionDict(edge.value).makeCopy();
 
-                if(source){
-                    infoCopy.fromURI = newTarget;
-                }else{
-                    infoCopy.toURI = newTarget;
+                // previous terminal was an interaction node, we need to decouple from it
+                if (previous && previous.isInteractionNode()) {
+                    // remove any refinements with this edge from original
+                    let sourceRefinement = infoCopy.sourceRefinement[edge.getId()];
+                    let targetRefinement = infoCopy.targetRefinement[edge.getId()];
+                    delete infoCopy.sourceRefinement[edge.getId()];
+                    delete infoCopy.targetRefinement[edge.getId()];
+                    this.updateInteractionDict(infoCopy);
+                    infoCopy = infoCopy.makeCopy(); // shouldn't modify the original copy anymore, or we mess up the history
+
+                    // remove all refinements from the copy
+                    infoCopy.sourceRefinement = {};
+                    infoCopy.targetRefinement = {};
+
+                    // add back refinements relating to ours
+                    if(sourceRefinement){
+                        infoCopy.sourceRefinement[edge.getId()] = sourceRefinement;
+                    }
+                    if(targetRefinement){
+                        infoCopy.targetRefinement[edge.getId()] = targetRefinement;
+                    }
+
+                    // make a dummy info so we can steal it's id
+                    let dummyInfo = new InteractionInfo();
+                    infoCopy.displayID = dummyInfo.displayID;
+                    // update the edges reference
+                    this.graph.getModel().setValue(edge, infoCopy.getFullURI());
                 }
 
-                sender.getModel().execute(new GraphEdits.interactionEdit(edge, infoCopy));
-            }finally{
+                // if the previous terminal was a module, we need to remove it's to/fromURI
+                if (previous && previous.isModule()) {
+                    if (source) {
+                        delete infoCopy.fromURI[edge.getId()];
+                    } else {
+                        delete infoCopy.toURI[edge.getId()];
+                    }
+                }
+
+                // new terminal is an interaction node, we need to couple with it
+                if (terminal && terminal.isInteractionNode()) {
+                    let oldURI = edge.value;
+                    let nodeInfo = this.getFromInteractionDict(terminal.value).makeCopy();
+                    this.graph.getModel().setValue(edge, nodeInfo.getFullURI());
+                    
+                    // duplicate over the nescessary info
+                    // module targets
+                    if(infoCopy.fromURI[edge.getId()]){
+                        nodeInfo.fromURI[edge.getId()] = infoCopy.fromURI[edge.getId()];
+                    }
+                    if(infoCopy.toURI[edge.getId()]){
+                        nodeInfo.toURI[edge.getId()] = infoCopy.toURI[edge.getId()];
+                    }
+
+                    // edge refinements
+                    let sourceRefinement = infoCopy.sourceRefinement[edge.getId()];
+                    if(sourceRefinement){
+                        nodeInfo.sourceRefinement[edge.getId()] = sourceRefinement;
+                    }
+                    let targetRefinement = infoCopy.targetRefinement[edge.getId()];
+                    if(targetRefinement){
+                        nodeInfo.targetRefinement[edge.getId()] = targetRefinement;
+                    }
+
+                    // if the previous wasn't an interaction node, then we need to remove the info from the dictionary
+                    if(!previous || !previous.isInteractionNode()){
+                        this.removeFromInteractionDict(oldURI);
+                    }
+
+                    infoCopy = nodeInfo;
+                }
+
+                if (newTarget) {
+                    if (source) {
+                        infoCopy.fromURI[edge.getId()] = newTarget;
+                    } else {
+                        infoCopy.toURI[edge.getId()] = newTarget;
+                    }
+                }
+
+                this.updateInteractionDict(infoCopy);
+            } finally {
                 sender.getModel().endUpdate();
                 // undo has to happen after end update
                 if (cancelled) {
@@ -939,6 +1061,8 @@ export class GraphBase {
                 }
             }
             evt.consume();
+
+            this.updateAngularMetadata(this.graph.getSelectionCells());
         }));
 
         // cell movement
@@ -1069,6 +1193,94 @@ export class GraphBase {
         }));
     }
 
+    /**
+     * Overrides methods necessary to prevent edge connections under certain conditions.
+     */
+    protected initEdgeValidation() {
+        // We have to override this method because multiplicities only are checked when there is a source and target.
+        // Multiplicities also base their type on cell.value, not cell.style
+        let oldGetEdgeValidationError = mx.mxGraph.prototype.getEdgeValidationError;
+        let validateInteractionRef = this.validateInteraction;
+        mx.mxGraph.prototype.getEdgeValidationError = function (edge, source, target) {
+            let result = oldGetEdgeValidationError.apply(this, arguments);
+
+            // will only be null if there wasn't already a condition preventing a connection
+            if (result != null) {
+                return result;
+            }
+
+            let styleString = edge.style.slice();
+            let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION)+GraphBase.STYLE_INTERACTION.length;
+            let endIdx = styleString.indexOf(';', startIdx);
+            endIdx = endIdx > 0 ? endIdx : styleString.length;
+            let interactionType = styleString.slice(startIdx, endIdx);
+
+            let validationMessage = validateInteractionRef(interactionType, source, target);
+
+            return validationMessage;
+        }
+    }
+
+    protected validateInteraction(interactionType: string, source: mxCell, target: mxCell) {
+
+        // edges can't connect to edges
+        if((source && source.isEdge()) || (target && target.isEdge())){
+            return "Edges are dissallowed to connect to edges.";
+        }
+
+        // certain edge types can't connect to interaction nodes
+        if (((source && source.isInteractionNode()) || (target && target.isInteractionNode())) &&
+            (interactionType == 'Control' || interactionType == 'Inhibition' || interactionType == 'Stimulation')) {
+            return 'Edge type dissallowed to connect to an interaction node.';
+        }
+
+        // prevent degredation from using anything as a target
+        if (interactionType == 'Degradation' && target) {
+            return 'Degradation isn\'t allowed target anything.';
+        }
+
+        // prevent degredation from having anything but a molecular species as a source
+        if (interactionType == 'Degradation' && source && !source.isMolecularSpeciesGlyph()) {
+            return 'Degredation is only allowed molecular species as a source.';
+        }
+
+        // prevent interaction nodes from chaining
+        if (source && target && source.isInteractionNode() && target.isInteractionNode()) {
+            return 'Interaction nodes aren\'t allowed to connect.';
+        }
+
+        return null;
+    }
+
+    protected interactionNodeNametoType(name: string) {
+        switch (name) {
+            case "association":
+                return "Non-Covalent Binding";
+            case "dissociation":
+                return "Dissociation";
+            case "process":
+                return "Process";
+        }
+    }
+
+    protected interactionNodeTypeToName(type: string) {
+        switch (type) {
+            case "Non-Covalent Binding":
+                return "association";
+            case "Dissociation":
+                return "dissociation";
+            case "Inhibition":
+            case "Stimulation":
+            case "Biochemical Reaction":
+            case "Degradation":
+            case "Genetic Production":
+            case "Control":
+                return "process";
+            default:
+                return "unkown";
+        }
+    }
+
     protected moleculeNameToType(name: string) {
         switch (name) {
             case "dsNA":
@@ -1083,6 +1295,8 @@ export class GraphBase {
                 return "RNA molecule";
             case "replacement-glyph":
                 return "All_types";
+            case "complex":
+                return "Complex";
             default:
                 return "Protein";
         }
@@ -1102,6 +1316,8 @@ export class GraphBase {
                 return "ssNA";
             case "All_types":
                 return "replacement-glyph";
+            case "Complex":
+                return "complex";
             default:
                 return "NGA (No Glyph Assigned Molecular Species)";
         }

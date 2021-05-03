@@ -7,10 +7,8 @@
 import {Component, OnInit, AfterViewInit, ViewChildren, QueryList, ElementRef, ViewEncapsulation} from '@angular/core';
 import {GraphService} from '../graph.service';
 import {GlyphService} from '../glyph.service';
-import {SearchfilterPipe} from '../searchfilter.pipe';
 import {DomSanitizer} from '@angular/platform-browser';
 import {MetadataService} from '../metadata.service';
-import {register} from 'ts-node';
 
 @Component({
   selector: 'app-glyph-menu',
@@ -27,6 +25,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     SEQUENCE_FEATURE: "Sequence Feature",
     MOLECULAR_SPECIES: "Molecular Species",
     INTERACTION: "Interaction",
+    INTERACTION_NODE: "Interaction Node",
   }
 
   @ViewChildren('canvasElement') canvasElements: QueryList<ElementRef>;
@@ -53,8 +52,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   onInteractionNodeGlyphClicked(name: string){
-    // name = name.charAt(0).toUpperCase()+name.slice(1);
-    // this.graphService.addInteractionNode(name);
+    //name = name.charAt(0).toUpperCase()+name.slice(1);
+    this.graphService.addInteractionNode(name);
   }
 
   onInteractionGlyphClicked(name: string) {
@@ -102,6 +101,9 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
         case this.elementTypes.INTERACTION:
           this.graphService.makeInteractionDragsource(elt, elt.getAttribute('glyphStyle'));
           break;
+        case this.elementTypes.INTERACTION_NODE:
+          this.graphService.makeInteractionNodeDragsource(elt, elt.getAttribute('glyphStyle'));
+          break;
       }
     }
 
@@ -126,6 +128,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
       this.utilsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
     for (const name in molecularSpeciesElts) {
+      if(name == "replacement-glyph") // Shouldn't be possible to add in canvas, only loaded
+        continue;
       const svg = molecularSpeciesElts[name];
       this.molecularSpeciesDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
@@ -134,6 +138,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
       this.interactionsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
     for(const name in interactionNodeElts){
+      if(name == "replacement-glyph") // Shouldn't be possible to add in canvas, only loaded
+        continue;
       const svg = interactionNodeElts[name];
       this.interactionNodeDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }

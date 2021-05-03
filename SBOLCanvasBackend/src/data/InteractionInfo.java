@@ -1,6 +1,6 @@
 package data;
 
-import utils.Converter;
+import java.util.Hashtable;
 
 public class InteractionInfo extends Info {
 
@@ -8,25 +8,18 @@ public class InteractionInfo extends Info {
 	private String interactionType;
 	private String fromParticipationType;
 	private String toParticipationType;
-	private String fromURI;
-	private String toURI;
+	private Hashtable<String, String> sourceRefinement;
+	private Hashtable<String, String> targetRefinement;
+	private Hashtable<String, String> fromURI;
+	private Hashtable<String, String> toURI;
+
+	public InteractionInfo() {
+		sourceRefinement = new Hashtable<String, String>();
+		targetRefinement = new Hashtable<String, String>();
+		fromURI = new Hashtable<String, String>();
+		toURI = new Hashtable<String, String>();
+	}
 	
-	public String getFromURI() {
-		return fromURI;
-	}
-
-	public void setFromURI(String fromURI) {
-		this.fromURI = fromURI;
-	}
-
-	public String getToURI() {
-		return toURI;
-	}
-
-	public void setToURI(String toURI) {
-		this.toURI = toURI;
-	}
-
 	public String getDisplayID() {
 		return displayID;
 	}
@@ -59,7 +52,39 @@ public class InteractionInfo extends Info {
 		this.toParticipationType = toParticipationType;
 	}
 	
+	public Hashtable<String, String> getSourceRefinement() {
+		return sourceRefinement;
+	}
+
+	public void setSourceRefinement(Hashtable<String, String> sourceRefinement) {
+		this.sourceRefinement = sourceRefinement;
+	}
+
+	public Hashtable<String, String> getTargetRefinement() {
+		return targetRefinement;
+	}
+
+	public void setTargetRefinement(Hashtable<String, String> targetRefinement) {
+		this.targetRefinement = targetRefinement;
+	}
+
+	public Hashtable<String, String> getFromURI() {
+		return fromURI;
+	}
+
+	public void setFromURI(Hashtable<String, String> fromURI) {
+		this.fromURI = fromURI;
+	}
+
+	public Hashtable<String, String> getToURI() {
+		return toURI;
+	}
+
+	public void setToURI(Hashtable<String, String> toURI) {
+		this.toURI = toURI;
+	}
+	
 	public String getFullURI() {
-		return Converter.URI_PREFIX+'/'+this.displayID;
+		return this.uriPrefix + '/' + this.displayID;
 	}
 }

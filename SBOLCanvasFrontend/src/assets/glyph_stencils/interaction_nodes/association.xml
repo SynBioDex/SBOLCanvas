@@ -6,8 +6,6 @@
         <linejoin join="round" />
         <linecap cap="round" />
         <miterlimit limit="4" />
-        <dashpattern pattern="none" />
-        <dashed dashed="1" />
         <alpha alpha="1" />
         <strokealpha alpha="1" />
         <fillalpha alpha="1" />
@@ -18,6 +16,7 @@
             <arc large-arc-flag="0.0" rx="15.83224060150376" ry="15.569563909774436" sweep-flag="1.0" x="8.21551879699248" x-axis-rotation="0.0" y="23.820902255639098" />
             <arc large-arc-flag="0.0" rx="15.83224060150376" ry="15.569563909774436" sweep-flag="1.0" x="24.1193984962406" x-axis-rotation="0.0" y="8.418496240601502" />
         </path>
+        <fillstroke />
         <stroke />
     </foreground>
 </shape>
