@@ -1,4 +1,3 @@
-import { AppModule } from "./app.module";
 import { mx } from "./graph-base";
 import { GraphService } from "./graph.service";
 
