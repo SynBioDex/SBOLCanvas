@@ -80,7 +80,9 @@ public class MxToSBOL extends Converter {
 		this.userTokens = userTokens;
 	}
 
-	public void toSBOL(InputStream graphStream, OutputStream sbolStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+	public void toSBOL(InputStream graphStream, OutputStream sbolStream)
+			throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException,
+			TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
 		SBOLDocument document = setupDocument(graphStream);
 
 		// write to body
@@ -88,45 +90,54 @@ public class MxToSBOL extends Converter {
 		SBOLWriter.write(document, sbolStream);
 	}
 
-	public void toGenBank(InputStream graphStream, OutputStream outputStream) throws SBOLConversionException, IOException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+	public void toGenBank(InputStream graphStream, OutputStream outputStream)
+			throws SBOLConversionException, IOException, URISyntaxException, SBOLValidationException,
+			TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
 		SBOLDocument document = setupDocument(graphStream);
-		
+
 		// write to body
 		SBOLWriter.setKeepGoing(true);
 		SBOLWriter.write(document, outputStream, SBOLDocument.GENBANK);
 	}
 
-	public void toGFF(InputStream graphStream, OutputStream outputStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+	public void toGFF(InputStream graphStream, OutputStream outputStream)
+			throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException,
+			TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
 		SBOLDocument document = setupDocument(graphStream);
-		
+
 		// write to body
 		SBOLWriter.setKeepGoing(true);
 		SBOLWriter.write(document, outputStream, SBOLDocument.GFF3format);
 	}
 
-	public void toFasta(InputStream graphStream, OutputStream outputStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+	public void toFasta(InputStream graphStream, OutputStream outputStream)
+			throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException,
+			TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
 		SBOLDocument document = setupDocument(graphStream);
-		
+
 		// write to body
 		SBOLWriter.setKeepGoing(true);
 		SBOLWriter.write(document, outputStream, SBOLDocument.FASTAformat);
 	}
 
-	public void toSBOL1(InputStream graphStream, OutputStream outputStream) throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+	public void toSBOL1(InputStream graphStream, OutputStream outputStream)
+			throws IOException, SBOLConversionException, URISyntaxException, SBOLValidationException,
+			TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
 		SBOLDocument document = setupDocument(graphStream);
 
 		// write to body
 		SBOLWriter.setKeepGoing(true);
 		SBOLWriter.write(document, outputStream, SBOLDocument.RDFV1);
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	public SBOLDocument setupDocument(InputStream graphStream) throws IOException, URISyntaxException, SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
+	public SBOLDocument setupDocument(InputStream graphStream) throws IOException, URISyntaxException,
+			SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		mxCell cell0 = (mxCell) model.getCell("0");
-		ArrayList<Object> dataContainer = (ArrayList<Object>)cell0.getValue();
+		ArrayList<Object> dataContainer = (ArrayList<Object>) cell0.getValue();
 		infoDict = loadDictionary(dataContainer, INFO_DICT_INDEX);
 		combinatorialDict = loadDictionary(dataContainer, COMBINATORIAL_DICT_INDEX);
 		interactionDict = loadDictionary(dataContainer, INTERACTION_DICT_INDEX);
@@ -139,9 +150,9 @@ public class MxToSBOL extends Converter {
 		document.setDefaultURIprefix(URI_PREFIX);
 		document.setComplete(true);
 		document.setCreateDefaults(true);
-		
-		// add registries
-		for(String key : userTokens.keySet()) {
+
+		// add registries that we're logged into
+		for (String key : userTokens.keySet()) {
 			SynBioHubFrontend registry = document.addRegistry(key);
 			registry.setUser(userTokens.get(key));
 		}
@@ -209,14 +220,14 @@ public class MxToSBOL extends Converter {
 				linkModuleDefinition(document, graph, model, viewCell);
 			}
 		}
-		
+
 		// create the combinatorials
-		for(CombinatorialInfo info : combinatorialDict.values()) {
+		for (CombinatorialInfo info : combinatorialDict.values()) {
 			createCombinatorial(document, graph, model, info);
 		}
-		
+
 		// link the combinatorials
-		for(CombinatorialInfo info : combinatorialDict.values()) {
+		for (CombinatorialInfo info : combinatorialDict.values()) {
 			linkCombinatorial(document, graph, model, info);
 		}
 
@@ -258,10 +269,15 @@ public class MxToSBOL extends Converter {
 		// if the uri is one of the synbiohub ones, just add the layout
 		boolean layoutOnly = false;
 		for (String registry : SBOLData.registries) {
-			if (modInfo.getUriPrefix().contains(registry)
-					&& (userTokens.containsKey(registry) || modInfo.getUriPrefix().contains("/public/"))) {
-				layoutOnly = true;
-				break;
+			if (modInfo.getUriPrefix().contains(registry)) {
+				// if we're not logged in, it still needs to be added to the document
+				if (document.getRegistry(registry) == null) {
+					document.addRegistry(registry);
+				}
+				if (userTokens.containsKey(registry) || modInfo.getUriPrefix().contains("/public/")) {
+					layoutOnly = true;
+					break;
+				}
 			}
 		}
 
@@ -269,13 +285,14 @@ public class MxToSBOL extends Converter {
 		for (mxCell protein : proteins) {
 			// proteins also have glyphInfos
 			GlyphInfo proteinInfo = (GlyphInfo) infoDict.get(protein.getValue());
-			if(proteinInfo.getUriPrefix() == null)
+			if (proteinInfo.getUriPrefix() == null)
 				proteinInfo.setUriPrefix(URI_PREFIX);
 			FunctionalComponent proteinFuncComp = null;
 			if (!layoutOnly) {
 				ComponentDefinition proteinCD = document.getComponentDefinition(new URI((String) protein.getValue()));
 				if (proteinCD == null) {
-					proteinCD = document.createComponentDefinition(proteinInfo.getUriPrefix(), proteinInfo.getDisplayID(), proteinInfo.getVersion(),
+					proteinCD = document.createComponentDefinition(proteinInfo.getUriPrefix(),
+							proteinInfo.getDisplayID(), proteinInfo.getVersion(),
 							SBOLData.types.getValue(proteinInfo.getPartType()));
 					proteinCD.setDescription(proteinInfo.getDescription());
 					proteinCD.setName(proteinInfo.getName());
@@ -341,9 +358,14 @@ public class MxToSBOL extends Converter {
 
 		// if the uri is one of the synbiohub ones, skip the object
 		for (String registry : SBOLData.registries) {
-			if (glyphInfo.getUriPrefix().contains(registry)
-					&& (userTokens.containsKey(registry) || glyphInfo.getUriPrefix().contains("/public/"))) {
-				return;
+			if (glyphInfo.getUriPrefix().contains(registry)) {
+				// if we're not logged in, it still needs to be added to the document
+				if (document.getRegistry(registry) == null) {
+					document.addRegistry(registry);
+				}
+				if (userTokens.containsKey(registry) || glyphInfo.getUriPrefix().contains("/public/")) {
+					return;
+				}
 			}
 		}
 
@@ -405,46 +427,51 @@ public class MxToSBOL extends Converter {
 //		}
 	}
 
-	private void createCombinatorial(SBOLDocument document, mxGraph graph, mxGraphModel model, CombinatorialInfo combInfo) throws SBOLValidationException {
-		if(combInfo.getUriPrefix() == null)
-			combInfo.setUriPrefix(URI_PREFIX.substring(0,URI_PREFIX.length()-1));
-		
+	private void createCombinatorial(SBOLDocument document, mxGraph graph, mxGraphModel model,
+			CombinatorialInfo combInfo) throws SBOLValidationException {
+		if (combInfo.getUriPrefix() == null)
+			combInfo.setUriPrefix(URI_PREFIX.substring(0, URI_PREFIX.length() - 1));
+
 		// create the combinatorial
-		CombinatorialDerivation combDer = document.createCombinatorialDerivation(combInfo.getUriPrefix(), combInfo.getDisplayID(), combInfo.getVersion(), URI.create(combInfo.getTemplateURI()));
-		
+		CombinatorialDerivation combDer = document.createCombinatorialDerivation(combInfo.getUriPrefix(),
+				combInfo.getDisplayID(), combInfo.getVersion(), URI.create(combInfo.getTemplateURI()));
+
 		// set fields the constructor doesn't give access to
 		String strategy = combInfo.getStrategy();
-		if(strategy != null) {
-			switch(strategy) {
+		if (strategy != null) {
+			switch (strategy) {
 			case "Enumerate":
 				combDer.setStrategy(StrategyType.ENUMERATE);
 				break;
 			case "Sample":
 				combDer.setStrategy(StrategyType.SAMPLE);
 				break;
-			}			
+			}
 		}
 		combDer.setName(combInfo.getName());
 		combDer.setDescription(combInfo.getDescription());
 	}
-	
+
 	private void linkModuleDefinition(SBOLDocument document, mxGraph graph, mxGraphModel model, mxCell viewCell)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
 			URISyntaxException {
 		mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
 				.toArray(mxCell[]::new);
 		mxCell[] modules = Arrays.stream(mxGraphModel.filterCells(viewChildren, moduleFilter)).toArray(mxCell[]::new);
-		mxCell[] interactionNodes = Arrays.stream(mxGraphModel.filterCells(viewChildren, interactionNodeFilter)).toArray(mxCell[]::new);
-		
+		mxCell[] interactionNodes = Arrays.stream(mxGraphModel.filterCells(viewChildren, interactionNodeFilter))
+				.toArray(mxCell[]::new);
+
 		// filter out all edges that connect to interaction nodes
 		ArrayList<mxCell> uniqueInteractionCells = new ArrayList<mxCell>();
-		for(mxCell edge : Arrays.stream(mxGraphModel.getChildCells(model, viewCell, false, true)).toArray(mxCell[]::new)) {
-			if(((mxCell) edge.getSource()).getStyle().contains(STYLE_INTERACTION_NODE) || ((mxCell) edge.getTarget()).getStyle().contains(STYLE_INTERACTION_NODE)) {
+		for (mxCell edge : Arrays.stream(mxGraphModel.getChildCells(model, viewCell, false, true))
+				.toArray(mxCell[]::new)) {
+			if (((mxCell) edge.getSource()).getStyle().contains(STYLE_INTERACTION_NODE)
+					|| ((mxCell) edge.getTarget()).getStyle().contains(STYLE_INTERACTION_NODE)) {
 				continue;
 			}
 			uniqueInteractionCells.add(edge);
 		}
-		for(mxCell interactionNode : interactionNodes) {
+		for (mxCell interactionNode : interactionNodes) {
 			uniqueInteractionCells.add(interactionNode);
 		}
 		mxCell[] interactionCells = uniqueInteractionCells.toArray(new mxCell[0]);
@@ -476,43 +503,46 @@ public class MxToSBOL extends Converter {
 		}
 
 		// edges to interactions
-		for(mxCell interactionCell : interactionCells) {
+		for (mxCell interactionCell : interactionCells) {
 			InteractionInfo intInfo = interactionDict.get(interactionCell.getValue());
 			Interaction interaction = null;
-			if(!layoutOnly) {
-				interaction = modDef.createInteraction(intInfo.getDisplayID(), SBOLData.interactions.getValue(intInfo.getInteractionType()));
-			}else {
+			if (!layoutOnly) {
+				interaction = modDef.createInteraction(intInfo.getDisplayID(),
+						SBOLData.interactions.getValue(intInfo.getInteractionType()));
+			} else {
 				Set<Interaction> interactions = modDef.getInteractions();
 				// find the interaction with the correct identity
-				for(Interaction inter : interactions) {
-					if(inter.getIdentity().toString().equals((String) intInfo.getFullURI())){
+				for (Interaction inter : interactions) {
+					if (inter.getIdentity().toString().equals((String) intInfo.getFullURI())) {
 						interaction = inter;
 						break;
 					}
 				}
 			}
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), interaction.getDisplayId(), interactionCell);
-			if(interactionCell.getStyle().contains(STYLE_INTERACTION_NODE) && layoutOnly) {
-				mxCell[] interactionEdges = Arrays.stream(mxGraphModel.getEdges(model, interactionCell)).toArray(mxCell[]::new);
-				for(mxCell interactionEdge : interactionEdges) {
+			if (interactionCell.getStyle().contains(STYLE_INTERACTION_NODE) && layoutOnly) {
+				mxCell[] interactionEdges = Arrays.stream(mxGraphModel.getEdges(model, interactionCell))
+						.toArray(mxCell[]::new);
+				for (mxCell interactionEdge : interactionEdges) {
 					attachEdgeToParticipant(document, model, modDef, interaction, layoutOnly, intInfo, interactionEdge);
 				}
 			}
-			
+
 			// No layout stuff below this part
-			if(layoutOnly) {
+			if (layoutOnly) {
 				return;
 			}
-			
+
 			// populate sources and targets
-			if(interactionCell.getStyle().contains(STYLE_INTERACTION_NODE)) {
+			if (interactionCell.getStyle().contains(STYLE_INTERACTION_NODE)) {
 				// multiple sources/targets
-				mxCell[] interactionEdges = Arrays.stream(mxGraphModel.getEdges(model, interactionCell)).toArray(mxCell[]::new);
-				for(mxCell interactionEdge : interactionEdges) {
+				mxCell[] interactionEdges = Arrays.stream(mxGraphModel.getEdges(model, interactionCell))
+						.toArray(mxCell[]::new);
+				for (mxCell interactionEdge : interactionEdges) {
 					boolean isSource = !interactionEdge.getSource().equals(interactionCell);
 					addParticipant(document, model, modDef, interaction, isSource, intInfo, interactionEdge);
 				}
-			}else {
+			} else {
 				// single source/target
 				addParticipant(document, model, modDef, interaction, true, intInfo, interactionCell);
 				addParticipant(document, model, modDef, interaction, false, intInfo, interactionCell);
@@ -590,24 +620,25 @@ public class MxToSBOL extends Converter {
 		}
 	}
 
-	private void linkCombinatorial(SBOLDocument document, mxGraph graph, mxGraphModel model, CombinatorialInfo combInfo) throws SBOLValidationException {
+	private void linkCombinatorial(SBOLDocument document, mxGraph graph, mxGraphModel model, CombinatorialInfo combInfo)
+			throws SBOLValidationException {
 		// pull the previously created combinatorial
 		CombinatorialDerivation combDer = document.getCombinatorialDerivation(URI.create(combInfo.getFullURI()));
-		
+
 		// get the template, so we can get it's components
 		ComponentDefinition template = combDer.getTemplate();
 		List<Component> components = template.getSortedComponents();
-		
+
 		// create the variable components
-		for(VariableComponentInfo varCompInfo : combInfo.getVariableComponents().values()) {
-			if(varCompInfo.getCellID() == null)
+		for (VariableComponentInfo varCompInfo : combInfo.getVariableComponents().values()) {
+			if (varCompInfo.getCellID() == null)
 				continue;
 			// figure out what the operator is
 			OperatorType operator = null;
 			String operatorString = varCompInfo.getOperator();
-			if(operatorString == null)
+			if (operatorString == null)
 				operatorString = "";
-			switch(operatorString) {
+			switch (operatorString) {
 			case "Zero Or One":
 				operator = OperatorType.ZEROORONE;
 				break;
@@ -620,16 +651,18 @@ public class MxToSBOL extends Converter {
 			default:
 				operator = OperatorType.ONE;
 			}
-			
+
 			// we assume that the component is at the same index as the sorted glyphs
-			// because we don't have a good way of associating glyphs to components otherwise
+			// because we don't have a good way of associating glyphs to components
+			// otherwise
 			mxCell variableCell = (mxCell) model.getCell(varCompInfo.getCellID());
-			Component component = components.get(variableCell.getParent().getIndex(variableCell)-1);
-			VariableComponent varComp = combDer.createVariableComponent(component.getDisplayId()+"_VariableComponent", operator, component.getIdentity());
-			for(IdentifiedInfo idInfo : varCompInfo.getVariants()) {
+			Component component = components.get(variableCell.getParent().getIndex(variableCell) - 1);
+			VariableComponent varComp = combDer.createVariableComponent(component.getDisplayId() + "_VariableComponent",
+					operator, component.getIdentity());
+			for (IdentifiedInfo idInfo : varCompInfo.getVariants()) {
 				URI partURI = URI.create(idInfo.getUri());
 				addRegistry(document, partURI);
-				switch(idInfo.getType()) {
+				switch (idInfo.getType()) {
 				case "collection":
 					boolean complete = document.isComplete();
 					document.setComplete(false);
@@ -645,7 +678,7 @@ public class MxToSBOL extends Converter {
 			}
 		}
 	}
-	
+
 	private void attachTextBoxAnnotation(mxGraphModel model, mxCell viewCell, URI objectRef)
 			throws SBOLValidationException, TransformerFactoryConfigurationError, TransformerException,
 			URISyntaxException {
@@ -705,28 +738,30 @@ public class MxToSBOL extends Converter {
 
 	/**
 	 * Adds the registry that the partURI references, if it isn't already added
+	 * 
 	 * @param document
 	 * @param partURI
 	 */
 	private static void addRegistry(SBOLDocument document, URI partURI) {
 		List<SynBioHubFrontend> registries = document.getRegistries();
 		// check if it's already been added
-		for(SynBioHubFrontend registry : registries) {
-			if(partURI.toString().startsWith(registry.getBackendUrl())) {
+		for (SynBioHubFrontend registry : registries) {
+			if (partURI.toString().startsWith(registry.getBackendUrl())) {
 				return;
 			}
 		}
-		
+
 		// it wasn't found, so we need to add it without a user token
-		// in the future when we allow registries not in the registry list, it's probably best to have the frontend send send it without a user token
-		for(String registry : SBOLData.registries) {
-			if(partURI.toString().startsWith(registry)) {
+		// in the future when we allow registries not in the registry list, it's
+		// probably best to have the frontend send send it without a user token
+		for (String registry : SBOLData.registries) {
+			if (partURI.toString().startsWith(registry)) {
 				document.addRegistry(registry);
 				return;
 			}
 		}
 	}
-	
+
 	/**
 	 * Enforces that children of circuit containers start with the backbone, and are
 	 * then sorted by their x position.
@@ -798,89 +833,99 @@ public class MxToSBOL extends Converter {
 
 	}
 
-	private void attachEdgeToParticipant(SBOLDocument document, mxGraphModel model, ModuleDefinition modDef, Interaction interaction, boolean isSource, InteractionInfo intInfo, mxCell interactionEdge) throws URISyntaxException, SBOLValidationException {
+	private void attachEdgeToParticipant(SBOLDocument document, mxGraphModel model, ModuleDefinition modDef,
+			Interaction interaction, boolean isSource, InteractionInfo intInfo, mxCell interactionEdge)
+			throws URISyntaxException, SBOLValidationException {
 		mxCell participantCell = null;
 		GlyphInfo participantInfo = null;
-		if(isSource) {
+		if (isSource) {
 			participantCell = (mxCell) interactionEdge.getSource();
-		}else {
+		} else {
 			participantCell = (mxCell) interactionEdge.getTarget();
 		}
-		
+
 		// get the necessary info to generate a participant
-		if(participantCell != null && participantCell.getStyle().contains(STYLE_MODULE)) {
+		if (participantCell != null && participantCell.getStyle().contains(STYLE_MODULE)) {
 			String subPartURI = null;
-			if(isSource) {
+			if (isSource) {
 				subPartURI = intInfo.getFromURI().get(interactionEdge.getId());
 			} else {
 				subPartURI = intInfo.getToURI().get(interactionEdge.getId());
 			}
-			String subPartCellID = subPartURI.substring(subPartURI.lastIndexOf("_")+1);
+			String subPartCellID = subPartURI.substring(subPartURI.lastIndexOf("_") + 1);
 			String subPartID = subPartURI.substring(0, subPartURI.lastIndexOf("_"));
 			participantInfo = (GlyphInfo) infoDict.get(subPartID);
 			participantCell = (mxCell) model.getCell(subPartCellID);
-		}else if (participantCell != null) {
+		} else if (participantCell != null) {
 			participantInfo = (GlyphInfo) infoDict.get(participantCell.getValue());
 		}
 		Set<Participation> participations = interaction.getParticipations();
-		for(Participation participation : participations) {
+		for (Participation participation : participations) {
 			FunctionalComponent funcComp = participation.getParticipant();
-			if(funcComp.getDefinitionURI().equals(new URI(participantInfo.getFullURI()))) {
-				// probably needs something to identify duplicate parts with separate mapstos, but we're getting close to sbol3 where that shouldn't be a problem
+			if (funcComp.getDefinitionURI().equals(new URI(participantInfo.getFullURI()))) {
+				// probably needs something to identify duplicate parts with separate mapstos,
+				// but we're getting close to sbol3 where that shouldn't be a problem
 				layoutHelper.addGraphicalNode(modDef.getIdentity(), participation.getDisplayId(), interactionEdge);
 			}
 		}
 	}
-	
-	private void addParticipant(SBOLDocument document, mxGraphModel model, ModuleDefinition modDef, Interaction interaction, boolean isSource, InteractionInfo intInfo, mxCell interactionEdge) throws SBOLValidationException {
+
+	private void addParticipant(SBOLDocument document, mxGraphModel model, ModuleDefinition modDef,
+			Interaction interaction, boolean isSource, InteractionInfo intInfo, mxCell interactionEdge)
+			throws SBOLValidationException {
 		mxCell participantCell = null;
 		mxCell participantParentCell = null;
 		GlyphInfo participantInfo = null;
-		if(isSource) {
+		if (isSource) {
 			participantCell = (mxCell) interactionEdge.getSource();
-		}else {
+		} else {
 			participantCell = (mxCell) interactionEdge.getTarget();
 		}
-		
+
 		// get the necessary info to generate a participant
-		if(participantCell != null && participantCell.getStyle().contains(STYLE_MODULE)) {
+		if (participantCell != null && participantCell.getStyle().contains(STYLE_MODULE)) {
 			String subPartURI = null;
-			if(isSource) {
+			if (isSource) {
 				subPartURI = intInfo.getFromURI().get(interactionEdge.getId());
 			} else {
 				subPartURI = intInfo.getToURI().get(interactionEdge.getId());
 			}
-			String subPartCellID = subPartURI.substring(subPartURI.lastIndexOf("_")+1);
+			String subPartCellID = subPartURI.substring(subPartURI.lastIndexOf("_") + 1);
 			String subPartID = subPartURI.substring(0, subPartURI.lastIndexOf("_"));
 			participantInfo = (GlyphInfo) infoDict.get(subPartID);
 			participantParentCell = participantCell;
 			participantCell = (mxCell) model.getCell(subPartCellID);
-		}else if (participantCell != null) {
+		} else if (participantCell != null) {
 			participantInfo = (GlyphInfo) infoDict.get(participantCell.getValue());
 			participantParentCell = (mxCell) participantCell.getParent();
 		}
-		if(participantCell != null) {
-			FunctionalComponent participantFC = getOrCreateParticipantFC(document, modDef, participantInfo, participantCell, participantParentCell);
+		if (participantCell != null) {
+			FunctionalComponent participantFC = getOrCreateParticipantFC(document, modDef, participantInfo,
+					participantCell, participantParentCell);
 			URI participantRole = getParticipantType(isSource, interaction.getTypes());
 			// extract the role refinment if there is one
-			if(isSource) {
+			if (isSource) {
 				String refinementName = intInfo.getSourceRefinement().get(interactionEdge.getId());
-				if(refinementName != null)
+				if (refinementName != null)
 					participantRole = SBOLData.getInteractionRoleRefinementFromName(refinementName);
-			}else {
+			} else {
 				String refinementName = intInfo.getTargetRefinement().get(interactionEdge.getId());
-				if(refinementName != null)
+				if (refinementName != null)
 					participantRole = SBOLData.getInteractionRoleRefinementFromName(refinementName);
 			}
 			// Issue with display id causing duplicate references in layout
-			Participation participation = interaction.createParticipation(intInfo.getDisplayID()+"_"+interaction.getParticipations().size(), participantFC.getIdentity(), participantRole);
-			if((isSource && interactionEdge.getTarget() != null && interactionEdge.getTarget().getStyle().contains(STYLE_INTERACTION_NODE)) || 
-					(!isSource && interactionEdge.getSource() != null && interactionEdge.getSource().getStyle().contains(STYLE_INTERACTION_NODE))) {
+			Participation participation = interaction.createParticipation(
+					intInfo.getDisplayID() + "_" + interaction.getParticipations().size(), participantFC.getIdentity(),
+					participantRole);
+			if ((isSource && interactionEdge.getTarget() != null
+					&& interactionEdge.getTarget().getStyle().contains(STYLE_INTERACTION_NODE))
+					|| (!isSource && interactionEdge.getSource() != null
+							&& interactionEdge.getSource().getStyle().contains(STYLE_INTERACTION_NODE))) {
 				layoutHelper.addGraphicalNode(modDef.getIdentity(), participation.getDisplayId(), interactionEdge);
 			}
 		}
 	}
-	
+
 	private FunctionalComponent getOrCreateParticipantFC(SBOLDocument document, ModuleDefinition modDef,
 			GlyphInfo partInfo, mxCell part, mxCell parent) throws SBOLValidationException {
 		FunctionalComponent sourceFC = modDef.getFunctionalComponent(partInfo.getDisplayID() + "_" + part.getId());
@@ -925,33 +970,36 @@ public class MxToSBOL extends Converter {
 		codec.decode(document.getDocumentElement(), graph.getModel());
 		return graph;
 	}
-	
+
 	/**
-	 * Dictionaries from the front end sometimes get decoded as array lists.
-	 * This method ensures that we load them as hash tables.
+	 * Dictionaries from the front end sometimes get decoded as array lists. This
+	 * method ensures that we load them as hash tables.
+	 * 
 	 * @param <T>
 	 * @param dataContainer
 	 * @param dictionaryIndex
 	 */
 	@SuppressWarnings("unchecked")
 	private <T extends Info> Hashtable<String, T> loadDictionary(ArrayList<Object> dataContainer, int dictionaryIndex) {
-		if(dataContainer.get(dictionaryIndex) instanceof ArrayList) {
-			// 90% sure it only happens when it's empty meaning that we could just return a empty hash table.
+		if (dataContainer.get(dictionaryIndex) instanceof ArrayList) {
+			// 90% sure it only happens when it's empty meaning that we could just return a
+			// empty hash table.
 			Hashtable<String, T> dict = new Hashtable<String, T>();
-			for(T item : (ArrayList<T>) dataContainer.get(dictionaryIndex)) {
-				// nasty instanceof as I couldn't convince the compiler that the abstract method is guaranteed to be implemented
-				if(item instanceof GlyphInfo) {
+			for (T item : (ArrayList<T>) dataContainer.get(dictionaryIndex)) {
+				// nasty instanceof as I couldn't convince the compiler that the abstract method
+				// is guaranteed to be implemented
+				if (item instanceof GlyphInfo) {
 					dict.put(((GlyphInfo) item).getFullURI(), item);
-				}else if(item instanceof ModuleInfo) {
+				} else if (item instanceof ModuleInfo) {
 					dict.put(((ModuleInfo) item).getFullURI(), item);
-				}else if(item instanceof CombinatorialInfo) {
+				} else if (item instanceof CombinatorialInfo) {
 					dict.put(((CombinatorialInfo) item).getFullURI(), item);
-				}else if(item instanceof InteractionInfo) {
+				} else if (item instanceof InteractionInfo) {
 					dict.put(((InteractionInfo) item).getFullURI(), item);
 				}
 			}
 			return dict;
-		}else {
+		} else {
 			return (Hashtable<String, T>) dataContainer.get(dictionaryIndex);
 		}
 	}
