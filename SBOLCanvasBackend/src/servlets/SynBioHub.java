@@ -94,8 +94,21 @@ public class SynBioHub extends HttpServlet {
 				user = sbhf.getUser();
 				body = user;
 
-			} else if (request.getPathInfo().equals("/listMyCollections")) {
-
+			} else if (request.getPathInfo().equals("/logout")) {
+			
+				if(server == null || user == null) {
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+				}
+				
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				sbhf.setUser(user);
+				sbhf.logout();
+				response.setStatus(HttpStatus.SC_OK);
+				return;
+				
+			}else if (request.getPathInfo().equals("/listMyCollections")) {
+				
 				if (server == null || user == null) {
 					response.setStatus(HttpStatus.SC_BAD_REQUEST);
 					return;

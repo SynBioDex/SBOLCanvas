@@ -157,6 +157,13 @@ export class DownloadGraphComponent implements OnInit {
     });
   }
 
+  async onLogoutClick() {
+    this.working = true;
+    await this.loginService.logout(this.registry);
+    this.working = false;
+    this.updateParts();
+  }
+
   onCancelClick() {
     this.dialogRef.close();
   }
