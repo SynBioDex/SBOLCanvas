@@ -102,6 +102,13 @@ export class UploadGraphComponent implements OnInit {
     });
   }
 
+  async onLogoutClick() {
+    this.working = true;
+    await this.loginService.logout(this.registry);
+    this.working = false;
+    this.updateCollections();
+  }
+
   onCreateCollectionClick() {
     this.dialog.open(CollectionCreationComponent, {data: {registry: this.registry}}).afterClosed().subscribe(result => {
       if(result)

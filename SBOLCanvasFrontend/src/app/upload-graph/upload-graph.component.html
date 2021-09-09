@@ -57,7 +57,8 @@
   </div>
 
   <div mat-dialog-actions>
-    <button mat-button [disabled]="loginDisabled()" (click)="onLoginClick()">Login</button>
+    <button mat-button *ngIf="!loginDisabled()" [disabled]="!registry" (click)="onLoginClick()">Login</button>
+    <button mat-button *ngIf="loginDisabled()" [disabled]="!registry" (click)="onLogoutClick()">Logout</button>
     <button mat-button (click)="onCancelClick()">Cancel</button>
     <button *ngIf="!importMode" mat-button [disabled]="!finishCheck()" (click)="onUploadClick()">Upload</button>
     <button *ngIf="importMode" mat-button [disabled]="!finishCheck()" (click)="onImportClick()">Import</button>
