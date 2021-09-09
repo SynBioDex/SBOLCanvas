@@ -6,8 +6,6 @@ import java.util.Set;
 
 import javax.xml.namespace.QName;
 
-import org.sbolstandard.core2.SystemsBiologyOntology;
-
 import com.mxgraph.io.mxCodecRegistry;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGraphModel.Filter;
@@ -119,22 +117,21 @@ public class Converter {
 	};
 	
 	protected static URI getParticipantType(boolean source, Set<URI> interactionTypes) {
-		if (interactionTypes.contains(SystemsBiologyOntology.BIOCHEMICAL_REACTION)) {
-			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;
-		} else if (interactionTypes.contains(SystemsBiologyOntology.CONTROL)) {
-			return source ? SystemsBiologyOntology.MODIFIER : SystemsBiologyOntology.MODIFIED;
-		} else if (interactionTypes.contains(SystemsBiologyOntology.DEGRADATION)) {
-			return SystemsBiologyOntology.REACTANT;
-		} else if (interactionTypes.contains(SystemsBiologyOntology.GENETIC_PRODUCTION)) {
-			return source ? SystemsBiologyOntology.TEMPLATE : SystemsBiologyOntology.PRODUCT;
-		} else if (interactionTypes.contains(SystemsBiologyOntology.INHIBITION)) {
-			return source ? SystemsBiologyOntology.INHIBITOR : SystemsBiologyOntology.INHIBITED;
-		} else if (interactionTypes.contains(SystemsBiologyOntology.NON_COVALENT_BINDING)) {
-			return source ? SystemsBiologyOntology.REACTANT : SystemsBiologyOntology.PRODUCT;
-		} else if (interactionTypes.contains(SystemsBiologyOntology.STIMULATION)) {
-			return source ? SystemsBiologyOntology.STIMULATOR : SystemsBiologyOntology.STIMULATED;
+		URI interactionType = null;
+		for(URI interactionURI : SBOLData.interactions.values()) {
+			if(interactionTypes.contains(interactionURI)) {
+				interactionType = interactionURI;
+				break;
+			}
 		}
-		return null;
+		if(interactionType == null) {
+			return null;
+		}
+		if(source) {
+			return SBOLData.interactionSourceRoles.get(interactionType);
+		}else {
+			return SBOLData.interactionTargetRoles.get(interactionType);
+		}
 	}
 
 	static QName createQName(String name) {
