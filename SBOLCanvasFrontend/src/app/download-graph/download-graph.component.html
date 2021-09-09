@@ -100,7 +100,8 @@
   </div>
 
   <div mat-dialog-actions>
-    <button mat-button [disabled]="loginDisabled()" (click)="onLoginClick()">Login</button>
+    <button mat-button *ngIf="!loginDisabled()" [disabled]="!registry" (click)="onLoginClick()">Login</button>
+    <button mat-button *ngIf="loginDisabled()" [disabled]="!registry" (click)="onLogoutClick()">Logout</button>
     <button mat-button (click)="onCancelClick()">Cancel</button>
     <button mat-button [disabled]="!enterCollectionEnabled()" (click)="onEnterCollectionClick()">Enter Collection</button>
     <button *ngIf="mode != classRef.SELECT_MODE" mat-button [disabled]="!finishCheck()" (click)="onDownloadClick()">Download</button>

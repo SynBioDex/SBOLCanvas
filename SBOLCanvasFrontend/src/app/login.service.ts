@@ -15,6 +15,7 @@ export interface LoginDialogData {
 export class LoginService {
   
   private loginURL = environment.backendURL + '/SynBioHub/login';
+  private logoutURL = environment.backendURL + '/SynBioHub/logout';
 
   public users: {} = {};
 
@@ -37,6 +38,16 @@ export class LoginService {
     let params = new HttpParams();
     params = params.append("server", server);
     return this.http.get(this.loginURL, { responseType: 'text', headers: headers, params: params });
+  }
+
+  async logout(server: string) {
+    let headers = new HttpHeaders();
+    headers = headers.set("Authorization", this.users[server]);
+    let params = new HttpParams();
+    params = params.append("server", server);
+    await this.http.get(this.logoutURL, { headers: headers, params: params }).toPromise();
+
+    delete this.users[server];
   }
 
 }
