@@ -1631,6 +1631,11 @@ export class GraphHelpers extends GraphBase {
                                     // edge case, module view, need to check parent circuit container
                                     toCheck.add(cell.getParent().getValue());
                                 }
+                            } else if(cell.isCircuitContainer() && cell.getParent().isModuleView()){
+                                // transition state to module views
+                                toCheck.add(cell.getParent().getId());
+                            } else if(cell.isModule()){
+                                toCheck.add(cell.getParent().getId());
                             }
                         }
                     }
