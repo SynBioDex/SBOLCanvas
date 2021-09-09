@@ -255,16 +255,6 @@ public class MxToSBOL extends Converter {
 				.toArray(mxCell[]::new);
 
 		ModuleInfo modInfo = (ModuleInfo) infoDict.get(viewCell.getId());
-		if (modInfo.getUriPrefix() == null)
-			modInfo.setUriPrefix(URI_PREFIX);
-		ModuleDefinition modDef = document.createModuleDefinition(modInfo.getUriPrefix(), modInfo.getDisplayID(),
-				modInfo.getVersion());
-		layoutHelper.createGraphicalLayout(modDef.getIdentity(), modDef.getDisplayId() + "_Layout");
-
-		// text boxes
-		if (textBoxes.length > 0) {
-			attachTextBoxAnnotation(model, viewCell, modDef.getIdentity());
-		}
 
 		// if the uri is one of the synbiohub ones, just add the layout
 		boolean layoutOnly = false;
@@ -281,6 +271,23 @@ public class MxToSBOL extends Converter {
 			}
 		}
 
+		if (modInfo.getUriPrefix() == null || modInfo.getUriPrefix().equals(""))
+			modInfo.setUriPrefix(URI_PREFIX);
+		
+		ModuleDefinition modDef = null;
+		if(layoutOnly) {
+			modDef = document.getModuleDefinition(new URI(modInfo.getFullURI()));
+		}else {
+			modDef = document.createModuleDefinition(modInfo.getUriPrefix(), modInfo.getDisplayID(),
+					modInfo.getVersion());			
+		}
+		layoutHelper.createGraphicalLayout(modDef.getIdentity(), modDef.getDisplayId() + "_Layout");
+
+		// text boxes
+		if (textBoxes.length > 0) {
+			attachTextBoxAnnotation(model, viewCell, modDef.getIdentity());
+		}
+		
 		// proteins
 		for (mxCell protein : proteins) {
 			// proteins also have glyphInfos
@@ -513,7 +520,8 @@ public class MxToSBOL extends Converter {
 				Set<Interaction> interactions = modDef.getInteractions();
 				// find the interaction with the correct identity
 				for (Interaction inter : interactions) {
-					if (inter.getIdentity().toString().equals((String) intInfo.getFullURI())) {
+					// TODO don't use startsWith here, inter.getIdentity() is including the version number, which isn't tracked in the front end
+					if (inter.getIdentity().toString().startsWith((String) intInfo.getFullURI())) {
 						interaction = inter;
 						break;
 					}
