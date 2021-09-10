@@ -472,8 +472,10 @@ public class MxToSBOL extends Converter {
 		ArrayList<mxCell> uniqueInteractionCells = new ArrayList<mxCell>();
 		for (mxCell edge : Arrays.stream(mxGraphModel.getChildCells(model, viewCell, false, true))
 				.toArray(mxCell[]::new)) {
-			if (((mxCell) edge.getSource()).getStyle().contains(STYLE_INTERACTION_NODE)
-					|| ((mxCell) edge.getTarget()).getStyle().contains(STYLE_INTERACTION_NODE)) {
+			mxCell source = ((mxCell) edge.getSource());
+			mxCell target = ((mxCell) edge.getTarget());
+			if ((source != null && source.getStyle().contains(STYLE_INTERACTION_NODE))
+					|| (target != null && target.getStyle().contains(STYLE_INTERACTION_NODE))) {
 				continue;
 			}
 			uniqueInteractionCells.add(edge);
