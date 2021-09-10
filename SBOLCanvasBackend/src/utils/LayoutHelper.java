@@ -322,7 +322,7 @@ public class LayoutHelper {
 								break;
 							}
 						}
-						cell.getGeometry().setSourcePoint(targetPoint);
+						cell.getGeometry().setTargetPoint(targetPoint);
 						break;
 					case "point":
 						mxPoint point = new mxPoint();
