@@ -18,3 +18,13 @@ button {
   padding: 0px 0px 0px 0px;
   margin: 0px 0px 0px 0px;
 }
+
+#logo {
+  padding: 10px 12px;
+}
+
+#logo img {
+  max-width: calc(100% - 17px); /* 100% minus scrollbar */
+  height: auto;
+  filter: invert(100%);
+}
