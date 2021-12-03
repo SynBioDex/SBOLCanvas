@@ -157,6 +157,8 @@ export class GraphBase {
         window['mxGeometry'] = mx.mxGeometry;
         window['mxPoint'] = mx.mxPoint;
         window['mxCell'] = mx.mxCell;
+        window['mxUtils'] = mx.mxUtils;
+        window['mxCodec'] = mx.mxCodec;
 
         let graphBaseRef = this; // for use in overide methods where you need one of the helpers here
 
