@@ -45,7 +45,6 @@
       </div>
     </div>
 
-
   </mat-sidenav>
 
   <!-- In the middle is the canvas -->
@@ -53,6 +52,19 @@
     <!-- Toolbar -->
     <app-toolbar></app-toolbar>
     <app-canvas></app-canvas>
+
+    <!-- Instructions -->
+    <div id="instructions" [ngClass]="{hidden: tipsHidden}">
+      <p>
+        Left-click to select<br>
+        Right-click to pan<br>
+        Scroll to zoom<br>
+        Double-click to enter component
+      </p>
+      <span class="hide-tips" (click)="tipsHidden = true">Hide Tips</span>
+      <span class="show-tips" (click)="tipsHidden = false">Show Tips</span>
+    </div>
+
   </div>
 
 </mat-sidenav-container>

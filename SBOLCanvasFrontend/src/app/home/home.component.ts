@@ -26,6 +26,7 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
   
   rightBarOpened = true;
   leftBarOpened = true;
+  tipsHidden = false;
 
   constructor(private graphService: GraphService, private titleService: Title) {
     this.titleService.setTitle('SBOL Canvas');

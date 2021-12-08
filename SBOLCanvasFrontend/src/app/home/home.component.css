@@ -66,3 +66,27 @@
   border-color: black;
   color: black;
 }
+
+#instructions {
+  position: absolute;
+  bottom: 0;
+  padding: 10px;
+  font-size: 0.8rem;
+  font-family: "Roboto", sans-serif;
+  color: #aaa;
+  user-select: none;
+}
+
+#instructions.hidden p, #instructions.hidden .hide-tips, #instructions:not(.hidden) .show-tips {
+  display: none;
+}
+
+.hide-tips, .show-tips {
+  cursor: pointer;
+  color: #333;
+}
+
+.hide-tips:hover, .show-tips:hover {
+  color: black;
+  text-decoration: underline;
+}
