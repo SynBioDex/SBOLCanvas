@@ -909,7 +909,9 @@ public class MxToSBOL extends Converter {
 			participantInfo = (GlyphInfo) infoDict.get(participantCell.getValue());
 			participantParentCell = (mxCell) participantCell.getParent();
 		}
-		if (participantCell != null) {
+        // More null checking here; was getting NullPointerException sometimes
+		if (document != null && modDef != null && participantInfo != null && 
+                participantCell != null && participantParentCell != null) {
 			FunctionalComponent participantFC = getOrCreateParticipantFC(document, modDef, participantInfo,
 					participantCell, participantParentCell);
 			URI participantRole = getParticipantType(isSource, interaction.getTypes());
@@ -934,6 +936,9 @@ public class MxToSBOL extends Converter {
 				layoutHelper.addGraphicalNode(modDef.getIdentity(), participation.getDisplayId(), interactionEdge);
 			}
 		}
+        else {
+            System.out.println("RELATED TO GITHUB ISSUE #174: FAILED NULL CHECK");
+        }
 	}
 
 	private FunctionalComponent getOrCreateParticipantFC(SBOLDocument document, ModuleDefinition modDef,
@@ -991,7 +996,13 @@ public class MxToSBOL extends Converter {
 	 */
 	@SuppressWarnings("unchecked")
 	private <T extends Info> Hashtable<String, T> loadDictionary(ArrayList<Object> dataContainer, int dictionaryIndex) {
-		if (dataContainer.get(dictionaryIndex) instanceof ArrayList) {
+		// previously was getting out of bounds exception sometimes, 
+        // hoping to catch it with this
+        if(dictionaryIndex >= dataContainer.size()) {
+            System.out.println("ARRAY INDEX OUT OF BOUNDS: " + dictionaryIndex);
+            return new Hashtable<String, T>();
+        }
+        if (dataContainer.get(dictionaryIndex) instanceof ArrayList) {
 			// 90% sure it only happens when it's empty meaning that we could just return a
 			// empty hash table.
 			Hashtable<String, T> dict = new Hashtable<String, T>();
