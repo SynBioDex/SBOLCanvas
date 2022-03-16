@@ -1,0 +1,27 @@
+<button mat-icon-button matTooltip="{{errors ? errors.length : 0}} error{{errors?.length == 1 ? '' : 's'}}, {{warnings ? warnings.length : 0}} warning{{warnings?.length == 1 ? '' : 's'}}. Click to view more info."
+    [matMenuTriggerFor]="problemsMenu" id="problems-expand" aria-label="Warning/problems list">
+    <span *ngIf="warnings?.length > 0" class="problem-qty warning">{{warnings?.length}}</span>
+    <mat-icon [ngClass]="{
+        'problem-icon': true,
+        'warning': warnings?.length > 0
+    }">warning</mat-icon>
+    <span *ngIf="errors?.length > 0" class="problem-qty error">{{errors?.length}}</span>
+    <mat-icon [ngClass]="{
+        'problem-icon': true,
+        'error': errors?.length > 0
+    }">error</mat-icon>
+</button>
+<mat-menu #problemsMenu="matMenu" panelClass="true" class="problems-panel">
+    <div *ngFor="let error of errors">
+        <button mat-menu-item class="problem-item error">
+            <mat-icon class="error">error</mat-icon>
+            <span>{{error}}</span>
+        </button>
+    </div>
+    <div *ngFor="let warning of warnings">
+        <button mat-menu-item class="problem-item warning">
+            <mat-icon class="warning">warning</mat-icon>
+            <span>{{warning}}</span>
+        </button>
+    </div>
+</mat-menu>

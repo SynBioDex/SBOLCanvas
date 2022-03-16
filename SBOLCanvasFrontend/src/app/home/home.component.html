@@ -17,7 +17,7 @@
   <!-- On the right will be the info menu and color palette -->
   <mat-sidenav [(opened)]="rightBarOpened" position="end"
   mode="side" [disableClose]="true">
-    <mat-tab-group>
+    <mat-tab-group animationDuration="200ms">
       <mat-tab label="Info">
         <app-info-editor></app-info-editor>
       </mat-tab>
@@ -30,6 +30,7 @@
   <!-- In the middle is the canvas -->
   <div ng-sidebar-content>
     <app-canvas></app-canvas>
+    <app-problems></app-problems>
   </div>
 
 </mat-sidenav-container>

@@ -9,6 +9,7 @@ import { GlyphMenuComponent } from './glyph-menu/glyph-menu.component';
 import { CanvasComponent } from './canvas/canvas.component';
 import { DesignMenuComponent } from './design-menu/design-menu.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
+import { ProblemsComponent } from './problems/problems.component'
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
@@ -53,6 +54,7 @@ import { LoadGraphComponent } from './load-graph/load-graph.component';
     CanvasComponent,
     DesignMenuComponent,
     InfoEditorComponent,
+    ProblemsComponent,
     HomeComponent,
     BannerComponent,
     ColorPickerComponent,
