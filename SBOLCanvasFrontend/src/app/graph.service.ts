@@ -1618,4 +1618,13 @@ export class GraphService extends GraphHelpers {
     this.metadataService.setComponentDefinitionMode(componentMode);
   }
 
+
+  public lookupInfo(glyphURI: string) {
+    return this.getFromInfoDict(glyphURI) as GlyphInfo
+  }
+
+  public getCurrentRoot() {
+      return this.graph.getCurrentRoot()
+  }
+
 }
