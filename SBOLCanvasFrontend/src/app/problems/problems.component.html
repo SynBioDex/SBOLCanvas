@@ -1,11 +1,13 @@
-<button mat-icon-button matTooltip="{{errors ? errors.length : 0}} error{{errors?.length == 1 ? '' : 's'}}, {{warnings ? warnings.length : 0}} warning{{warnings?.length == 1 ? '' : 's'}}. Click to view more info."
-    [matMenuTriggerFor]="problemsMenu" id="problems-expand" aria-label="Warning/problems list">
-    <span *ngIf="warnings?.length > 0" class="problem-qty warning">{{warnings?.length}}</span>
+<button mat-icon-button
+    matTooltip="{{errors ? errors.length : 0}} error{{errors?.length == 1 ? '' : 's'}}, {{warnings ? warnings.length : 0}} warning{{warnings?.length == 1 ? '' : 's'}}.{{!warnings?.length && !errors?.length ? '' : ' Click to view more info.'}}"
+    [matMenuTriggerFor]="problemsMenu" id="problems-expand" aria-label="Warning/problems list"
+    disabled="{{!warnings?.length && !errors?.length}}">
+    <span class="problem-qty warning">{{warnings?.length || ' '}}</span>
     <mat-icon [ngClass]="{
         'problem-icon': true,
         'warning': warnings?.length > 0
     }">warning</mat-icon>
-    <span *ngIf="errors?.length > 0" class="problem-qty error">{{errors?.length}}</span>
+    <span class="problem-qty error">{{errors?.length || ' '}}</span>
     <mat-icon [ngClass]="{
         'problem-icon': true,
         'error': errors?.length > 0

@@ -12,7 +12,11 @@ export class ProblemsComponent {
     errors: string[]
 
     ngOnInit() {
-        this.errors = ['Sequence contains illegal characters.','displayId cannot start with number.']
-        this.warnings = ['Version syntax defies conventions.']
+        this.errors = ['hi']
+        this.warnings = []
+    }
+
+    validateModule() {
+
     }
 }
