@@ -168,6 +168,7 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'sequence': {
         this.glyphInfo.sequence = event.target.value;
+        break;
       }
       default: {
         console.log('Unexpected id encountered in info menu input = ' + id);
