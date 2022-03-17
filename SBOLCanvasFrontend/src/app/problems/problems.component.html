@@ -20,7 +20,7 @@
         <mat-icon class="success">check_circle</mat-icon>
     </ng-template>
 </button>
-<mat-menu #problemsMenu="matMenu" panelClass="true" class="problems-panel">
+<mat-menu #problemsMenu="matMenu" xPosition="before" panelClass="true" class="problems-panel">
     <div *ngFor="let error of errors">
         <button mat-menu-item class="problem-item error">
             <mat-icon class="error">error</mat-icon>
