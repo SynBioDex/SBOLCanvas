@@ -64,14 +64,25 @@ export class ProblemsComponent {
     validateComponent(component, warnings: string[], errors: string[]) {
         const info = this.graphService.lookupInfo(component.value)
         const sequence = (info.sequence || '').toUpperCase()
+        const version = (info.version || '')
 
         // Warning: No sequence
         !sequence && warnings.push(`Component '${info.displayID}' doesn't have a sequence.`)
 
         // Error: Non-IUPAC compliant sequence
-        const incompliantRegex = /[^ACGTURYSWKMBDHVN\.\-]/g
-        const compliant = !sequence.match(incompliantRegex)
+        const negativeIUPACSequenceRegex = /[^ACGTURYSWKMBDHVN\.\-]/g
+        var compliant = !sequence.match(negativeIUPACSequenceRegex)
         const sequencePreview = sequence.substring(0, 10)
         !compliant && errors.push(`Component '${info.displayID}' has illegal sequence: ${sequencePreview}...`)
+    
+        // Warning: No version
+        !version && warnings.push(`Component '${info.displayID}' doesn't have a version.`)
+
+        // Warning: Non-Semver compliant version
+        // Got Regex from https://ihateregex.io/expr/semver/#
+        const semverVersionRegex = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/gm
+        compliant = !!version.match(semverVersionRegex)
+        version && !compliant && 
+            warnings.push(`Component '${info.displayID}' has incompliant version: ${version}`)
     }    
 }
