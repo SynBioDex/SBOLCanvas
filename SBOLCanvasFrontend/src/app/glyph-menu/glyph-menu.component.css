@@ -5,8 +5,26 @@
 }
 
 .glyphContainer {
-  width: 250px;
-  padding: 5px;
+  /* width: 250px; */
+  /* padding: 5px; */
+}
+
+.flexWrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.searchBar {
+    margin: 15px 10px -20px 10px;
+}
+
+.glyphMenuSection {
+    box-shadow: none;
+    background: transparent;
+}
+
+.glyphGrid {
+    margin: 0 -10px;
 }
 
 :host ::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {

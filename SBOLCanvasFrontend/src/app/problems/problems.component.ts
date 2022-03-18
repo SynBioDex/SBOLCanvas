@@ -84,5 +84,5 @@ export class ProblemsComponent {
         compliant = !!version.match(semverVersionRegex)
         version && !compliant && 
             warnings.push(`Component '${info.displayID}' has incompliant version: ${version}`)
-    }    
+    }   
 }
