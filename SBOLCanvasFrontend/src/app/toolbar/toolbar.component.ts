@@ -8,6 +8,7 @@ import { ExportImageComponent } from '../export-image/export-image.component';
 import { ExportDesignComponent } from '../export-design/export-design.component';
 import { ConfirmComponent } from '../confirm/confirm.component';
 import { LoadGraphComponent } from '../load-graph/load-graph.component';
+import { EmbeddedService } from '../embedded.service';
 
 export interface SaveDialogData {
   filename: string;
@@ -30,7 +31,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   users: {};
 
   constructor(public graphService: GraphService, private filesService: FilesService,
-              public dialog: MatDialog) {
+              public dialog: MatDialog, public embeddedService: EmbeddedService) {
   }
 
   ngOnInit() {

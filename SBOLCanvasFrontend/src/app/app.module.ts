@@ -44,6 +44,7 @@ import { ExportDesignComponent } from './export-design/export-design.component';
 import { CollectionCreationComponent } from './collection-creation/collection-creation.component';
 import { CombinatorialDesignEditorComponent } from './combinatorial-design-editor/combinatorial-design-editor.component';
 import { LoadGraphComponent } from './load-graph/load-graph.component';
+import { EmbeddedService } from './embedded.service';
 
 
 @NgModule({
@@ -72,7 +73,7 @@ import { LoadGraphComponent } from './load-graph/load-graph.component';
     ExportDesignComponent,
     CollectionCreationComponent,
     CombinatorialDesignEditorComponent,
-    LoadGraphComponent,
+    LoadGraphComponent
   ],
   imports: [
     BrowserModule,
@@ -88,7 +89,7 @@ import { LoadGraphComponent } from './load-graph/load-graph.component';
     MaterialModule,
     FlexLayoutModule
   ],
-  providers: [PendingChangesGuard, GraphService, MetadataService, {
+  providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, {
     provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
     }],
   bootstrap: [AppComponent],
