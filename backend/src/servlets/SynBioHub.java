@@ -47,10 +47,9 @@ import utils.SBOLToMx;
 public class SynBioHub extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-		Gson gson = new Gson();
 		try {
-			String body = null;
-			// parameters for the different methods
+
+			// parse auth header
 			String authorization = request.getHeader("Authorization");
 			String email = null;
 			String password = null;
@@ -62,228 +61,237 @@ public class SynBioHub extends HttpServlet {
 			} else {
 				user = authorization;
 			}
+
+			// setup SBH server
 			String server = request.getParameter("server");
+			SynBioHubFrontend sbhf = server == null ? null : new SynBioHubFrontend(server);
 
-			if (request.getPathInfo().equals("/registries")) {
-
-				List<WebOfRegistriesData> registries = null;
-				registries = SynBioHubFrontend.getRegistries();
-				LinkedList<String> registryURLs = new LinkedList<String>();
-				for (WebOfRegistriesData registry : registries) {
-					registryURLs.add(registry.getInstanceUrl());
+			// handle routes
+			// NOTE: using nested scopes in each case to prevent naming collisions
+            switch(request.getPathInfo()) {
+				
+                case "/registries": {
+					LinkedList<String> registryURLs = new LinkedList<String>();
+                    for (WebOfRegistriesData registry : SynBioHubFrontend.getRegistries()) {
+						registryURLs.add(registry.getInstanceUrl());
+					}
+					writeJSONBody(response, registryURLs);
+					cacheResponse(response);
 				}
-				body = gson.toJson(registryURLs);
-
-			} else if (request.getPathInfo().equals("/login")) {
-
-				if (email == null || password == null || server == null || email.equals("") || password.equals("")
-						|| server.equals("")) {
-					response.setStatus(HttpStatus.SC_BAD_REQUEST);
-					return;
-				}
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-				try {
-					sbhf.login(email, password);
-				} catch (SynBioHubException e) {
-					if (e.getMessage().equals("org.synbiohub.frontend.PermissionException")) {
-						response.setStatus(HttpStatus.SC_UNAUTHORIZED);
+					break;
+				
+				case "/login": {
+					if (sbhf == null || email == null || password == null || email.isEmpty() || password.isEmpty()
+						|| server.isEmpty()) {
+						response.setStatus(HttpStatus.SC_BAD_REQUEST);
 						return;
 					}
-					throw e;
-				}
-				user = sbhf.getUser();
-				body = user;
 
-			} else if (request.getPathInfo().equals("/logout")) {
-			
-				if(server == null || user == null) {
-					response.setStatus(HttpStatus.SC_BAD_REQUEST);
-					return;
+					try {
+						sbhf.login(email, password);
+					} catch (SynBioHubException e) {
+						if (e.getMessage().equals("org.synbiohub.frontend.PermissionException")) {
+							response.setStatus(HttpStatus.SC_UNAUTHORIZED);
+							return;
+						}
+						throw e;
+					}
+					writeJSONBody(response, sbhf.getUser());
 				}
+					break;
 				
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-				sbhf.setUser(user);
-				sbhf.logout();
-				response.setStatus(HttpStatus.SC_OK);
-				return;
-				
-			}else if (request.getPathInfo().equals("/listMyCollections")) {
-				
-				if (server == null || user == null) {
-					response.setStatus(HttpStatus.SC_BAD_REQUEST);
-					return;
-				}
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-				sbhf.setUser(user);
-				List<IdentifiedMetadata> collections = sbhf.getRootCollectionMetadata();
-				collections.removeIf(collection -> (collection.getUri().contains("/public/")));
-				body = gson.toJson(collections);
+				case "/logout": {
+					if(sbhf == null || user == null) {
+						response.setStatus(HttpStatus.SC_BAD_REQUEST);
+						return;
+					}
 
-			} else if (request.getPathInfo().equals("/listRegistryParts")) {
-				String collection = request.getParameter("collection");
-				String type = request.getParameter("type");
-				String role = request.getParameter("role");
-				String mode = request.getParameter("mode");
-
-				if (mode == null) {
-					response.setStatus(HttpStatus.SC_BAD_REQUEST);
-					return;
-				}
-
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-				if (user != null)
 					sbhf.setUser(user);
+					sbhf.logout();
+				}
+					break;
 
-				TreeSet<URI> roles = null;
-				TreeSet<URI> types = null;
-				TreeSet<URI> collections = null;
-				if (role != null && role.length() > 0) {
-					roles = new TreeSet<URI>();
-					if (SBOLData.roles.ContainsKey(role))
-						roles.add(SBOLData.roles.getValue(role));
-					else
-						roles.add(SBOLData.refinements.getValue(role));
-				}
-				if (type != null && type.length() > 0) {
-					types = new TreeSet<URI>();
-					types.add(SBOLData.types.getValue(type));
-				}
-				if (collection != null) {
-					collections = new TreeSet<URI>();
-					collections.add(URI.create(collection));
-				}
-
-				ArrayList<IdentifiedMetadata> results = new ArrayList<IdentifiedMetadata>();
-				if (mode.equals("collections")) {
-					if (collections == null) {
-						results.addAll(sbhf.getRootCollectionMetadata());
-					} else {
-						for (URI collectionURI : collections) {
-							results.addAll(sbhf.getSubCollectionMetadata(collectionURI));
-						}
+				case "/listMyCollections": {
+					if (sbhf == null || user == null) {
+						response.setStatus(HttpStatus.SC_BAD_REQUEST);
+						return;
 					}
-				} else if (mode.equals("components") && collections != null) {
-					results.addAll(
-							sbhf.getMatchingComponentDefinitionMetadata(null, roles, types, collections, null, null));
-				} else if (mode.equals("modules") && collections != null) {
-					// SynbioHubFrontend doesn't have anything easy for modules
+
+					sbhf.setUser(user);
+					List<IdentifiedMetadata> collections = sbhf.getRootCollectionMetadata();
+					collections.removeIf(collection -> (collection.getUri().contains("/public/")));
+					writeJSONBody(response, collections);
+				}
+					break;
+
+				case "/listRegistryParts": {
+					String collection = request.getParameter("collection");
+					String type = request.getParameter("type");
+					String role = request.getParameter("role");
+					String mode = request.getParameter("mode");
+
+					if (sbhf == null || mode == null) {
+						response.setStatus(HttpStatus.SC_BAD_REQUEST);
+						return;
+					}
+
+					if (user != null)
+						sbhf.setUser(user);
+
+					TreeSet<URI> roles = null;
+					TreeSet<URI> types = null;
+					TreeSet<URI> collections = null;
+					if (role != null && role.length() > 0) {
+						roles = new TreeSet<URI>();
+						if (SBOLData.roles.ContainsKey(role))
+							roles.add(SBOLData.roles.getValue(role));
+						else
+							roles.add(SBOLData.refinements.getValue(role));
+					}
+					if (type != null && type.length() > 0) {
+						types = new TreeSet<URI>();
+						types.add(SBOLData.types.getValue(type));
+					}
+					if (collection != null) {
+						collections = new TreeSet<URI>();
+						collections.add(URI.create(collection));
+					}
+
+					ArrayList<IdentifiedMetadata> results = new ArrayList<IdentifiedMetadata>();
+					if (mode.equals("collections")) {
+						if (collections == null) {
+							results.addAll(sbhf.getRootCollectionMetadata());
+						} else {
+							for (URI collectionURI : collections) {
+								results.addAll(sbhf.getSubCollectionMetadata(collectionURI));
+							}
+						}
+					} else if (mode.equals("components") && collections != null) {
+						results.addAll(
+								sbhf.getMatchingComponentDefinitionMetadata(null, roles, types, collections, null, null));
+					} else if (mode.equals("modules") && collections != null) {
+						// SynbioHubFrontend doesn't have anything easy for modules
+						SearchQuery query = new SearchQuery();
+
+						SearchCriteria objectCriteria = new SearchCriteria();
+						objectCriteria.setKey("objectType");
+						objectCriteria.setValue("ModuleDefinition");
+						query.addCriteria(objectCriteria);
+
+						if (collections != null) {
+							for (URI uri : collections) {
+								SearchCriteria collectionCriteria = new SearchCriteria();
+								collectionCriteria.setKey("collection");
+								collectionCriteria.setValue(uri.toString());
+								query.getCriteria().add(collectionCriteria);
+							}
+						}
+
+						results.addAll(sbhf.search(query));
+					}
+
+					writeJSONBody(response, results.toArray(new IdentifiedMetadata[0]));
+				}
+					break;
+
+				case "/listLayouts":
+					// TO DO: implement
+					break;
+				
+				case "/listCombinatorials": {
+					if(sbhf == null || user == null) {
+						response.setStatus(HttpStatus.SC_BAD_REQUEST);
+						return;
+					}
+					sbhf.setUser(user);
+				
+					String template = request.getParameter("template");
+					
+					ArrayList<IdentifiedMetadata> results = new ArrayList<IdentifiedMetadata>();
+					
 					SearchQuery query = new SearchQuery();
-
-					SearchCriteria objectCriteria = new SearchCriteria();
-					objectCriteria.setKey("objectType");
-					objectCriteria.setValue("ModuleDefinition");
-					query.addCriteria(objectCriteria);
-
-					if (collections != null) {
-						for (URI uri : collections) {
-							SearchCriteria collectionCriteria = new SearchCriteria();
-							collectionCriteria.setKey("collection");
-							collectionCriteria.setValue(uri.toString());
-							query.getCriteria().add(collectionCriteria);
-						}
-					}
-
+					
+					SearchCriteria objectTypeCriteria = new SearchCriteria();
+					objectTypeCriteria.setKey("objectType");
+					objectTypeCriteria.setValue("CombinatorialDerivation");
+					query.addCriteria(objectTypeCriteria);
+					
+					SearchCriteria sbolTagCriteria = new SearchCriteria();
+					sbolTagCriteria.setKey("template");
+					sbolTagCriteria.setValue(template);
+					query.addCriteria(sbolTagCriteria);
+					
 					results.addAll(sbhf.search(query));
+					
+					writeJSONBody(response, results.toArray(new IdentifiedMetadata[0]));
 				}
+					break;
 
-				body = gson.toJson(results.toArray(new IdentifiedMetadata[0]));
+				case "/getRegistryPart": {
+					String uri = request.getParameter("uri");
+					if (uri == null || sbhf == null || user == null) {
+						response.setStatus(HttpStatus.SC_BAD_REQUEST);
+						return;
+					}
+					
+					String combinatorial = request.getParameter("combinatorial");
 
-			} else if (request.getPathInfo().equals("/listLayouts")) {
-				//TODO come back to me
-			} else if (request.getPathInfo().equals("/listCombinatorials")) {
-				String template = request.getParameter("template");
-				
-				ArrayList<IdentifiedMetadata> results = new ArrayList<IdentifiedMetadata>();
-				
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-				sbhf.setUser(user);
-				
-				SearchQuery query = new SearchQuery();
-				
-				SearchCriteria objectTypeCriteria = new SearchCriteria();
-				objectTypeCriteria.setKey("objectType");
-				objectTypeCriteria.setValue("CombinatorialDerivation");
-				query.addCriteria(objectTypeCriteria);
-				
-				SearchCriteria sbolTagCriteria = new SearchCriteria();
-				sbolTagCriteria.setKey("template");
-				sbolTagCriteria.setValue(template);
-				query.addCriteria(sbolTagCriteria);
-				
-				results.addAll(sbhf.search(query));
-				
-				body = gson.toJson(results.toArray(new IdentifiedMetadata[0]));
-				
-			} else if (request.getPathInfo().equals("/getRegistryPart")) {
-				String uri = request.getParameter("uri");
-				if (uri == null) {
-					response.setStatus(HttpStatus.SC_BAD_REQUEST);
-					return;
-				}
-				
-				String combinatorial = request.getParameter("combinatorial");
-
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-				sbhf.setUser(user);
-				SBOLToMx converter = new SBOLToMx();
-				
-				String layoutURI = uri.substring(0,uri.lastIndexOf("/"))+"_Layout"+uri.substring(uri.lastIndexOf("/"), uri.length());
-				SBOLDocument document;
-				try {
-					document = sbhf.getSBOL(URI.create(layoutURI), true);
-				}catch(SynBioHubException e) {
-					document = sbhf.getSBOL(URI.create(uri), true);
-				}
-				if(document == null) {
-					document = sbhf.getSBOL(URI.create(uri), true);
-				}
-				
-				SBOLDocument combDocument = null;
-				if(combinatorial != null) {
-					combDocument = sbhf.getSBOL(URI.create(combinatorial), true);
-				}
-				
-				converter.toGraph(document, combDocument, response.getOutputStream());
-				response.setStatus(HttpStatus.SC_OK);
-				return;
-			}else if(request.getPathInfo().equals("/importRegistryPart")) {
-				String uri = request.getParameter("uri");
-				if(uri == null) {
-					response.setStatus(HttpStatus.SC_BAD_REQUEST);
-					return;
-				}
-				
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
-				sbhf.setUser(user);
-				SBOLToMx converter = new SBOLToMx();
-				
-				String layoutURI = uri.substring(0,uri.lastIndexOf("/"))+"_Layout"+uri.substring(uri.lastIndexOf("/"), uri.length());
-				SBOLDocument document;
-				try {
-					document = sbhf.getSBOL(URI.create(layoutURI), true);
+					sbhf.setUser(user);
+					SBOLToMx converter = new SBOLToMx();
+					
+					String layoutURI = uri.substring(0,uri.lastIndexOf("/"))+"_Layout"+uri.substring(uri.lastIndexOf("/"), uri.length());
+					SBOLDocument document;
+					try {
+						document = sbhf.getSBOL(URI.create(layoutURI), true);
+					}catch(SynBioHubException e) {
+						document = sbhf.getSBOL(URI.create(uri), true);
+					}
 					if(document == null) {
 						document = sbhf.getSBOL(URI.create(uri), true);
 					}
-				}catch(SynBioHubException e) {
-					document = sbhf.getSBOL(URI.create(uri), true);
+					
+					SBOLDocument combDocument = null;
+					if(combinatorial != null) {
+						combDocument = sbhf.getSBOL(URI.create(combinatorial), true);
+					}
+					
+					converter.toGraph(document, combDocument, response.getOutputStream());
 				}
-				
-				converter.toGraph(document, response.getOutputStream());
-				response.setStatus(HttpStatus.SC_OK);
-				return;
-			} else {
-				response.setStatus(HttpStatus.SC_BAD_REQUEST);
-				return;
-			}
+					break;
 
-			ServletOutputStream outputStream = response.getOutputStream();
-			InputStream inputStream = new ByteArrayInputStream(body.getBytes());
-			IOUtils.copy(inputStream, outputStream);
+				case "/importRegistryPart": {
+					String uri = request.getParameter("uri");
+					if(uri == null || sbhf == null || user == null) {
+						response.setStatus(HttpStatus.SC_BAD_REQUEST);
+						return;
+					}
+					
+					sbhf.setUser(user);
+					SBOLToMx converter = new SBOLToMx();
+					
+					String layoutURI = uri.substring(0,uri.lastIndexOf("/"))+"_Layout"+uri.substring(uri.lastIndexOf("/"), uri.length());
+					SBOLDocument document;
+					try {
+						document = sbhf.getSBOL(URI.create(layoutURI), true);
+						if(document == null) {
+							document = sbhf.getSBOL(URI.create(uri), true);
+						}
+					}catch(SynBioHubException e) {
+						document = sbhf.getSBOL(URI.create(uri), true);
+					}
+					
+					converter.toGraph(document, response.getOutputStream());
+				}
+					break;
 
-			// the request was good
+				default:
+					response.setStatus(HttpStatus.SC_BAD_REQUEST);
+					return;
+            }
+			
+			// if it made it out, status is OK
 			response.setStatus(HttpStatus.SC_OK);
-			response.setContentType("application/json");
-			return;
+			
 		} catch (SynBioHubException | IOException | ParserConfigurationException | TransformerException | SBOLValidationException | SAXException | URISyntaxException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
@@ -362,4 +370,14 @@ public class SynBioHub extends HttpServlet {
 
 	}
 
+	private void writeJSONBody(HttpServletResponse response, Object data) throws IOException {
+		Gson gson = new Gson();
+		InputStream bodyStream = new ByteArrayInputStream(gson.toJson(data).getBytes());
+		IOUtils.copy(bodyStream, response.getOutputStream());
+		response.setContentType("application/json");
+	}
+
+	private void cacheResponse(HttpServletResponse response) {
+		response.setHeader("Cache-Control", "max-age=3600");
+	}
 }
