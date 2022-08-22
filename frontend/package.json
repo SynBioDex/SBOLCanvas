@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "bundle-report": "ng build --prod --stats-json && webpack-bundle-analyzer dist/SBOLCanvasFrontend/stats.json",
-    "prebuild": "npm rebuild node-sass && ts-node -O \"{\\\"module\\\":\\\"commonjs\\\"}\" git.version.ts",
+    "prebuild": "npm rebuild node-sass && ts-node -O \"{\\\"module\\\":\\\"commonjs\\\"}\" git.version.ts && node assetBundler.js",
     "build": "ng build --prod --build-optimizer --vendor-chunk --progress --output-hashing=all --stats-json --source-map=true",
     "predev": "npm run prebuild",
     "dev": "ng serve -o"
