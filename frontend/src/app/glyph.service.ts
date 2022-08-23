@@ -11,7 +11,6 @@ const mx = require('mxgraph')({
 })
 export class GlyphService {
 
-    // TODO load list of xml files from server
     private sequenceFeatureXMLBundle: string = "assets/glyph_stencils/sequence_feature/bundle.xml";
     private sequenceFeatureXMLs: string[] = [
         // Strand glyphs
@@ -89,7 +88,7 @@ export class GlyphService {
         'assets/glyph_stencils/indicators/error.xml',
     ];
 
-    private utilXMLBundle: string = "assets/bundle.xml";
+    private utilXMLBundle: string = "assets/glyph_stencils/util/bundle.xml";
     private utilXMLs: string[] = [
         'assets/backbone.xml',
         'assets/textBox.xml',
@@ -103,19 +102,28 @@ export class GlyphService {
     private indicators: any = {};
     private utils: any = {};
 
+    private xmlBundle: string = "assets/glyph_stencils/bundle.xml"
+
     constructor() {
-        // this.loadXMLs(this.sequenceFeatureXMLs, this.sequenceFeatures);
-        // this.loadXMLs(this.molecularSpeciesXMLs, this.molecularSpecies);
-        // this.loadXMLs(this.interactionNodeXMLs, this.interactionNodes);
-        // this.loadXMLs(this.interactionXMLs, this.interactions);
-        // this.loadXMLs(this.indicatorXMLs, this.indicators);
-        // this.loadXMLs(this.utilXMLs, this.utils);
-        this.loadXML(this.sequenceFeatureXMLBundle, this.sequenceFeatures);
-        this.loadXML(this.molecularSpeciesXMLBundle, this.molecularSpecies);
-        this.loadXML(this.interactionNodeXMLBundle, this.interactionNodes);
-        this.loadXML(this.interactionXMLBundle, this.interactions);
-        this.loadXML(this.indicatorXMLBundle, this.indicators);
-        this.loadXML(this.utilXMLBundle, this.utils);
+        this.loadXMLBundle(this.xmlBundle)
+    }
+
+    loadXMLBundle(bundleFile) {
+        let req = mx.mxUtils.load(bundleFile);
+        let root = req.getDocumentElement();
+        let shape = root.firstChild;
+
+        while (shape != null) {
+            if (shape.nodeType == mx.mxConstants.NODETYPE_ELEMENT) {
+                const name = shape.getAttribute('name');
+                const subDir = shape.getAttribute('subdir');
+                const centered = shape.getAttribute('centered');
+
+                const stencil = new mx.mxStencil(shape);
+                this[subDir][name] = [stencil, (centered && centered.toLowerCase() == 'true')];
+            }
+            shape = shape.nextSibling;
+        }
     }
 
     loadXMLs(xml_list, glyph_list) {

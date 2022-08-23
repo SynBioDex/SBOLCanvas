@@ -2,23 +2,37 @@ const fs = require("fs").promises
 const path = require("path")
 
 const BUNDLE_DIRS = [
-    "src/assets/glyph_stencils/sequence_feature",
-    "src/assets/glyph_stencils/molecular_species",
+    "src/assets/glyph_stencils/sequenceFeatures",
+    "src/assets/glyph_stencils/molecularSpecies",
     "src/assets/glyph_stencils/interactions",
-    "src/assets/glyph_stencils/interaction_nodes",
+    "src/assets/glyph_stencils/interactionNodes",
     "src/assets/glyph_stencils/indicators",
-    "src/assets",
+    "src/assets/glyph_stencils/utils",
 ]
 
 const BUNDLE_FILENAME = "bundle.xml"
 const BUNDLE_ORDER_FILENAME = ".bundle_order"
+const OUTPUT_DIR = "src/assets/glyph_stencils"
 
-{
-    (async () => {
-        for (const dir of BUNDLE_DIRS)
-            await bundleDir(dir)
-    })()
+
+async function bundle() {
+    // create bundle for each directory
+    // using for loop instead of map so logs are in order
+    const bundles = []
+    for (const dir of BUNDLE_DIRS)
+        bundles.push(await bundleDir(dir))
+
+    // join them all together into one string
+    const entireBundle = `<shapes>
+    ${bundles.join("\n")}
+</shapes>`
+
+    // write bundle out
+    const bundlePath = path.join(OUTPUT_DIR, BUNDLE_FILENAME)
+    await fs.writeFile(bundlePath, entireBundle)
+    console.log("\nWrote final bundle:", bundlePath)
 }
+
 
 async function bundleDir(dir) {
     console.log("\nBundling assets in", dir)
@@ -75,17 +89,12 @@ async function bundleDir(dir) {
     const joinedContent = filesContents
         // remove <shapes> tag
         .map(content => content.replace(/\<[\/]*shapes\>/g, ""))
+        // add subdir attribute to <shape> tag
+        .map(content => content.replace(/\<shape/g, `$& subdir="${path.basename(dir)}"`))
         // combine into one string
         .join("\n")
 
-    // write bundle out
-    const bundlePath = path.join(dir, BUNDLE_FILENAME)
-    await fs.writeFile(
-        bundlePath,
-        `<shapes>
-        ${joinedContent}
-</shapes>`
-    )
-
-    console.log("\tWrote bundle:", bundlePath)
+    return joinedContent
 }
+
+bundle()
