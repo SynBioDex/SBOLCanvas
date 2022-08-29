@@ -5,6 +5,7 @@ import { ToolbarComponent } from "../toolbar/toolbar.component";
 import {ComponentCanDeactivate} from '../pending-changes.guard';
 import {Observable} from 'rxjs';
 import {Title} from "@angular/platform-browser";
+import { EmbeddedService } from '../embedded.service';
 
 export enum KEY_CODE {
   DELETE = "Delete",
@@ -25,7 +26,7 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
   rightBarOpened = true;
   leftBarOpened = true;
 
-  constructor(private graphService: GraphService, private titleService: Title) {
+  constructor(private graphService: GraphService, private titleService: Title, private embeddedService: EmbeddedService) {
     this.titleService.setTitle('SBOL Canvas');
   }
 
@@ -77,6 +78,6 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
     // insert logic to check if there are pending changes here;
     // returning true will navigate without confirmation
     // returning false will show a confirm dialog before navigating away
-    return false;
+    return this.embeddedService.isAppEmbedded();
   }
 }
