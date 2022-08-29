@@ -11,6 +11,7 @@ import { DesignMenuComponent } from './design-menu/design-menu.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
 import { ProblemsComponent } from './problems/problems.component'
 import { HierarchyPreviewComponent } from './hierarchy-preview/hierarchy-preview.component';
+import { ZoomControlsComponent } from './zoom-controls/zoom-controls.component';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
@@ -58,6 +59,7 @@ import { EmbeddedService } from './embedded.service';
         InfoEditorComponent,
         ProblemsComponent,
         HierarchyPreviewComponent,
+        ZoomControlsComponent,
         HomeComponent,
         BannerComponent,
         ColorPickerComponent,
