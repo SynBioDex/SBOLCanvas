@@ -10,16 +10,10 @@ import { Observable } from 'rxjs'
 
 export class EmbeddedService {
 
-    private isEmbedded: boolean
     private parent: any
     public sbol: Observable<string>
 
     constructor(private route: ActivatedRoute) {
-
-        // subscribe to query parameters to see if app is embedded
-        // this.route.queryParams.subscribe(params => {
-        //     this.isEmbedded = params.embed !== undefined
-        // })
 
         // create observable that watches for messages
         this.sbol = new Observable<string>(observer => {
@@ -36,12 +30,9 @@ export class EmbeddedService {
                 }
             })
         })
-
-        
     }
 
     public isAppEmbedded(): boolean {
-        // return this.isEmbedded
         return !!this.parent
     }
 

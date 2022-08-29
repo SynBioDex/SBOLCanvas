@@ -23,6 +23,8 @@ import { Info } from './info';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
+import { Observable } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 @Injectable({
     providedIn: 'root'
@@ -38,14 +40,21 @@ export class GraphService extends GraphHelpers {
         // --- For when SBOLCanvas is embedded in another app ---
 
         // send changes in mxgraph model to parent
-        this.graph.getModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, () => {
-            if (embeddedService.isAppEmbedded()) {
-                console.debug('[GraphService] Model changed. Sending to parent.')
-                fileService.exportDesignToString({}, 'SBOL2', this.getGraphXML()).subscribe(sbol => {
-                    embeddedService.postMessage({ sbol })
-                })
-            }
-        }))
+        // doing this via an Observable so we can debounce
+        new Observable<any>(observer => {
+            this.graph.getModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, () => {
+                observer.next(this.getGraphXML())
+            }))
+        })
+            .pipe(debounceTime(100))
+            .subscribe(graphXml => {
+                if (embeddedService.isAppEmbedded()) {
+                    console.debug('[GraphService] Model changed. Sending to parent.')
+                    fileService.exportDesignToString({}, 'SBOL2', graphXml).subscribe(sbol => {
+                        embeddedService.postMessage({ sbol })
+                    })
+                }
+            })
 
         // observe changes in parent SBOL
         embeddedService.sbol.subscribe(sbolContent => {
