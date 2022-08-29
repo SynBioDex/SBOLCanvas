@@ -10,7 +10,7 @@ import { GraphService } from '../graph.service'
 
 export class ZoomControlsComponent {
 
-    constructor(private graphService: GraphService) { }
+    constructor(public graphService: GraphService) { }
 
     zoomSliderChanged($event) {
         this.graphService.setZoom($event.value / 100);
