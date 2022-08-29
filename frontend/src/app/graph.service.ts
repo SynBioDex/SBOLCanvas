@@ -34,9 +34,13 @@ export class GraphService extends GraphHelpers {
     constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService) {
         super(dialog, metadataService, glyphService);
 
+        // handle selection changes
         this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
 
+        // handle double click on glyph to enter it
+        this.graph.addListener(mx.mxEvent.DOUBLE_CLICK, mx.mxUtils.bind(this, this.enterGlyph));
 
+        
         // --- For when SBOLCanvas is embedded in another app ---
 
         // send changes in mxgraph model to parent
