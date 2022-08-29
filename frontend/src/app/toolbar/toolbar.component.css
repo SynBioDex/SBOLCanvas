@@ -1,27 +1,27 @@
 /* This sets the space between sets of buttons */
 .toolbar-spacer {
-  flex: 1 1 auto;
+    flex: 1 1 auto;
 }
 
 /* Not sure exactly how this works but it makes the menu
  bigger so that it can fit the buttons. */
 ::ng-deep .mat-menu-panel {
-  padding: 0 10px!important;
-  width: 100%!important;
+    padding: 0 10px !important;
+    width: 100% !important;
 }
 
 /* This sets the css for the buttons on the row */
 .toolbar-row-button {
-  margin-right: 8px;
-  margin-left: 8px;
+    margin: 0 3px;
+    border: none;
 }
 
 .zoom-input {
-  text-align: right;
-  padding-left: 10px;
-  padding-right: 10px;
-  max-width: 50px;
-  font-size: .8em;
+    text-align: right;
+    padding-left: 10px;
+    padding-right: 10px;
+    max-width: 50px;
+    font-size: .8em;
 }
 
 /* There is a bug with vertical dividers in
@@ -29,11 +29,15 @@
    the styling for the divider.
  */
 mat-divider.toolbar-divider-style-fix {
-  height: 40px;
-  margin-left: 8px;
-  margin-right: 8px;
+    height: 40px;
+    margin-left: 8px;
+    margin-right: 8px;
 }
 
 .toolbar-row {
-  padding: 8px;
+    height: 44px;
+}
+
+.mat-toolbar {
+    min-height: 0;
 }
