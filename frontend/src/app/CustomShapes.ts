@@ -69,7 +69,8 @@ export class CustomShapes {
                 this.variant.paint(c);
             } else if (this.error != null && !CustomShapes.graphService.hasSequence(this.state.cell)) {
                 this.error.bounds = this.getErrorBounds(x, y, w, h);
-                this.error.paint(c);
+                // disabling error painting in favor of problems panel
+                // this.error.paint(c);
             }
         }
         SequenceFeatureShape.prototype.getCompositeBounds = function (x, y, w, h) { //mx.mxLabel.prototype.getIndicatorBounds;
