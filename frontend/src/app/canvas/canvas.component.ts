@@ -21,7 +21,7 @@ export class CanvasComponent implements OnInit {
     }
 
     @HostListener('wheel', ['$event']) onMouseWheel(event: WheelEvent) {
-        const zoomCoef = -1.5 / 1000,
+        const zoomCoef = -1 / 1000,
             minZoom = 0.1,
             maxZoom = 4;
 
