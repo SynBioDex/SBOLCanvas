@@ -80,8 +80,12 @@ export class ProblemsComponent {
 
         // Warning: Non-Semver compliant version
         // Got Regex from https://ihateregex.io/expr/semver/#
-        const semverVersionRegex = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/gm
-        compliant = !!version.match(semverVersionRegex)
+        // const semverVersionRegex = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/gm
+        
+        // using less strict expression now -- SBOL interpreted Semver improperly and actually intended
+        // to allow versions like 1 or 1.3
+        const versionRegex = /^[0-9]+[\\p{L}0-9_\\.-]*$/
+        compliant = !!version.match(versionRegex)
         version && !compliant && 
             warnings.push(`Component '${info.displayID}' has incompliant version: ${version}`)
     }   
