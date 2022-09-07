@@ -18,7 +18,7 @@ jobs:
       run: |
         tag="synbiosuite/canvas-api:latest"
         echo $tag
-        docker build . --tag $tag
+        docker build ./backend --tag $tag
     - uses: azure/docker-login@v1
       with:
           username: ${{ secrets.SBS_DOCKER_USERNAME }}
