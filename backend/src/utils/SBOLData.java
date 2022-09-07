@@ -99,6 +99,7 @@ public class SBOLData {
 		interactions.put("Genetic Production", SystemsBiologyOntology.GENETIC_PRODUCTION);
 		interactions.put("Control", SystemsBiologyOntology.CONTROL);
 		interactions.put("Dissociation", SystemsBiologyOntology.DISSOCIATION);
+		interactions.put("Process", SystemsBiologyOntology.PROCESS);
 		
 		interactionRoles = new BiMap<String, URI>();
 		interactionRoles.put("Inhibitor", SystemsBiologyOntology.INHIBITOR);
@@ -119,6 +120,7 @@ public class SBOLData {
 		interactionTargetRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.PRODUCT);
 		interactionTargetRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIED);
 		interactionTargetRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.PRODUCT);
+		interactionTargetRoles.put(SystemsBiologyOntology.PROCESS, SystemsBiologyOntology.PRODUCT);
 		
 		interactionSourceRoles = new HashMap<URI, URI>();
 		interactionSourceRoles.put(SystemsBiologyOntology.INHIBITION, SystemsBiologyOntology.INHIBITOR);
@@ -129,6 +131,7 @@ public class SBOLData {
 		interactionSourceRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.TEMPLATE);
 		interactionSourceRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIER);
 		interactionSourceRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.REACTANT);
+		interactionSourceRoles.put(SystemsBiologyOntology.PROCESS, SystemsBiologyOntology.REACTANT);
 		
 		registries = new HashSet<String>();
 		try {
