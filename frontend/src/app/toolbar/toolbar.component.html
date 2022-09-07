@@ -101,6 +101,22 @@
 
         <div class="toolbar-row-section">
 
+            <button mat-stroked-button class="toolbar-row-button"
+                [matTooltip]="'Focus in the selected part to view and edit its subparts'"
+                (click)="graphService.enterGlyph()">
+                <mat-icon>save_alt</mat-icon>
+            </button>
+
+            <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Focus out to the parent part'"
+                (click)="graphService.exitGlyph()">
+                <mat-icon>open_in_browser</mat-icon>
+            </button>
+
+        </div>
+
+
+        <div class="toolbar-row-section">
+
             <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Flip selected part\'s orientation'"
                 (click)="graphService.flipSequenceFeatureGlyph()">
                 <mat-icon>swap_vert</mat-icon>
