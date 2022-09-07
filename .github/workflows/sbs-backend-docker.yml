@@ -1,4 +1,4 @@
-name: Build and push docker image
+name: Build SBS Canvas API Docker Image
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - synbio-suite
     paths:
       - backend/**
+  workflow_dispatch:
 
 jobs:
   build-and-push:
