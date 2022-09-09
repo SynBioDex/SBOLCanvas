@@ -64,7 +64,12 @@ public class SynBioHub extends HttpServlet {
 
 			// setup SBH server
 			String server = request.getParameter("server");
-			SynBioHubFrontend sbhf = server == null ? null : new SynBioHubFrontend(server);
+			SynBioHubFrontend sbhf = null; 
+            if(server != null) {
+                sbhf = new SynBioHubFrontend(server);
+                if(user != null)
+                    sbhf.setUser(user);
+            }            
 
 			// handle routes
 			// NOTE: using nested scopes in each case to prevent naming collisions
@@ -106,7 +111,6 @@ public class SynBioHub extends HttpServlet {
 						return;
 					}
 
-					sbhf.setUser(user);
 					sbhf.logout();
 				}
 					break;
@@ -117,7 +121,6 @@ public class SynBioHub extends HttpServlet {
 						return;
 					}
 
-					sbhf.setUser(user);
 					List<IdentifiedMetadata> collections = sbhf.getRootCollectionMetadata();
 					collections.removeIf(collection -> (collection.getUri().contains("/public/")));
 					writeJSONBody(response, collections);
@@ -134,9 +137,6 @@ public class SynBioHub extends HttpServlet {
 						response.setStatus(HttpStatus.SC_BAD_REQUEST);
 						return;
 					}
-
-					if (user != null)
-						sbhf.setUser(user);
 
 					TreeSet<URI> roles = null;
 					TreeSet<URI> types = null;
@@ -199,11 +199,10 @@ public class SynBioHub extends HttpServlet {
 					break;
 				
 				case "/listCombinatorials": {
-					if(sbhf == null || user == null) {
+					if(sbhf == null) {
 						response.setStatus(HttpStatus.SC_BAD_REQUEST);
 						return;
 					}
-					sbhf.setUser(user);
 				
 					String template = request.getParameter("template");
 					
@@ -229,16 +228,13 @@ public class SynBioHub extends HttpServlet {
 
 				case "/getRegistryPart": {
 					String uri = request.getParameter("uri");
-					if (uri == null || sbhf == null || user == null) {
+					if (uri == null || sbhf == null) {
 						response.setStatus(HttpStatus.SC_BAD_REQUEST);
 						return;
 					}
 					
 					String combinatorial = request.getParameter("combinatorial");
-
-					sbhf.setUser(user);
 					SBOLToMx converter = new SBOLToMx();
-					
 					String layoutURI = uri.substring(0,uri.lastIndexOf("/"))+"_Layout"+uri.substring(uri.lastIndexOf("/"), uri.length());
 					SBOLDocument document;
 					try {
@@ -261,12 +257,11 @@ public class SynBioHub extends HttpServlet {
 
 				case "/importRegistryPart": {
 					String uri = request.getParameter("uri");
-					if(uri == null || sbhf == null || user == null) {
+					if(uri == null || sbhf == null) {
 						response.setStatus(HttpStatus.SC_BAD_REQUEST);
 						return;
 					}
 					
-					sbhf.setUser(user);
 					SBOLToMx converter = new SBOLToMx();
 					
 					String layoutURI = uri.substring(0,uri.lastIndexOf("/"))+"_Layout"+uri.substring(uri.lastIndexOf("/"), uri.length());
