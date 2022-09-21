@@ -42,9 +42,9 @@ export class ProblemsComponent {
         const children = currentView.children || []
 
         // Warning: No children in current view
-        if(!children.length) {
+        if (!children.length) {
             const cellType = currentView.isModuleView() ? 'Module' : currentView.isComponentView() ? 'Component' : 'Current view'
-            warnings.push(`${cellType} doesn't contain any children.`)
+            warnings.push(`${cellType} does not contain any children.`)
         }
 
         // TO DO: other validations
@@ -66,27 +66,30 @@ export class ProblemsComponent {
         const sequence = (info.sequence || '').toUpperCase()
         const version = (info.version || '')
 
-        // Warning: No sequence
-        !sequence && warnings.push(`Component '${info.displayID}' doesn't have a sequence.`)
+        // Error: No ID
+        !info.displayID && errors.push(`${info.partRole} is missing an ID.`)
 
         // Error: Non-IUPAC compliant sequence
         const negativeIUPACSequenceRegex = /[^ACGTURYSWKMBDHVN\.\-]/g
         var compliant = !sequence.match(negativeIUPACSequenceRegex)
         const sequencePreview = sequence.substring(0, 10)
         !compliant && errors.push(`Component '${info.displayID}' has illegal sequence: ${sequencePreview}...`)
-    
+
+        // Warning: No sequence
+        !sequence && warnings.push(`Component '${info.displayID}' does not have a sequence.`)
+
         // Warning: No version
-        !version && warnings.push(`Component '${info.displayID}' doesn't have a version.`)
+        !version && warnings.push(`Component '${info.displayID}' does not have a version.`)
 
         // Warning: Non-Semver compliant version
         // Got Regex from https://ihateregex.io/expr/semver/#
         // const semverVersionRegex = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/gm
-        
+
         // using less strict expression now -- SBOL interpreted Semver improperly and actually intended
         // to allow versions like 1 or 1.3
         const versionRegex = /^[0-9]+[\\p{L}0-9_\\.-]*$/
         compliant = !!version.match(versionRegex)
-        version && !compliant && 
+        version && !compliant &&
             warnings.push(`Component '${info.displayID}' has incompliant version: ${version}`)
-    }   
+    }
 }
