@@ -22,12 +22,17 @@ export class GlyphInfo extends Info {
     derivedFroms: string[];
     generatedBys: string[];
 
-    constructor(partType?: string) {
+    constructor(partType?: string, id?: string) {
         super();
 
-        this.displayID = 'id' + (GlyphInfo.counter++);
-        // this.displayID = 'id_' + (customAlphabet(alphanumeric, 5)());
         this.version = "1"
+
+        if (id) {
+            this.displayID = id
+            // this.displayID = 'id_' + (customAlphabet(alphanumeric, 5)());
+        }
+        else
+            this.displayID = 'id' + (GlyphInfo.counter++);
 
         if (partType) {
             this.partType = partType;

@@ -126,10 +126,12 @@ export class GlyphService {
         }
     }
 
+    // unused now
     loadXMLs(xml_list, glyph_list) {
         xml_list.forEach((filename) => this.loadXML(filename, glyph_list));
     }
 
+    // unused now
     loadXML(xmlFile, glyph_list) {
         let req = mx.mxUtils.load(xmlFile);
         let root = req.getDocumentElement();
@@ -160,7 +162,7 @@ export class GlyphService {
 
             canvas.setStrokeColor('#000000');
             canvas.setFillColor('none');
-
+            
             stencil.drawShape(canvas, shape, 0, 0, 50, 50);
 
             svgs[name] = elt;
@@ -183,6 +185,10 @@ export class GlyphService {
 
     getInteractionNodeGlyphs() {
         return this.interactionNodes;
+    }
+
+    getUtilGlyphs() {
+        return this.utils;
     }
 
     getUtilElements() {

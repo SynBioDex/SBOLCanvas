@@ -149,6 +149,10 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     this.graphService.addBackbone();
   }
 
+  addCircularPlasmid() {
+    this.graphService.addCircularPlasmid();
+  }
+
   addTextBox() {
     this.graphService.addTextBox();
   }

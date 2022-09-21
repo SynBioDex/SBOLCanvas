@@ -40,7 +40,7 @@ export class GraphService extends GraphHelpers {
         // handle double click on glyph to enter it
         this.graph.addListener(mx.mxEvent.DOUBLE_CLICK, mx.mxUtils.bind(this, this.enterGlyph));
 
-        
+
         // --- For when SBOLCanvas is embedded in another app ---
 
         // send changes in mxgraph model to parent
@@ -625,7 +625,7 @@ export class GraphService extends GraphHelpers {
      * Adds a sequenceFeatureGlyph.
      * The new glyph's location is based off the user's selection.
      */
-    addSequenceFeature(name) {
+    async addSequenceFeature(name) {
         this.graph.getModel().beginUpdate();
         try {
             if (!this.atLeastOneCircuitContainerInGraph()) {
@@ -658,7 +658,44 @@ export class GraphService extends GraphHelpers {
             }
 
             // Add it
-            this.addSequenceFeatureAt(name, x, y, circuitContainer);
+            await this.addSequenceFeatureAt(name, x, y, circuitContainer);
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+    }
+
+    async addCircularPlasmid() {
+        this.graph.getModel().beginUpdate();
+        try {
+            if (!this.atLeastOneCircuitContainerInGraph()) {
+                // if there is no strand, quietly make one
+                // stupid user
+                this.addBackbone();
+                // this changes the selection, so the rest of this method works fine
+            }
+
+            // let the graph choose an arbitrary cell from the selection,
+            // we'll pretend it's the only one selected
+            const selection = this.graph.getSelectionCell();
+
+            // if selection is nonexistent, or is not part of a strand, there is no suitable place.
+            if (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer())) {
+                return;
+            }
+
+            const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent();
+
+            // x is at the beginning of the circuit container
+            let x = circuitContainer.getGeometry().x - 1;
+
+            // use y coord of the strand
+            let y = circuitContainer.getGeometry().y;
+
+            // Add it
+            await this.addSequenceFeatureAt("Cir (Circular Backbone)", x, y, circuitContainer, {
+                connectable: false,
+                glyphWidth: 10,
+            });
         } finally {
             this.graph.getModel().endUpdate();
         }
@@ -673,7 +710,12 @@ export class GraphService extends GraphHelpers {
      * x,y are also used to determine where on the strand the new
      * glyph is added (first, second, etc)
      */
-    async addSequenceFeatureAt(name, x, y, circuitContainer?) {
+    async addSequenceFeatureAt(name, x, y, circuitContainer?, {
+        connectable = true,
+        glyphWidth = GraphBase.sequenceFeatureGlyphWidth,
+        glyphStyle = undefined,
+        cellValue = undefined,
+    } = {}) {
 
         // ownership change check
         if (this.graph.getCurrentRoot()) {
@@ -719,10 +761,16 @@ export class GraphService extends GraphHelpers {
             this.addToInfoDict(glyphInfo);
 
             // Insert new glyph and its components
-            const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_SEQUENCE_FEATURE + name);
+            const sequenceFeatureCell = this.graph.insertVertex(
+                circuitContainer,
+                null,
+                cellValue == null ? glyphInfo.getFullURI() : cellValue,
+                x, y, glyphWidth, GraphBase.sequenceFeatureGlyphHeight,
+                glyphStyle || GraphBase.STYLE_SEQUENCE_FEATURE + name
+            );
 
             this.createViewCell(glyphInfo.getFullURI());
-            sequenceFeatureCell.setConnectable(true);
+            sequenceFeatureCell.setConnectable(connectable);
 
             // Sorts the new SequenceFeature into the correct position in parent's array
             this.horizontalSortBasedOnPosition(circuitContainer);
