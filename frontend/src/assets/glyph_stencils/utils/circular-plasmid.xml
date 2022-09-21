@@ -1,5 +1,5 @@
 <shapes>
-<shape aspect="variable" centered="False" h="48" name="Cir (Circular Backbone)" strokewidth="inherit" w="10">
+<shape aspect="variable" centered="False" h="48" name="Cir (Circular Backbone)" strokewidth="inherit" w="1">
     <connections />
     <foreground>
         <strokewidth width="2.0" />

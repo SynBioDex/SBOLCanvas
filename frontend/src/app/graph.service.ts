@@ -692,10 +692,13 @@ export class GraphService extends GraphHelpers {
             let y = circuitContainer.getGeometry().y;
 
             // Add it
-            await this.addSequenceFeatureAt("Cir (Circular Backbone)", x, y, circuitContainer, {
+            const circCell = await this.addSequenceFeatureAt("Cir (Circular Backbone)", x, y, circuitContainer, {
                 connectable: false,
-                glyphWidth: 10,
+                glyphWidth: 1,
             });
+
+            circCell.stayAtBeginning = true
+            circuitContainer.circularBackbone = true
         } finally {
             this.graph.getModel().endUpdate();
         }
@@ -716,6 +719,8 @@ export class GraphService extends GraphHelpers {
         glyphStyle = undefined,
         cellValue = undefined,
     } = {}) {
+
+        let sequenceFeatureCell;
 
         // ownership change check
         if (this.graph.getCurrentRoot()) {
@@ -761,7 +766,7 @@ export class GraphService extends GraphHelpers {
             this.addToInfoDict(glyphInfo);
 
             // Insert new glyph and its components
-            const sequenceFeatureCell = this.graph.insertVertex(
+            sequenceFeatureCell = this.graph.insertVertex(
                 circuitContainer,
                 null,
                 cellValue == null ? glyphInfo.getFullURI() : cellValue,
@@ -799,6 +804,8 @@ export class GraphService extends GraphHelpers {
         } finally {
             this.graph.getModel().endUpdate();
         }
+
+        return sequenceFeatureCell
     }
 
     /**

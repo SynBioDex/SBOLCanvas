@@ -830,12 +830,12 @@ export class GraphHelpers extends GraphBase {
                     let interactionInfo = this.getFromInteractionDict(interaction.value).makeCopy();
                     // remove an edge if the new reference is null, and this specific edge had it's old reference
                     if (!newReference) {
-                        if(interactionInfo.fromURI[interaction.getId()] == oldReference){
+                        if (interactionInfo.fromURI[interaction.getId()] == oldReference) {
                             delete interactionInfo.fromURI[interaction.getId()];
                             this.updateInteractionDict(interactionInfo);
                             this.graph.getModel().remove(interaction);
                         }
-                        if(interactionInfo.toURI[interaction.getId()] == oldReference){
+                        if (interactionInfo.toURI[interaction.getId()] == oldReference) {
                             delete interactionInfo.toURI[interaction.getId()];
                             this.updateInteractionDict(interactionInfo);
                             this.graph.getModel().remove(interaction);
@@ -843,13 +843,13 @@ export class GraphHelpers extends GraphBase {
                         continue;
                     }
                     // replace any interaction references that reference the oldReference
-                    for(let key in interactionInfo.fromURI){
-                        if(interactionInfo.fromURI[key] == oldReference){
+                    for (let key in interactionInfo.fromURI) {
+                        if (interactionInfo.fromURI[key] == oldReference) {
                             interactionInfo.fromURI[key] = newReference;
                         }
                     }
-                    for(let key in interactionInfo.toURI){
-                        if(interactionInfo.toURI[key] == oldReference){
+                    for (let key in interactionInfo.toURI) {
+                        if (interactionInfo.toURI[key] == oldReference) {
                             interactionInfo.toURI[key] = newReference;
                         }
                     }
@@ -1631,10 +1631,10 @@ export class GraphHelpers extends GraphBase {
                                     // edge case, module view, need to check parent circuit container
                                     toCheck.add(cell.getParent().getValue());
                                 }
-                            } else if(cell.isCircuitContainer() && cell.getParent().isModuleView()){
+                            } else if (cell.isCircuitContainer() && cell.getParent().isModuleView()) {
                                 // transition state to module views
                                 toCheck.add(cell.getParent().getId());
-                            } else if(cell.isModule()){
+                            } else if (cell.isModule()) {
                                 toCheck.add(cell.getParent().getId());
                             }
                         }
@@ -1834,8 +1834,8 @@ export class GraphHelpers extends GraphBase {
         return false;
     }
 
-    protected flipInteractionEdge(cell){
-        if(!cell.isInteraction()){
+    protected flipInteractionEdge(cell) {
+        if (!cell.isInteraction()) {
             console.error("flipInteraction attempted on something other than an interaction!");
             return;
         }
@@ -1847,10 +1847,10 @@ export class GraphHelpers extends GraphBase {
         let targetPoint = cell.geometry.getTerminalPoint(false);
         cell.geometry.setTerminalPoint(null, true);
         cell.geometry.setTerminalPoint(null, false);
-        if(sourcePoint){
+        if (sourcePoint) {
             cell.geometry.setTerminalPoint(sourcePoint, false);
         }
-        if(targetPoint){
+        if (targetPoint) {
             cell.geometry.setTerminalPoint(targetPoint, true);
         }
         // reverse the info to/from
@@ -1859,10 +1859,10 @@ export class GraphHelpers extends GraphBase {
         let oldFrom = newInfo.toURI[cell.id];
         delete newInfo.toURI[cell.id];
         delete newInfo.fromURI[cell.id];
-        if(oldTo){
+        if (oldTo) {
             newInfo.fromURI[cell.id] = oldTo;
         }
-        if(oldFrom){
+        if (oldFrom) {
             newInfo.toURI[cell.id] = oldFrom;
         }
         // nuke the refinemnets, as source refinements don't match target refinements
@@ -2036,16 +2036,26 @@ export class GraphHelpers extends GraphBase {
     }
 
     horizontalSortBasedOnPosition(circuitContainer) {
+        // pull out children that should be sorted
+        let childrenCopy = circuitContainer.children.slice()
+            .filter(cell => !cell.stayAtBeginning)
+
         // sort the children
-        let childrenCopy = circuitContainer.children.slice();
-        childrenCopy.sort(function (cellA, cellB) {
-            return cellA.getGeometry().x - cellB.getGeometry().x;
-        });
+        childrenCopy.sort((cellA, cellB) =>
+            cellA.getGeometry().x - cellB.getGeometry().x
+        );
+
         // and have the model reflect the sort in an undoable way
-        for (let i = 0; i < childrenCopy.length; i++) {
-            const child = childrenCopy[i];
+        childrenCopy.forEach((child, i) => {
             this.graph.getModel().add(circuitContainer, child, i);
-        }
+        })
+
+        // add in children that should stay at the beginning
+        circuitContainer.children
+            .filter(cell => cell.stayAtBeginning)
+            .forEach(child => {
+                this.graph.getModel().add(circuitContainer, child, 0);
+            })
 
         circuitContainer.refreshCircuitContainer(this.graph);
     }
