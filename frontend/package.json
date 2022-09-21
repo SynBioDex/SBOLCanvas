@@ -29,6 +29,8 @@
     "jquery": "^3.5.0",
     "material-community-components": "^3.4.0",
     "mxgraph": "^3.9.12",
+    "nanoid": "^4.0.0",
+    "nanoid-dictionary": "^4.3.0",
     "ng-sidebar": "^8.0.0",
     "ngx-bootstrap": "^4.0.0",
     "popper.js": "^1.15.0",
