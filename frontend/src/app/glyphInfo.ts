@@ -47,6 +47,10 @@ export class GlyphInfo extends Info {
             `${partRolePrefix}_${customAlphabet(alphanumeric, 4)()}` :      // either use prefix and short ID
             customAlphabet(alphanumeric, 8)()                               // or long ID
 
+        // ensure ID doesn't start with a digit
+        if(/^\d/.test(this.displayID))
+            this.displayID = "i" + this.displayID
+
         // make a name so the displayed stuff is cleaner
         this.name = partRolePrefix || " "
     }
