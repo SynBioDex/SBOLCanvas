@@ -22,18 +22,33 @@ export class GlyphInfo extends Info {
     derivedFroms: string[];
     generatedBys: string[];
 
-    constructor(partType?: string) {
+    constructor({
+        id,
+        version = "1",
+        partType = "DNA region",
+        partRole,
+    }: {
+        id?,
+        version?,
+        partType?,
+        partRole?,
+    } = {}) {
         super();
 
-        this.displayID = 'id' + (GlyphInfo.counter++);
-        // this.displayID = 'id_' + (customAlphabet(alphanumeric, 5)());
-        this.version = "1"
+        this.version = version
+        this.partType = partType
+        this.partRole = partRole
 
-        if (partType) {
-            this.partType = partType;
-        } else {
-            this.partType = 'DNA region';
-        }
+        // try to make a prefix from the part role
+        const partRolePrefix = partRole && (partRole.match(/(\w+?) \(/) || [])[1];
+
+        // generate id
+        this.displayID = id || partRolePrefix ?
+            `${partRolePrefix}_${customAlphabet(alphanumeric, 4)()}` :      // either use prefix and short ID
+            customAlphabet(alphanumeric, 8)()                               // or long ID
+
+        // make a name so the displayed stuff is cleaner
+        this.name = partRolePrefix || " "
     }
 
     makeCopy() {
