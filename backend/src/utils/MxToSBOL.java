@@ -587,9 +587,11 @@ public class MxToSBOL extends Converter {
 			Component previous = null;
 			int count = 0, start = 0, end = 0;
 			for (mxCell glyph : glyphs) {
-				GlyphInfo info = (GlyphInfo) infoDict.get(glyph.getValue());
-				ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
-				Component component = compDef.createComponent(
+
+				GlyphInfo info = (GlyphInfo) infoDict.get(glyph.getValue());				
+                // ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
+                ComponentDefinition glyphCD = getComponentDefinitionBetter(document, URI.create((String) glyph.getValue()));
+                Component component = compDef.createComponent(
 						info.getDisplayID() + "_" + glyph.getParent().getIndex(glyph), AccessType.PUBLIC,
 						URI.create((String) glyph.getValue()));
 
@@ -909,9 +911,7 @@ public class MxToSBOL extends Converter {
 			participantInfo = (GlyphInfo) infoDict.get(participantCell.getValue());
 			participantParentCell = (mxCell) participantCell.getParent();
 		}
-        // More null checking here; was getting NullPointerException sometimes
-		if (document != null && modDef != null && participantInfo != null && 
-                participantCell != null && participantParentCell != null) {
+		if (participantCell != null) {
 			FunctionalComponent participantFC = getOrCreateParticipantFC(document, modDef, participantInfo,
 					participantCell, participantParentCell);
 			URI participantRole = getParticipantType(isSource, interaction.getTypes());
@@ -936,9 +936,6 @@ public class MxToSBOL extends Converter {
 				layoutHelper.addGraphicalNode(modDef.getIdentity(), participation.getDisplayId(), interactionEdge);
 			}
 		}
-        else {
-            System.out.println("RELATED TO GITHUB ISSUE #174: FAILED NULL CHECK");
-        }
 	}
 
 	private FunctionalComponent getOrCreateParticipantFC(SBOLDocument document, ModuleDefinition modDef,
@@ -996,12 +993,6 @@ public class MxToSBOL extends Converter {
 	 */
 	@SuppressWarnings("unchecked")
 	private <T extends Info> Hashtable<String, T> loadDictionary(ArrayList<Object> dataContainer, int dictionaryIndex) {
-		// previously was getting out of bounds exception sometimes, 
-        // hoping to catch it with this
-        if(dictionaryIndex >= dataContainer.size()) {
-            System.out.println("ARRAY INDEX OUT OF BOUNDS: " + dictionaryIndex);
-            return new Hashtable<String, T>();
-        }
         if (dataContainer.get(dictionaryIndex) instanceof ArrayList) {
 			// 90% sure it only happens when it's empty meaning that we could just return a
 			// empty hash table.
@@ -1025,4 +1016,54 @@ public class MxToSBOL extends Converter {
 		}
 	}
 
+    /*
+        Not using the libSBOLj method because it skips the entire document
+        when one top-level throws an exception, which causes it to skip copying
+        the actual ComponentDefintion sometimes.
+    */
+    private ComponentDefinition getComponentDefinitionBetter(SBOLDocument document, URI componentDefinitionURI) {
+
+        // Try to find ComponentDefinition in document
+        for(ComponentDefinition cd : document.getComponentDefinitions()) {
+            if(cd.getIdentity().equals(componentDefinitionURI))
+                return cd;
+        }
+
+        // Look in SynBioHub for it
+        for (SynBioHubFrontend frontend : document.getRegistries()) {
+
+            // Fetch from SynBioHub
+            SBOLDocument remoteDocument = null;
+            try {
+                remoteDocument = frontend.getSBOL(componentDefinitionURI);
+            }
+            catch(SynBioHubException e) {
+                System.out.println(e);
+                // e.printStackTrace();
+            }
+
+            if (remoteDocument != null) {
+                /*
+                    Create a copy of each top level.
+
+                    Not using the libSBOLj method because it skips the entire document
+                    when one top-level throws an exception, which causes it to skip copying
+                    the actual ComponentDefintion sometimes.
+                */
+                for (TopLevel topLevel : remoteDocument.getTopLevels()) {
+                    try {
+                        document.createCopy(topLevel);
+                    }
+                    catch(SBOLValidationException e) {
+                        System.out.println("Failed to copy top-level:\n" + topLevel.getIdentity());
+                        System.out.println(e);
+                        // e.printStackTrace();
+                    }
+                }
+                return remoteDocument.getComponentDefinition(componentDefinitionURI);
+            }
+        }
+
+		return null;
+	}
 }
