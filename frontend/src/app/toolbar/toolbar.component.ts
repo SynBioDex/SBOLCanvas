@@ -72,6 +72,10 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     });
   }
 
+  downloadMXGraph(): void {
+    this.filesService.exportMXGraph(this.graphService)
+  }
+
   zoomChanged($event) {
     let number = parseInt($event.target.value);
     if (!isNaN(number)) {
