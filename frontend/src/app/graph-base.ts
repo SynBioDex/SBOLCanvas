@@ -1079,7 +1079,7 @@ export class GraphBase {
                 // can appear here (even if they were also selected)
 
                 // sort cells: processing order is important
-                movedCells = movedCells.sort(function (cellA, cellB) {
+                movedCells = movedCells.sort(function (cellA, cellB) {                    
                     if (cellA.getRootId() !== cellB.getRootId()) {
                         // cells are not related: choose arbitrary order (but still group by root)
                         return cellA.getRootId() < cellB.getRootId() ? -1 : 1;
@@ -1155,9 +1155,18 @@ export class GraphBase {
                 let cells = sender.getChildVertices(sender.getDefaultParent());
                 for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
                     this.horizontalSortBasedOnPosition(circuitContainer);
+
+                    // translates the top edge of the cir backbone to be matched up with the backbone
+                    if(circuitContainer.circularBackbone) {
+                        circuitContainer.children
+                        .filter(cell => cell.stayAtEnd)
+                        .forEach(child => {
+                            child.geometry.translate(0, 26);
+                        });
+                    }
                 }
 
-                // finallly, another special case: if a circuitContainer only has one sequenceFeatureGlyph,
+                // finally, another special case: if a circuitContainer only has one sequenceFeatureGlyph,
                 // moving the glyph should move the circuitContainer
                 for (const cell of movedCells) {
                     if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {

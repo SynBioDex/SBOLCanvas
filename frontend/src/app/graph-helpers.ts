@@ -1090,6 +1090,21 @@ export class GraphHelpers extends GraphBase {
         var cellsRemoved = evt.getProperty('added');
         var cellsAdded = evt.getProperty('removed');
 
+        // checks if either the left or right side of a circular backbone was selected
+        const cirBackboneFilter = sender.cells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd);
+        if(cirBackboneFilter.length > 0) {
+            const parentCell = cirBackboneFilter[0].parent.children;
+            const cirBackboneCells = [parentCell[parentCell.length -1], parentCell[1]];
+
+            // checks if the circular backbone is already selected
+            if(this.graph.getSelectionCells()[0] == cirBackboneCells[0] && this.graph.getSelectionCells()[1] == cirBackboneCells[1]) {
+                return;
+            }
+
+            //set the selection to the circular backbone cells
+            this.graph.setSelectionCells(cirBackboneCells);
+        }
+
         console.debug("----handleSelectionChange-----");
 
         console.debug("cells removed: ");
@@ -1120,8 +1135,8 @@ export class GraphHelpers extends GraphBase {
     }
 
     /**
- * Updates the data in the metadata service according to the cells properties
- */
+       * Updates the data in the metadata service according to the cells properties
+       */
     protected updateAngularMetadata(cells) {
         // start with null data, (re)add it as possible
         this.nullifyMetadata();
@@ -2038,25 +2053,32 @@ export class GraphHelpers extends GraphBase {
     horizontalSortBasedOnPosition(circuitContainer) {
         // pull out children that should be sorted
         let childrenCopy = circuitContainer.children.slice()
-            .filter(cell => !cell.stayAtBeginning)
+            .filter(cell => !cell.stayAtBeginning);
 
         // sort the children
-        childrenCopy.sort((cellA, cellB) =>
+        childrenCopy.sort((cellA, cellB) => 
             cellA.getGeometry().x - cellB.getGeometry().x
         );
 
         // and have the model reflect the sort in an undoable way
         childrenCopy.forEach((child, i) => {
             this.graph.getModel().add(circuitContainer, child, i);
-        })
+        });
 
         // add in children that should stay at the beginning
         circuitContainer.children
             .filter(cell => cell.stayAtBeginning)
             .forEach(child => {
                 this.graph.getModel().add(circuitContainer, child, 0);
-            })
+            });
 
+        // add in children that should stay at the end
+        circuitContainer.children
+            .filter(cell => cell.stayAtEnd)
+            .forEach(child => {
+                this.graph.getModel().add(circuitContainer, child, circuitContainer.children.length);
+            });
+        
         circuitContainer.refreshCircuitContainer(this.graph);
     }
 
