@@ -257,7 +257,10 @@ export class GraphService extends GraphHelpers {
         let selectionCells = this.graph.getSelectionCells();
 
         // a circular backbone cannot be flipped
-        if(selectionCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0) return;
+        if(selectionCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0) {
+            this.showError("A circular backbone cannot be flipped.");
+            return;
+        }
 
         // flip any selected glyphs
         let parentInfos = new Set<GlyphInfo>();
@@ -700,7 +703,7 @@ export class GraphService extends GraphHelpers {
             let y = circuitContainer.getGeometry().y;
 
             // add the left side of the circular cell
-            const circCellLeft = await this.addSequenceFeatureAt("Cir (Circular Backbone)", 
+            const circCellLeft = await this.addSequenceFeatureAt("Cir (Circular Backbone Left)", 
             x, y, circuitContainer, {
                 connectable: false,
                 glyphWidth: 1
@@ -708,7 +711,7 @@ export class GraphService extends GraphHelpers {
             circCellLeft.stayAtBeginning = true;
 
             // add the right side of the circular cell
-            const circCellRight = await this.addSequenceFeatureAt("Cir (Circular Backbone)", 
+            const circCellRight = await this.addSequenceFeatureAt("Cir (Circular Backbone Right)", 
             x + circuitContainer.getGeometry().width, y,
             circuitContainer, {
                 connectable: false,
@@ -716,9 +719,12 @@ export class GraphService extends GraphHelpers {
             });
             circCellRight.stayAtEnd = true;
 
-            this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "west", [circCellRight]);
-            circCellRight.geometry.translate(circuitContainer.getGeometry().width == 2 ? 48 : 0, 26);
-
+            // if the only cells are the backbone and the circular backbone the right circular backbone needs
+            // to be repositioned and the size of the circuit container needs to reflect that
+            if(circuitContainer.getGeometry().width == 2) {
+                circuitContainer.replaceGeometry("auto", "auto", 52, "auto", this.graph);
+                circCellRight.replaceGeometry(circCellRight.getGeometry().x + 49, "auto", "auto", "auto", this.graph);
+            }
         } finally {
             this.graph.getModel().endUpdate();
         }
@@ -739,7 +745,6 @@ export class GraphService extends GraphHelpers {
         glyphStyle = undefined,
         cellValue = undefined,
     } = {}) {
-
         let sequenceFeatureCell;
         let cirBackboneLeftCell;
 
@@ -820,13 +825,6 @@ export class GraphService extends GraphHelpers {
             // if the new sequence feature is a circular backbone both circular backbones should be selected
             if(cellValue != null) this.graph.setSelectionCells([sequenceFeatureCell, cirBackboneLeftCell]);
             else this.graph.setSelectionCell(sequenceFeatureCell);
-
-            // translates the top edge of the cir backbone to be matched up with the backbone
-            circuitContainer.children
-            .filter(cell => cell.stayAtEnd)
-            .forEach(child => {
-                child.geometry.translate(0, 26);
-            });
 
             // perform the ownership change
             if (this.graph.getCurrentRoot()) {
@@ -1137,7 +1135,7 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().endUpdate();
         }
     }
-
+x
     /**
      * Find the selected cell, and if there is a glyph selected, update its metadata.
      */

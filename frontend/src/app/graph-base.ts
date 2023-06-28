@@ -528,8 +528,9 @@ export class GraphBase {
             const layout = new mx.mxStackLayout(graph, true);
             layout.resizeParent = true;
             layout.isVertexIgnored = function (vertex) {
-                return vertex.isBackbone()
+                return vertex.isBackbone();
             };
+
             layout.execute(this);
         };
 
@@ -1070,8 +1071,8 @@ export class GraphBase {
         // cell movement
         this.graph.addListener(mx.mxEvent.MOVE_CELLS, mx.mxUtils.bind(this, async function (sender, evt) {
             // sender is the graph
-
             sender.getModel().beginUpdate();
+            
             let cancelled = false;
             try {
                 let movedCells = evt.getProperty("cells");
@@ -1127,6 +1128,7 @@ export class GraphBase {
                     if (!movedCells[i].isSequenceFeatureGlyph()) {
                         continue;
                     }
+
                     // found a sequenceFeature glyph. A streak might be starting...
                     const baseX = movedCells[i].getGeometry().x;
                     const rootId = movedCells[i].getRootId();
@@ -1155,25 +1157,6 @@ export class GraphBase {
                 let cells = sender.getChildVertices(sender.getDefaultParent());
                 for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
                     this.horizontalSortBasedOnPosition(circuitContainer);
-
-                    // translates the top edge of the cir backbone to be matched up with the backbone
-                    if(circuitContainer.circularBackbone) {
-                        circuitContainer.children
-                        .filter(cell => cell.stayAtEnd)
-                        .forEach(child => {
-                            child.geometry.translate(0, 26);
-                        });
-                    }
-                }
-
-                // finally, another special case: if a circuitContainer only has one sequenceFeatureGlyph,
-                // moving the glyph should move the circuitContainer
-                for (const cell of movedCells) {
-                    if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {
-                        const x = cell.getParent().getGeometry().x + evt.getProperty("dx");
-                        const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
-                        cell.getParent().replaceGeometry(x, y, 'auto', 'auto', sender);
-                    }
                 }
 
                 // sync circuit containers
@@ -1185,6 +1168,44 @@ export class GraphBase {
                 }
                 for (let circuitContainer of Array.from(circuitContainers.values())) {
                     this.syncCircuitContainer(circuitContainer);
+                }
+
+                for (const cell of movedCells) {
+                    // another special case: if a circuitContainer only has one sequenceFeatureGlyph,
+                    // moving the glyph should move the circuitContainer
+                    if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {
+                        const x = cell.getParent().getGeometry().x + evt.getProperty("dx");
+                        const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
+                        cell.getParent().replaceGeometry(x, y, "auto", "auto", sender);
+                    }
+
+                    // special case where an empty circular backbone's circuit container is moved
+                    // fixes the containers position and the right circular backbones x position
+                    if((cell.circularBackbone && cell.children.length === 3)) {
+                        cell.replaceGeometry("auto", "auto", 52, "auto", sender);
+                        cell.children[2].replaceGeometry(
+                                cell.children[2].getGeometry().x + 49, "auto", "auto", "auto", sender);
+                    }
+                }
+
+                // special case where a circular backbone is repositioned within a circuit container
+                if(movedCells[0].getParent().circularBackbone && movedCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0) {
+                    if(movedCells.length === 2) {
+                        movedCells[0].getParent().replaceGeometry("auto", "auto", 52, "auto", sender);
+                        movedCells[0].replaceGeometry(
+                                movedCells[0].getGeometry().x + 49, "auto", "auto", "auto", sender);
+                    } 
+                    // if a circuit container has been moved once and a circular backbone is moved only one side
+                    // of it will be passed in by the sender
+                    else if(movedCells.length === 1) {
+                        const container = movedCells[0].getParent();
+                        container.replaceGeometry("auto", "auto", 52, "auto", sender);
+                        container.children.filter(cell => cell.stayAtEnd)
+                        .forEach(circBackboneRight => {
+                            circBackboneRight.replaceGeometry(
+                                circBackboneRight.getGeometry().x + 49, "auto", "auto", "auto", sender);
+                        });
+                    }
                 }
 
                 // change ownership

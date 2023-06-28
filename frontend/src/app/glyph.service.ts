@@ -79,7 +79,7 @@ export class GlyphService {
         'assets/glyph_stencils/interaction_nodes/dissociation.xml',
         'assets/glyph_stencils/interaction_nodes/process.xml',
         'assets/glyph_stencils/molecular_species/replacement-glyph.xml',
-    ]
+    ];
 
     private indicatorXMLBundle: string = "assets/glyph_stencils/indicators/bundle.xml";
     private indicatorXMLs: string[] = [
