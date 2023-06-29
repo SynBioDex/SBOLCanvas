@@ -1182,30 +1182,15 @@ export class GraphBase {
                     // special case where an empty circular backbone's circuit container is moved
                     // fixes the containers position and the right circular backbones x position
                     if((cell.circularBackbone && cell.children.length === 3)) {
-                        cell.replaceGeometry("auto", "auto", 52, "auto", sender);
-                        cell.children[2].replaceGeometry(
-                                cell.children[2].getGeometry().x + 49, "auto", "auto", "auto", sender);
+                        this.repositionCircularBackbone(cell);
                     }
                 }
 
                 // special case where a circular backbone is repositioned within a circuit container
-                if(movedCells[0].getParent().circularBackbone && movedCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0) {
-                    if(movedCells.length === 2) {
-                        movedCells[0].getParent().replaceGeometry("auto", "auto", 52, "auto", sender);
-                        movedCells[0].replaceGeometry(
-                                movedCells[0].getGeometry().x + 49, "auto", "auto", "auto", sender);
-                    } 
-                    // if a circuit container has been moved once and a circular backbone is moved only one side
-                    // of it will be passed in by the sender
-                    else if(movedCells.length === 1) {
-                        const container = movedCells[0].getParent();
-                        container.replaceGeometry("auto", "auto", 52, "auto", sender);
-                        container.children.filter(cell => cell.stayAtEnd)
-                        .forEach(circBackboneRight => {
-                            circBackboneRight.replaceGeometry(
-                                circBackboneRight.getGeometry().x + 49, "auto", "auto", "auto", sender);
-                        });
-                    }
+                if(movedCells[0].getParent().circularBackbone 
+                && movedCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0
+                && movedCells[0].getParent().children.length === 3) {
+                    this.repositionCircularBackbone(movedCells[0].getParent());
                 }
 
                 // change ownership

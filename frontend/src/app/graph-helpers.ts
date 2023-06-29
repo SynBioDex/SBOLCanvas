@@ -2050,6 +2050,22 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    /**
+     * If a circuit container contains only a circular backbone the container's width is for some
+     * reason set to 1 and the right side of the circular backbone is moved right next to the left 
+     * side, this method fixes the formatting
+     * 
+     * @param circuitContainer The circuit container that contains the circular backbone
+     */
+    repositionCircularBackbone(circuitContainer) {
+        const childrenCopy = circuitContainer.children.slice().filter(cell => cell.stayAtEnd);
+        const containerCopy = childrenCopy[0].getParent();
+        
+        containerCopy.replaceGeometry("auto", "auto", 52, "auto", this.graph);
+        childrenCopy[0].replaceGeometry(
+                childrenCopy[0].getGeometry().x + 49, "auto", "auto", "auto", this.graph);
+    }
+
     horizontalSortBasedOnPosition(circuitContainer) {
         // pull out children that should be sorted
         let childrenCopy = circuitContainer.children.slice()

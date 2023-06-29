@@ -500,8 +500,6 @@ export class GraphService extends GraphHelpers {
                 this.graph.setSelectionCells(newSelection);
             }
 
-
-
             // remove interactions with modules if the item it connects to is being removed
             for (let selectedCell of selectedCells) {
                 if (selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()) {
@@ -527,6 +525,11 @@ export class GraphService extends GraphHelpers {
 
             for (let cell of circuitContainers) {
                 cell.refreshCircuitContainer(this.graph);
+            }
+
+            // repositions the circular backbone if the circular backbone is now empty
+            if(circuitContainers[0].children.length === 3 && circuitContainers[0].circularBackbone) {
+                this.repositionCircularBackbone(circuitContainers[0]);
             }
         } finally {
             this.graph.getModel().endUpdate();
@@ -722,8 +725,7 @@ export class GraphService extends GraphHelpers {
             // if the only cells are the backbone and the circular backbone the right circular backbone needs
             // to be repositioned and the size of the circuit container needs to reflect that
             if(circuitContainer.getGeometry().width == 2) {
-                circuitContainer.replaceGeometry("auto", "auto", 52, "auto", this.graph);
-                circCellRight.replaceGeometry(circCellRight.getGeometry().x + 49, "auto", "auto", "auto", this.graph);
+                this.repositionCircularBackbone(circuitContainer);
             }
         } finally {
             this.graph.getModel().endUpdate();
