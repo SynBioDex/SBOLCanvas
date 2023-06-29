@@ -528,7 +528,8 @@ export class GraphService extends GraphHelpers {
             }
 
             // repositions the circular backbone if the circular backbone is now empty
-            if(circuitContainers[0].children.length === 3 && circuitContainers[0].circularBackbone) {
+            if(circuitContainers.length > 0 && circuitContainers[0].children.length === 3 
+               && circuitContainers[0].circularBackbone) {
                 this.repositionCircularBackbone(circuitContainers[0]);
             }
         } finally {
@@ -788,7 +789,7 @@ export class GraphService extends GraphHelpers {
             x = x - circuitContainer.getGeometry().x;
             y = y - circuitContainer.getGeometry().y;
 
-            const glyphInfo = new GlyphInfo();
+            let glyphInfo = new GlyphInfo();
 
             // if the container is a circular backbone then both sides should have the same cellValue
             if (glyphWidth == 1) {
@@ -805,7 +806,7 @@ export class GraphService extends GraphHelpers {
                 glyphInfo.partRole = name;
                 this.addToInfoDict(glyphInfo);
             }
-
+ 
             // Insert new glyph and its components
             sequenceFeatureCell = this.graph.insertVertex(
                 circuitContainer,
