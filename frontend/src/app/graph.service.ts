@@ -827,7 +827,7 @@ export class GraphService extends GraphHelpers {
 
             // if the new sequence feature is a circular backbone both circular backbones should be selected
             if(cirBackboneLeftCell !== undefined) this.graph.setSelectionCells([cirBackboneLeftCell, sequenceFeatureCell]);
-            else if(!circularBackboneSide) this.graph.setSelectionCell(sequenceFeatureCell);
+            else if(glyphWidth !== 1) this.graph.setSelectionCell(sequenceFeatureCell);
 
             // perform the ownership change
             if (this.graph.getCurrentRoot()) {
