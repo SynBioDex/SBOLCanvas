@@ -701,7 +701,7 @@ export class GraphService extends GraphHelpers {
             circuitContainer.circularBackbone = true;
 
             // x is at the beginning of the circuit container
-            let x = circuitContainer.getGeometry().x - 1;
+            let x = circuitContainer.getGeometry().x;
 
             // use y coord of the strand
             let y = circuitContainer.getGeometry().y;
@@ -710,7 +710,7 @@ export class GraphService extends GraphHelpers {
             const circCellLeft = await this.addSequenceFeatureAt("Cir (Circular Backbone Left)", 
             x, y, circuitContainer, {
                 connectable: false,
-                glyphWidth: 1
+                glyphWidth: 1,
             });
             circCellLeft.stayAtBeginning = true;
 
@@ -719,7 +719,7 @@ export class GraphService extends GraphHelpers {
             x + circuitContainer.getGeometry().width, y,
             circuitContainer, {
                 connectable: false,
-                glyphWidth: 1
+                glyphWidth: 1,
             });
             circCellRight.stayAtEnd = true;
 
@@ -826,8 +826,8 @@ export class GraphService extends GraphHelpers {
             this.graph.clearSelection();
 
             // if the new sequence feature is a circular backbone both circular backbones should be selected
-            if(cellValue != null) this.graph.setSelectionCells([sequenceFeatureCell, cirBackboneLeftCell]);
-            else this.graph.setSelectionCell(sequenceFeatureCell);
+            if(cirBackboneLeftCell !== undefined) this.graph.setSelectionCells([cirBackboneLeftCell, sequenceFeatureCell]);
+            else if(!circularBackboneSide) this.graph.setSelectionCell(sequenceFeatureCell);
 
             // perform the ownership change
             if (this.graph.getCurrentRoot()) {

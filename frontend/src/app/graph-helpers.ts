@@ -1092,15 +1092,16 @@ export class GraphHelpers extends GraphBase {
 
         // checks if either the left or right side of a circular backbone was selected
         const cirBackboneFilter = sender.cells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd);
+
         if(cirBackboneFilter.length > 0) {
             const parentCell = cirBackboneFilter[0].parent.children;
-            const cirBackboneCells = [parentCell[parentCell.length -1], parentCell[1]];
-
+            const cirBackboneCells = [parentCell[parentCell.length - 1], parentCell[1]];
+    
             // checks if the circular backbone is already selected
             if(this.graph.getSelectionCells()[0] == cirBackboneCells[0] && this.graph.getSelectionCells()[1] == cirBackboneCells[1]) {
                 return;
             }
-
+    
             //set the selection to the circular backbone cells
             this.graph.setSelectionCells(cirBackboneCells);
         }
@@ -1141,7 +1142,7 @@ export class GraphHelpers extends GraphBase {
         // start with null data, (re)add it as possible
         this.nullifyMetadata();
 
-        // if there is no current root it's because we're in the middle of reseting the view
+        // if there is no current root it's because we're in the middle of resetting the view
         if (!this.graph.getCurrentRoot())
             return;
 
@@ -1152,19 +1153,25 @@ export class GraphHelpers extends GraphBase {
         }
 
         if (cells.length > 1) {
-            // multiple selections? can't display glyph data
-            return;
+            // multiple selections can't display glyph data unless it's a circular backbone
+            if(cells[1].stayAtBeginning) {
+                let glyphInfo;
+                if (!cells[1]) glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
+                else glyphInfo = this.getFromInfoDict(cells[1].value);
+    
+                this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());            
+            } else return;
         }
 
         // have to add special check as no selection cell should signify the module/component of the current view
         let cell;
-        if (cells && cells.length > 0) {
+        if (cells && cells.length === 1) {
             cell = cells[0];
         }
 
         if ((!cell && this.graph.getCurrentRoot().isModuleView()) || (cell && cell.isModule())) {
             let moduleInfo;
-            if (!cell)
+            if (!cell) 
                 moduleInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
             else
                 moduleInfo = this.getFromInfoDict(cell.value);
