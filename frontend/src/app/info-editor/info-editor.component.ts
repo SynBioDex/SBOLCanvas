@@ -57,7 +57,9 @@ export class InfoEditorComponent implements OnInit {
   }
 
   getRoles() {
-    this.metadataService.loadRoles().subscribe(roles => this.partRoles = roles);
+    this.metadataService.loadRoles().subscribe(roles => {
+      this.partRoles = roles;
+    });
   }
 
   getRefinements(role: string) {
@@ -89,6 +91,8 @@ export class InfoEditorComponent implements OnInit {
         break;
       }
       case 'partRole': {
+        if(event.value.includes("Cir (Circular Backbone")) break;
+
         this.glyphInfo.partRole = event.value;
         this.glyphInfo.partRefine = '';
         if (event.value !== '') {
