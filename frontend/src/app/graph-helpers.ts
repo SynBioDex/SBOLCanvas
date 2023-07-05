@@ -1160,7 +1160,9 @@ export class GraphHelpers extends GraphBase {
                 else glyphInfo = this.getFromInfoDict(cells[1].value);
     
                 this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());            
-            } else return;
+            }
+            
+            return;
         }
 
         // have to add special check as no selection cell should signify the module/component of the current view
