@@ -57,9 +57,7 @@ export class InfoEditorComponent implements OnInit {
   }
 
   getRoles() {
-    this.metadataService.loadRoles().subscribe(roles => {
-      this.partRoles = roles;
-    });
+    this.metadataService.loadRoles().subscribe(roles => this.partRoles = roles);
   }
 
   getRefinements(role: string) {
