@@ -1,0 +1,30 @@
+<shapes>
+<shape aspect="fixed" h="50" name="error" strokewidth="inherit" w="50">
+    <connections/>
+    <foreground>
+        <fillcolor color="#ffff00"/>
+        <strokewidth width="0.279947"/>
+        <strokecolor color='#000000'/>
+        <path>
+            <move x="43" y="40.59"/>
+            <line x="25" y="40.59"/>
+            <line x="7" y="40.59"/>
+            <line x="16" y="25"/>
+            <line x="25" y="9.41"/>
+            <line x="34" y="25"/>
+            <close/>
+        </path>
+        <fillstroke/>
+        <fontcolor color="#000000"/>
+        <strokewidth width="0.265089"/>
+        <fillalpha alpha="1"/>
+        <fontsize size="21.6035"/>
+        <fontfamily family="sans-serif"/>
+        <fontstyle style="0"/>
+        <fillalpha alpha=""/>
+        <fontfamily family=""/>
+        <fontstyle style="0"/>
+        <text str="?" valign="bottom" x="20.17" y="45.08"/>
+    </foreground>
+</shape>
+</shapes>

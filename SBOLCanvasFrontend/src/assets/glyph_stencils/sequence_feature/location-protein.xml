@@ -1,0 +1,28 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="AA (Amino Acid)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <save />
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="21.15602196964148" y="24.69330428966771" />
+            <curve x1="31.21100207424495" x2="31.483064670085408" x3="20.9859828472412" y1="22.505467581450723" y2="33.6260261864293" y3="31.95964278690652" />
+            <curve x1="31.347033372165175" x2="30.961611361391196" x3="20.88395937380103" y1="29.10298553058175" y2="41.0850756890551" y3="39.13529375219851" />
+            <curve x1="31.15432236677819" x2="31.074970776324722" x3="20.804607783347556" y1="36.3353162033405" y2="48.0" y3="46.20892124405033" />
+        </path>
+        <fillstroke />
+        <restore />
+        <rect />
+        <fillstroke />
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <ellipse h="15.870318090693186" w="15.870318090693186" x="16.064840954653405" y="9.519941056446157" />
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>

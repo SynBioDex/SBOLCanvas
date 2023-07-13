@@ -1,0 +1,18 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="circular-plasmid" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="33.96152351340847" y="48.0" />
+            <arc large-arc-flag="0.0" rx="40.82899339292655" ry="39.09444228527011" sweep-flag="1.0" x="7.303925378935095" x-axis-rotation="5.0" y="37.94247959580257" />
+            <arc large-arc-flag="0.0" rx="40.82899339292655" ry="39.09444228527011" sweep-flag="1.0" x="43.0" x-axis-rotation="5.0" y="29.937815779246016" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

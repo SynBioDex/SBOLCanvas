@@ -1,0 +1,131 @@
+<div *ngIf="registries && partTypes && partRoles && interactionTypes"> <!-- Don't show anything until all the data from the backend is loaded -->
+<div *ngIf="glyphInfo" class="info-menu-container">
+  <mat-form-field>
+    <mat-label>Part type</mat-label>
+    <mat-select id="partType" value="{{glyphInfo.partType}}" (selectionChange)="dropDownChange($event)" matTooltipShowDelay="1000" matTooltip="Specifies the category of biochemical or physical entity.">
+      <mat-option value="">All_types</mat-option>
+      <mat-option *ngFor="let type of partTypes" [value]="type">
+        {{type}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field *ngIf="glyphInfo.partType.startsWith('DNA')">
+    <mat-label>Part role</mat-label>
+    <mat-select id="partRole" value="{{glyphInfo.partRole}}" (selectionChange)="dropDownChange($event)" matTooltipShowDelay="1000" matTooltip="Clarifies the potential function of the entity.">
+      <mat-option value="">IDK (Unspecified)</mat-option>
+      <mat-option *ngFor="let role of partRoles" [value]="role">
+        {{role}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field *ngIf="glyphInfo.partType.startsWith('DNA')">
+    <mat-label>Role refinement</mat-label>
+    <mat-select id="partRefinement" value="{{glyphInfo.partRefine}}" (selectionChange)="dropDownChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. More specific version of the part role.">
+      <mat-option value="">None</mat-option>
+      <mat-option *ngFor="let refinement of partRefinements" [value]="refinement">
+        {{refinement}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <input matInput id="displayID" placeholder="Display ID" value="{{ glyphInfo.displayID }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Must be composed of only alphanumeric or underscore characters and MUST NOT begin with a digit.">
+  </mat-form-field>
+
+  <mat-form-field>
+    <input matInput id="name" placeholder="Name" value="{{ glyphInfo.name }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Intended to be displayed to a human when visualizing an Identified object.">
+  </mat-form-field>
+
+  <mat-form-field>
+    <textarea matInput id="description" placeholder="Description" value="{{ glyphInfo.description }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Inteded to contain a more thorough text description of an Identified object."></textarea>
+  </mat-form-field>
+
+  <mat-form-field>
+      <textarea matInput id="version" placeholder="Version" value="{{ glyphInfo.version }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Recomended style is numbers and qualifiers that are separated by '.' and '-'."></textarea>
+  </mat-form-field>
+
+  <mat-label *ngIf="localDesign()" matTooltipShowDelay="1000" matTooltip="{{ glyphInfo.getFullURI() }}">URI: Local Design</mat-label>
+  <mat-label *ngIf="synBioHubDesign()" matTooltipShowDelay="1000" matTooltip="{{ glyphInfo.getFullURI() }}">URI: <a href="{{ glyphInfo.getFullURI() }}" target="_blank">SynBioHub Record</a></mat-label>
+  <mat-label *ngIf="importedDesign()" matTooltipShowDelay="1000" matTooltip="{{ glyphInfo.getFullURI() }}">URI: Imported Design</mat-label>
+
+<!--    <mat-form-field>-->
+<!--      <mat-label>Sequence encoding</mat-label>-->
+<!--      <mat-select id="sequenceEncoding" value="{{glyphInfo.encoding}}" (selectionChange)="dropDownChange($event)">-->
+<!--        <mat-option *ngFor="let encoding of encodings" [value]="encoding">-->
+<!--          {{encoding}}-->
+<!--        </mat-option>-->
+<!--      </mat-select>-->
+<!--    </mat-form-field>-->
+
+  <mat-form-field>
+    <textarea matInput id="sequence" placeholder="Sequence" value="{{glyphInfo.sequence}}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Represents the constituents of a biological or chemical molecule."></textarea>
+  </mat-form-field>
+
+  <button mat-stroked-button (click)="openDownloadDialog()">Import Component</button>
+  <button *ngIf="isCombinatorialPossible()" mat-stroked-button (click)="openCombinatorialDialog()">Edit Combinatorial Design</button>
+</div>
+
+<div *ngIf="moduleInfo" class="info-menu-container">
+  <mat-form-field>
+    <input matInput id="displayID" placeholder="Display ID" value="{{ moduleInfo.displayID }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Must be composed of only alphanumeric or underscore characters and MUST NOT begin with a digit.">
+  </mat-form-field>
+
+  <mat-form-field>
+    <input matInput id="name" placeholder="Name" value="{{ moduleInfo.name }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Intended to be displayed to a human when visualizing an Identified object.">
+  </mat-form-field>
+
+  <mat-form-field>
+    <textarea matInput id="description" placeholder="Description" value="{{ moduleInfo.description }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Inteded to contain a more thorough text description of an Identified object."></textarea>
+  </mat-form-field>
+
+  <mat-form-field>
+      <textarea matInput id="version" placeholder="Version" value="{{ moduleInfo.version }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. Recomended style is numbers and qualifiers that are separated by '.' and '-'."></textarea>
+  </mat-form-field>
+
+  <mat-label *ngIf="localDesign()" matTooltipShowDelay="1000" matTooltip="{{ moduleInfo.getFullURI() }}">URI: Local Design</mat-label>
+  <mat-label *ngIf="synBioHubDesign()" matTooltipShowDelay="1000" matTooltip="{{ moduleInfo.getFullURI() }}">URI: <a href="{{ moduleInfo.getFullURI() }}" target="_blank">SynBioHub Record</a></mat-label>
+  <mat-label *ngIf="importedDesign()" matTooltipShowDelay="1000" matTooltip="{{ moduleInfo.getFullURI() }}">URI: Imported Design</mat-label>
+
+  <button mat-stroked-button (click)="openDownloadDialog(true)">Import Component</button>
+</div>
+
+
+<div *ngIf="interactionInfo" class="info-menu-container">
+  <mat-form-field>
+    <mat-label>Interaction Type</mat-label>
+    <mat-select id="interactionType" value="{{interactionInfo.interactionType}}" (selectionChange)="dropDownChange($event)">
+      <mat-option *ngFor="let type of filteredInteractionTypes" [value]="type">
+        {{type}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-label *ngIf="graphService.isSelectedSourceEdge()">Source Role: {{getSourceInteractionRole()}}</mat-label>
+
+  <mat-form-field *ngIf="hasSourceRefinements() && graphService.isSelectedSourceEdge()">
+    <mat-label>Source Refinement</mat-label>
+    <mat-select id="interactionSourceRefinement" value={{interactionInfo.sourceRefinement[graphService.getSelectedCellID()]}} (selectionChange)="dropDownChange($event)">
+      <mat-option *ngFor="let refinement of interactionSourceRefinements" [value]="refinement">
+        {{refinement}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-label *ngIf="graphService.isSelectedTargetEdge()">Target Role: {{getTargetInteractionRole()}}</mat-label>
+
+  <mat-form-field *ngIf="hasTargetRefinements() && graphService.isSelectedTargetEdge()">
+    <mat-label>Target Refinement</mat-label>
+    <mat-select id="interactionTargetRefinement" value={{interactionInfo.targetRefinement[graphService.getSelectedCellID()]}} (selectionChange)="dropDownChange($event)">
+      <mat-option *ngFor="let refinement of interactionTargetRefinements" [value]="refinement">
+        {{refinement}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  
+  <mat-form-field>
+    <input matInput id="displayID" placeholder="Display ID" value="{{ interactionInfo.displayID }}" (change)="inputChange($event)">
+  </mat-form-field>
+</div>
+</div>

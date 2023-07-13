@@ -1,0 +1,33 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="Sig (Signature)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="5.0" y="48.0" />
+            <line x="5.0" y="24.25" />
+            <line x="43.0" y="24.25" />
+            <line x="43.0" y="48.0" />
+            <close />
+        </path>
+        <fillstroke />
+        <path>
+            <move x="9.75" y="30.9" />
+            <line x="19.25" y="40.4" />
+        </path>
+        <stroke />
+        <path>
+            <move x="9.75" y="40.4" />
+            <line x="19.25" y="30.9" />
+        </path>
+        <stroke />
+        <path>
+            <move x="23.05" y="42.3" />
+            <line x="38.25" y="42.3" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

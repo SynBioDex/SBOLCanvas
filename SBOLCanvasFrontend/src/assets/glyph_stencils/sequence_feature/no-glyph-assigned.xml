@@ -1,0 +1,26 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="NGA (No Glyph Assigned)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="miter" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="19.69209039548022" y="21.09039548022598" />
+            <line x="14.0" y="21.09039548022598" />
+            <line x="14.0" y="44.0" />
+            <line x="19.69209039548022" y="44.0" />
+        </path>
+        <stroke />
+        <path>
+            <move x="28.30790960451978" y="21.09039548022598" />
+            <line x="34.0" y="21.09039548022598" />
+            <line x="34.0" y="44.0" />
+            <line x="28.30790960451978" y="44.0" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

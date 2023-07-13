@@ -1,0 +1,14 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="macromolecule" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.25" />
+        <linejoin join="miter" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <roundrect arcsize="50" h="13.86" w="31.76" x="8.12" y="17.07" />
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>

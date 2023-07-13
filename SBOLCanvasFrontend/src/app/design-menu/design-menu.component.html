@@ -1,0 +1,248 @@
+<div *ngIf="styleInfo" class="design-menu-container">
+  <div fxFill *ngIf="styleInfo.hasStrokeColor() || styleInfo.hasStrokeOpacity() || styleInfo.hasStrokeWidth()">
+    <mat-card>
+      <mat-card-title>Stroke</mat-card-title>
+      <mat-grid-list cols="2" rowHeight="52px">
+        <div *ngIf="styleInfo.hasStrokeColor()"
+             [matTooltip]="'Color of the selected glyph\'s lines'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Color:  </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <button mat-stroked-button class="design-menu-input" [style.backgroundColor]="styleInfo.currentStrokeColor()"
+                    (click)="setStrokeColorClicked()">&nbsp;</button>
+            </div>
+          </mat-grid-tile>
+        </div>
+
+        <div *ngIf="styleInfo.hasStrokeOpacity()"
+             [matTooltip]="'Opacity of the selected glyph\'s lines'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Opacity: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-form-field appearance="outline" class="number-input">
+                <input id="strokeOpacity" #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentStrokeOpacity()">
+              </mat-form-field>
+            </div>
+          </mat-grid-tile>
+        </div>
+
+        <div *ngIf="styleInfo.hasStrokeWidth()"
+             [matTooltip]="'Width of the selected glyph\'s lines'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Width: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-form-field appearance="outline" class="number-input">
+                <input id="strokeWidth" #endSizeInput matInput type="number" min="1" step="0.1" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentStrokeWidth()">
+              </mat-form-field>
+            </div>
+          </mat-grid-tile>
+        </div>
+
+      </mat-grid-list>
+    </mat-card>
+  </div>
+
+  <div fxFill *ngIf="styleInfo.hasFillColor() || styleInfo.hasFillOpacity()">
+    <mat-card>
+      <mat-card-title>Fill</mat-card-title>
+      <mat-grid-list cols="2" rowHeight="52px">
+        <div *ngIf="styleInfo.hasFillColor()"
+             [matTooltip]="'Color of the selected glyph\'s interior'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Color: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <button mat-stroked-button [style.backgroundColor]="styleInfo.currentFillColor()"
+                    (click)="setFillColorClicked()">&nbsp;</button>
+            </div>
+          </mat-grid-tile>
+        </div>
+
+        <div *ngIf="styleInfo.hasFillOpacity()"
+             [matTooltip]="'Opacity of the selected glyph\'s interior'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Opacity: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-form-field appearance="outline" class="number-input">
+                <input id="fillOpacity" #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentFillOpacity()">
+              </mat-form-field>
+            </div>
+          </mat-grid-tile>
+          <br>
+        </div>
+
+      </mat-grid-list>
+    </mat-card>
+  </div>
+
+
+  <div fxFill *ngIf="styleInfo.hasEdgeStyle() || styleInfo.hasBendStyle() || styleInfo.hasEndSize() || styleInfo.hasSourceSpacing() || styleInfo.hasTargetSpacing()">
+    <mat-card>
+      <mat-card-title>Edge</mat-card-title>
+      <mat-grid-list cols="2" rowHeight="52px">
+        <div *ngIf="styleInfo.hasEdgeStyle()"
+             [matTooltip]="'Shape of the interaction\'s line'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Style: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-form-field appearance="outline" style="max-width:85px;">
+                <mat-select id="edgeStyle" value="{{styleInfo.currentEdgeStyle()}}" (selectionChange)="dropDownChange($event)">
+                  <mat-select-trigger>
+                    <img src="assets/icons/{{styleInfo.currentEdgeStyle()}}.png"/>
+                  </mat-select-trigger>
+
+                  <mat-option value="{{mx.mxConstants.EDGESTYLE_ORTHOGONAL}}" [matTooltip]="'Customizable line composed of orthogonal segments'">
+                    <img src="assets/icons/orthogonalEdgeStyle.png"/>
+                  </mat-option>
+
+                  <!-- mxConstants doesn't define an option for diagonal since it's the default -->
+                  <mat-option value="{{'diagonalEdgeStyle'}}" [matTooltip]="'Straight line between endpoints'">
+                    <img src="assets/icons/diagonalEdgeStyle.png"/>
+                  </mat-option>
+
+                  <mat-option value="{{mx.mxConstants.EDGESTYLE_ENTITY_RELATION}}" [matTooltip]="'Horizontal segments near endpoints'">
+                    <img src="assets/icons/entityRelationEdgeStyle.png"/>
+                  </mat-option>
+                  <mat-option value="{{mx.mxConstants.EDGESTYLE_SIDETOSIDE}}" [matTooltip]="'Simple style for horizontally spaced endpoints'">
+                    <img src="assets/icons/sideToSideEdgeStyle.png"/>
+                  </mat-option>
+                  <mat-option value="{{mx.mxConstants.EDGESTYLE_TOPTOBOTTOM}}" [matTooltip]="'Simple style for vertically spaced endpoints'">
+                    <img src="assets/icons/topToBottomEdgeStyle.png"/>
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </mat-grid-tile>
+        </div>
+
+        <div *ngIf="styleInfo.hasBendStyle()"
+             [matTooltip]="'Shape of interaction\'s corners'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Corner: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-select id="bendStyle" style="max-width: 90px;" class="auto-width" value="{{styleInfo.currentBendStyle()}}" (selectionChange)="dropDownChange($event)">
+                <mat-option value="sharp">Sharp</mat-option>
+                <mat-option value="rounded">Rounded</mat-option>
+                <mat-option value="curved">Curved</mat-option>
+              </mat-select>
+            </div>
+          </mat-grid-tile>
+        </div>
+
+        <div *ngIf="styleInfo.hasEndSize()"
+             [matTooltip]="'Size of interaction glyph'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Arrow Size: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-form-field appearance="outline" class="number-input">
+                <input id="endSize" #endSizeInput matInput type="number" min="0" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentEndSize()">
+              </mat-form-field>
+            </div>
+          </mat-grid-tile>
+        </div>
+
+        <div *ngIf="styleInfo.hasSourceSpacing()"
+             [matTooltip]="'Space between interaction and its source participant. Use negative values to get closer.'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Source Margin: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-form-field appearance="outline" class="number-input">
+                <input id="sourceSpacing" #endSizeInput matInput type="number"
+                       (change)="inputChange($event)" [value]="styleInfo.currentSourceSpacing()">
+              </mat-form-field>
+            </div>
+          </mat-grid-tile>
+          <br>
+        </div>
+
+        <div fxLayoutAlign="end" *ngIf="styleInfo.hasTargetSpacing()"
+             [matTooltip]="'Space between interaction and its target participant. Use negative values to get closer.'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Target Margin: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-form-field appearance="outline" class="number-input">
+                <input id="targetSpacing" #endSizeInput matInput type="number"
+                       (change)="inputChange($event)" [value]="styleInfo.currentTargetSpacing()">
+              </mat-form-field>
+            </div>
+          </mat-grid-tile>
+          <br>
+        </div>
+      </mat-grid-list>
+    </mat-card>
+  </div>
+
+
+  <div fxFill *ngIf="styleInfo.hasFontColor() || styleInfo.hasFontOpacity() || styleInfo.hasFontSize()">
+    <mat-card>
+      <mat-card-title>Font</mat-card-title>
+      <mat-grid-list cols="2" rowHeight="52px">
+      <div *ngIf="styleInfo.hasFontColor()"
+             [matTooltip]="'Color of selected object\'s text'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Color: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <button mat-stroked-button [style.backgroundColor]="styleInfo.currentFontColor()"
+                  (click)="setFontColorClicked()">&nbsp;</button>
+            </div>
+          </mat-grid-tile>
+        </div>
+
+        <div *ngIf="styleInfo.hasFontOpacity()"
+             [matTooltip]="'Opacity of selected object\'s text'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Opacity: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-form-field appearance="outline" class="number-input">
+                <input id="fontOpacity" #endSizeInput matInput type="number" min="0" max="100" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentFontOpacity()">
+              </mat-form-field>
+            </div>
+          </mat-grid-tile>
+        </div>
+
+        <div *ngIf="styleInfo.hasFontSize()"
+             [matTooltip]="'Size of selected object\'s text'">
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">Size: </div>
+          </mat-grid-tile>
+          <mat-grid-tile>
+            <div fxFlex fxLayoutAlign="end">
+              <mat-form-field appearance="outline" class="number-input">
+                <input id="fontSize" #endSizeInput matInput type="number" min="1" oninput="validity.valid||(value='');"
+                       (change)="inputChange($event)" [value]="styleInfo.currentFontSize()">
+              </mat-form-field>
+            </div>
+          </mat-grid-tile>
+        </div>
+      </mat-grid-list>
+    </mat-card>
+  </div>
+</div>

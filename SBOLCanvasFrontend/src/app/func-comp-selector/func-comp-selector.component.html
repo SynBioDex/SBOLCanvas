@@ -1,0 +1,52 @@
+<mat-card>
+  <h1 *ngIf="mode == classRef.COMBINATORIAL_MODE" mat-dialog-title>Select Combinatorial</h1>
+  <h1 *ngIf="mode == classRef.FUNCTIONAL_COMPONENT_MODE" mat-dialog-title>Functional Component {{ from }}</h1>
+  <div class="mat-form-field-container">
+    <table *ngIf="mode == classRef.FUNCTIONAL_COMPONENT_MODE" mat-table [dataSource]="options" matSort>
+      <ng-container matColumnDef="displayId">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>DisplayID</th>
+        <td mat-cell *matCellDef="let element">{{element.info.displayID}}</td>
+      </ng-container>
+    
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+        <td mat-cell *matCellDef="let element">{{element.info.name}}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)"
+          [style.background]="highlightRow(row) ? 'lightblue' : ''" (dblclick)="onRowDoubleClick(row)"></tr>
+    </table>
+
+    <table *ngIf="mode == classRef.COMBINATORIAL_MODE" mat-table [dataSource]="options" matSort>
+      <ng-container matColumnDef="displayId">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>DisplayID</th>
+        <td mat-cell *matCellDef="let element">{{element.displayId}}</td>
+      </ng-container>
+    
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+        <td mat-cell *matCellDef="let element">{{element.name}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="version">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Version</th>
+        <td mat-cell *matCellDef="let element">{{element.version}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th mat-header-cell *matHeaderCellDef>Description</th>
+        <td mat-cell *matCellDef="let element">{{element.description}}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)"
+          [style.background]="highlightRow(row) ? 'lightblue' : ''" (dblclick)="onRowDoubleClick(row)"></tr>
+    </table>
+  </div>
+
+  <div mat-dialog-actions>
+    <button mat-button (click)="onCancelClick()">Cancel</button>
+    <button mat-button [disabled]="!finishCheck()" (click)="onOkClick()">Ok</button>
+  </div>
+</mat-card>

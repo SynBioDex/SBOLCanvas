@@ -1,0 +1,34 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="replacement-glyph" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="miter" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="24.005789270551908" y="9.000000000000002" />
+            <line x="9.0" y="24.005789270551915" />
+            <line x="24.005789270551908" y="39.0" />
+            <line x="39.0" y="24.005789270551915" />
+            <line x="24.005789270551908" y="9.000000000000002" />
+            <close />
+        </path>
+        <fillstroke />
+        <strokewidth width="2.88" />
+        <linecap cap="butt" />
+        <path>
+            <move x="19.698571979930527" y="20.972211501350834" />
+            <curve x1="19.87225009648784" x2="28.243535314550364" x3="28.23195677344654" y1="16.352373600926285" y2="16.00501736781166" y3="20.798533384793515" />
+            <curve x1="28.18564260903126" x2="23.565804708606713" x3="23.565804708606713" y1="23.913160941721344" y2="24.35314550366654" y3="27.398301813971436" />
+        </path>
+        <stroke />
+        <strokewidth width="2.88" />
+        <path>
+            <move x="23.623697414125818" y="29.181397143959856" />
+            <line x="23.635275955229638" y="32.22655345426476" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

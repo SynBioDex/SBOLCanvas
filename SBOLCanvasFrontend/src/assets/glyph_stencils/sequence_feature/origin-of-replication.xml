@@ -1,0 +1,12 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="Ori (Origin of Replication)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.5" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <ellipse h="24.0" w="24.0" x="12.0" y="12.0" />
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>

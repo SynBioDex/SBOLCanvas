@@ -1,0 +1,33 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="textBox" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <save />
+        <fontcolor color="#000000" />
+        <strokewidth width="2.88" />
+        <alpha alpha="1" />
+        <fontsize size="12.86118507" />
+        <fontfamily family="sans-serif" />
+        <fontstyle style="0" />
+        <alpha alpha="" />
+        <fontfamily family="" />
+        <fontstyle style="0" />
+        <text str="Text" valign="bottom" x="12.3" y="30.57344155844156" />
+        <restore />
+        <rect />
+        <stroke />
+        <strokewidth width="1.87499988" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <miterlimit limit="4" />
+        <path>
+            <move x="5.0" y="12.433441558441558" />
+            <line x="5.0" y="35.56655844155844" />
+            <line x="43.0" y="35.56655844155844" />
+            <line x="43.0" y="12.433441558441558" />
+            <close />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

@@ -1,0 +1,16 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="PBS (Primer Binding Site)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="10.0" y="42.24" />
+            <line x="38.0" y="42.24" />
+            <line x="27.23076923076923" y="34.70153846153846" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

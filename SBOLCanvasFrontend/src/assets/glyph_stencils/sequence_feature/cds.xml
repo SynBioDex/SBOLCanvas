@@ -1,0 +1,19 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="CDS (Coding Sequence)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="6.0" y="35.90115804925787" />
+            <line x="30.646876529114337" y="35.90115804925787" />
+            <line x="42.0" y="24.0" />
+            <line x="30.646876529114337" y="12.098841950742127" />
+            <line x="6.0" y="12.098841950742127" />
+            <close />
+        </path>
+      <fillstroke />
+    </foreground>
+</shape>
+</shapes>

@@ -1,0 +1,26 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="Ins (Insulator)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+          <path>
+            <move x="7.0" y="48.0" />
+            <line x="41.0" y="48.0" />
+            <line x="41.0" y="14.0" />
+            <line x="7.0" y="14.0" />
+            <close />
+          </path>
+        <fillstroke />
+        <path>
+          <move x="14.933333333333334" y="40.06666666666667" />
+          <line x="33.06666666666667" y="40.06666666666667" />
+          <line x="33.06666666666667" y="21.933333333333334" />
+          <line x="14.933333333333334" y="21.933333333333334" />
+          <close />
+        </path>
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>
