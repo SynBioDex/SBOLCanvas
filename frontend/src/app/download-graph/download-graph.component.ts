@@ -63,6 +63,16 @@ export class DownloadGraphComponent implements OnInit {
   constructor(@Inject(MAT_DIALOG_DATA) public data: any, private dialog: MatDialog, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent>) { }
 
   ngOnInit() {
+    // check if there is a saved registry and collection information
+    if (this.metadataService.getSavedRegistry() !== undefined) this.registry = this.metadataService.getSavedRegistry();
+    if (this.metadataService.getSavedCollection() !== undefined) {
+      this.collection = this.metadataService.getSavedCollection().collection;
+      this.history = this.metadataService.getSavedCollection().history;
+    } else {
+      this.collection = "";
+      this.history = [];
+    }
+    
     this.working = true;
     if (this.data != null) {
       if (this.data.mode != null) {
@@ -108,10 +118,9 @@ export class DownloadGraphComponent implements OnInit {
         this.working = false;
       });
     }
+
     this.updateParts();
     this.parts.sort = this.sort;
-    this.history = [];
-    this.collection = "";
   }
 
   loginDisabled(): boolean {
@@ -128,6 +137,7 @@ export class DownloadGraphComponent implements OnInit {
 
   setRegistry(registry: string) {
     this.registry = registry;
+    this.metadataService.setSavedRegistry(registry);
     this.updateParts();
   }
 
@@ -172,7 +182,9 @@ export class DownloadGraphComponent implements OnInit {
     // only allowed to get here when there is one item selected, and it's a collection
     let row = this.selection.selected[0];
     this.history.push(row);
+    this.metadataService.setSavedCollection({ collection: row.uri, history: this.history });
     this.selection.clear();
+
     this.updateParts();
   }
 
@@ -222,6 +234,7 @@ export class DownloadGraphComponent implements OnInit {
     if (row.type === DownloadGraphComponent.collectionType) {
       this.history.push(row);
       this.collection = row.uri;
+      this.metadataService.setSavedCollection({ collection: this.collection, history: this.history });
       this.selection.clear();
       this.updateParts();
     } else if (row.type === DownloadGraphComponent.componentType) {
@@ -296,6 +309,7 @@ export class DownloadGraphComponent implements OnInit {
 
   changeCollection(collection: string) {
     this.selection.clear();
+    
     let found = false;
     for (let i = 0; i < this.history.length; i++) {
       if (this.history[i] === collection) {
@@ -306,7 +320,9 @@ export class DownloadGraphComponent implements OnInit {
     }
     if (!found)
       this.history.length = 0;
+
     this.collection = collection;
+    this.metadataService.setSavedCollection({ collection: collection, history: this.history });
 
     this.updateParts();
   }
@@ -356,7 +372,7 @@ export class DownloadGraphComponent implements OnInit {
           this.parts.data = partCache;
           this.working = false;
         });
-      }else{
+      }else {
         // collection, modules, and components
         this.partRequest = forkJoin(
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
