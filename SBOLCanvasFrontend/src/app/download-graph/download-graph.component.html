@@ -1,0 +1,110 @@
+<mat-card>
+
+  <h1 *ngIf="mode == classRef.SELECT_MODE" mat-dialog-title>Select</h1>
+  <h1 *ngIf="mode != classRef.SELECT_MODE" mat-dialog-title>Download</h1>
+  <div class="mat-form-field-container">
+    <mat-form-field>
+      <mat-label>Server</mat-label>
+      <mat-select id="registry" [disabled]="registries == null || registries.length < 1"
+        (selectionChange)="setRegistry($event.value)">
+        <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
+          {{registry}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field *ngIf="data != null && type != classRef.MODULE_TYPE">
+      <mat-label>Part type</mat-label>
+      <mat-select id="partType" [disabled]="partTypes == null || partTypes.length < 1"
+      (selectionChange)="setPartType($event.value)" value="{{partType}}">
+        <mat-option value="">All_types</mat-option>
+        <mat-option *ngFor="let partType of partTypes" [value]="partType">
+          {{partType}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Collection</mat-label>
+      <mat-select id="collection" value="{{history.length > 0 ? history[history.length-1].uri : ''}}"
+      (selectionChange)="changeCollection($event.value)">
+        <mat-option value="">Root Collections</mat-option>
+        <mat-option *ngFor="let collection of history" [value]="collection.uri">
+          {{collection.name}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field *ngIf="data != null && type != classRef.MODULE_TYPE">
+      <mat-label>Part role</mat-label>
+      <mat-select id="partRole" [disabled]="partRoles == null || partRoles.length < 1"
+      (selectionChange)="setPartRole($event.value)" value="{{partRole}}">
+        <mat-option value="">IDK (Unspecified)</mat-option>
+        <mat-option *ngFor="let partRole of partRoles" [value]="partRole">
+          {{partRole}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field *ngIf="data != null && type != classRef.MODULE_TYPE">
+      <mat-label>Role refinement</mat-label>
+      <mat-select id="roleRefinement" [disabled]="roleRefinements == null || roleRefinements.length < 1"
+      (selectionChange)="setPartRefinement($event.value)" value="{{partRefine}}">
+        <mat-option value="">None</mat-option>
+        <mat-option *ngFor="let refinement of roleRefinements" [value]="refinement">
+          {{refinement}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter"/>
+    </mat-form-field>
+
+
+    <table mat-table [dataSource]="parts" matSort>
+
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+        <td mat-cell *matCellDef="let element">{{element.type}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="displayId">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Display Id</th>
+        <td mat-cell *matCellDef="let element">{{element.displayId}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+        <td mat-cell *matCellDef="let element">{{element.name}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="version">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Version</th>
+        <td mat-cell *matCellDef="let element">{{element.version}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th mat-header-cell *matHeaderCellDef>Description</th>
+        <td mat-cell *matCellDef="let element">{{element.description}}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)"
+        [style.background]="highlightRow(row) ? 'lightblue' : ''" (dblclick)="onRowDoubleClick(row)"></tr>
+    </table>
+  </div>
+
+  <div *ngIf="working">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+
+  <div mat-dialog-actions>
+    <button mat-button *ngIf="!loginDisabled()" [disabled]="!registry" (click)="onLoginClick()">Login</button>
+    <button mat-button *ngIf="loginDisabled()" [disabled]="!registry" (click)="onLogoutClick()">Logout</button>
+    <button mat-button (click)="onCancelClick()">Cancel</button>
+    <button mat-button [disabled]="!enterCollectionEnabled()" (click)="onEnterCollectionClick()">Enter Collection</button>
+    <button *ngIf="mode != classRef.SELECT_MODE" mat-button [disabled]="!finishCheck()" (click)="onDownloadClick()">Download</button>
+    <button *ngIf="mode == classRef.SELECT_MODE" mat-button [disabled]="!selectCheck()" (click)="onSelectClick()">Select</button>
+  </div>
+</mat-card>

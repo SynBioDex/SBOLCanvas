@@ -1,0 +1,20 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="Ter (Terminator)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="24.0" y="48.0" />
+            <line x="24.0" y="22.4" />
+        </path>
+        <stroke />
+        <path>
+            <move x="8.0" y="21.333333333333336" />
+            <line x="40.0" y="21.333333333333336" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

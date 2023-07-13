@@ -1,0 +1,45 @@
+<shapes>
+<shape aspect="fixed" h="5.54" name="composite" strokewidth="inherit" w="34.22">
+    <connections/>
+    <foreground>
+        <strokewidth width="0.5"/>
+        <linejoin join="round"/>
+        <miterlimit limit="4"/>
+        <dashpattern pattern="none"/>
+        <dashed dashed="1"/>
+        <alpha alpha="1"/>
+        <strokealpha alpha="1"/>
+        <fillalpha alpha="1"/>
+        <path>
+            <move x="0" y="5.54"/>
+            <line x="13.31" y="5.54"/>
+        </path>
+        <stroke/>
+        <strokewidth width="0.5"/>
+        <dashpattern pattern="1.0 1.0"/>
+        <path>
+            <move x="29.81" y="0"/>
+            <line x="34.01" y="5.45"/>
+        </path>
+        <stroke/>
+        <path>
+            <move x="4.35" y="0"/>
+            <line x="0.15" y="5.45"/>
+        </path>
+        <stroke/>
+        <strokewidth width="0.5"/>
+        <dashpattern pattern="0.5  2.0"/>
+        <path>
+            <move x="15.23" y="5.54"/>
+            <line x="19.34" y="5.54"/>
+        </path>
+        <stroke/>
+        <dashpattern pattern="none"/>
+        <path>
+            <move x="20.91" y="5.54"/>
+            <line x="34.22" y="5.54"/>
+        </path>
+        <stroke/>
+    </foreground>
+</shape>
+</shapes>

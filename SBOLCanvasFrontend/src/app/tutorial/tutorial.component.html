@@ -1,0 +1,295 @@
+<mat-toolbar color="primary">
+  <mat-toolbar-row class="toolbar-row">
+
+    <div style="width: 230.77px"><button mat-stroked-button class="toolbar-row-button"
+                                         [matTooltip]="'Back to the Canvas'"
+                                         [routerLink]="['/']"><mat-icon>exit_to_app</mat-icon></button>
+    </div>
+
+    <span class="toolbar-spacer" style="font-weight: bold; font-size: 34px">Tutorial</span>
+
+    <img src="assets/banner.png"
+         style="max-width:100%;max-height:100%" [routerLink]="['/']"/>
+  </mat-toolbar-row>
+</mat-toolbar>
+
+<mat-sidenav-container [hasBackdrop]="false"><!-- A sidebar -->
+
+  <!-- table of contents -->
+  <mat-sidenav style="padding: 10px;" opened="true" position="end"
+  mode="side" [disableClose]="true">
+    <ul style="padding-left:25px">
+
+      <li title="Tutorial">
+        <a href="/tutorial#SBOLCanvas">SBOL Canvas</a>
+      </li>
+
+      <li title="Getting Started">
+        <a href="/tutorial#gettingStarted">Getting Started</a>
+      </li>
+
+      <li title="Editing Parts">
+        <a href="/tutorial#editingParts">Editing Parts</a>
+      </li>
+
+      <li title="Substructure">
+        <a href="/tutorial#substructure">Substructure</a>
+      </li>
+
+      <li title="Adding Interactions">
+        <a href="/tutorial#addingInteractions">Adding Interactions</a>
+      </li>
+
+      <li title="combinatorialDerivation">
+        <a href="/tutorial#combinatorialDerivation">Combinatorial Derivation</a>
+      </li>
+
+      <li title="Saving and Loading">
+        <a href="/tutorial#savingAndLoading">Saving and Loading</a>
+      </li>
+
+    </ul>
+  </mat-sidenav>
+
+    <!-- tutorial text -->
+    <div ng-sidebar-content style="height: 90vh;">
+
+
+<mat-card fxLayout="column" style="margin: 8px;"  id="SBOLCanvas">
+  <mat-card-content fxLayout="row wrap" fxLayoutAlign="space-around center">
+    <div style="max-width: 1200px;">
+      <p class="about-text">
+        SBOL Canvas is the newest tool for creating SBOL documents.
+        For an in-depth guide to SBOL structure and syntax, go to <a href="https://sbolstandard.org/">sbolstandard.org</a>.
+        During development, SBOL Canvas's designers drew inspiration from <a href="https://sboldesigner.github.io/">SBOL Designer</a> and <a href="https://draw.io">Draw.io</a>, so it's workflow should be intuitive for anyone familiar with those editors.
+      </p>
+      <p class="about-text">
+        SBOL Canavas's <a [routerLink]="['/']">main page</a> is divided into four parts.
+      </p>
+      <ul class="about-text">
+        <li>
+          <b>The toolbar:</b> The blue bar at the top of the screen. It is full of options for manipulating your diagram.
+        </li>
+        <li>
+          <b>The glyph menu:</b> The list of glyphs on the left side of the screen. This allows you to add components to your diagram.
+        </li>
+        <li>
+          <b>The canvas:</b> The large region in the center of the screen. This is where your diagram appears. In SBOL terms, this canvas is either a Component Definition, or Module Definition that you can edit.
+        </li>
+        <li>
+          <b>The side menu:</b> A menu on the right side of the screen.
+          This is split between the <b>info menu,</b> which has options for editing components' SBOL attributes; and the <b>design menu,</b> which has options for changing objects appearances.
+          To switch between the <b>info menu</b> and the <b>design menu,</b> click on the words "Info" or "Design," as pictured here:
+          <br>
+          <img src="assets/tutorial_pics/side_menu_top.png"/>
+          <br>
+          Note that both of these menus are empty unless a valid part is selected on the <b>canvas.</b>
+        </li>
+      </ul>
+      <p class="about-text">Most of SBOL Canvas's UI elements have a tooltip. Move the mouse over buttons or text fields to see a brief description.</p>
+
+
+      <h2 id="gettingStarted">
+        Getting Started
+      </h2>
+      <ul class="about-text">
+        <p class="about-text">
+          By default SBOLCanvas opens a Module Definition rooted design. If you want to start with a Component Definition rooted design instead, you can do so by selecting "File->New component design". This basic guide will demonstrate creating a basic circuit with a Module Definition root.
+        </p>
+
+        <li>
+          First we need to add a DNA backbone to the canvas. We can use the search bar at the top of the <b>glyph menu:</b>
+          <br>
+          <img src="assets/tutorial_pics/search_bar.png" />
+          <br>
+          Then type in "dna." This brings up an icon for creating new backbones: the horizontal line as shown below.
+          <br>
+          <img src="assets/tutorial_pics/GettingStarted/backbone_menu.png" />
+          <br>
+          You can click on the horizontal line to create a backbone in the center of your <b>canvas</b>, or click-and-drag to drop it anywhere you like.
+          <img src="assets/tutorial_pics/GettingStarted/backbone.png" />
+        </li>
+
+        <li>
+          To add components to your backbone, first click the search bar's "X" to clear your search, then choose any glyph from the "Sequence Features" section.
+          Clicking on them will add them to the currently selected backbone, and click-and-dragging will add them to the backbone of your choice. In our example circuit we add a Promoter, RBS, CDS, and Terminator.
+          <br>
+          <img src="assets/tutorial_pics/GettingStarted/circuit.png" />
+        </li>
+
+        <li>
+          You can add Molecular Species glyphs, Modules, Textboxes, and additional DNA backbones in the same way.
+        </li>
+      </ul>
+
+      <h2 id="editingParts">
+        Editing Parts
+      </h2>
+      <ul class="about-text">
+        <p>
+        Left-click is used to select different parts of a design. The contents of the <b>info menu</b> and <b>design menu</b> apply to whatever you have selected. Selection of most parts is indicated by a green, dashed box. Selection of a backbone is disambiguated with a blue dashed box.
+        <b>IMPORTANT:</b> Selecting glyphs on a backbone is different from selecting the backbone itself. This is akin to selecting a part vs selecting a sub part.
+        <li>
+          To select a single glyph on the backbone, click exactly on it.
+        </li>
+        <li>
+          To select the backbone, click on the horizontal line, or the empty space near it.
+        </li>
+        <br>
+        <img src="assets/tutorial_pics/EditingParts/selection_glyph_vs_strand.png" />
+        <br>
+        <li>
+          To select multiple parts, you can left-click and drag to create a light-blue box. Anything inside the box when you release the mouse button will be selected.
+          Note that the <b>info menu</b> will be empty if conflicting parts are selected.
+        </li>
+        <li>
+          Holding CTRL (CMD for Mac) while clicking adds or removes components from the selection.
+        </li>
+        <li>
+          Left-click-and-drag on a component to move it (and other selected components, if any). For sequence feature glyphs, this reorders them on the backbone. To move the entire backbone, select it instead of the glyphs.
+        </li>
+        <li>
+          Double-click on text boxes to edit their text.
+        </li>
+        <li>
+          Right-click and drag on an empty part of the canvas to pan your view around.
+        </li>
+        <li>
+          This section of the <b>toolbar</b> has several important options:
+          <br>
+          <img src="assets/tutorial_pics/EditingParts/simple_toolbar_options.png" />
+          <br>
+          These are controls for zooming in and out of the <b>canavs,</b> deleting the selected components, undoing/redoing recent changes, flipping parts/interactions, bringing elements to the front/back, and entering/exiting parts.
+          Deleting glyphs can also be done with the "delete" and "backspace" keys on your keyboard, and undoing/redoing can be done with CTRL+Z and CTRL+SHIFT+Z respectively.
+        </li>
+        <li>
+          Editing part information can be done in the info menu to the right of the canvas, when the desired part is selected.
+          <br>
+          <img src="assets/tutorial_pics/EditingParts/infoMenu.png" />
+        </li>
+        <li>
+          Graphical information such as color and font size can be edited in the design menu to the right of the canvas, when the desired part is selected. The color chooser is similar to most graphical editors.
+          <br>
+          <img src="assets/tutorial_pics/EditingParts/designMenu.png" />
+          <img src="assets/tutorial_pics/EditingParts/colorEditor.png" />
+        </li>
+        <li>
+          To import a part from <a href="https://synbiohub.org">SynBioHub</a>, select a part, and click the "Import Component" button at the bottom of the info menu.
+          This will open a menu letting you select which SynBioHub instance to use, login to that instance, and navigate collections to find the part you wish to import.
+          <br>
+          <img src="assets/tutorial_pics/EditingParts/importComponentMenu.png" />
+          <br>
+        </li>
+        </p>
+      </ul>
+
+      <h2 id="substructure">
+        Substructure
+      </h2>
+      <ul class="about-text">
+        <p>
+          There are two forms of substructure in SBOLCanvas. Substructure for sequence features, and substructure for modules. Both can be accessed by selecting the part you wish to modify and clicking the enter part button on the toolbar. In this case I will modify our Terminator.
+          <br>
+          <img src="assets/tutorial_pics/Substructure/terminator.png" />
+          <img src="assets/tutorial_pics/Substructure/enterPart.png" />
+          <br>
+          From here we are now in a component view representing our selected terminator. We can only add parts that are allowed inside a component (e.g. sequence features and text boxes). For this example I will add two terminators to have our top level terminator signify a double terminator.
+          <br>
+          <img src="assets/tutorial_pics/Substructure/terminatorSubParts.png" />
+          <br>
+          When we zoom back out you can now see that our terminator has substructure by the composite indicator beneath it.
+          <br>
+          <img src="assets/tutorial_pics/Substructure/terminatorComposite.png" />
+          <br>
+          This can also be done with modules. Once you've entered a module, you are now in a module view and can add parts that are allowed inside modules (e.g. backbones, modules, molecular species, interactions, and text boxes). For this example I'll add a basic circuit.
+          <br>
+          <img src="assets/tutorial_pics/Substructure/module.png" />
+          <img src="assets/tutorial_pics/Substructure/enterPart.png" />
+          <img src="assets/tutorial_pics/Substructure/moduleSubstructure.png" />
+        </p>
+      </ul>
+
+      <h2 id="addingInteractions">
+        Adding Interactions
+      </h2>
+      <ul class="about-text">
+        <p>
+          Interactions can be added in two ways. The first way is dragging an interaction onto the canvas, like you would any other part. From there you can select one of the endpoints and drag it to connect to the desired part.
+          <br>
+          <img src="assets/tutorial_pics/AddingInteractions/freeFloatingInteraction.png"/>
+          <br>
+          The other way of adding interactions is by selecting two parts and then clicking an interaction in the glyph menu. The first part selected will be the source of the interaction.
+          <br>
+          <img src="assets/tutorial_pics/AddingInteractions/selectionBefore.png" />
+          <img src="assets/tutorial_pics/AddingInteractions/selectionAfter.png" />
+          <br>
+          If you are connecting an interaction to a module, a list of parts within the module is displayed for your selection. In this case the module has two molecular species in it with DisplayID's id11 and id13
+          <br>
+          <img src="assets/tutorial_pics/AddingInteractions/moduleInteraction.png" />
+        </p>
+      </ul>
+
+      <h2 id="combinatorialDerivation">
+        Combinatorial Derivation
+      </h2>
+      <ul class="about-text">
+        <p>
+          Combinatorial Derivations are a way to represent multiple circuits by providing a list of parts to substitute for a sequence feature. <b><u>Combinatorial Derivation is only allowed in a Component Definition rooted design!</u></b>
+          To create a combinatorial derivation you first need to select a part, then click the "Edit Combinatorial Design" button at the bottom of the info menu.
+          <br>
+          <img src="assets/tutorial_pics/CombinatorialDerivation/circuit.png" />
+          <img src="assets/tutorial_pics/CombinatorialDerivation/combinatorialButton.png" />
+          <br>
+          This opens up the combinatorial menu where you can change how the combinatorial will be enumerated. You can also add parts for enumeration by clicking "Add Variant". In this example, I've added araC and lacI.
+          <br>
+          <img src="assets/tutorial_pics/CombinatorialDerivation/combinatorialEditor.png" />
+          <br>
+          When you are done the part will now have a combinatorial indicator below it.
+          <br>
+          <img src="assets/tutorial_pics/CombinatorialDerivation/combinatorialIndicator.png" />
+          <br>
+          To enumerate your design select "File->Enumerate Design". You can then name your file and set the enumeration output to SBOL2 or a flattened CSV.
+          <br>
+          <img src="assets/tutorial_pics/CombinatorialDerivation/enumerateButton.png" />
+          <img src="assets/tutorial_pics/CombinatorialDerivation/enumerationMenu.png" />
+        </p>
+      </ul>
+
+      <h2 id="savingAndLoading">
+        Saving and Loading
+      </h2>
+      <ul class="about-text">
+        <p>
+          There are a two ways of storing your designs. The easiest method would be to export your design to disc. This can be done under "File->Export File". The following menu lets you set a filename and choose a format.
+          <br>
+          <img src="assets/tutorial_pics/SavingAndLoading/exportButton.png" />
+          <img src="assets/tutorial_pics/SavingAndLoading/exportMenu.png" />
+          <br>
+          The other method of storing your design is uploading it to a <a href="https://synbiohub.org">SynBioHub</a> instance. This can be done under "File->Upload".
+          <br>
+          <img src="assets/tutorial_pics/SavingAndLoading/uploadButton.png" />
+          <br>
+          This will open up a menu allowing you to choose which SynBioHub instance you wish to save too, login to that instance, as well as selecting or creating a collection to save too.
+          <br>
+          <img src="assets/tutorial_pics/SavingAndLoading/uploadMenu.png" />
+          <br>
+          You can also export an image of your design under "File->Export Image".
+          <br>
+          The main way of loading your design is by downloading it from a <a href="https://synbiohub.org">SynBioHub</a> instance. This can be done under "File->Download".
+          <br>
+          <img src="assets/tutorial_pics/SavingAndLoading/downloadButton.png" />
+          <br>
+          This will open a menu allowing you to choose which SynBioHub instance you wish to download from, login to that instance, and navigate collections to find the design to open.
+          <br>
+          <img src="assets/tutorial_pics/SavingAndLoading/downloadMenu.png" />
+          <br>
+          You can also upload a local file to a SynBioHub collection under "File->Import". The UI is similar to saving a design to SynBioHub.
+          <br>
+        </p>
+      </ul>
+
+    </div>
+  </mat-card-content>
+</mat-card>
+</div>
+</mat-sidenav-container>

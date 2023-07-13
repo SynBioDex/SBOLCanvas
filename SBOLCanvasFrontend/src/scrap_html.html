@@ -1,0 +1,19 @@
+<!-- Created by Jared Earl. Lets put scrap code that we may reuse in here. -->
+<ng-sidebar-container style="height: 100vh;"><!-- A sidebar -->
+
+  <!-- On the left is the glyph menu -->
+  <ng-sidebar [(opened)]="leftBarOpened" position="left">
+    <app-glyph-menu></app-glyph-menu>
+  </ng-sidebar>
+
+  <!-- On the right will be the info menu and color palette -->
+  <ng-sidebar [(opened)]="rightBarOpened" position="right">
+    <app-info-editor></app-info-editor>
+  </ng-sidebar>
+
+  <!-- In the middle is the canvas -->
+  <div ng-sidebar-content>
+    <!--<app-canvas></app-canvas>-->
+  </div>
+
+</ng-sidebar-container>

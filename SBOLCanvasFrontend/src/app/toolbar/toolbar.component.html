@@ -1,0 +1,155 @@
+<mat-toolbar color="primary">
+
+<!-- menu -->
+  <mat-toolbar-row class="toolbar-row">
+
+    <!--    File menu-->
+    <button mat-stroked-button class="toolbar-row-button" [matMenuTriggerFor]="fileMenu">File</button>
+    <mat-menu #fileMenu="matMenu">
+      <span style="font-family:sans-serif;font-size:.8em;color:gray;">SynBioHub</span>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Upload design to SynBioHub'"
+              (click)="openUploadDialog()">Upload</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Download design from SynBioHub'"
+              (click)="openDownloadDialog()">Download</button>
+
+      <span style="font-family:sans-serif;font-size:.8em;color:gray;">Local Device</span>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Load module from xml'"
+              (click)="openLoadDialog()">Load</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Load a file into a SynBioHub collection'"
+              (click)="openImportDialog()">Import</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Export diagram as picture'"
+              (click)="openExportImageDialog()">Export Image</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Export design as other file formats'"
+              (click)="openExportDialog()">Export File</button>
+
+      <button *ngIf="enumerateAvailable()"
+              mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Enumerate combinatorial designs'"
+              (click)="openEnumerateDialog()">Enumerate Design</button>  
+
+       <span style="font-family:sans-serif;font-size:.8em;color:gray;">New</span>
+
+       <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'New module design'"
+              (click)="newModuleDesign()">New module design</button>
+
+       <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'New component design'"
+              (click)="newComponentDesign()">New component design</button>
+              
+    </mat-menu>
+
+    <!--    View menu-->
+    <button mat-stroked-button class="toolbar-row-button" [matMenuTriggerFor]="viewMenu">View</button>
+    <mat-menu #viewMenu="matMenu">
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Focus in the selected part to view and edit its subparts'"
+              (click)="graphService.enterGlyph()">Enter Glyph</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Focus out to the parent part'"
+              (click)="graphService.exitGlyph()">Exit Glyph</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Show or hide scar glyphs'"
+              (click)="graphService.toggleScars()">Toggle Scar Visibility</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Center camera so all parts are visible'"
+              (click)="graphService.fitCamera()">Reset View</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Return to 100% zoom'"
+              (click)="graphService.setZoom(1)">Reset Zoom</button>
+    </mat-menu>
+
+    <!--    Help menu-->
+    <button mat-stroked-button class="toolbar-row-button" [matMenuTriggerFor]="helpMenu">Help</button>
+    <mat-menu #helpMenu="matMenu">
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Help using SBOL Canvas'"
+              onClick="window.open('./tutorial')">Tutorial</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'About SBOL Canavs and its creators'"
+              onClick="window.open('./about')">About</button>
+
+      <button mat-menu-item class="toolbar-row-button"
+              [matTooltip]="'Links to Github issue tracker.'"
+              onClick="window.open('https://github.com/SynBioDex/SBOLCanvas/issues')">Report Issue</button>
+    </mat-menu>
+
+    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
+
+    <mat-form-field class="zoom-input" [matTooltip]="'Camera zoom'">
+      <input matInput (change)="zoomChanged($event)" [value]="getZoomDisplayValue()">
+    </mat-form-field>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Zoom in'"
+            (click)="graphService.zoomIn()"><mat-icon>zoom_in</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Zoom out'"
+            (click)="graphService.zoomOut()"><mat-icon>zoom_out</mat-icon></button>
+
+    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Delete selected parts'"
+            (click)="graphService.delete()"><mat-icon>delete</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Undo'"
+            (click)="graphService.undo()"><mat-icon>undo</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Redo'"
+            (click)="graphService.redo()"><mat-icon>redo</mat-icon></button>
+
+    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Flip selected part\'s orientation'"
+            (click)="graphService.flipSequenceFeatureGlyph()"><mat-icon>swap_vert</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Bring selected part to front'"
+            (click)="graphService.sendSelectionToFront()"><mat-icon>flip_to_back</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Send selected part to back'"
+            (click)="graphService.sendSelectionToBack()"><mat-icon>flip_to_front</mat-icon></button>
+
+    <mat-divider class="toolbar-divider-style-fix" [vertical]="true"></mat-divider>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Focus in the selected part to view and edit its subparts'"
+            (click)="graphService.enterGlyph()"><mat-icon>save_alt</mat-icon></button>
+
+    <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Focus out to the parent part'"
+            (click)="graphService.exitGlyph()"><mat-icon>open_in_browser</mat-icon></button>
+
+    <!-- <button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'For development testing'"
+            (click)="testMethod()">TEST</button> -->
+
+    <span class="toolbar-spacer"></span>
+
+    <img src="assets/banner.png" style="max-width:100%;max-height:100%"/>
+
+  </mat-toolbar-row>
+</mat-toolbar>

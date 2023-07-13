@@ -1,0 +1,33 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="Degradation" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="1.5" />
+        <linejoin join="round" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="4.298868440686398" y="23.799940313354888" />
+            <line x="29.323489181795573" y="23.799940313354888" />
+        </path>
+        <stroke />
+        <fillcolor color="#000000" />
+        <path>
+            <move x="24.116326784381993" y="28.0242626212385" />
+            <line x="24.116326784381993" y="19.575618005471277" />
+            <line x="31.440375528475503" y="23.799940313354888" />
+            <close />
+        </path>
+        <fillstroke />
+        <ellipse h="8.902263118627207" w="8.902263118627207" x="34.7988684406864" y="19.548868440686398" />
+        <stroke />
+        <strokewidth width="1.5" />
+        <path>
+            <move x="42.2988684406864" y="21.03097736881373" />
+            <line x="36.07106441183785" y="27.759651827903504" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

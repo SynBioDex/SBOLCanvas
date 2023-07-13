@@ -1,0 +1,15 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="backbone" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="5.0" y="24.0" />
+            <line x="43.0" y="24.0" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

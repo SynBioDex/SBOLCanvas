@@ -1,0 +1,20 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="OH5 (5' Overhang)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>a
+            <move x="10.0" y="20.266666666666666" />
+            <line x="38.0" y="20.266666666666666" />
+        </path>
+        <stroke />
+        <path>
+            <move x="24.0" y="27.733333333333334" />
+            <line x="38.0" y="27.733333333333334" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

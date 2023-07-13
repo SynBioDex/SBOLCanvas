@@ -1,0 +1,11 @@
+<mat-card>
+  <h1 mat-dialog-title>Confirm</h1>
+  <div>
+    <p>{{message}}</p>
+  </div>
+  <div mat-dialog-actions>
+    <button mat-button *ngFor="let option of options" [value]="option" (click)="onClick(option)">
+      {{option}}
+    </button>
+  </div>
+</mat-card>

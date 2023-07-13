@@ -1,0 +1,44 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="RSE (RNA Stability Element)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <save />
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="16.0" y="9.6637168141593" />
+            <line x="31.999999999999996" y="9.6637168141593" />
+            <line x="31.999999999999996" y="23.71681415929204" />
+            <line x="23.952802359882003" y="29.640117994100297" />
+            <line x="16.0" y="23.457227138643074" />
+            <close />
+        </path>
+        <fillstroke />
+        <restore />
+        <rect />
+        <stroke />
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <miterlimit limit="4" />
+        <path>
+            <move x="24.165191740412975" y="38.442477876106196" />
+            <curve x1="29.427728613569318" x2="19.091445427728615" x3="24.165191740412975" y1="33.227138643067846" y2="33.34513274336283" y3="28.814159292035402" />
+        </path>
+        <stroke />
+        <path>
+            <move x="24.22418879056047" y="48.0" />
+            <curve x1="29.486725663716808" x2="19.150442477876105" x3="24.22418879056047" y1="42.79646017699115" y2="42.902654867256636" y3="38.3834808259587" />
+        </path>
+        <stroke />
+        <path>
+            <move x="24.165191740412975" y="38.442477876106196" />
+            <curve x1="29.427728613569318" x2="19.091445427728615" x3="24.165191740412975" y1="33.227138643067846" y2="33.34513274336283" y3="28.814159292035402" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

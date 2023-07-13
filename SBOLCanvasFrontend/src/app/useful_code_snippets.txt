@@ -1,0 +1,14 @@
+ // This can be used to load stencils in for the ends of edges that make up interactions.
+ stencils = this.glyphService.getInteractionMarkerGlyphs();
+ for (const name in stencils) {
+   const stencil = stencils[name][0];
+   let customStencil = new mx.mxStencil(stencil.desc); // Makes of deep copy of the stencil.
+
+   let f = function(canvas, shape, type, pe, unitX, unitY, size, source, sw, filled) {
+
+       return customStencil.drawShape(canvas, customStencil, pe.x, pe.y, size, size);
+
+   };
+
+   mx.mxMarker.addMarker(name, f);
+ }

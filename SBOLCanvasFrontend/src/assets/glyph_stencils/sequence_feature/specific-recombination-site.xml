@@ -1,0 +1,18 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="SRS (Specific Recombination Site)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="13.0" y="35.0" />
+            <line x="35.0" y="24.0" />
+            <line x="13.0" y="13.0" />
+            <line x="13.0" y="35.0" />
+            <close />
+        </path>
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>

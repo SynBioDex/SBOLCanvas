@@ -1,0 +1,27 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="Control" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2" />
+        <linejoin join="round" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="4.9999999999999964" y="23.944281524926687" />
+            <line x="31.82591308984271" y="23.944281524926687" />
+        </path>
+        <stroke />
+        <strokewidth width="2" />
+        <path>
+            <move x="37.45854438816316" y="18.463609704078912" />
+            <line x="31.927219408157825" y="24.005065315915758" />
+            <line x="37.45854438816316" y="29.536390295921088" />
+            <line x="43.0" y="24.005065315915758" />
+            <line x="37.45854438816316" y="18.463609704078912" />
+            <close />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

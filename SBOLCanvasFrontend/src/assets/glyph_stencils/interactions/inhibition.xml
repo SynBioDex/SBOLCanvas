@@ -1,0 +1,22 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="Inhibition" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.0" />
+        <linejoin join="round" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="5.0" y="24.15005641218503" />
+            <line x="42.84279804437759" y="24.15005641218503" />
+        </path>
+        <stroke />
+        <path>
+            <move x="43.0" y="18.247837532907106" />
+            <line x="43.0" y="29.75216246709289" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

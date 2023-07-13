@@ -1,0 +1,27 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="dna-stability-element" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="23.88774555659495" y="48.0" />
+            <line x="23.88774555659495" y="28.592454006859995" />
+        </path>
+        <fillstroke />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="15.543498596819456" y="8.0" />
+            <line x="32.456501403180546" y="8.0" />
+            <line x="32.456501403180546" y="22.855004677268475" />
+            <line x="23.950109136264423" y="29.116308076083563" />
+            <line x="15.543498596819456" y="22.580604926722792" />
+            <close />
+        </path>
+        <fillstroke />
+    </foreground>
+</shape>
+</shapes>

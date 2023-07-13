@@ -1,0 +1,35 @@
+<!-- Banner -->
+<!-- <app-banner></app-banner> -->
+
+<!-- Toolbar -->
+<app-toolbar></app-toolbar>
+
+<!-- We are using the Angular Material library for layout. -->
+<mat-sidenav-container style="height: 100vh;" [hasBackdrop]="false"><!-- A sidebar -->
+
+  <!-- On the left is the glyph menu -->
+  <mat-sidenav [(opened)]="leftBarOpened" position="start"
+  mode="side"
+  disableClose="true" [disableClose]="true">
+      <app-glyph-menu></app-glyph-menu>
+  </mat-sidenav>
+
+  <!-- On the right will be the info menu and color palette -->
+  <mat-sidenav [(opened)]="rightBarOpened" position="end"
+  mode="side" [disableClose]="true">
+    <mat-tab-group>
+      <mat-tab label="Info">
+        <app-info-editor></app-info-editor>
+      </mat-tab>
+      <mat-tab label="Design" class="mat-tab-label">
+        <app-color-palette></app-color-palette>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-sidenav>
+
+  <!-- In the middle is the canvas -->
+  <div ng-sidebar-content>
+    <app-canvas></app-canvas>
+  </div>
+
+</mat-sidenav-container>

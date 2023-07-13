@@ -1,0 +1,37 @@
+<shapes>
+  <shape aspect="variable" centered="True" h="48" name="OriT (Origin of Transfer)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+      <strokewidth width="2.5" />
+      <linejoin join="round" />
+      <linecap cap="round" />
+      <ellipse h="22.06051321332823" w="22.06051321332823" x="12.0" y="13.814743393335885" />
+      <fillstroke />
+      <fillcolor color="#000000" />
+      <strokewidth width="2.56858516" />
+      <miterlimit limit="4" />
+      <alpha alpha="1" />
+      <path>
+        <move x="23.17732669475297" y="24.947416698582916" />
+        <line x="36.0" y="12.124743393335885" />
+      </path>
+      <fillstroke />
+      <strokewidth width="1.5" />
+      <miterlimit limit="4" />
+      <alpha alpha="1" />
+      <path>
+        <move x="36.6" y="11.62" />
+        <line x="36.6" y="14.62" />
+      </path>
+      <fillstroke />
+      <strokewidth width="1.5" />
+      <miterlimit limit="4" />
+      <alpha alpha="1" />
+      <path>
+        <move x="33.6" y="11.62" />
+        <line x="36.6" y="11.62" />
+      </path>
+      <fillstroke />
+    </foreground>
+  </shape>
+</shapes>

@@ -1,0 +1,90 @@
+<mat-toolbar color="primary">
+  <mat-toolbar-row class="toolbar-row">
+
+    <div style="width: 230.77px"><button mat-stroked-button class="toolbar-row-button"
+            [matTooltip]="'Back to the Canvas'"
+            [routerLink]="['/']"><mat-icon>exit_to_app</mat-icon></button>
+    </div>
+
+<!--    <div  style="text-align: center; width: 100%; position: absolute;">About</div>-->
+
+    <span class="toolbar-spacer" style="font-weight: bold; font-size: 28pt">About</span>
+
+    <img src="assets/banner.png"
+         style="max-width:100%;max-height:100%" [routerLink]="['/']"/>
+  </mat-toolbar-row>
+</mat-toolbar>
+
+
+<mat-card fxLayout="column" style="margin: 8px;" >
+  <mat-card-content fxLayout="row wrap" fxLayoutAlign="space-around center">
+    <div style="max-width: 1200px;">
+      <p class="about-text">
+      Biologists often face the challenge of effectively communicating DNA sequences and their behaviors. An increasingly popular solution is SBOL, the Synthetic Biology Open Language. It is a diagram syntax that models genetic systems, allowing for both abstract visualizations and detailed data. Unfortunately, the complexity of creating SBOL documents is limiting this powerful language’s growth. SBOL, while characterized by graphic models, is lacking tools for graphical editing. Until now.
+      </p>
+      <p class="about-text">
+      SBOL Canvas is a web-based graphical editor that opens synthetic biology design to anyone from students to advanced researchers. Users will enjoy a simple interface for creating diagrams that are both artistic and scientific. By interfacing with existing SBOL databases, SBOL Canvas lets users share their designs and easily reference the research of others. This editor significantly lowers SBOL’s barrier to entry, helping it carry synthetic biology to new heights.
+      </p>
+      <p class="about-text">
+        SBOL Canvas is supported in part by the <a href="https://sbolstandard.org/sbol-industrial/" target="_blank">SBOL Industrial Consortium</a>.
+      </p>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+
+<mat-divider class="botton-half" style="padding-bottom: 20px;"></mat-divider>
+
+
+<div fxLayout="row" fxLayoutAlign="space-evenly stretch" class="botton-half" style="padding-bottom: 20px">
+  <mat-card class="bio-card">
+    <mat-card-header>
+      <div mat-card-avatar style="background-image: url('assets/profile_jared.jpeg'); background-size: cover"></div>
+
+      <mat-card-title class="bio-title">Jared Earl</mat-card-title>
+      <mat-card-subtitle>jared.s.earl123@gmail.com</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p>5 years ago, Jared had a friend show him a thing or two that could be done with a computer. At the time Jared was a mechanic, but he was quickly consumed by his interest in computing. After a short period of time spent learning more on his own, Jared enrolled at the University in pursuit of a computer science degree, and acquired a job at Bluehost working tech support. Over the next 5 years, Jared excelled in the classroom while simultaneously developing his professional career. It didn’t take him long to move up in the ranks, and he became a software engineer at Forcepoint almost a full year before his expected graduation date. </p>
+      <p>Jared enjoys an edge that he has honed through years of professional experience at Bluehost and Forcepoint during his academic career thus far. During the course of the development of SBOL Canvas, Jared brought his skills to bear on front end and infrastructure work. He worked to ensure the application was built with a scalable architecture using Angular, he contributed to all major parts of the front end, he automated server deployment, and he built tools that supported the development of SBOL Canvas.  </p>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="bio-card">
+    <mat-card-header>
+      <div mat-card-avatar style="background-image: url('assets/profile_logan.jpg'); background-size: cover"></div>
+
+      <mat-card-title class="bio-title">Logan Terry</mat-card-title>
+      <mat-card-subtitle>randoom97@live.com</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p>Likes solving puzzles and plays a lot of puzzle games. Got into programming because of video games. Plays a lot of Minecraft. Can solve a Rubik's cube in just over a minute. Interested in operating systems, and compilers.</p>
+      <p>Made a dungeon crawler using only the built in java libraries in highschool. Also created a networked version of bomberman in highschool. Currently pursuing a Masters in computer science at the University of Utah. Fluent in Java, C++, C#. Experienced in JavaScript, TypeScript, Python, REST api’s, and SQL.</p>
+      <p>Developed Canvas Project Manager, an Eclipse plugin that integrates with Canvas to facilitate easy assignment download and submission. Developed Code Evolution Monitor, an extension of CPM that takes minutely snapshots of code, via git, and submits them to a GitLab server for analysis of developer habits. Primarily worked on the backend of sbolcanvas.org during senior capstone, but did some frontend work such as the SynBioHub download/upload dialogs. Currently maintains and updates SBOL Canvas as part of his graduate studies.</p>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="bio-card">
+    <mat-card-header>
+      <div mat-card-avatar style="background-image: url('assets/profile_sam.jpg'); background-size: cover"></div>
+
+      <mat-card-title class="bio-title">Samuel Thayer</mat-card-title>
+      <mat-card-subtitle>samonella7@gmail.com</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p>
+        As a young lad, Sam  often played an open source strategy game called The Battle for Wesnoth. In his young teens, he found the game’s config files and started tinkering with them. Before long, he created several add-ons to the game, which by now have been downloaded well over 10,000 times by players around the world. This was Sam’s first taste of programming, and he loved it even more than his first taste of homemade habanero salsa (another life-changing experience).
+      </p>
+      <p>
+        After taking every programming-related class his high school offered, Sam enrolled in the University of Utah and earned a Computer Science Bachelor’s Degree in December 2019. During his time there, he became involved with Lawrence Livermore National Lab, and helped them advance high performance computing by building a data race debugging tool.
+      </p>
+      <p>
+        Sam worked on SBOL Canvas in his final year of his undergraduate studies. He was mainly involved in the front end interface, especially the appearance and behavior of the editing canvas.
+      </p>
+    </mat-card-content>
+  </mat-card>
+</div>
+<p align="center">Version {{version}} ({{hash}})</p>
