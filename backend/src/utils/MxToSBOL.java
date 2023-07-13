@@ -148,7 +148,7 @@ public class MxToSBOL extends Converter {
 		// create the document
 		SBOLDocument document = new SBOLDocument();
 		document.setDefaultURIprefix(URI_PREFIX);
-		document.setComplete(true);
+		document.setComplete(false);
 		document.setCreateDefaults(true);
 
 		// add registries that we're logged into

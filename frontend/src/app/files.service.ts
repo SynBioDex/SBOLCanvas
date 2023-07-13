@@ -106,6 +106,14 @@ export class FilesService {
     });
   }
 
+  exportMXGraph(graphService: GraphService) {
+    var file = new File(
+        [graphService.getGraphXML()], 
+        "graph_record.xml"
+    );
+    FileSaver.saveAs(file);
+  }
+
   enumerateDesign(users: {}, filename: string, format: string, contents: string): Observable<void> {
     return new Observable<void>(observer => {
       let headers = new HttpHeaders();

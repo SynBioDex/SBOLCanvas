@@ -795,7 +795,11 @@ export class GraphService extends GraphHelpers {
             x = x - circuitContainer.getGeometry().x;
             y = y - circuitContainer.getGeometry().y;
 
-            let glyphInfo = new GlyphInfo();
+            // create the glyph info and add it to the dictionary
+            const glyphInfo = new GlyphInfo({
+                partRole: name
+            });
+            this.addToInfoDict(glyphInfo)
 
             // if the container is a circular backbone then both sides should have the same cellValue
             if (glyphWidth == 1) {
@@ -885,8 +889,9 @@ export class GraphService extends GraphHelpers {
         try {
 
             //TODO partRoles for proteins
-            let proteinInfo = new GlyphInfo();
-            proteinInfo.partType = this.moleculeNameToType(name);
+            let proteinInfo = new GlyphInfo({
+                partType: this.moleculeNameToType(name)
+            });
             this.addToInfoDict(proteinInfo);
 
             const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, proteinInfo.getFullURI(), x, y,
@@ -899,8 +904,6 @@ export class GraphService extends GraphHelpers {
         } finally {
             this.graph.getModel().endUpdate();
         }
-
-        console.log(this.graph.getModel().cells);
     }
 
     makeInteractionNodeDragsource(element, stylename) {
