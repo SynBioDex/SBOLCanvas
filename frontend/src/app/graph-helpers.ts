@@ -1090,6 +1090,22 @@ export class GraphHelpers extends GraphBase {
         var cellsRemoved = evt.getProperty('added');
         var cellsAdded = evt.getProperty('removed');
 
+        // checks if either the left or right side of a circular backbone was selected
+        const cirBackboneFilter = sender.cells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd);
+
+        if(cirBackboneFilter.length > 0) {
+            const parentCell = cirBackboneFilter[0].parent.children;
+            const cirBackboneCells = [parentCell[parentCell.length - 1], parentCell[1]];
+    
+            // checks if the circular backbone is already selected
+            if(this.graph.getSelectionCells()[0] == cirBackboneCells[0] && this.graph.getSelectionCells()[1] == cirBackboneCells[1]) {
+                return;
+            }
+    
+            //set the selection to the circular backbone cells
+            this.graph.setSelectionCells(cirBackboneCells);
+        }
+
         console.debug("----handleSelectionChange-----");
 
         console.debug("cells removed: ");
@@ -1120,13 +1136,13 @@ export class GraphHelpers extends GraphBase {
     }
 
     /**
- * Updates the data in the metadata service according to the cells properties
- */
+       * Updates the data in the metadata service according to the cells properties
+       */
     protected updateAngularMetadata(cells) {
         // start with null data, (re)add it as possible
         this.nullifyMetadata();
 
-        // if there is no current root it's because we're in the middle of reseting the view
+        // if there is no current root it's because we're in the middle of resetting the view
         if (!this.graph.getCurrentRoot())
             return;
 
@@ -1136,20 +1152,28 @@ export class GraphHelpers extends GraphBase {
             this.metadataService.setSelectedStyleInfo(styleInfo);
         }
 
+        // multiple selections can't display glyph data unless it's a circular backbone
         if (cells.length > 1) {
-            // multiple selections? can't display glyph data
+            if(cells[1].stayAtBeginning) {
+                let glyphInfo;
+                if (!cells[1]) glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
+                else glyphInfo = this.getFromInfoDict(cells[1].value);
+    
+                this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());            
+            }
+            
             return;
         }
 
         // have to add special check as no selection cell should signify the module/component of the current view
         let cell;
-        if (cells && cells.length > 0) {
+        if (cells && cells.length === 1) {
             cell = cells[0];
         }
 
         if ((!cell && this.graph.getCurrentRoot().isModuleView()) || (cell && cell.isModule())) {
             let moduleInfo;
-            if (!cell)
+            if (!cell) 
                 moduleInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
             else
                 moduleInfo = this.getFromInfoDict(cell.value);
@@ -1163,6 +1187,20 @@ export class GraphHelpers extends GraphBase {
             else
                 glyphInfo = this.getFromInfoDict(cell.value);
             if (glyphInfo) {
+                if(cell.style === "circuitContainer") {
+                    glyphInfo.sequence = "";
+
+                    // appends the sequence of every child to the circuit containers sequence
+                    cell.children.forEach(child => {
+                        let childGlyphInfo;
+                        if(child) childGlyphInfo = this.getFromInfoDict(child.value);
+
+                        if(childGlyphInfo !== undefined && childGlyphInfo.sequence) {
+                            glyphInfo.sequence += childGlyphInfo.sequence;
+                        }
+                    });
+                }
+                
                 this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
             }
         }
@@ -1839,6 +1877,7 @@ export class GraphHelpers extends GraphBase {
             console.error("flipInteraction attempted on something other than an interaction!");
             return;
         }
+
         const src = cell.source;
         const dest = cell.target;
         this.graph.getModel().setTerminals(cell, dest, src);
@@ -2035,28 +2074,51 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    /**
+     * If a circuit container contains only the container's width is for some
+     * reason set to 1 and the right side of the circular backbone is moved right next to the left 
+     * side, this method fixes the formatting
+     * 
+     * @param circuitContainer The circuit container that contains the circular backbone
+     */
+    repositionCircularBackbone(circuitContainer) {
+        const childrenCopy = circuitContainer.children.slice().filter(cell => cell.stayAtEnd);
+        const containerCopy = childrenCopy[0].getParent();
+        
+        containerCopy.replaceGeometry("auto", "auto", 52, "auto", this.graph);
+        childrenCopy[0].replaceGeometry(
+                childrenCopy[0].getGeometry().x + 49, "auto", "auto", "auto", this.graph);
+    }
+
     horizontalSortBasedOnPosition(circuitContainer) {
         // pull out children that should be sorted
         let childrenCopy = circuitContainer.children.slice()
-            .filter(cell => !cell.stayAtBeginning)
+            .filter(cell => !cell.stayAtBeginning);
 
         // sort the children
-        childrenCopy.sort((cellA, cellB) =>
+        childrenCopy.sort((cellA, cellB) => 
             cellA.getGeometry().x - cellB.getGeometry().x
         );
 
         // and have the model reflect the sort in an undoable way
         childrenCopy.forEach((child, i) => {
             this.graph.getModel().add(circuitContainer, child, i);
-        })
+        });
 
         // add in children that should stay at the beginning
         circuitContainer.children
             .filter(cell => cell.stayAtBeginning)
             .forEach(child => {
                 this.graph.getModel().add(circuitContainer, child, 0);
-            })
+            });
 
+        // add in children that should stay at the end
+        circuitContainer.children
+            .filter(cell => cell.stayAtEnd)
+            .forEach(child => {
+                this.graph.getModel().add(circuitContainer, child, circuitContainer.children.length);
+            });
+        
         circuitContainer.refreshCircuitContainer(this.graph);
     }
 

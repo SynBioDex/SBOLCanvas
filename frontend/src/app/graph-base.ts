@@ -528,8 +528,9 @@ export class GraphBase {
             const layout = new mx.mxStackLayout(graph, true);
             layout.resizeParent = true;
             layout.isVertexIgnored = function (vertex) {
-                return vertex.isBackbone()
+                return vertex.isBackbone();
             };
+
             layout.execute(this);
         };
 
@@ -1070,8 +1071,8 @@ export class GraphBase {
         // cell movement
         this.graph.addListener(mx.mxEvent.MOVE_CELLS, mx.mxUtils.bind(this, async function (sender, evt) {
             // sender is the graph
-
             sender.getModel().beginUpdate();
+            
             let cancelled = false;
             try {
                 let movedCells = evt.getProperty("cells");
@@ -1079,7 +1080,7 @@ export class GraphBase {
                 // can appear here (even if they were also selected)
 
                 // sort cells: processing order is important
-                movedCells = movedCells.sort(function (cellA, cellB) {
+                movedCells = movedCells.sort(function (cellA, cellB) {                    
                     if (cellA.getRootId() !== cellB.getRootId()) {
                         // cells are not related: choose arbitrary order (but still group by root)
                         return cellA.getRootId() < cellB.getRootId() ? -1 : 1;
@@ -1127,6 +1128,7 @@ export class GraphBase {
                     if (!movedCells[i].isSequenceFeatureGlyph()) {
                         continue;
                     }
+
                     // found a sequenceFeature glyph. A streak might be starting...
                     const baseX = movedCells[i].getGeometry().x;
                     const rootId = movedCells[i].getRootId();
@@ -1157,16 +1159,6 @@ export class GraphBase {
                     this.horizontalSortBasedOnPosition(circuitContainer);
                 }
 
-                // finallly, another special case: if a circuitContainer only has one sequenceFeatureGlyph,
-                // moving the glyph should move the circuitContainer
-                for (const cell of movedCells) {
-                    if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {
-                        const x = cell.getParent().getGeometry().x + evt.getProperty("dx");
-                        const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
-                        cell.getParent().replaceGeometry(x, y, 'auto', 'auto', sender);
-                    }
-                }
-
                 // sync circuit containers
                 let circuitContainers = new Set<mxCell>();
                 for (let movedCell of movedCells) {
@@ -1176,6 +1168,29 @@ export class GraphBase {
                 }
                 for (let circuitContainer of Array.from(circuitContainers.values())) {
                     this.syncCircuitContainer(circuitContainer);
+                }
+
+                for (const cell of movedCells) {
+                    // another special case: if a circuitContainer only has one sequenceFeatureGlyph,
+                    // moving the glyph should move the circuitContainer
+                    if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {
+                        const x = cell.getParent().getGeometry().x + evt.getProperty("dx");
+                        const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
+                        cell.getParent().replaceGeometry(x, y, "auto", "auto", sender);
+                    }
+
+                    // special case where an empty circular backbone's circuit container is moved
+                    // fixes the containers position and the right circular backbones x position
+                    if((cell.circularBackbone && cell.children.length === 3)) {
+                        this.repositionCircularBackbone(cell);
+                    }
+                }
+
+                // special case where a circular backbone is repositioned within a circuit container
+                if(movedCells[0].getParent().circularBackbone 
+                && movedCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0
+                && movedCells[0].getParent().children.length === 3) {
+                    this.repositionCircularBackbone(movedCells[0].getParent());
                 }
 
                 // change ownership
