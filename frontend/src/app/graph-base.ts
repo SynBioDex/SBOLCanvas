@@ -291,18 +291,18 @@ export class GraphBase {
                     reconstructCellStyle = true;
                 else if (cell.style === GraphBase.STYLE_MOLECULAR_SPECIES || cell.style.includes(GraphBase.STYLE_MOLECULAR_SPECIES + ";"))
                     reconstructCellStyle = true;
-                else if (cell.style === GraphBase.STYLE_INTERACTION || cell.style.includes(GraphBase.STYLE_INTERACTION+";"))
+                else if (cell.style === GraphBase.STYLE_INTERACTION || cell.style.includes(GraphBase.STYLE_INTERACTION + ";"))
                     reconstructCellStyle = true;
-                else if (cell.style === GraphBase.STYLE_INTERACTION_NODE || cell.style.includes(GraphBase.STYLE_INTERACTION_NODE+";"))
+                else if (cell.style === GraphBase.STYLE_INTERACTION_NODE || cell.style.includes(GraphBase.STYLE_INTERACTION_NODE + ";"))
                     reconstructCellStyle = true;
             }
 
             // reconstruct the cell style
             if (reconstructCellStyle) {
                 if (glyphDict[cell.value] != null) {
-                    if(glyphDict[cell.value] instanceof ModuleInfo){
+                    if (glyphDict[cell.value] instanceof ModuleInfo) {
                         // module
-                        if(!cell.style){
+                        if (!cell.style) {
                             cell.style = GraphBase.STYLE_MODULE;
                         }
                         cell.geometry.width = GraphBase.defaultModuleWidth;
@@ -318,7 +318,7 @@ export class GraphBase {
                             cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth;
                         if (cell.geometry.height == 0)
                             cell.geometry.height = GraphBase.sequenceFeatureGlyphHeight;
-                    } else if(glyphDict[cell.value] instanceof GlyphInfo){
+                    } else if (glyphDict[cell.value] instanceof GlyphInfo) {
                         // molecular species
                         if (!cell.style)
                             cell.style = GraphBase.STYLE_MOLECULAR_SPECIES + "macromolecule";
@@ -329,17 +329,17 @@ export class GraphBase {
                     }
                 } else if (interactionDict[cell.value] != null) {
                     let intInfo = interactionDict[cell.value];
-                    if(cell.isVertex()){
+                    if (cell.isVertex()) {
                         // interaction node
                         let name = graphBaseRef.interactionNodeTypeToName(intInfo.interactionType);
-                        if(!cell.style){
-                            cell.style = GraphBase.STYLE_INTERACTION_NODE+name;
-                        }else{
+                        if (!cell.style) {
+                            cell.style = GraphBase.STYLE_INTERACTION_NODE + name;
+                        } else {
                             cell.style = cell.style.replace(GraphBase.STYLE_INTERACTION_NODE, GraphBase.STYLE_INTERACTION_NODE + name);
                         }
                         cell.geometry.width = GraphBase.interactionNodeGlyphWidth;
                         cell.geometry.height = GraphBase.interactionNodeGlyphHeight;
-                    }else{
+                    } else {
                         // interaction
                         let name = intInfo.interactionType;
                         if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
@@ -528,8 +528,9 @@ export class GraphBase {
             const layout = new mx.mxStackLayout(graph, true);
             layout.resizeParent = true;
             layout.isVertexIgnored = function (vertex) {
-                return vertex.isBackbone()
+                return vertex.isBackbone();
             };
+
             layout.execute(this);
         };
 
@@ -775,13 +776,14 @@ export class GraphBase {
 
         // we need this if we intend on creating custom shapes with stencils
         let sequenceFeatureStencils = this.glyphService.getSequenceFeatureGlyphs();
+        let utilStencils = this.glyphService.getUtilGlyphs()
         mx.mxCellRenderer.prototype.createShape = function (state) {
             var shape = null;
             if (state.style != null) {
                 let stencilName = state.style[mx.mxConstants.STYLE_SHAPE];
                 var stencil = mx.mxStencilRegistry.getStencil(stencilName);
 
-                if (sequenceFeatureStencils[stencilName] != null) {
+                if (sequenceFeatureStencils[stencilName] != null || utilStencils[stencilName] != null) {
                     shape = new CustomShapes.SequenceFeatureShape(stencil);
                 } else if (stencil != null) {
                     shape = new mx.mxShape(stencil);
@@ -794,47 +796,48 @@ export class GraphBase {
             return shape;
         }
 
+        const registerSequenceFeatureShapes = stencils => {
+            for (const name in stencils) {
+                // Create a new copy of the stencil for the graph.
+                const stencil = stencils[name][0];
+                const centered = stencils[name][1];
+                let customStencil = new mx.mxStencil(stencil.desc); // Makes a deep copy
 
-        // custom stencil setup
-        let stencils = this.glyphService.getSequenceFeatureGlyphs();
+                // Change the copied stencil for mxgraph
+                let origDrawShape = mx.mxStencil.prototype.drawShape;
 
-        for (const name in stencils) {
-            // Create a new copy of the stencil for the graph.
-            const stencil = stencils[name][0];
-            const centered = stencils[name][1];
-            let customStencil = new mx.mxStencil(stencil.desc); // Makes a deep copy
+                if (centered) {
+                    customStencil.drawShape = function (canvas, shape, x, y, w, h) {
+                        h /= 2;
+                        y += h / 2;
+                        origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
 
-            // Change the copied stencil for mxgraph
-            let origDrawShape = mx.mxStencil.prototype.drawShape;
+                        shape.paintComposite(canvas, x, y - (h / 2), w, h * 2);
+                    }
+                } else {
+                    customStencil.drawShape = function (canvas, shape, x, y, w, h) {
+                        h = h / 2;
+                        origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
 
-            if (centered) {
-                customStencil.drawShape = function (canvas, shape, x, y, w, h) {
-                    h /= 2;
-                    y += h / 2;
-                    origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
-
-                    shape.paintComposite(canvas, x, y - (h / 2), w, h * 2);
+                        shape.paintComposite(canvas, x, y, w, h * 2);
+                    }
                 }
-            } else {
-                customStencil.drawShape = function (canvas, shape, x, y, w, h) {
-                    h = h / 2;
-                    origDrawShape.apply(this, [canvas, shape, x, y, w, h]);
 
-                    shape.paintComposite(canvas, x, y, w, h * 2);
-                }
+                // Add the stencil to the registry and set its style.
+                mx.mxStencilRegistry.addStencil(name, customStencil);
+
+                const newGlyphStyle = mx.mxUtils.clone(this.baseSequenceFeatureGlyphStyle);
+                newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
+                this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_SEQUENCE_FEATURE + name, newGlyphStyle);
             }
-
-            // Add the stencil to the registry and set its style.
-            mx.mxStencilRegistry.addStencil(name, customStencil);
-
-            const newGlyphStyle = mx.mxUtils.clone(this.baseSequenceFeatureGlyphStyle);
-            newGlyphStyle[mx.mxConstants.STYLE_SHAPE] = name;
-            this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_SEQUENCE_FEATURE + name, newGlyphStyle);
         }
+
+        registerSequenceFeatureShapes(this.glyphService.getSequenceFeatureGlyphs())
+        registerSequenceFeatureShapes(this.glyphService.getUtilGlyphs())
 
         // molecularSpecies glyphs are simpler, since we don't have to morph
         // them to always be centred on the strand
-        stencils = this.glyphService.getMolecularSpeciesGlyphs();
+        let stencils = this.glyphService.getMolecularSpeciesGlyphs();
         for (const name in stencils) {
             const stencil = stencils[name][0];
             let customStencil = new mx.mxStencil(stencil.desc); // Makes of deep copy of the stencil.
@@ -987,10 +990,10 @@ export class GraphBase {
                     infoCopy.targetRefinement = {};
 
                     // add back refinements relating to ours
-                    if(sourceRefinement){
+                    if (sourceRefinement) {
                         infoCopy.sourceRefinement[edge.getId()] = sourceRefinement;
                     }
-                    if(targetRefinement){
+                    if (targetRefinement) {
                         infoCopy.targetRefinement[edge.getId()] = targetRefinement;
                     }
 
@@ -1015,28 +1018,28 @@ export class GraphBase {
                     let oldURI = edge.value;
                     let nodeInfo = this.getFromInteractionDict(terminal.value).makeCopy();
                     this.graph.getModel().setValue(edge, nodeInfo.getFullURI());
-                    
+
                     // duplicate over the nescessary info
                     // module targets
-                    if(infoCopy.fromURI[edge.getId()]){
+                    if (infoCopy.fromURI[edge.getId()]) {
                         nodeInfo.fromURI[edge.getId()] = infoCopy.fromURI[edge.getId()];
                     }
-                    if(infoCopy.toURI[edge.getId()]){
+                    if (infoCopy.toURI[edge.getId()]) {
                         nodeInfo.toURI[edge.getId()] = infoCopy.toURI[edge.getId()];
                     }
 
                     // edge refinements
                     let sourceRefinement = infoCopy.sourceRefinement[edge.getId()];
-                    if(sourceRefinement){
+                    if (sourceRefinement) {
                         nodeInfo.sourceRefinement[edge.getId()] = sourceRefinement;
                     }
                     let targetRefinement = infoCopy.targetRefinement[edge.getId()];
-                    if(targetRefinement){
+                    if (targetRefinement) {
                         nodeInfo.targetRefinement[edge.getId()] = targetRefinement;
                     }
 
                     // if the previous wasn't an interaction node, then we need to remove the info from the dictionary
-                    if(!previous || !previous.isInteractionNode()){
+                    if (!previous || !previous.isInteractionNode()) {
                         this.removeFromInteractionDict(oldURI);
                     }
 
@@ -1068,8 +1071,8 @@ export class GraphBase {
         // cell movement
         this.graph.addListener(mx.mxEvent.MOVE_CELLS, mx.mxUtils.bind(this, async function (sender, evt) {
             // sender is the graph
-
             sender.getModel().beginUpdate();
+            
             let cancelled = false;
             try {
                 let movedCells = evt.getProperty("cells");
@@ -1077,7 +1080,7 @@ export class GraphBase {
                 // can appear here (even if they were also selected)
 
                 // sort cells: processing order is important
-                movedCells = movedCells.sort(function (cellA, cellB) {
+                movedCells = movedCells.sort(function (cellA, cellB) {                    
                     if (cellA.getRootId() !== cellB.getRootId()) {
                         // cells are not related: choose arbitrary order (but still group by root)
                         return cellA.getRootId() < cellB.getRootId() ? -1 : 1;
@@ -1125,6 +1128,7 @@ export class GraphBase {
                     if (!movedCells[i].isSequenceFeatureGlyph()) {
                         continue;
                     }
+
                     // found a sequenceFeature glyph. A streak might be starting...
                     const baseX = movedCells[i].getGeometry().x;
                     const rootId = movedCells[i].getRootId();
@@ -1155,16 +1159,6 @@ export class GraphBase {
                     this.horizontalSortBasedOnPosition(circuitContainer);
                 }
 
-                // finallly, another special case: if a circuitContainer only has one sequenceFeatureGlyph,
-                // moving the glyph should move the circuitContainer
-                for (const cell of movedCells) {
-                    if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {
-                        const x = cell.getParent().getGeometry().x + evt.getProperty("dx");
-                        const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
-                        cell.getParent().replaceGeometry(x, y, 'auto', 'auto', sender);
-                    }
-                }
-
                 // sync circuit containers
                 let circuitContainers = new Set<mxCell>();
                 for (let movedCell of movedCells) {
@@ -1174,6 +1168,29 @@ export class GraphBase {
                 }
                 for (let circuitContainer of Array.from(circuitContainers.values())) {
                     this.syncCircuitContainer(circuitContainer);
+                }
+
+                for (const cell of movedCells) {
+                    // another special case: if a circuitContainer only has one sequenceFeatureGlyph,
+                    // moving the glyph should move the circuitContainer
+                    if (cell.isSequenceFeatureGlyph() && cell.getParent().children.length === 2) {
+                        const x = cell.getParent().getGeometry().x + evt.getProperty("dx");
+                        const y = cell.getParent().getGeometry().y + evt.getProperty("dy");
+                        cell.getParent().replaceGeometry(x, y, "auto", "auto", sender);
+                    }
+
+                    // special case where an empty circular backbone's circuit container is moved
+                    // fixes the containers position and the right circular backbones x position
+                    if((cell.circularBackbone && cell.children.length === 3)) {
+                        this.repositionCircularBackbone(cell);
+                    }
+                }
+
+                // special case where a circular backbone is repositioned within a circuit container
+                if(movedCells[0].getParent().circularBackbone 
+                && movedCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0
+                && movedCells[0].getParent().children.length === 3) {
+                    this.repositionCircularBackbone(movedCells[0].getParent());
                 }
 
                 // change ownership
@@ -1210,7 +1227,7 @@ export class GraphBase {
             }
 
             let styleString = edge.style.slice();
-            let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION)+GraphBase.STYLE_INTERACTION.length;
+            let startIdx = styleString.indexOf(GraphBase.STYLE_INTERACTION) + GraphBase.STYLE_INTERACTION.length;
             let endIdx = styleString.indexOf(';', startIdx);
             endIdx = endIdx > 0 ? endIdx : styleString.length;
             let interactionType = styleString.slice(startIdx, endIdx);
@@ -1224,7 +1241,7 @@ export class GraphBase {
     protected validateInteraction(interactionType: string, source: mxCell, target: mxCell) {
 
         // edges can't connect to edges
-        if((source && source.isEdge()) || (target && target.isEdge())){
+        if ((source && source.isEdge()) || (target && target.isEdge())) {
             return "Edges are dissallowed to connect to edges.";
         }
 

@@ -46,7 +46,6 @@ export class GlyphService {
         'assets/glyph_stencils/sequence_feature/ribonuclease-site.xml',
         'assets/glyph_stencils/sequence_feature/rna-stability-element.xml',
         //'assets/glyph_stencils/sequence_feature/chromosomal-locus.xml',
-        //'assets/glyph_stencils/sequence_feature/circular-plasmid.xml',
         'assets/glyph_stencils/sequence_feature/transcription-end.xml',
         'assets/glyph_stencils/sequence_feature/translation-end.xml',
         //'assets/glyph_stencils/sequence_feature/test.xml',
@@ -91,6 +90,8 @@ export class GlyphService {
     private utilXMLBundle: string = "assets/glyph_stencils/util/bundle.xml";
     private utilXMLs: string[] = [
         'assets/backbone.xml',
+        'assets/circular-plasmid-left.xml',
+        'assets/circular-plasmid-right.xml',
         'assets/textBox.xml',
         'assets/module.xml',
     ];
@@ -105,7 +106,7 @@ export class GlyphService {
     private xmlBundle: string = "assets/glyph_stencils/bundle.xml"
 
     constructor() {
-        this.loadXMLBundle(this.xmlBundle)
+        this.loadXMLBundle(this.xmlBundle);
     }
 
     loadXMLBundle(bundleFile) {
@@ -119,7 +120,6 @@ export class GlyphService {
                 const subDir = shape.getAttribute('subdir');
                 const centered = shape.getAttribute('centered');
 
-                console.log(shape);
                 const stencil = new mx.mxStencil(shape);
                 this[subDir][name] = [stencil, (centered && centered.toLowerCase() == 'true')];
             }
