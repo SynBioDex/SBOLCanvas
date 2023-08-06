@@ -9,9 +9,9 @@
             <miterlimit limit="4" />
             <alpha alpha="1" />
             <path>
-                <move x="45.0" y="15.0" />
-                <arc large-arc-flag="1.0" rx="30.0" ry="12.0" sweep-flag="0.0" x="45.0"
-                    x-axis-rotation="0.0" y="37.5" />
+                <move x="45.0" y="15.0" /> 
+                <arc large-arc-flag="1.0" rx="30.0" ry="12.0" sweep-flag="0.0" x="45.0" 
+                x-axis-rotation="0.0" y="37.5" />
             </path>
             <stroke />
         </foreground>
