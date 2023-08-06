@@ -93,6 +93,9 @@ export class DownloadGraphComponent implements OnInit {
         this.partRole = this.data.info.partRole ? this.data.info.partRole : "";
         this.partRefine = this.data.info.partRefine;
 
+        // if the part role has changed we want to update the parts shown
+        this.updateParts();
+
         forkJoin(
           this.filesService.getRegistries(),
           this.metadataService.loadTypes(),
@@ -237,15 +240,15 @@ export class DownloadGraphComponent implements OnInit {
       this.selection.clear();
       this.updateParts();
     } else if (row.type === DownloadGraphComponent.componentType) {
-      if(this.mode == DownloadGraphComponent.SELECT_MODE){
+      if(this.mode == DownloadGraphComponent.SELECT_MODE) {
         this.onSelectClick();
-      }else{
+      } else {
         this.downloadComponent();
       }
     } else if (row.type === DownloadGraphComponent.moduleType) {
-      if(this.mode == DownloadGraphComponent.SELECT_MODE){
+      if(this.mode == DownloadGraphComponent.SELECT_MODE) {
         this.onSelectClick();
-      }else{
+      } else {
         this.downloadModule();
       }
     }
@@ -400,7 +403,7 @@ export class DownloadGraphComponent implements OnInit {
     }
   }
 
-  protected noCollectionsSelected(){
+  protected noCollectionsSelected() {
     for(let row of this.selection.selected){
       if(row.type == DownloadGraphComponent.collectionType){
         return false;
@@ -409,7 +412,7 @@ export class DownloadGraphComponent implements OnInit {
     return true;
   }
 
-  protected onlyComponentsAndCollectionsSelected(){
+  protected onlyComponentsAndCollectionsSelected() {
     for(let row of this.selection.selected){
       if(row.type != DownloadGraphComponent.componentType && row.type != DownloadGraphComponent.collectionType){
         return false;

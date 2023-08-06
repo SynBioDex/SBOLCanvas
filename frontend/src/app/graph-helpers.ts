@@ -2097,7 +2097,6 @@ export class GraphHelpers extends GraphBase {
      * @param circuitContainer The circuit container that contains the circular backbone
      */
     repositionCircularBackbone(circuitContainer) {
-        console.log("called")
         let childrenContainer;
 
         // if something that is not a container or sequence it needs to be properly handled
