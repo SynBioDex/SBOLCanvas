@@ -2097,7 +2097,15 @@ export class GraphHelpers extends GraphBase {
      * @param circuitContainer The circuit container that contains the circular backbone
      */
     repositionCircularBackbone(circuitContainer) {
-        const childrenCopy = circuitContainer.children.slice().filter(cell => cell.stayAtEnd);
+        console.log("called")
+        let childrenContainer;
+
+        // if something that is not a container or sequence it needs to be properly handled
+        if(circuitContainer.isMolecularSpeciesGlyph() || circuitContainer.isInteractionNode()) {
+            childrenContainer = this.getClosestCircuitContainerToPoint(circuitContainer.geometry.x, circuitContainer.geometry.y).children;
+        } else childrenContainer = circuitContainer.children;
+        
+        const childrenCopy = childrenContainer.slice().filter(cell => cell.stayAtEnd);
         const containerCopy = childrenCopy[0].getParent();
         
         containerCopy.replaceGeometry("auto", "auto", 52, "auto", this.graph);

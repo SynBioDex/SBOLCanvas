@@ -1122,10 +1122,14 @@ export class GraphBase {
                 // If two adjacent sequenceFeatureGlyphs were moved, they should be adjacent after the move.
                 // This loop finds all such sets of glyphs (relying on the sorted order) and sets them to
                 // have the same x position so there is no chance of outside glyphs sneaking in between
+                let nonSequenceGlyphMoved = false;
                 let streak;
                 for (let i = 0; i < movedCells.length; i += streak) {
                     streak = 1;
                     if (!movedCells[i].isSequenceFeatureGlyph()) {
+                        //don't update if there isn't a circular backbone in the graph
+                        //if(this.getClosestCircuitContainerToPoint(.geometry.x, circuitContainer.geometry.y).children) 
+                        if(!movedCells[i].isCircuitContainer()) nonSequenceGlyphMoved = true;
                         continue;
                     }
 
@@ -1156,6 +1160,9 @@ export class GraphBase {
                 // (equal x position means they should stay in the order they were previously in)
                 let cells = sender.getChildVertices(sender.getDefaultParent());
                 for (let circuitContainer of cells.filter(cell => cell.isCircuitContainer())) {
+                    if(nonSequenceGlyphMoved && circuitContainer.circularBackbone && circuitContainer.children.length !== 3) {
+                        nonSequenceGlyphMoved = false;
+                    }
                     this.horizontalSortBasedOnPosition(circuitContainer);
                 }
 
@@ -1181,7 +1188,7 @@ export class GraphBase {
 
                     // special case where an empty circular backbone's circuit container is moved
                     // fixes the containers position and the right circular backbones x position
-                    if((cell.circularBackbone && cell.children.length === 3)) {
+                    if(cell.circularBackbone && cell.children.length === 3) {
                         this.repositionCircularBackbone(cell);
                     }
                 }
@@ -1191,6 +1198,10 @@ export class GraphBase {
                 && movedCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0
                 && movedCells[0].getParent().children.length === 3) {
                     this.repositionCircularBackbone(movedCells[0].getParent());
+                }
+
+                if(nonSequenceGlyphMoved) {
+                    this.repositionCircularBackbone(movedCells[0]);
                 }
 
                 // change ownership
