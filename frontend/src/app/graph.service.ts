@@ -296,13 +296,6 @@ export class GraphService extends GraphHelpers {
                         this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "east", [cell]);
                         console.debug("turning east");
                     }
-
-                    // if a glyph has been flipped its sequence needs to be reversed
-                    let glyphInfo;
-                    if(cell) glyphInfo = this.getFromInfoDict(cell.value);
-                    glyphInfo.sequence = glyphInfo.sequence.split("").reverse().join("");
-
-                    this.metadataService.setSelectedGlyphInfo(glyphInfo);
                 } else if (cell.isInteraction()) {
                     this.flipInteractionEdge(cell);
                 } else if (cell.isInteractionNode()) {
@@ -680,7 +673,7 @@ export class GraphService extends GraphHelpers {
         }
     }
 
-    async addCircularPlasmid() {
+    async addCircularPlasmid(info?: Info) {
         this.graph.getModel().beginUpdate();
         try {
             if (!this.atLeastOneCircuitContainerInGraph()) {
@@ -695,11 +688,17 @@ export class GraphService extends GraphHelpers {
             const selection = this.graph.getSelectionCell();
 
             // if selection is nonexistent, or is not part of a strand, there is no suitable place.
-            if (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer())) {
+            if (info === undefined && (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer()))) {
                 return;
             }
 
-            const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent();
+            let circuitContainer;
+            if (selection === undefined) {
+                circuitContainer = this.getClosestCircuitContainerToPoint(0, 0);
+            }
+            else {
+                circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent();
+            }
 
             // there cannot be more than one circular backbone on a circuit container
             if(circuitContainer.circularBackbone) return;
@@ -717,6 +716,7 @@ export class GraphService extends GraphHelpers {
             x, y, circuitContainer, {
                 connectable: false,
                 glyphWidth: 1,
+                cellValue: info
             });
             circCellLeft.stayAtBeginning = true;
 
@@ -726,6 +726,7 @@ export class GraphService extends GraphHelpers {
             circuitContainer, {
                 connectable: false,
                 glyphWidth: 1,
+                cellValue: info
             });
             circCellRight.stayAtEnd = true;
 
@@ -795,7 +796,7 @@ export class GraphService extends GraphHelpers {
             x = x - circuitContainer.getGeometry().x;
             y = y - circuitContainer.getGeometry().y;
 
-            let glyphInfo = new GlyphInfo();
+            let glyphInfo = cellValue == null ? new GlyphInfo() : cellValue;
 
             // if the container is a circular backbone then both sides should have the same cellValue
             if (glyphWidth == 1) {
@@ -807,17 +808,15 @@ export class GraphService extends GraphHelpers {
                     });
             }
 
-            if(cellValue == null) {
-                // create the glyph info and add it to the dictionary
-                glyphInfo.partRole = name;
-                this.addToInfoDict(glyphInfo);
-            }
- 
+            // create the glyph info and add it to the dictionary
+            glyphInfo.partRole = name;
+            this.addToInfoDict(glyphInfo);
+
             // Insert new glyph and its components
             sequenceFeatureCell = this.graph.insertVertex(
                 circuitContainer,
                 null,
-                cellValue == null ? glyphInfo.getFullURI() : cellValue,
+                cellValue == null ? glyphInfo.getFullURI() : typeof cellValue === "object" ? glyphInfo.getFullURI() : cellValue,
                 x, y, glyphWidth, GraphBase.sequenceFeatureGlyphHeight,
                 glyphStyle || GraphBase.STYLE_SEQUENCE_FEATURE + name
             );
@@ -1144,11 +1143,12 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().endUpdate();
         }
     }
-x
+
     /**
      * Find the selected cell, and if there is a glyph selected, update its metadata.
      */
     async setSelectedCellInfo(info: Info) {
+        console.log(info)
         const selectedCell = this.graph.getSelectionCell();
 
         this.graph.getModel().beginUpdate();
@@ -1161,8 +1161,26 @@ x
 
             if (info instanceof GlyphInfo && (!selectedCell || selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph())) {
                 if (!selectedCell || !selectedCell.isMolecularSpeciesGlyph()) {
-                    // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
-                    this.updateSelectedGlyphInfo(info);
+                    if(info.partRole === "Cir (Circular Backbone)") {
+                        if(selectedCell.getParent().circularBackbone && info.partRole === "Cir (Circular Backbone)" && !selectedCell.style.includes("Cir (Circular Backbone ")) {
+                            this.showError("There cannot be multiple circular backbones.");
+                            return;
+                        } else this.delete().then(() => this.addCircularPlasmid(info));
+                    } 
+                    // case where a circular backbone is being replaced with a different glyph
+                    else if(this.graph.getSelectionCells().length > 1) {
+                        this.delete().then(() => {
+                            this.addSequenceFeatureAt(info.partRole, 0, 0, false, { cellValue: info });
+                            // check for ownership prompt
+                            // let oldGlyphInfo = this.getFromInfoDict(selectedCell.value);
+                            // if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
+                            //     return;
+                            // }
+                        });
+                    } else {
+                        // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
+                        this.updateSelectedGlyphInfo(info);
+                    }
                 } else {
                     this.updateSelectedMolecularSpecies(info);
                 }
@@ -1172,7 +1190,6 @@ x
             if (info instanceof InteractionInfo && (selectedCell.isInteraction() || selectedCell.isInteractionNode())) {
                 this.updateSelectedInteractionInfo(info);
             }
-
         } finally {
             this.graph.getModel().endUpdate();
             this.graph.refresh(selectedCell);
@@ -1387,7 +1404,8 @@ x
     async setSelectedToXML(cellString: string) {
         const selectionCells = this.graph.getSelectionCells();
 
-        if (selectionCells.length == 0 || (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule()))) {
+        if (selectionCells.length == 0 || (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule()))
+         || (selectionCells.length == 2 && (selectionCells[0].stayAtBeginning || selectionCells[0].stayAtEnd))) {
             // We're making a new cell to replace the selected one
             let selectedCell;
             if (selectionCells.length > 0) {
@@ -1451,7 +1469,6 @@ x
                     origParent = selectedCell.getParent();
 
                     // generated cells don't have a proper geometry
-                    newCell.setStyle(selectedCell.getStyle());
                     this.graph.getModel().setGeometry(newCell, selectedCell.geometry);
 
                     // add new cell to the graph
@@ -1464,6 +1481,13 @@ x
 
                     // remove the old cell
                     this.graph.getModel().remove(selectedCell);
+
+                    if(selectedCell.style.includes("Cir (Circular Backbone ")) {
+                        let cirBackboneInfo = new GlyphInfo();
+                        newCell.partRole = "Cir (Circular Backbone";
+                        newCell.style = "sequenceFeatureGlyphCir (Circular Backbone ";
+                        newCell.id = selectedCell.id;
+                    }
 
                     // move any edges from selectedCell to newCell
                     if (selectedCell.edges != null) {
@@ -1505,6 +1529,7 @@ x
                 let viewCells = subGraph.getModel().getCell("1").children;
                 let subGlyphDict = subGraph.getModel().getCell("0").getValue();
                 let cell1 = this.graph.getModel().getCell("1");
+
                 for (let i = 1; i < viewCells.length; i++) { // start at cell 1 because the glyph is at 0
                     // If we already have it skip it
                     if (this.graph.getModel().getCell(viewCells[i].getId())) {
@@ -1523,6 +1548,12 @@ x
                     if (this.getFromInfoDict(viewCells[i].getId()) != null) {
                         this.removeFromInfoDict(viewCells[i].getId());
                     }
+                    
+                    // if a circular backbone is being imported the part role should not be NGA
+                    if(selectedCell.style.includes("Cir (Circular Backbone ")) {
+                        subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()].partRole = "Cir (Circular Backbone)";
+                    } 
+                    
                     this.addToInfoDict(subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()]);
 
                     // add any molecular species or interactions to the info dict

@@ -90,6 +90,7 @@ export class GlyphService {
     private utilXMLBundle: string = "assets/glyph_stencils/util/bundle.xml";
     private utilXMLs: string[] = [
         'assets/backbone.xml',
+        'assets/circular-plasmid-icon.xml',
         'assets/circular-plasmid-left.xml',
         'assets/circular-plasmid-right.xml',
         'assets/textBox.xml',

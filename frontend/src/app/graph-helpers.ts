@@ -1013,6 +1013,7 @@ export class GraphHelpers extends GraphBase {
         }
         if (!cells) {
             const selectionCells = this.graph.getSelectionCells();
+
             if (selectionCells.length > 0) {
                 this.mutateSequenceFeatureGlyph(name, selectionCells);
             }
@@ -1196,11 +1197,25 @@ export class GraphHelpers extends GraphBase {
                         if(child) childGlyphInfo = this.getFromInfoDict(child.value);
 
                         if(childGlyphInfo !== undefined && childGlyphInfo.sequence) {
-                            glyphInfo.sequence += childGlyphInfo.sequence;
+                            // if the glyph is flipped the sequence needs to be reversed and inverted
+                            if(child.style.includes("direction=west;")) {
+                                let flippedGlyphSequence = "";
+                                for(let i = childGlyphInfo.sequence.length - 1; i >= 0; i--) {
+                                    const currentChar = childGlyphInfo.sequence[i];
+                                    if(currentChar === "a") flippedGlyphSequence += "t";
+                                    else if(currentChar === "t") flippedGlyphSequence += "a";
+                                    else if(currentChar === "g") flippedGlyphSequence += "c";
+                                    else if(currentChar === "c") flippedGlyphSequence += "g";
+                                }
+
+                                glyphInfo.sequence += flippedGlyphSequence;
+                            } else if(!(childGlyphInfo.partRole.includes("Cir (Circular Backbone ") && glyphInfo.sequence.includes(childGlyphInfo.sequence))) {
+                                glyphInfo.sequence += childGlyphInfo.sequence;
+                            }
                         }
                     });
                 }
-                
+
                 this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
             }
         }

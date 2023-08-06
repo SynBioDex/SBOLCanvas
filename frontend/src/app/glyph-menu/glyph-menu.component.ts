@@ -125,6 +125,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
     for (const name in utilElts) {
       const svg = utilElts[name];
+      console.log(name);
       this.utilsDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
     }
     for (const name in molecularSpeciesElts) {

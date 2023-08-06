@@ -36,12 +36,12 @@ export class ExportDesignComponent implements OnInit {
 
   onFinishClick(){
     this.working = true;
-    if(this.mode == "Export"){
+    if(this.mode == "Export") {
       this.filesService.exportDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe(_ => {
         this.working = false;
         this.dialogRef.close();
       });
-    }else{
+    }else {
       this.filesService.enumerateDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe(_ => {
         this.working = false;
         this.dialogRef.close();

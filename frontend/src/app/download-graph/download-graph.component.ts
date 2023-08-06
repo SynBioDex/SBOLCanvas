@@ -101,7 +101,7 @@ export class DownloadGraphComponent implements OnInit {
         ).subscribe(results => {
           this.registries = results[0];
           this.partTypes = results[1];
-          this.partRoles = results[2];
+          this.partRoles = results[2].filter(role => !role.includes("Cir (Circular Backbone "));
           this.roleRefinements = results[3];
           this.working = false;
         });
@@ -119,7 +119,6 @@ export class DownloadGraphComponent implements OnInit {
       });
     }
 
-    this.updateParts();
     this.parts.sort = this.sort;
   }
 
@@ -359,7 +358,7 @@ export class DownloadGraphComponent implements OnInit {
         this.partRequest = forkJoin(
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules")
-        ).subscribe(parts =>{
+        ).subscribe(parts => {
           let partCache = [];
           parts[0].forEach(part => {
             part.type = DownloadGraphComponent.collectionType;
@@ -372,7 +371,7 @@ export class DownloadGraphComponent implements OnInit {
           this.parts.data = partCache;
           this.working = false;
         });
-      }else {
+      } else {
         // collection, modules, and components
         this.partRequest = forkJoin(
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
