@@ -219,11 +219,20 @@ export class InfoEditorComponent implements OnInit {
         if(this.glyphInfo.partRole.includes("Cir (Circular Backbone ")) {
           // fixes the part role name so it will show up in the info-editor
           this.glyphInfo.partRole = "Cir (Circular Backbone)";
-        } else this.getRefinements(this.glyphInfo.partRole);
+
+          // for some reason part refinements are not gotten for circular backbones correctly
+          if(this.glyphInfo.partRefine !== undefined && !this.partRefinements.includes(this.glyphInfo.partRefine)) {
+            // if partRefine is not undefined the part refinement list needs to be manually set
+            this.partRefinements = [this.glyphInfo.partRefine];
+          }
+        }
+
+        if(this.glyphInfo.partRefine == undefined) this.getRefinements(this.glyphInfo.partRole);
       } else {
         this.partRefinements = [];
       }
     }
+
     // this needs to be called because we may have gotten here from an async function
     // an async function doesn't update the view for some reason
     this.changeDetector.detectChanges();

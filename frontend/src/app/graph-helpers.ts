@@ -1044,7 +1044,7 @@ export class GraphHelpers extends GraphBase {
                         graph.setSelectionCells([circBackboneLeft[0], cell]);
                     }
                 }
-                
+
                 if (cell.isSequenceFeatureGlyph()) {
                     // Modify the style string
                     let styleString = cell.style.slice();

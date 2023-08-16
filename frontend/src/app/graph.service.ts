@@ -1166,6 +1166,8 @@ export class GraphService extends GraphHelpers {
                                 return;
                             }
 
+                            this.changeOwnership(info.getFullURI());
+
                             this.delete().then(() => {
                                 this.addCircularPlasmid(info);
                             });
@@ -1178,6 +1180,8 @@ export class GraphService extends GraphHelpers {
                         if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
                             return;
                         }
+
+                        this.changeOwnership(info.getFullURI());
 
                         this.delete().then(() => {
                             this.addSequenceFeatureAt(info.partRole, 0, 0, false, { cellValue: info });
@@ -1476,22 +1480,18 @@ export class GraphService extends GraphHelpers {
                     // generated cells don't have a proper geometry
                     this.graph.getModel().setGeometry(newCell, selectedCell.geometry);
                     
+                    // if the imported cell if a circular backbone some properties need to be manually set
                     if(selectedCell.style.includes("Cir (Circular Backbone ")) {
                         newCell.partRole = "Cir (Circular Backbone Right)";
                         newCell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)";
                         newCell.id = selectedCell.id;
-                        this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
-                        
-                        // remove the old cells
-                        this.graph.getModel().remove(selectedCell);
                     }
-                    // add new cell to the graph
-                    else {
-                        this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
 
-                        // remove the old cell
-                        this.graph.getModel().remove(selectedCell);
-                    }
+                    // add new cell to the graph
+                    this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+
+                    // remove the old cell
+                    this.graph.getModel().remove(selectedCell);
 
                     // remove the old cell's view cell if it doesn't have any references
                     if (this.getCoupledGlyphs(selectedCell.value).length < 2) {
@@ -1555,8 +1555,8 @@ export class GraphService extends GraphHelpers {
                         this.removeFromInfoDict(viewCells[i].getId());
                     }
 
+                    // if a circular backbone is being imported the part role should not be NGA
                     if (selectedCell.style.includes("Cir (Circular Backbone ")) {
-                        // if a circular backbone is being imported the part role should not be NGA
                         subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()].partRole = "Cir (Circular Backbone Right)";
                     }
 
