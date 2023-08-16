@@ -693,12 +693,8 @@ export class GraphService extends GraphHelpers {
             }
 
             let circuitContainer;
-            if (selection === undefined) {
-                circuitContainer = this.getClosestCircuitContainerToPoint(0, 0);
-            }
-            else {
-                circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent();
-            }
+            if (selection === undefined) circuitContainer = this.getClosestCircuitContainerToPoint(0, 0);
+            else circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent();
 
             // there cannot be more than one circular backbone on a circuit container
             if(circuitContainer.circularBackbone) return;
@@ -1146,7 +1142,6 @@ export class GraphService extends GraphHelpers {
      * Find the selected cell, and if there is a glyph selected, update its metadata.
      */
     async setSelectedCellInfo(info: Info) {
-        console.log(info)
         const selectedCell = this.graph.getSelectionCell();
 
         this.graph.getModel().beginUpdate();
@@ -1159,24 +1154,36 @@ export class GraphService extends GraphHelpers {
 
             if (info instanceof GlyphInfo && (!selectedCell || selectedCell.isSequenceFeatureGlyph() || selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph())) {
                 if (!selectedCell || !selectedCell.isMolecularSpeciesGlyph()) {
+                    // handles when a glyph is being replaced with a circular backbone
                     if(info.partRole === "Cir (Circular Backbone)") {
                         if(selectedCell.getParent().circularBackbone && info.partRole === "Cir (Circular Backbone)" && !selectedCell.style.includes("Cir (Circular Backbone ")) {
                             this.showError("There cannot be multiple circular backbones.");
                             return;
-                        } else this.delete().then(() => this.addCircularPlasmid(info));
-                    } 
+                        } else {
+                            //check for ownership prompt
+                            let oldGlyphInfo = this.getFromInfoDict(selectedCell.value);
+                            if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
+                                return;
+                            }
+
+                            this.delete().then(() => {
+                                this.addCircularPlasmid(info);
+                            });
+                        }
+                    }
                     // case where a circular backbone is being replaced with a different glyph
                     else if(this.graph.getSelectionCells().length > 1) {
+                        //check for ownership prompt
+                        let oldGlyphInfo = this.getFromInfoDict(selectedCell.value);
+                        if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
+                            return;
+                        }
+
                         this.delete().then(() => {
                             this.addSequenceFeatureAt(info.partRole, 0, 0, false, { cellValue: info });
-                            // check for ownership prompt
-                            // let oldGlyphInfo = this.getFromInfoDict(selectedCell.value);
-                            // if (oldGlyphInfo.uriPrefix != environment.baseURI && !await this.promptMakeEditableCopy(oldGlyphInfo.displayID)) {
-                            //     return;
-                            // }
                         });
                     } else {
-                        // The logic for updating the glyphs was getting a bit big, so I moved it into it's own method
+                        // The logic for updating the glyphs was getting a bit big, so I moved it into its own method
                         this.updateSelectedGlyphInfo(info);
                     }
                 } else {
@@ -1468,23 +1475,27 @@ export class GraphService extends GraphHelpers {
 
                     // generated cells don't have a proper geometry
                     this.graph.getModel().setGeometry(newCell, selectedCell.geometry);
-
+                    
+                    if(selectedCell.style.includes("Cir (Circular Backbone ")) {
+                        newCell.partRole = "Cir (Circular Backbone Right)";
+                        newCell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)";
+                        newCell.id = selectedCell.id;
+                        this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+                        
+                        // remove the old cells
+                        this.graph.getModel().remove(selectedCell);
+                    }
                     // add new cell to the graph
-                    this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+                    else {
+                        this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell));
+
+                        // remove the old cell
+                        this.graph.getModel().remove(selectedCell);
+                    }
 
                     // remove the old cell's view cell if it doesn't have any references
                     if (this.getCoupledGlyphs(selectedCell.value).length < 2) {
                         this.removeViewCell(this.graph.getModel().getCell(selectedCell.value));
-                    }
-
-                    // remove the old cell
-                    this.graph.getModel().remove(selectedCell);
-
-                    if(selectedCell.style.includes("Cir (Circular Backbone ")) {
-                        let cirBackboneInfo = new GlyphInfo();
-                        newCell.partRole = "Cir (Circular Backbone";
-                        newCell.style = "sequenceFeatureGlyphCir (Circular Backbone ";
-                        newCell.id = selectedCell.id;
                     }
 
                     // move any edges from selectedCell to newCell
@@ -1539,21 +1550,22 @@ export class GraphService extends GraphHelpers {
                     // cloning doesn't keep the id for some reason
                     viewClone.id = viewCells[i].id;
 
+                    // cleanup the info dictionary if the uri is already in there
+                    if (this.getFromInfoDict(viewCells[i].getId()) != null) {
+                        this.removeFromInfoDict(viewCells[i].getId());
+                    }
+
+                    if (selectedCell.style.includes("Cir (Circular Backbone ")) {
+                        // if a circular backbone is being imported the part role should not be NGA
+                        subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()].partRole = "Cir (Circular Backbone Right)";
+                    }
+
                     // add the cell to the graph
                     this.graph.addCell(viewClone, cell1);
 
                     // add the info to the dictionary
-                    if (this.getFromInfoDict(viewCells[i].getId()) != null) {
-                        this.removeFromInfoDict(viewCells[i].getId());
-                    }
-                    
-                    // if a circular backbone is being imported the part role should not be NGA
-                    if(selectedCell.style.includes("Cir (Circular Backbone ")) {
-                        subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()].partRole = "Cir (Circular Backbone)";
-                    } 
-                    
-                    this.addToInfoDict(subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()]);
-
+                    this.addToInfoDict(subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()]);                    
+                
                     // add any molecular species or interactions to the info dict
                     for (let child of viewClone.children) {
                         if (child.isMolecularSpeciesGlyph()) {
@@ -1668,6 +1680,9 @@ export class GraphService extends GraphHelpers {
                     origParent.refreshCircuitContainer(this.graph);
                     this.graph.setSelectionCell(newCell);
                     this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(newCell.value)).partRole);
+                    
+                    // if the parent is an empty circular backbone the circular backbone needs to be repositioned
+                    if(origParent.children.length === 3 && origParent.circularBackbone) this.repositionCircularBackbone(origParent);
                 }
 
                 // if we zoomed out zoom back in
@@ -1725,7 +1740,6 @@ export class GraphService extends GraphHelpers {
                 }
 
                 if (GraphBase.unFormatedCells.size > 0) {
-                    console.log("FORMATTING !!!!!!!!!!!!!!!!");
                     this.autoFormat(GraphBase.unFormatedCells);
                     GraphBase.unFormatedCells.clear();
                 }

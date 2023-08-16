@@ -1032,6 +1032,19 @@ export class GraphHelpers extends GraphBase {
                 newStyleName = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.STYLE_NGA;
 
             cells.forEach(function (cell) {
+                if(name === "Cir (Circular Backbone Right)") {
+                    let circBackboneLeft = cell.getParent().children.filter(cell => cell.stayAtBeginning);
+
+                    // checks if the value of the left backbone is the same as the imported parts value
+                    if(circBackboneLeft.length == 1 && circBackboneLeft.value != cell.value) {
+                        // add missing property on the newly created right circular backbone
+                        cell.stayAtEnd = true;
+
+                        graph.getModel().setValue(circBackboneLeft[0], cell.value);
+                        graph.setSelectionCells([circBackboneLeft[0], cell]);
+                    }
+                }
+                
                 if (cell.isSequenceFeatureGlyph()) {
                     // Modify the style string
                     let styleString = cell.style.slice();
@@ -1364,7 +1377,8 @@ export class GraphHelpers extends GraphBase {
             let viewID = toExpand.values().next().value;
             let viewCell = this.graph.getModel().getCell(viewID);
             toExpand.delete(viewID);
-            reached.add(viewCell.getId());
+            if(viewCell == undefined) reached.add(viewID);
+            else reached.add(viewCell.getId());
 
             // get the children of the viewCell
             let viewChildren = this.graph.getModel().getChildren(viewCell);
@@ -2096,7 +2110,7 @@ export class GraphHelpers extends GraphBase {
      * 
      * @param circuitContainer The circuit container that contains the circular backbone
      */
-    repositionCircularBackbone(circuitContainer) {
+    protected repositionCircularBackbone(circuitContainer) {
         let childrenContainer;
 
         // if something that is not a container or sequence it needs to be properly handled
@@ -2112,7 +2126,7 @@ export class GraphHelpers extends GraphBase {
                 childrenCopy[0].getGeometry().x + 49, "auto", "auto", "auto", this.graph);
     }
 
-    horizontalSortBasedOnPosition(circuitContainer) {
+    protected horizontalSortBasedOnPosition(circuitContainer) {
         // pull out children that should be sorted
         let childrenCopy = circuitContainer.children.slice()
             .filter(cell => !cell.stayAtBeginning);
