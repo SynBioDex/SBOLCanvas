@@ -1,11 +1,17 @@
 import { Component } from '@angular/core'
 import { GraphService } from '../graph.service'
-
-
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSliderModule } from '@angular/material/slider';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import {FormsModule} from '@angular/forms'
+import {RouterModule } from '@angular/router';
 @Component({
+    standalone:true,
     selector: 'app-zoom-controls',
     templateUrl: './zoom-controls.component.html',
-    styleUrls: ['./zoom-controls.component.css']
+    styleUrls: ['./zoom-controls.component.css'],
+    imports: [MatIconModule, MatFormFieldModule,MatSliderModule, MatTooltipModule, FormsModule, RouterModule]
 })
 
 export class ZoomControlsComponent {

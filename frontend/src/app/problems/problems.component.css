@@ -43,6 +43,6 @@
     line-height: 28px;
     height: 2.5em;
 }
-/deep/ .problems-panel {
+::ng-deep .problems-panel {
     max-width: 500px !important;
 }

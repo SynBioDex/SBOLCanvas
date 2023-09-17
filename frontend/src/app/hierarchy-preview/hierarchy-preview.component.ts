@@ -3,6 +3,7 @@ import { GraphService } from '../graph.service'
 
 
 @Component({
+    standalone: true,
     selector: 'app-hierarchy-preview',
     templateUrl: './hierarchy-preview.component.html',
     styleUrls: ['./hierarchy-preview.component.css']

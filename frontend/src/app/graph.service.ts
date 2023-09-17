@@ -7,15 +7,17 @@
 ///// <reference path="./graph-base.ts"/>
 
 import { Injectable } from '@angular/core';
-import * as mxCell from 'mxgraph';
+//import * as mxCell from 'mxgraph';
+import { mxCell, mxGraphView, mxGraph } from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { MetadataService } from './metadata.service';
 import { GlyphService } from './glyph.service';
 import { InteractionInfo } from './interactionInfo';
 import { environment } from 'src/environments/environment';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { GraphEdits } from './graph-edits';
-import { GraphBase, mx } from './graph-base';
+import { GraphBase } from './graph-base';
+import mx from './mxgraph';
 import { GraphHelpers } from './graph-helpers';
 import { StyleInfo } from './style-info';
 import { ModuleInfo } from './moduleInfo';
@@ -25,11 +27,14 @@ import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
 import { Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
-
+import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 @Injectable({
     providedIn: 'root'
 })
 export class GraphService extends GraphHelpers {
+
+    @ViewChild("graphContainer") containerElementRef: ElementRef ;
+
 
     constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService) {
         super(dialog, metadataService, glyphService);
@@ -39,8 +44,6 @@ export class GraphService extends GraphHelpers {
 
         // handle double click on glyph to enter it
         this.graph.addListener(mx.mxEvent.DOUBLE_CLICK, mx.mxUtils.bind(this, this.enterGlyph));
-
-        
         // --- For when SBOLCanvas is embedded in another app ---
 
         // send changes in mxgraph model to parent
@@ -131,7 +134,7 @@ export class GraphService extends GraphHelpers {
 
     isSelectedTargetEdge(): boolean {
         let selected = this.graph.getSelectionCells();
-        if (selected.lengh > 1 || selected.length == 0 || !selected[0].isInteraction()) {
+        if (selected.length > 1 || selected.length == 0 || !selected[0].isInteraction()) {
             return false;
         }
 
@@ -140,7 +143,7 @@ export class GraphService extends GraphHelpers {
 
     isSelectedSourceEdge(): boolean {
         let selected = this.graph.getSelectionCells();
-        if (selected.lengh > 1 || selected.length == 0 || !selected[0].isInteraction()) {
+        if (selected.length > 1 || selected.length == 0 || !selected[0].isInteraction()) {
             return false;
         }
 
@@ -336,7 +339,8 @@ export class GraphService extends GraphHelpers {
             let viewCell = this.graph.getModel().getCell(selection[0].getValue());
             // doing this in the graph edit breaks things in the undo, so we put it here
             viewCell.refreshViewCell(this.graph);
-            let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
+            const view: mxGraphView = new mx.mxGraphView(this.graph);
+            let zoomEdit = new GraphEdits.zoomEdit(view, selection[0], this);
             this.graph.getModel().execute(zoomEdit);
         } finally {
             this.graph.getModel().endUpdate();
@@ -351,7 +355,8 @@ export class GraphService extends GraphHelpers {
     exitGlyph() {
         // the root view should always be left on the viewStack
         if (this.viewStack.length > 1) {
-            let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), null, this);
+            const view: mxGraphView = new mx.mxGraphView(this.graph);
+            let zoomEdit = new GraphEdits.zoomEdit(view, null, this);
             this.graph.getModel().execute(zoomEdit);
         }
     }
@@ -1175,7 +1180,7 @@ export class GraphService extends GraphHelpers {
         imgExport.drawState(this.graph.getView().getState(this.graph.getCurrentRoot()), svgCanvas);
 
         var xml = encodeURIComponent(mx.mxUtils.getXml(root));
-        new mx.mxXmlRequest(environment.backendURL + '/echo', 'filename=' + filename + '.svg&format=svg' + '&xml=' + xml).simulate(document, '_blank');
+        new mx.mxXmlRequest(environment.backendURL + '/echo', 'filename=' + filename + '.svg&format=svg' + '&xml=' + xml, 'POST', false, '','').simulate(document, '_blank');
     }
 
     exportImage(filename: string, format: string) {
@@ -1206,7 +1211,7 @@ export class GraphService extends GraphHelpers {
             bg = '&bg=' + bg;
         }
 
-        new mx.mxXmlRequest(environment.backendURL + '/export', 'filename=' + filename + '.' + format + '&format=' + format + bg + '&w=' + w + '&h=' + h + '&xml=' + encodeURIComponent(xml)).simulate(document, '_blank');
+        new mx.mxXmlRequest(environment.backendURL + '/export', 'filename=' + filename + '.' + format + '&format=' + format + bg + '&w=' + w + '&h=' + h + '&xml=' + encodeURIComponent(xml), 'POST', false, '','').simulate(document, '_blank');
     }
 
     /**
@@ -1332,7 +1337,8 @@ export class GraphService extends GraphHelpers {
                 const codec = new mx.mxCodec(doc);
 
                 // store the information in a temp graph for easy access
-                const subGraph = new mx.mxGraph();
+                
+                const subGraph = new mx.mxGraph(this.graphContainer);
                 codec.decode(doc.documentElement, subGraph.getModel());
 
                 // get the new cell
@@ -1539,6 +1545,7 @@ export class GraphService extends GraphHelpers {
                 if (zoomOut) {
                     if (selectedCell.isSequenceFeatureGlyph()) {
                         // if the selected cell is a sequenceFeature that means we came from a sub view
+                       
                         this.graph.getModel().execute(new GraphEdits.zoomEdit(this.graph.getView(), newCell, this));
                     } else {
                         // if it isn't, that means we are in a module, or at the root

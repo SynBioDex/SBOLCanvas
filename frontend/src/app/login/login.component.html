@@ -7,11 +7,13 @@
       <mat-label>Registry: {{data.server}}</mat-label>
 
       <mat-form-field>
-        <input matInput type="email" placeholder="email" [(ngModel)]="email">
+        <input matInput type="email" placeholder="email" [(ngModel)]="email" [ngModelOptions]=" 
+        {standalone: true}">
       </mat-form-field>
 
       <mat-form-field>
-        <input matInput type="password" placeholder="password" [(ngModel)]="password">
+        <input matInput type="password" placeholder="password" [(ngModel)]="password"[ngModelOptions]=" 
+        {standalone: true}">
       </mat-form-field>
   
     </div>

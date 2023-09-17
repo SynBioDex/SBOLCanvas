@@ -4,18 +4,21 @@ import { InteractionInfo } from '../interactionInfo';
 import { MetadataService } from '../metadata.service';
 import { GraphService } from '../graph.service';
 import { FilesService } from '../files.service';
-import { MatSelectChange, MatDialog } from '@angular/material';
+import { MatSelectChange } from '@angular/material/select';
+import { MatDialog } from '@angular/material/dialog';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
-import { ThrowStmt } from '@angular/compiler';
+//import { ThrowStmt } from '@angular/compiler';
 
 
 @Component({
+  standalone:true,
   selector: 'app-info-editor',
   templateUrl: './info-editor.component.html',
-  styleUrls: ['./info-editor.component.css']
+  styleUrls: ['./info-editor.component.css'],
+  imports:[]
 })
 
 export class InfoEditorComponent implements OnInit {

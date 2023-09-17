@@ -1,13 +1,21 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { GraphService } from '../graph.service';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+
+import { MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { FilesService } from '../files.service';
 import { LoginService } from '../login.service';
-
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatInputModule } from '@angular/material/input';
+import {FormsModule} from '@angular/forms'
 @Component({
+  standalone:true,
   selector: 'app-export-design',
   templateUrl: './export-design.component.html',
-  styleUrls: ['./export-design.component.css']
+  styleUrls: ['./export-design.component.css'],
+  imports: [MatCardModule, MatFormFieldModule, MatSelectModule, MatInputModule, FormsModule]
 })
 export class ExportDesignComponent implements OnInit {
 

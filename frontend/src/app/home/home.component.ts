@@ -1,11 +1,23 @@
 import {Component, HostListener, OnInit, ViewChild} from '@angular/core';
 import {GlyphInfo} from '../glyphInfo';
 import {GraphService} from "../graph.service";
-import { ToolbarComponent } from "../toolbar/toolbar.component";
+import {ToolbarComponent } from "../toolbar/toolbar.component";
 import {ComponentCanDeactivate} from '../pending-changes.guard';
 import {Observable} from 'rxjs';
 import {Title} from "@angular/platform-browser";
 import { EmbeddedService } from '../embedded.service';
+import { MatCardModule } from '@angular/material/card';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MaterialModule } from '../material.module';
+import { CanvasComponent } from '../canvas/canvas.component';
+import { ProblemsComponent } from '../problems/problems.component';
+import { GlyphMenuComponent } from '../glyph-menu/glyph-menu.component';
+import { InfoEditorComponent } from '../info-editor/info-editor.component';
+import { HierarchyPreviewComponent } from '../hierarchy-preview/hierarchy-preview.component';
+import { ZoomControlsComponent } from '../zoom-controls/zoom-controls.component';
+import { ColorPickerComponent } from '../color-picker/color-picker.component';
+
 
 export enum KEY_CODE {
   DELETE = "Delete",
@@ -15,9 +27,12 @@ export enum KEY_CODE {
 }
 
 @Component({
+  standalone:true,
   selector: 'app-sbol-canvas',
   templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css']
+  styleUrls: ['./home.component.css'],
+  imports: [MatCardModule, MatSidenavModule, MatTabsModule, CanvasComponent, ZoomControlsComponent, ProblemsComponent, GlyphMenuComponent,
+  InfoEditorComponent, ToolbarComponent,HierarchyPreviewComponent, ColorPickerComponent]
 })
 export class HomeComponent implements OnInit, ComponentCanDeactivate {
 

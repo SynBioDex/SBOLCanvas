@@ -1,6 +1,8 @@
-import * as mxEditor from 'mxgraph';
-import * as mxGraph from 'mxgraph';
-import * as mxCell from 'mxgraph';
+// import * as mxEditor from 'mxgraph';
+// import * as mxGraph from 'mxgraph';
+// import * as mxCell from 'mxgraph';
+import { mxEditor, mxGraph, mxCell } from 'mxgraph';
+import mx from './mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { InteractionInfo } from './interactionInfo';
 import { GlyphService } from './glyph.service';
@@ -14,12 +16,12 @@ import { CustomShapes } from './CustomShapes';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
-declare var require: any;
-export const mx = require('mxgraph')({
-    mxImageBasePath: 'mxgraph/images',
-    mxBasePath: 'mxgraph'
-});
 
+// declare var require: any;
+// export const mx = require('mxgraph')({
+//     mxImageBasePath: './../assets/mxgraph/images',
+//     mxBasePath: '../../assets/mxgraph'
+// });
 /**
  * The base class that represents our mxGraph. Primarily contains initalizers, and core methods.
  */
@@ -71,8 +73,8 @@ export class GraphBase {
 
 
     // class variables
-    graph: mxGraph;
-    editor: mxEditor;
+    graph:  mxGraph;
+    editor:  mxEditor;
     graphContainer: HTMLElement;
 
     // Keeps track of the cell order we entered

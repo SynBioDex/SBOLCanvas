@@ -1,9 +1,11 @@
-import * as mxCell from 'mxgraph';
+//import * as mxCell from 'mxgraph';
+import { mxCell } from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
-import { mxGraphView } from 'src/mxgraph';
+import { mxGraphView} from 'mxgraph';
 import { GraphService } from './graph.service';
 import { Info } from './info';
-import { mx, GraphBase } from './graph-base';
+import { GraphBase } from './graph-base';
+import mx from './mxgraph'
 
 /**
  * Contains all the custom edit objects necessary for mxGraph.
@@ -69,7 +71,7 @@ export class GraphEdits {
          * @param previousInfo The info that is already there (or null if adding)
          */
         constructor(cell0: string, info: Info, previousInfo: Info, dictionaryIndex = GraphBase.INFO_DICT_INDEX) {
-            this.cell0 = cell0;
+            this.cell0.value = cell0;
             // store them in reverse so the execute performs the action the first time
             this.info = previousInfo;
             this.previousInfo = info;

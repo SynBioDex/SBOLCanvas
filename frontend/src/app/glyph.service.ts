@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
+import { mxEditor, mxGraph, mxCell } from 'mxgraph';
 
-declare var require: any;
-const mx = require('mxgraph')({
-    mxImageBasePath: 'mxgraph/images',
-    mxBasePath: 'mxgraph'
-});
+import mx from './mxgraph';
+// declare var require: any;
+// const mx = require('mxgraph')({
+//     mxImageBasePath: 'mxgraph/images',
+//     mxBasePath: 'mxgraph'
+// });
 
 @Injectable({
     providedIn: 'root'

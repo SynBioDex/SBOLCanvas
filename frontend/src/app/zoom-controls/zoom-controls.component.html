@@ -3,8 +3,8 @@
         <mat-icon>zoom_in</mat-icon>
     </button>
 
-    <mat-slider vertical aria-label="zoom" min="10" max="400" step="5" tickInterval="5"
-        (input)="zoomSliderChanged($event)" [value]="getZoomSliderValue()"></mat-slider>
+    <!-- <mat-slider vertical aria-label="zoom" min="10" max="400" step="5" tickInterval="5"
+        (input)="zoomSliderChanged($event)" [value]="getZoomSliderValue()"></mat-slider> -->
 
     <button mat-icon-button [matTooltip]="'Zoom Out'" (click)="graphService.zoomOut()">
         <mat-icon>zoom_out</mat-icon>

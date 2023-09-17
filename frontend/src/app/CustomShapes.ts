@@ -1,4 +1,4 @@
-import { mx } from "./graph-base";
+import mx  from "./mxgraph";
 import { GraphService } from "./graph.service";
 
 

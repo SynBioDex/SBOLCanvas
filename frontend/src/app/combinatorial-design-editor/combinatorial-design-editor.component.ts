@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { MatTableDataSource, MatDialogRef, MatDialog } from '@angular/material';
+import { MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { MatTableDataSource } from '@angular/material/table';
 import { CombinatorialInfo } from '../combinatorialInfo';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { GlyphInfo } from '../glyphInfo';
@@ -7,11 +8,16 @@ import { GraphService } from '../graph.service';
 import { IdentifiedInfo } from '../identifiedInfo';
 import { MetadataService } from '../metadata.service';
 import { VariableComponentInfo } from '../variableComponentInfo';
-
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCardModule } from '@angular/material/card';
+import { MatTableModule } from '@angular/material/table';
 @Component({
+  standalone: true,
   selector: 'app-combinatorial-design-editor',
   templateUrl: './combinatorial-design-editor.component.html',
-  styleUrls: ['./combinatorial-design-editor.component.css']
+  styleUrls: ['./combinatorial-design-editor.component.css'],
+  imports: [MatFormFieldModule, MatSelectModule,MatCardModule, MatTableModule]
 })
 export class CombinatorialDesignEditorComponent implements OnInit {
 

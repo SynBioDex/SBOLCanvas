@@ -1,12 +1,18 @@
 import { Component, OnInit, Inject } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { FilesService } from '../files.service';
 import { LoginService } from '../login.service';
-
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatFormField } from '@angular/material/form-field';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import {FormsModule} from '@angular/forms';
 @Component({
+  standalone:true,
   selector: 'app-collection-creation',
   templateUrl: './collection-creation.component.html',
-  styleUrls: ['./collection-creation.component.css']
+  styleUrls: ['./collection-creation.component.css'],
+  imports: [MatCardModule, MatFormFieldModule, MatDialogModule, MatCheckboxModule, FormsModule]
 })
 export class CollectionCreationComponent implements OnInit {
 

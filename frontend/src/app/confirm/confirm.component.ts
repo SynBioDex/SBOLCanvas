@@ -1,10 +1,12 @@
 import { Component, OnInit, Inject } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
-
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatCardModule } from '@angular/material/card';
 @Component({
+  standalone: true,
   selector: 'app-confirm',
   templateUrl: './confirm.component.html',
-  styleUrls: ['./confirm.component.css']
+  styleUrls: ['./confirm.component.css'],
+  imports: [MatCardModule]
 })
 export class ConfirmComponent implements OnInit {
 
@@ -22,3 +24,4 @@ export class ConfirmComponent implements OnInit {
   }
 
 }
+

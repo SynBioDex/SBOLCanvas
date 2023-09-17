@@ -1,11 +1,14 @@
 import { Component } from '@angular/core'
 import { GraphService } from '../graph.service'
-
+import { MatMenuModule } from '@angular/material/menu'
+import { MatTooltipModule } from '@angular/material/tooltip'
 
 @Component({
+    standalone: true,
     selector: 'app-problems',
     templateUrl: './problems.component.html',
-    styleUrls: ['./problems.component.css']
+    styleUrls: ['./problems.component.css'],
+    imports : [MatMenuModule, MatTooltipModule]
 })
 
 export class ProblemsComponent {

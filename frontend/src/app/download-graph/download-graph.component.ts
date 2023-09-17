@@ -1,19 +1,30 @@
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
 import { LoginService } from '../login.service';
-import { MatDialog, MatDialogRef, MatSort, MatTableDataSource, MAT_DIALOG_DATA } from '@angular/material';
+
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSortModule } from '@angular/material/sort';
+import { MatTableDataSource } from '@angular/material/table';
 import { FilesService } from '../files.service';
 import { GraphService } from '../graph.service';
 import { MetadataService } from '../metadata.service';
 import { forkJoin, Subscription } from 'rxjs';
-import { ThrowStmt } from '@angular/compiler';
+//import { ThrowStmt } from '@angular/compiler';
 import { IdentifiedInfo } from '../identifiedInfo';
 import { FuncCompSelectorComponent } from '../func-comp-selector/func-comp-selector.component';
 import { SelectionModel } from '@angular/cdk/collections';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatOptionModule } from '@angular/material/core';
+import { MatCardModule } from '@angular/material/card';
+import { MatTableModule } from '@angular/material/table';
+import { MatSort } from '@angular/material/sort';
 
 @Component({
+  standalone: true,
   selector: 'app-download-graph',
   templateUrl: './download-graph.component.html',
-  styleUrls: ['./download-graph.component.css']
+  styleUrls: ['./download-graph.component.css'],
+  imports: [MatSortModule, MatSelectModule, MatFormFieldModule, MatOptionModule, MatCardModule, MatTableModule]
 })
 export class DownloadGraphComponent implements OnInit {
 

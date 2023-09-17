@@ -21,13 +21,13 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
-              {"glob":"**/*", "input":"node_modules/mxgraph/javascript/src", "output": "./mxgraph"}
+              {"glob":"**/*", "input":"node_modules/mxgraph/javascript/src", "output": "./assets/mxgraph"}
             ],
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": [],
-            "es5BrowserSupport": true
+            "scripts": ["node_modules/mxgraph/javascript/mxClient.js"]
+ 
           },
           "configurations": {
             "production": {
@@ -40,7 +40,7 @@
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
-              "extractCss": true,
+
               "namedChunks": false,
               "aot": true,
               "extractLicenses": true,
@@ -133,5 +133,8 @@
       }
     }
   },
-  "defaultProject": "SBOLCanvasFrontend"
+ 
+  "cli": {
+    "analytics": "b22c91f6-894e-42cf-8cdd-77289413e4c6"
+  }
 }

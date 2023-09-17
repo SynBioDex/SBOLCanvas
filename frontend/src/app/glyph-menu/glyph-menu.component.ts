@@ -9,11 +9,13 @@ import {GraphService} from '../graph.service';
 import {GlyphService} from '../glyph.service';
 import {DomSanitizer} from '@angular/platform-browser';
 import {MetadataService} from '../metadata.service';
-
+import { MatFormFieldModule } from '@angular/material/form-field';
 @Component({
+  standalone: true,
   selector: 'app-glyph-menu',
   templateUrl: './glyph-menu.component.html',
-  styleUrls: ['./glyph-menu.component.css']
+  styleUrls: ['./glyph-menu.component.css'],
+  imports: [MatFormFieldModule]
 })
 export class GlyphMenuComponent implements OnInit, AfterViewInit {
 

@@ -1,11 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { GraphService } from '../graph.service';
-import { MatDialogRef } from '@angular/material';
-
+import { MatDialogRef } from '@angular/material/dialog';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatCardModule } from '@angular/material/card';
+import { MatInputModule } from '@angular/material/input';
+import {FormsModule} from '@angular/forms'
 @Component({
+  standalone: true,
   selector: 'app-export',
   templateUrl: './export-image.component.html',
-  styleUrls: ['./export-image.component.css']
+  styleUrls: ['./export-image.component.css'], 
+  imports: [MatSelectModule, MatFormFieldModule, MatCardModule, MatInputModule, FormsModule]
 })
 export class ExportImageComponent implements OnInit {
 

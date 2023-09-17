@@ -1,11 +1,17 @@
 import {Component, Inject, OnInit} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {ColorPickerStartupData} from '../design-menu/design-menu.component';
-
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MccColorPickerModule } from 'material-community-components/color-picker';
+import { MatDialogModule } from '@angular/material/dialog';
 @Component({
+  standalone: true,
   selector: 'app-color-picker',
   templateUrl: './color-picker.component.html',
-  styleUrls: ['./color-picker.component.css']
+  styleUrls: ['./color-picker.component.css'],
+  imports: [MatButtonModule, MatCardModule, MatCheckboxModule, MccColorPickerModule,MatDialogModule]
 })
 export class ColorPickerComponent implements OnInit {
 

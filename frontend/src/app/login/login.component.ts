@@ -1,12 +1,18 @@
 import { Component, Inject, OnInit, forwardRef } from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material';
+
 import { LoginDialogData, LoginService } from '../login.service';
-
-
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatCardModule } from '@angular/material/card';
+import { MatInputModule } from '@angular/material/input';
+import {FormsModule} from '@angular/forms'
 @Component({
+  standalone: true,
   selector: 'app-login',
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+  styleUrls: ['./login.component.css'],
+  imports : [MatFormFieldModule, MatCardModule, MatInputModule,FormsModule]
 })
 export class LoginComponent implements OnInit {
 

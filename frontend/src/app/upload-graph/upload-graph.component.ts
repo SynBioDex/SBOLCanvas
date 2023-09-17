@@ -1,15 +1,26 @@
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
-import { MatDialogRef, MatTableDataSource, MatSort, MAT_DIALOG_DATA, MatDialog } from '@angular/material';
+import { MatSort } from '@angular/material/sort';
+import { MatDialogRef } from '@angular/material/dialog';
+import { MatTableDataSource } from '@angular/material/table';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { FilesService } from '../files.service';
 import { LoginService } from '../login.service';
 import { GraphService } from '../graph.service';
 import { CollectionCreationComponent } from '../collection-creation/collection-creation.component';
-
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCardModule } from '@angular/material/card';
+import { MatTableModule } from '@angular/material/table';
 @Component({
+  standalone: true,
   selector: 'app-upload-graph',
   templateUrl: './upload-graph.component.html',
-  styleUrls: ['./upload-graph.component.css']
+  styleUrls: ['./upload-graph.component.css'],
+  imports: [MatFormFieldModule, MatSelectModule, MatCardModule, MatTableModule]
 })
+
+
 export class UploadGraphComponent implements OnInit {
 
   registries: string[];

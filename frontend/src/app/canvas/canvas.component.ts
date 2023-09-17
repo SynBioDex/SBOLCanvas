@@ -2,9 +2,11 @@ import { Component, ElementRef, OnInit, ViewChild, HostListener } from '@angular
 import { GraphService } from '../graph.service';
 
 @Component({
+    standalone: true,
     selector: 'app-canvas',
     templateUrl: './canvas.component.html',
-    styleUrls: ['./canvas.component.css']
+    styleUrls: ['./canvas.component.css'],
+    imports : []
 })
 export class CanvasComponent implements OnInit {
 

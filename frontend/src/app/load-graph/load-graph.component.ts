@@ -1,13 +1,20 @@
 import {Component, Inject, OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material';
-import {LoadDialogData} from '../toolbar/toolbar.component';
+
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef } from '@angular/material/dialog';
+import { LoadDialogData } from '../toolbar/toolbar.component';
 import { FilesService } from '../files.service';
 import { GraphService } from '../graph.service';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatCardModule } from '@angular/material/card';
+
 
 @Component({
+  standalone: true,
   selector: 'app-load-graph',
   templateUrl: './load-graph.component.html',
-  styleUrls: ['./load-graph.component.css']
+  styleUrls: ['./load-graph.component.css'],
+  imports: [MatFormFieldModule, MatCardModule]
 })
 export class LoadGraphComponent implements OnInit {
 

@@ -27,12 +27,7 @@ export class GlyphInfo extends Info {
         version = "1",
         partType = "DNA region",
         partRole,
-    }: {
-        id?,
-        version?,
-        partType?,
-        partRole?,
-    } = {}) {
+    }: {id?,version?,partType?,partRole?,} = {}) {
         super();
 
         this.version = version

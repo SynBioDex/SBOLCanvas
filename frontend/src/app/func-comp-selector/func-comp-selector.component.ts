@@ -1,10 +1,14 @@
 import { Component, OnInit, Inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatTableDataSource, MatDialogRef } from '@angular/material';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatCardModule } from '@angular/material/card';
 
 @Component({
+  standalone: true,
   selector: 'app-func-comp-selector',
   templateUrl: './func-comp-selector.component.html',
-  styleUrls: ['./func-comp-selector.component.css']
+  styleUrls: ['./func-comp-selector.component.css'],
+  imports: [MatCardModule]
 })
 export class FuncCompSelectorComponent implements OnInit {
 

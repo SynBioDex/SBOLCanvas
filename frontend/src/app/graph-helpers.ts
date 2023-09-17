@@ -3,12 +3,14 @@
 import { GlyphService } from './glyph.service';
 import { GraphEdits } from './graph-edits';
 import { GlyphInfo } from './glyphInfo';
-import * as mxCell from 'mxgraph';
-import * as mxDragSource from 'mxgraph';
-import * as mxGraph from 'mxgraph';
+// import * as mxCell from 'mxgraph';
+// import * as mxDragSource from 'mxgraph';
+// import * as mxGraph from 'mxgraph';
+import { mxCell, mxDragSource, mxGraph } from 'mxgraph';
 import { ConfirmComponent } from './confirm/confirm.component';
-import { MatDialog } from '@angular/material';
-import { GraphBase, mx } from './graph-base';
+import { MatDialog } from '@angular/material/dialog';
+import { GraphBase} from './graph-base';
+import mx from './mxgraph';
 import { GraphService } from './graph.service';
 import { MetadataService } from './metadata.service';
 import { StyleInfo } from './style-info';
@@ -21,7 +23,7 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { InteractionInfo } from './interactionInfo';
-import { SystemJsNgModuleLoader } from '@angular/core';
+import { SystemJsNgModuleLoader } from 'systemjs';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.
@@ -35,7 +37,7 @@ export class GraphHelpers extends GraphBase {
         super(glyphService);
 
         // initalize the GlyphInfoDictionary
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0');
         const infoDict = [];
         const combinatorialDict = [];
         const interactionDict = [];
@@ -46,7 +48,7 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().setValue(cell0, dataContainer);
 
         // initalize the root view cell of the graph
-        const cell1 = this.graph.getModel().getCell(1);
+        const cell1 = this.graph.getModel().getCell('1');
         const rootModuleInfo = new ModuleInfo();
         this.addToInfoDict(rootModuleInfo);
         const rootViewCell = this.graph.insertVertex(cell1, rootModuleInfo.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
@@ -1220,7 +1222,7 @@ export class GraphHelpers extends GraphBase {
             }
         } else {
             layout.execute(this.graph.getDefaultParent());
-            for (let viewChild of this.graph.getDefualtParent().children) {
+            for (let viewChild of this.graph.getDefaultParent().children) {
                 if (viewChild.isEdge()) {
                     viewChild.setStyle(viewChild.getStyle().replace("noEdgeStyle=1;", ""));
                 }
@@ -1497,7 +1499,7 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().remove(cell);
         // clone it because the previous remove will keep the id change if we don't
         newViewCell.id = newGlyphURI;
-        this.graph.getModel().add(this.graph.getModel().getCell(1), newViewCell);
+        this.graph.getModel().add(this.graph.getModel().getCell('1'), newViewCell);
     }
 
     protected removeViewCell(viewCell: mxCell) {
@@ -1877,7 +1879,7 @@ export class GraphHelpers extends GraphBase {
      * NOTE: Should only be used if the glyphURI is the same
      */
     protected updateInfoDict(info: Info) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[GraphBase.INFO_DICT_INDEX][info.getFullURI()]));
     }
 
@@ -1885,7 +1887,7 @@ export class GraphHelpers extends GraphBase {
      * Remove an Info object from the dictionary
      */
     protected removeFromInfoDict(glyphURI: string) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.INFO_DICT_INDEX][glyphURI]));
     }
 
@@ -1893,7 +1895,7 @@ export class GraphHelpers extends GraphBase {
      * Add a Info object to the dictionary
      */
     protected addToInfoDict(info: Info) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null));
     }
 
@@ -1901,7 +1903,7 @@ export class GraphHelpers extends GraphBase {
      * Get the GlyphInfo with the given glyphURI from the dictionary
      */
     protected getFromInfoDict(glyphURI: string): Info {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0');
         return cell0.value[GraphBase.INFO_DICT_INDEX][glyphURI];
     }
 
@@ -1910,7 +1912,7 @@ export class GraphHelpers extends GraphBase {
      * NOTE: Should only be used if the fullURI is the same
      */
     protected updateCombinatorialDict(info: CombinatorialInfo) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][info.getFullURI()], GraphBase.COMBINATORIAL_DICT_INDEX));
     }
 
@@ -1918,7 +1920,7 @@ export class GraphHelpers extends GraphBase {
      * Remove a combinatorial object from the dictionary
      */
     protected removeFromCombinatorialDict(glyphURI: string) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI], GraphBase.COMBINATORIAL_DICT_INDEX));
     }
 
@@ -1926,7 +1928,7 @@ export class GraphHelpers extends GraphBase {
      * Add a combinatorial object to the dictionary
      */
     protected addToCombinatorialDict(info: CombinatorialInfo) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null, GraphBase.COMBINATORIAL_DICT_INDEX));
     }
 
@@ -1934,7 +1936,7 @@ export class GraphHelpers extends GraphBase {
      * Get the CombinatorialInfo that targets the given glyphURI from the dictionary
      */
     protected getFromCombinatorialDict(glyphURI: string): CombinatorialInfo {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         return cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][glyphURI];
     }
 
@@ -1943,7 +1945,7 @@ export class GraphHelpers extends GraphBase {
      * @param templateURI - The templateURI to search for
      */
     protected getCombinatorialWithTemplate(templateURI: string) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         for (let key in cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX]) {
             if (cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][key].templateURI === templateURI) {
                 return cell0.value[GraphBase.COMBINATORIAL_DICT_INDEX][key];
@@ -1952,22 +1954,22 @@ export class GraphHelpers extends GraphBase {
     }
 
     protected updateInteractionDict(info: InteractionInfo) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, cell0.value[GraphBase.INTERACTION_DICT_INDEX][info.getFullURI()], GraphBase.INTERACTION_DICT_INDEX));
     }
 
     protected removeFromInteractionDict(interactionURI: string) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.INTERACTION_DICT_INDEX][interactionURI], GraphBase.INTERACTION_DICT_INDEX));
     }
 
     protected addToInteractionDict(info: InteractionInfo) {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null, GraphBase.INTERACTION_DICT_INDEX));
     }
 
     protected getFromInteractionDict(interactionURI: string): InteractionInfo {
-        const cell0 = this.graph.getModel().getCell(0);
+        const cell0 = this.graph.getModel().getCell('0').getValue();
         return cell0.value[GraphBase.INTERACTION_DICT_INDEX][interactionURI];
     }
 
@@ -2052,7 +2054,7 @@ export class GraphHelpers extends GraphBase {
 
     protected createViewCell(uri: string, module: boolean = false): mxCell {
         // construct the view cell
-        const cell1 = this.graph.getModel().getCell(1);
+        const cell1 = this.graph.getModel().getCell('1');
         let childViewCell;
         if (module) {
             childViewCell = this.graph.insertVertex(cell1, uri, '', 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
