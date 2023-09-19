@@ -2,7 +2,7 @@ name: Build Latest Docker Image
 
 on:
   push:
-    branches: [ synbio-suite ]
+    branches: [ final ]
   workflow_dispatch:
   
 jobs:
