@@ -25,6 +25,7 @@
     "bootstrap": "^4.3.1",
     "browserslist": "^4.16.6",
     "core-js": "^2.5.4",
+    "dns-packet": "^1.3.4",
     "file-saver": "^2.0.2",
     "hammerjs": "^2.0.8",
     "handlebars": "^4.7.8",
@@ -39,8 +40,10 @@
     "nanoid-dictionary": "^4.3.0",
     "ng-sidebar": "^8.0.0",
     "ngx-bootstrap": "^4.0.0",
+    "path-parse": "^1.0.7",
     "popper.js": "^1.15.0",
     "rxjs": "^6.3.3",
+    "shelljs": "^0.8.5",
     "tslib": "^1.9.0",
     "zone.js": "~0.8.26"
   },
