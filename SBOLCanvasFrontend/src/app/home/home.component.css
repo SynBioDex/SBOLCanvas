@@ -6,7 +6,87 @@
   right: 0;
 }
 
+.rightSideBar {
+  overflow: visible;
+
+}
 
 /deep/ .mat-tab-label {
   min-width: 130px!important;
+}
+
+/*
+  New stuff added by Zach
+*/
+
+#zoomControls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(-100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+}
+
+.zoom-input {
+  width: 6ch;
+  text-align: center;
+}
+
+#hierarchyControls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+}
+
+#hierarchyControls .level {
+  width: 4em;
+  height: 4em;
+  margin: 8px;
+  font-family: 'Roboto';
+  cursor: pointer;
+  border-radius: 8px;
+
+  border: 4px solid #ddd;
+  color: grey;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#hierarchyControls .level:last-child {
+  border-color: black;
+  color: black;
+}
+
+#instructions {
+  position: absolute;
+  bottom: 0;
+  padding: 10px;
+  font-size: 0.8rem;
+  font-family: "Roboto", sans-serif;
+  color: #aaa;
+  user-select: none;
+}
+
+#instructions.hidden p, #instructions.hidden .hide-tips, #instructions:not(.hidden) .show-tips {
+  display: none;
+}
+
+.hide-tips, .show-tips {
+  cursor: pointer;
+  color: #333;
+}
+
+.hide-tips:hover, .show-tips:hover {
+  color: black;
+  text-decoration: underline;
 }

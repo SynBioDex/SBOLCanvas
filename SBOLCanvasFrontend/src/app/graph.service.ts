@@ -31,6 +31,7 @@ export class GraphService extends GraphHelpers {
     super(dialog, metadataService, glyphService);
 
     this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
+    this.graph.addListener(mx.mxEvent.DOUBLE_CLICK, mx.mxUtils.bind(this, this.enterGlyph));
   }
 
   isSelectedAGlyph(): boolean {

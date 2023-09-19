@@ -1,22 +1,19 @@
 <!-- Banner -->
 <!-- <app-banner></app-banner> -->
 
-<!-- Toolbar -->
-<app-toolbar></app-toolbar>
-
 <!-- We are using the Angular Material library for layout. -->
 <mat-sidenav-container style="height: 100vh;" [hasBackdrop]="false"><!-- A sidebar -->
 
   <!-- On the left is the glyph menu -->
   <mat-sidenav [(opened)]="leftBarOpened" position="start"
   mode="side"
-  disableClose="true" [disableClose]="true">
-      <app-glyph-menu></app-glyph-menu>
+  disableClose="true" [disableClose]="true">  
+    <app-glyph-menu></app-glyph-menu>
   </mat-sidenav>
 
   <!-- On the right will be the info menu and color palette -->
   <mat-sidenav [(opened)]="rightBarOpened" position="end"
-  mode="side" [disableClose]="true">
+  mode="side" [disableClose]="true" class="rightSideBar">
     <mat-tab-group>
       <mat-tab label="Info">
         <app-info-editor></app-info-editor>
@@ -25,11 +22,49 @@
         <app-color-palette></app-color-palette>
       </mat-tab>
     </mat-tab-group>
+
+
+    <!-- New zoom controls added by Zach -->
+    <div id="zoomControls">
+      <mat-icon>zoom_in</mat-icon>
+      <mat-slider vertical aria-label="zoom" min="10" max="400" step="5" tickInterval="5" (input)="zoomSliderChanged($event)" [value]="getZoomSliderValue()"></mat-slider>
+      <mat-icon>zoom_out</mat-icon>
+      <mat-form-field class="zoom-input" [matTooltip]="'Camera zoom'">
+        <input matInput (change)="zoomInputChanged($event)" [value]="getZoomDisplayValue()">
+      </mat-form-field>
+    </div>
+
+    <!-- New hierarcy controls added by Zach -->
+    <div id="hierarchyControls">
+      <div *ngFor="let depth of getViewStack(); let i = index" (click)="switchView(i)" class="level">
+        <span>
+          {{i == 0 && "Top" || i}}
+          <!-- {{i}} -->
+          <!-- <svg #canvasElement [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg> -->
+        </span>
+      </div>
+    </div>
+
   </mat-sidenav>
 
   <!-- In the middle is the canvas -->
   <div ng-sidebar-content>
+    <!-- Toolbar -->
+    <app-toolbar></app-toolbar>
     <app-canvas></app-canvas>
+
+    <!-- Instructions -->
+    <div id="instructions" [ngClass]="{hidden: tipsHidden}">
+      <p>
+        Left-click to select<br>
+        Right-click to pan<br>
+        Scroll to zoom<br>
+        Double-click to enter component
+      </p>
+      <span class="hide-tips" (click)="tipsHidden = true">Hide Tips</span>
+      <span class="show-tips" (click)="tipsHidden = false">Show Tips</span>
+    </div>
+
   </div>
 
 </mat-sidenav-container>

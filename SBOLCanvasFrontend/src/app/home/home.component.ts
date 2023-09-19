@@ -2,6 +2,7 @@ import {Component, HostListener, OnInit, ViewChild} from '@angular/core';
 import {GlyphInfo} from '../glyphInfo';
 import {GraphService} from "../graph.service";
 import { ToolbarComponent } from "../toolbar/toolbar.component";
+import { GlyphMenuComponent } from '../glyph-menu/glyph-menu.component';
 import {ComponentCanDeactivate} from '../pending-changes.guard';
 import {Observable} from 'rxjs';
 import {Title} from "@angular/platform-browser";
@@ -20,10 +21,12 @@ export enum KEY_CODE {
 })
 export class HomeComponent implements OnInit, ComponentCanDeactivate {
 
-  @ViewChild(ToolbarComponent) toolbar
-
+  @ViewChild(ToolbarComponent) toolbar;
+  @ViewChild(GlyphMenuComponent) glyphMenu;
+  
   rightBarOpened = true;
   leftBarOpened = true;
+  tipsHidden = false;
 
   constructor(private graphService: GraphService, private titleService: Title) {
     this.titleService.setTitle('SBOL Canvas');
@@ -78,5 +81,44 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
     // returning true will navigate without confirmation
     // returning false will show a confirm dialog before navigating away
     return false;
+  }
+
+  zoomSliderChanged($event) {
+    this.graphService.setZoom($event.value / 100);
+  }
+
+  zoomInputChanged($event) {
+    let number = parseInt($event.target.value);
+    if (!isNaN(number)) {
+      const percent = number / 100;
+      this.graphService.setZoom(percent);
+    }
+
+    // if they entered nonsense the zoom doesn't change, which
+    // means angular won't refresh the input box on its own
+    $event.target.value = this.getZoomDisplayValue();
+  }
+
+  getZoomSliderValue() {
+    return this.graphService.getZoom() * 100;
+  }
+
+  getZoomDisplayValue() {
+    let percent = this.graphService.getZoom() * 100;
+    let string = percent.toFixed(0);
+    return string.toString() + '%';
+  }
+
+  getViewStack() {
+    // console.log(this.glyphMenu.sequenceFeatureDict);
+    return this.graphService.viewStack;
+  }
+
+  switchView(depth) {
+    let levels = this.graphService.viewStack.length - depth - 1;
+
+    for(let i = 0; i < levels; i++) {
+      this.graphService.exitGlyph();
+    }
   }
 }

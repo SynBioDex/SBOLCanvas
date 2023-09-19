@@ -16,12 +16,20 @@
   margin-left: 8px;
 }
 
-.zoom-input {
-  text-align: right;
-  padding-left: 10px;
-  padding-right: 10px;
-  max-width: 50px;
-  font-size: .8em;
+
+.mat-toolbar {
+  background: transparent;
+  position: fixed;
+  z-index: 999;
+}
+
+.toolbar-row .mat-card {
+  margin: 0 4px;
+}
+
+.toolbar-row .mat-card-footer {
+  text-align: center;
+  font-size: 0.6em;
 }
 
 /* There is a bug with vertical dividers in
@@ -36,4 +44,12 @@ mat-divider.toolbar-divider-style-fix {
 
 .toolbar-row {
   padding: 8px;
+  height: 100px;
+}
+
+
+.menuSectionLabel {
+  font-family:sans-serif;
+  font-size:.8em;
+  color:gray;
 }

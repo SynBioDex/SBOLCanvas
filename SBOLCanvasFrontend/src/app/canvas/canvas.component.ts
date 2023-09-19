@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, HostListener } from '@angular/core';
 import { GraphService } from '../graph.service';
 
 @Component({
@@ -10,7 +10,7 @@ export class CanvasComponent implements OnInit {
 
   constructor(
     private graphService: GraphService
-  ) {}
+  ) { }
 
   @ViewChild('canvasContainer') canvasContainer: ElementRef;
 
@@ -18,5 +18,22 @@ export class CanvasComponent implements OnInit {
     const canvasContainer = this.canvasContainer.nativeElement;
     const svg = this.graphService.getGraphDOM();
     canvasContainer.appendChild(svg);
+  }
+
+
+  @HostListener('wheel', ['$event']) onMouseWheel(event: WheelEvent) {
+    const zoomCoef = 1 / 1000,
+          minZoom = 0.1,
+          maxZoom = 4;
+
+    // calculate new zoom value
+    let newZoom = this.graphService.getZoom() + zoomCoef * event.deltaY;
+
+    // clip illegal cases
+    newZoom = Math.max(minZoom, newZoom);
+    newZoom = Math.min(maxZoom, newZoom);
+    
+    // set the zoom
+    this.graphService.setZoom(newZoom);
   }
 }

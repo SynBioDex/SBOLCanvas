@@ -71,17 +71,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     });
   }
 
-  zoomChanged($event) {
-    let number = parseInt($event.target.value);
-    if (!isNaN(number)) {
-      const percent = number / 100;
-      this.graphService.setZoom(percent);
-    }
-
-    // if they entered nonsense the zoom doesn't change, which
-    // means angular won't refresh the input box on its own
-    $event.target.value = this.getZoomDisplayValue();
-  }
 
   openLoadDialog(): void {
     const dialogRef = this.dialog.open(LoadGraphComponent, {
@@ -91,12 +80,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     dialogRef.afterClosed().subscribe(result => {
       this.popupOpen = false;
     });
-  }
-
-  getZoomDisplayValue() {
-    let percent = this.graphService.getZoom() * 100;
-    let string = percent.toFixed(0);
-    return string.toString() + '%';
   }
 
   async newModuleDesign(){
