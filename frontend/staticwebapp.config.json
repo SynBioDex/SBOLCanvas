@@ -1,0 +1,12 @@
+{
+    "routes": [
+        {
+            "route": "/about",
+            "rewrite": "/index.html"
+        },
+        {
+            "route": "/tutorial",
+            "rewrite": "/index.html"
+        }
+    ]
+}

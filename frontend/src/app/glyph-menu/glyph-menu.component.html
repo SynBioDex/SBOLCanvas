@@ -1,0 +1,137 @@
+<div class="glyphContainer">
+  <div class="flexWrapper" style="margin: auto">
+
+    <!-- Lawwwwdd -->
+      <!-- The style in here eliminates all the terrible crap angular material devs do. https://github.com/angular/components/issues/7975 -->
+      <!-- Adding it back because i like it -Zach -->
+      <mat-form-field class="searchBar" floatLabel="never" appearance="outline">
+      <!-- <mat-form-field style=" margin-bottom: -1.5em; width: 100%;" floatLabel="never" appearance="outline"> -->
+        <input matInput id="displayID" placeholder="Search..." [value]="searchPhrase" (input)="searchPhrase=$event.target.value">
+
+        <!-- Icon in search bar changes depending on content -->
+        <button mat-button *ngIf="searchPhrase" matSuffix mat-icon-button aria-label="Clear" (click)="searchPhrase=''">
+          <mat-icon>close</mat-icon>
+        </button>
+        <button mat-button *ngIf="!searchPhrase" matSuffix mat-icon-button aria-label="Clear">
+          <mat-icon>search</mat-icon>
+        </button>
+      </mat-form-field>
+
+
+
+
+    <!-------------------------------------    Sequence panel   --------------------------------------->
+    <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="(sequenceFeatureDict | keyvalue: keepOrder| searchfilter: searchPhrase).length > 0">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Sequence Features
+        </mat-panel-title>
+        <mat-panel-description>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
+        <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue:keepOrder | searchfilter: searchPhrase" >
+          <button mat-button (click)="onSequenceFeatureGlyphClicked(pair.key)" [matTooltip]="pair.key">
+            <svg #canvasElement [attr.elementType]="elementTypes.SEQUENCE_FEATURE" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel>
+
+
+
+    <!-------------------------------------    Molecular Species panel   --------------------------------------->
+    <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="!componentDefinitionMode &&
+            (molecularSpeciesDict | keyvalue | searchfilter: searchPhrase).length > 0">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Molecular Species
+        </mat-panel-title>
+        <mat-panel-description>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
+        <mat-grid-tile *ngFor="let pair of molecularSpeciesDict | keyvalue | searchfilter: searchPhrase">
+          <button mat-button (click)="onMolecularSpeciesGlyphClicked(pair.key)" [matTooltip]="pair.key">
+            <svg #canvasElement [attr.elementType]="elementTypes.MOLECULAR_SPECIES" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel>
+
+
+    <!-------------------------------------    Interactions panel   --------------------------------------->
+    <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="!componentDefinitionMode &&
+            (interactionsDict | keyvalue | searchfilter: searchPhrase).length > 0">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Interactions
+        </mat-panel-title>
+        <mat-panel-description>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
+        <mat-grid-tile *ngFor="let pair of interactionsDict | keyvalue | searchfilter: searchPhrase">
+          <button mat-button (click)="onInteractionGlyphClicked(pair.key)" [matTooltip]="pair.key">
+            <svg #canvasElement [attr.elementType]="elementTypes.INTERACTION" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel>
+
+
+    <!-------------------------------------    Interaction nodes panel   --------------------------------------->
+    <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="!componentDefinitionMode &&
+            (interactionNodeDict | keyvalue | searchfilter: searchPhrase).length > 0">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Interaction Nodes
+        </mat-panel-title>
+        <mat-panel-description>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
+        <mat-grid-tile *ngFor="let pair of interactionNodeDict | keyvalue | searchfilter: searchPhrase">
+          <button mat-button (click)="onInteractionNodeGlyphClicked(pair.key)" [matTooltip]="pair.key">
+            <svg #canvasElement [attr.elementType]="elementTypes.INTERACTION_NODE" [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel>
+
+
+    <!-------------------------------------    Utils panel   --------------------------------------->
+    <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="
+                    (!componentDefinitionMode && stringMatches('backbone dna strand circuit', searchPhrase))
+                    || stringMatches('textbox text box', searchPhrase)">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Util
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-grid-list class="glyphGrid" cols="4" rowHeight="52px" gutterSize="5px">
+        <mat-grid-tile *ngIf="!componentDefinitionMode && stringMatches('backbone dna strand circuit', searchPhrase)">
+          <button mat-icon-button (click)="addStrand()"
+                  [matTooltip]="'Backbone'"
+                  style="width:52px;height:52px;">
+            <svg #canvasElement [attr.elementType]="elementTypes.BACKBONE" width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>
+          </button>
+        </mat-grid-tile>
+        <mat-grid-tile *ngIf="stringMatches('textbox text box', searchPhrase)">
+          <button mat-button (click)="addTextBox()"  width="52px" height="52px" [matTooltip]="'Text box'">
+            <svg #canvasElement [attr.elementType]="elementTypes.TEXT_BOX" width="52px" height="52px" [innerHTML]="utilsDict['textBox']"></svg>
+          </button>
+        </mat-grid-tile>
+        <mat-grid-tile *ngIf="!componentDefinitionMode && stringMatches('module definition', searchPhrase)">
+          <button mat-button (click)="addModule()"
+                  [matTooltip]="'Module'"
+                  style="width:52px;height:52px;">
+            <svg #canvasElement [attr.elementType]="elementTypes.MODULE" width="52px" height="52px" [innerHTML]="utilsDict['module']"></svg>
+          </button>
+        </mat-grid-tile>
+      </mat-grid-list>
+    </mat-expansion-panel>
+
+
+  </div>
+</div>

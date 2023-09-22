@@ -1,0 +1,27 @@
+import { Component, OnInit, Inject } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatCardModule } from '@angular/material/card';
+@Component({
+  standalone: true,
+  selector: 'app-confirm',
+  templateUrl: './confirm.component.html',
+  styleUrls: ['./confirm.component.css'],
+  imports: [MatCardModule]
+})
+export class ConfirmComponent implements OnInit {
+
+  message: string;
+  options: string[];
+
+  constructor(public dialogRef: MatDialogRef<ConfirmComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any) {this.message = data.message; this.options = data.options;}
+  
+  ngOnInit() {
+  }
+
+  onClick(option: string){
+    this.dialogRef.close(option);
+  }
+
+}
+

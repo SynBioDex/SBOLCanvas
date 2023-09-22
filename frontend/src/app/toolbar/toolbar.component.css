@@ -1,0 +1,31 @@
+/* This sets the space between sets of buttons */
+.toolbar-spacer {
+    flex: 1 1 auto;
+}
+
+/* Not sure exactly how this works but it makes the menu
+ bigger so that it can fit the buttons. */
+::ng-deep .mat-menu-panel {
+    padding: 0 10px !important;
+    width: 100% !important;
+}
+
+/* This sets the css for the buttons on the row */
+.toolbar-row-button {
+    margin: 0 3px;
+    border: none;
+}
+
+.mat-toolbar {
+    min-height: 0;
+}
+
+.toolbar-row {
+    height: 44px;
+    padding-bottom: 2px;
+    gap: 40px;
+}
+
+.toolbar-row-section.grow {
+    flex-grow: 1;
+}

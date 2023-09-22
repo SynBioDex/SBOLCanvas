@@ -1,0 +1,38 @@
+
+/* Needed because angular material developers are stupid. */
+.mat-icon {
+  vertical-align: middle;
+}
+
+.glyphContainer {
+  /* width: 250px; */
+  /* padding: 5px; */
+}
+
+.flexWrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.searchBar {
+    margin: 15px 10px -20px 10px;
+}
+
+.glyphMenuSection {
+    box-shadow: none;
+    background: transparent;
+}
+
+.glyphGrid {
+    margin: 0 -10px;
+}
+
+:host ::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
+  padding: 0.1em 0 0.1em 0 !important;
+  top: -0.25em;
+}
+
+button {
+  padding: 0px 0px 0px 0px;
+  margin: 0px 0px 0px 0px;
+}
