@@ -13,4 +13,4 @@ SBOLCavas is a web application for creation and editing of genetic constructs us
 -$docker run --rm -p 8080:8080 synbiohub/sbolcanvas
 
 #### To run the current release on the dockerhub repository locally:<br/>
--$docker run --rm -p 8080:8080 synbiohub/sbolcanvas:1.2.0
+-$docker run --rm -p 8080:8080 synbiohub/sbolcanvas:1.2.0 
