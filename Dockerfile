@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:12-alpine
 
 RUN apk add openjdk8 bash
 
