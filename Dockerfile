@@ -6,7 +6,7 @@ RUN apk add git
 COPY . /opt/canvas
 
 # build frontend
-WORKDIR /opt/canvas/frontend
+WORKDIR /opt/canvas/SBOLCanvasFrontend
 RUN npm install
 RUN npm run gitversion
 RUN npm run build
@@ -16,7 +16,7 @@ FROM tomcat:9.0-jdk8-openjdk as server
 
 # copy backend files
 WORKDIR /opt/backend
-COPY backend .
+COPY SBOLCanvasBackend .
 
 # make directories
 RUN mkdir -p WebContent/WEB-INF/classes
@@ -31,7 +31,7 @@ RUN jar -cf /usr/local/tomcat/webapps/api.war WebContent/*
 WORKDIR /usr/local/tomcat
 
 # copy built frontend files
-COPY --from=frontend-build /opt/canvas/frontend/dist webapps/canvas
+COPY --from=frontend-build /opt/canvas/SBOLCanvasFrontend/dist webapps/canvas
 
 # copy configs for tomcat
 ARG TOMCAT_AUTOMATION_DIR=resources/server_automation/tomcat
