@@ -1,11 +1,14 @@
 FROM node:12-alpine as frontend-build
 
-# copy frontend files
-WORKDIR /opt/frontend
-COPY frontend .
+RUN apk add git
+
+# copy files -- need to copy whole repo for gitversion
+COPY . /opt/canvas
 
 # build frontend
+WORKDIR /opt/canvas/frontend
 RUN npm install
+RUN npm run gitversion
 RUN npm run build
 
 
@@ -28,7 +31,7 @@ RUN jar -cf /usr/local/tomcat/webapps/api.war WebContent/*
 WORKDIR /usr/local/tomcat
 
 # copy built frontend files
-COPY --from=frontend-build /opt/frontend/dist webapps/canvas
+COPY --from=frontend-build /opt/canvas/frontend/dist webapps/canvas
 
 # copy configs for tomcat
 ARG TOMCAT_AUTOMATION_DIR=resources/server_automation/tomcat
