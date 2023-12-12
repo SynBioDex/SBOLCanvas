@@ -1,9 +1,19 @@
-<mat-card>
-  <h1 mat-dialog-title>Error</h1>
-  <div>
-    <p>{{message}}</p>
-  </div>
-  <div mat-dialog-actions>
+<h1 mat-dialog-title>An error has occurred.</h1>
+<mat-expansion-panel>
+    <mat-expansion-panel-header>
+
+        <mat-panel-description>
+            Click to view more details.
+        </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <div id="error-content-size"></div>
+    <ng-template matExpansionPanelContent>
+        <iframe id="error-frame" [srcdoc]="message"></iframe>
+    </ng-template>
+</mat-expansion-panel>
+
+<div mat-dialog-actions>
+    <!-- <button mat-button (click)="onDownloadGraphClick()">Download Raw Design</button> -->
     <button mat-button (click)="onOkClick()">Ok</button>
-  </div>
-</mat-card>
+</div>

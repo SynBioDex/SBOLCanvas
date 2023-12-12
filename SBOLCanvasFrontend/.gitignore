@@ -4,8 +4,10 @@
 /dist
 /tmp
 /out-tsc
+*bundle.xml
 # Only exists if Bazel was run
 /bazel-out
+package-lock.json
 
 # dependencies
 /node_modules
@@ -40,6 +42,8 @@ npm-debug.log
 yarn-error.log
 testem.log
 /typings
+*.ps1
+src/environments/versions.ts
 
 # System Files
 .DS_Store

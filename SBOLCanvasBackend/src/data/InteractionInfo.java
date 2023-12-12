@@ -65,7 +65,7 @@ public class InteractionInfo extends Info {
 	}
 
 	public void setTargetRefinement(Hashtable<String, String> targetRefinement) {
-		this.targetRefinement = targetRefinement;
+		this.targetRefinement = targetRefinement; 
 	}
 
 	public Hashtable<String, String> getFromURI() {

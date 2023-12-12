@@ -1,0 +1,48 @@
+
+.problem-icon {
+    color: lightgray;
+}
+
+.warning {
+    color: #ffca28;
+}
+
+.warning span, span.warning {
+    color: #c79a00;
+}
+
+.error {
+    color: #f44336;
+}
+
+.problem-qty {
+    font-weight: bolder;
+    display: inline-block;
+    padding: 0 6px 0 10px;
+}
+
+.success {
+    color: #4caf50;
+}
+
+/* .error span, span.error {
+    color: #ba000d;
+} */
+
+#problems-expand {
+    width: 100px;
+    border-radius: 20px;
+    margin: 10px;
+    margin-right: 20px;
+    position: absolute;
+    right: 0;
+}
+
+.problem-item {
+    /* width: 300px; */
+    line-height: 28px;
+    height: 2.5em;
+}
+/deep/ .problems-panel {
+    max-width: 500px !important;
+}

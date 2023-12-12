@@ -32,7 +32,7 @@ export class LoginComponent implements OnInit {
     this.working = true;
     this.badLogin = false;
     this.loginService.login(this.email, this.password, this.data.server).subscribe(result => {
-      this.loginService.users[this.data.server] = result;
+      this.loginService.users[this.data.server] = JSON.parse(result);
       this.working = false;
       this.dialogRef.close(true);
     },

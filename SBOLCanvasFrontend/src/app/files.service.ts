@@ -93,6 +93,27 @@ export class FilesService {
     });
   }
 
+  exportDesignToString(users: {}, format: string, contents: string): Observable<string> {
+    return new Observable<string>(observer => {
+      let headers = new HttpHeaders();
+      headers = headers.set("Authorization", this.usersToStringArr(users));
+      let params = new HttpParams();
+      params = params.append("format", format);
+
+      this.http.post(this.exportDesignURL, contents, { headers: headers, responseType: 'text', params: params }).subscribe(result => {
+        observer.next(result);
+      });
+    });
+  }
+
+  exportMXGraph(graphService: GraphService) {
+    var file = new File(
+        [graphService.getGraphXML()], 
+        "graph_record.xml"
+    );
+    FileSaver.saveAs(file);
+  }
+
   enumerateDesign(users: {}, filename: string, format: string, contents: string): Observable<void> {
     return new Observable<void>(observer => {
       let headers = new HttpHeaders();

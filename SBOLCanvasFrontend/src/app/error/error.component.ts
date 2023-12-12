@@ -1,5 +1,7 @@
 import { Component, OnInit, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+// import { GraphService } from '../graph.service';
+// import * as FileSaver from 'file-saver';
 
 @Component({
   selector: 'app-error',
@@ -9,10 +11,12 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 export class ErrorComponent implements OnInit {
 
   message: string;
+  
 
   constructor(
     public dialogRef: MatDialogRef<ErrorComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any) { this.message = data; }
+    @Inject(MAT_DIALOG_DATA) public data: any
+    ) { this.message = data; }
 
   ngOnInit() {
   }
@@ -20,5 +24,13 @@ export class ErrorComponent implements OnInit {
   onOkClick(){
     this.dialogRef.close();
   }
+
+//   onDownloadGraphClick(){
+//     var file = new File(
+//         [this.graphService.getGraphXML()], 
+//         "mxgraph.xml"
+//     );
+//     FileSaver.saveAs(file);
+//   }
 
 }

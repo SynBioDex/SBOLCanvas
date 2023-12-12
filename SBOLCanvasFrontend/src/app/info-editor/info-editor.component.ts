@@ -168,6 +168,7 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'sequence': {
         this.glyphInfo.sequence = event.target.value;
+        break;
       }
       default: {
         console.log('Unexpected id encountered in info menu input = ' + id);
@@ -240,8 +241,8 @@ export class InfoEditorComponent implements OnInit {
     this.interactionInfo = interactionInfo;
     if (interactionInfo != null) {
       if (interactionInfo.interactionType != null) {
-        this.getInteractionSourceRefinements(this.interactionRoles[interactionInfo.interactionType][0]);
-        this.getInteractionTargetRefinements(this.interactionRoles[interactionInfo.interactionType][1]);
+        this.getInteractionSourceRefinements(this.getSourceInteractionRole());
+        this.getInteractionTargetRefinements(this.getTargetInteractionRole());
       } else {
         this.interactionSourceRefinements = [];
         this.interactionTargetRefinements = [];
@@ -284,13 +285,15 @@ export class InfoEditorComponent implements OnInit {
   }
 
   getSourceInteractionRole() {
-    let sourceRole = this.interactionRoles[this.interactionInfo.interactionType][0];
-    return sourceRole ? sourceRole : "NA";
+    const interactionRole = this.interactionRoles[this.interactionInfo.interactionType]
+    const NA = "NA"
+    return interactionRole ? interactionRole[0] || NA : NA;
   }
 
   getTargetInteractionRole() {
-    let targetRole = this.interactionRoles[this.interactionInfo.interactionType][1];
-    return targetRole ? targetRole : "NA";
+    const interactionRole = this.interactionRoles[this.interactionInfo.interactionType]
+    const NA = "NA"
+    return interactionRole ? interactionRole[1] || NA : NA;
   }
 
   hasSourceRefinements(): boolean {
