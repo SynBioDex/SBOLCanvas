@@ -120,6 +120,7 @@ export class GlyphService {
                 const subDir = shape.getAttribute('subdir');
                 const centered = shape.getAttribute('centered');
 
+                console.log(shape);
                 const stencil = new mx.mxStencil(shape);
                 this[subDir][name] = [stencil, (centered && centered.toLowerCase() == 'true')];
             }
