@@ -129,7 +129,8 @@
                 <mat-grid-tile *ngIf="stringMatches('circular plasmid', searchPhrase)">
                     <button mat-button (click)="addCircularPlasmid()" matTooltip="Cir (Circular Backbone)">
                         <svg #canvasElement [attr.elementType]="elementTypes.SEQUENCE_FEATURE"
-                            glyphStyle="Cir (Circular Backbone)" width="52px" height="52px" [innerHTML]="utilsDict['Cir (Circular Backbone)']"></svg>
+                            glyphStyle="Cir (Circular Backbone)" width="52px" height="52px" 
+                            [innerHTML]="utilsDict['Cir (Circular Backbone)']"></svg>
                     </button>
                 </mat-grid-tile>
                 <mat-grid-tile *ngIf="stringMatches('textbox text box', searchPhrase)">
