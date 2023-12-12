@@ -6,8 +6,8 @@
     <mat-form-field>
       <mat-label>Server</mat-label>
       <mat-select id="registry" [disabled]="registries == null || registries.length < 1"
-        (selectionChange)="setRegistry($event.value)">
-        <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
+      (selectionChange)="setRegistry($event.value)" value="{{registry}}">
+      <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
           {{registry}}
         </mat-option>
       </mat-select>
