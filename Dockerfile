@@ -10,6 +10,7 @@ WORKDIR /opt/canvas/SBOLCanvasFrontend
 RUN npm install
 RUN npm run gitversion
 RUN npm run build
+# RUN npm run debug-build
 
 
 FROM tomcat:9.0-jdk8-openjdk as server
