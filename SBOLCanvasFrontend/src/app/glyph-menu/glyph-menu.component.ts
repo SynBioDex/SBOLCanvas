@@ -175,7 +175,4 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   keepOrder = (a, b) => {
     return a;
   }
-  /**
-   * Returns true if
-   */
 }
