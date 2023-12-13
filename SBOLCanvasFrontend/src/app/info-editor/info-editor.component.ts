@@ -90,8 +90,6 @@ export class InfoEditorComponent implements OnInit {
         break;
       }
       case 'partRole': {
-        if(event.value.includes("Cir (Circular Backbone")) break;
-
         this.glyphInfo.partRole = event.value;
         this.glyphInfo.partRefine = '';
         if (event.value !== '') {

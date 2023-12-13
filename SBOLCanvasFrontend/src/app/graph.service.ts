@@ -904,6 +904,8 @@ export class GraphService extends GraphHelpers {
         } finally {
             this.graph.getModel().endUpdate()
         }
+
+        console.log(this.graph.getModel().cells)
     }
 
     makeInteractionNodeDragsource(element, stylename) {
