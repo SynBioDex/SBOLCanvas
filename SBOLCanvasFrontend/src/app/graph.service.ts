@@ -889,8 +889,9 @@ export class GraphService extends GraphHelpers {
         try {
 
             //TODO partRoles for proteins
-            let proteinInfo = new GlyphInfo()
-            proteinInfo.partType = this.moleculeNameToType(name)
+            let proteinInfo = new GlyphInfo({
+                partType: this.moleculeNameToType(name)
+            })
             this.addToInfoDict(proteinInfo)
 
             const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, proteinInfo.getFullURI(), x, y,
