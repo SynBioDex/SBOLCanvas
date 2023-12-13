@@ -79,7 +79,7 @@ export class GlyphService {
         'assets/glyph_stencils/interaction_nodes/dissociation.xml',
         'assets/glyph_stencils/interaction_nodes/process.xml',
         'assets/glyph_stencils/molecular_species/replacement-glyph.xml',
-    ]
+    ];
 
     private indicatorXMLBundle: string = "assets/glyph_stencils/indicators/bundle.xml";
     private indicatorXMLs: string[] = [
@@ -119,6 +119,7 @@ export class GlyphService {
                 const subDir = shape.getAttribute('subdir');
                 const centered = shape.getAttribute('centered');
 
+                console.log(shape);
                 const stencil = new mx.mxStencil(shape);
                 this[subDir][name] = [stencil, (centered && centered.toLowerCase() == 'true')];
             }
@@ -126,10 +127,12 @@ export class GlyphService {
         }
     }
 
+    // unused now
     loadXMLs(xml_list, glyph_list) {
         xml_list.forEach((filename) => this.loadXML(filename, glyph_list));
     }
 
+    // unused now
     loadXML(xmlFile, glyph_list) {
         let req = mx.mxUtils.load(xmlFile);
         let root = req.getDocumentElement();
@@ -160,7 +163,7 @@ export class GlyphService {
 
             canvas.setStrokeColor('#000000');
             canvas.setFillColor('none');
-
+            
             stencil.drawShape(canvas, shape, 0, 0, 50, 50);
 
             svgs[name] = elt;
@@ -183,6 +186,10 @@ export class GlyphService {
 
     getInteractionNodeGlyphs() {
         return this.interactionNodes;
+    }
+
+    getUtilGlyphs() {
+        return this.utils;
     }
 
     getUtilElements() {

@@ -50,7 +50,8 @@ public class SBOLData {
 		roles.put("RBS (Ribosome Binding Site)", SequenceOntology.RIBOSOME_ENTRY_SITE);
 		roles.put("CDS (Coding Sequence)", SequenceOntology.CDS);
 		roles.put("Ter (Terminator)", SequenceOntology.TERMINATOR);
-		roles.put("Cir (Circular Backbone)", SequenceOntology.CIRCULAR);
+		roles.put("Cir (Circular Backbone Left)", SequenceOntology.CIRCULAR);
+		roles.put("Cir (Circular Backbone Right)", SequenceOntology.CIRCULAR);
 		roles.put("gRNA (Non-Coding RNA gene)", URI.create("http://identifiers.org/so/SO:0001263"));
 		roles.put("Ori (Origin of Replication)", SequenceOntology.ORIGIN_OF_REPLICATION);
 		roles.put("OriT (Origin of Transfer)", URI.create("http://identifiers.org/so/SO:0000724"));

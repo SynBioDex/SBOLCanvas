@@ -40,7 +40,7 @@ export class GraphService extends GraphHelpers {
         // handle double click on glyph to enter it
         this.graph.addListener(mx.mxEvent.DOUBLE_CLICK, mx.mxUtils.bind(this, this.enterGlyph));
 
-        
+
         // --- For when SBOLCanvas is embedded in another app ---
 
         // send changes in mxgraph model to parent
@@ -256,6 +256,12 @@ export class GraphService extends GraphHelpers {
     async flipSequenceFeatureGlyph() {
         let selectionCells = this.graph.getSelectionCells();
 
+        // a circular backbone cannot be flipped
+        if(selectionCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0) {
+            this.showError("A circular backbone cannot be flipped.");
+            return;
+        }
+
         // flip any selected glyphs
         let parentInfos = new Set<GlyphInfo>();
         for (let cell of selectionCells) {
@@ -290,6 +296,13 @@ export class GraphService extends GraphHelpers {
                         this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "east", [cell]);
                         console.debug("turning east");
                     }
+
+                    // if a glyph has been flipped its sequence needs to be reversed
+                    let glyphInfo;
+                    if(cell) glyphInfo = this.getFromInfoDict(cell.value);
+                    glyphInfo.sequence = glyphInfo.sequence.split("").reverse().join("");
+
+                    this.metadataService.setSelectedGlyphInfo(glyphInfo);
                 } else if (cell.isInteraction()) {
                     this.flipInteractionEdge(cell);
                 } else if (cell.isInteractionNode()) {
@@ -301,7 +314,6 @@ export class GraphService extends GraphHelpers {
             }
 
             // sync circuit containers
-            let circuitContainers = [];
             for (let cell of selectionCells) {
                 if (cell.isSequenceFeatureGlyph()) {
                     this.syncCircuitContainer(cell.getParent());
@@ -448,14 +460,16 @@ export class GraphService extends GraphHelpers {
             let circuitContainers = [];
             for (let cell of selectedCells) {
                 if (cell.isSequenceFeatureGlyph()) {
-                    circuitContainers.push(cell.getParent());
-
                     // if it's a sequence feature and it has a combinatorial, remove the variable component
                     if (cell.isSequenceFeatureGlyph()) {
                         let combinatorial = this.getCombinatorialWithTemplate(cell.getParent().getValue());
                         // TODO make this undoable
                         if (combinatorial)
                             combinatorial.removeVariableComponentInfo(cell.getId());
+                        
+                        if(cell.stayAtBeginning || cell.stayAtEnd) cell.getParent().circularBackbone = false;
+                        
+                        circuitContainers.push(cell.getParent());
                     }
                 } else if (cell.isCircuitContainer() && this.graph.getCurrentRoot() && this.graph.getCurrentRoot().isComponentView())
                     circuitContainers.push(cell);
@@ -492,8 +506,6 @@ export class GraphService extends GraphHelpers {
                 this.graph.setSelectionCells(newSelection);
             }
 
-
-
             // remove interactions with modules if the item it connects to is being removed
             for (let selectedCell of selectedCells) {
                 if (selectedCell.isCircuitContainer() || selectedCell.isMolecularSpeciesGlyph()) {
@@ -519,6 +531,12 @@ export class GraphService extends GraphHelpers {
 
             for (let cell of circuitContainers) {
                 cell.refreshCircuitContainer(this.graph);
+            }
+
+            // repositions the circular backbone if the circular backbone is now empty
+            if(circuitContainers.length > 0 && circuitContainers[0].children.length === 3 
+               && circuitContainers[0].circularBackbone) {
+                this.repositionCircularBackbone(circuitContainers[0]);
             }
         } finally {
             this.graph.getModel().endUpdate();
@@ -608,8 +626,6 @@ export class GraphService extends GraphHelpers {
         this.graph.center();
     }
 
-
-
     /**
      * Turns the given element into a dragsource for creating
      * sequenceFeatureGlyphs of the type specified by 'stylename.'
@@ -625,7 +641,7 @@ export class GraphService extends GraphHelpers {
      * Adds a sequenceFeatureGlyph.
      * The new glyph's location is based off the user's selection.
      */
-    addSequenceFeature(name) {
+    async addSequenceFeature(name) {
         this.graph.getModel().beginUpdate();
         try {
             if (!this.atLeastOneCircuitContainerInGraph()) {
@@ -658,7 +674,66 @@ export class GraphService extends GraphHelpers {
             }
 
             // Add it
-            this.addSequenceFeatureAt(name, x, y, circuitContainer);
+            await this.addSequenceFeatureAt(name, x, y, circuitContainer);
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+    }
+
+    async addCircularPlasmid() {
+        this.graph.getModel().beginUpdate();
+        try {
+            if (!this.atLeastOneCircuitContainerInGraph()) {
+                // if there is no strand, quietly make one
+                // stupid user
+                this.addBackbone();
+                // this changes the selection, so the rest of this method works fine
+            }
+
+            // let the graph choose an arbitrary cell from the selection,
+            // we'll pretend it's the only one selected
+            const selection = this.graph.getSelectionCell();
+
+            // if selection is nonexistent, or is not part of a strand, there is no suitable place.
+            if (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer())) {
+                return;
+            }
+
+            const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent();
+
+            // there cannot be more than one circular backbone on a circuit container
+            if(circuitContainer.circularBackbone) return;
+
+            circuitContainer.circularBackbone = true;
+
+            // x is at the beginning of the circuit container
+            let x = circuitContainer.getGeometry().x;
+
+            // use y coord of the strand
+            let y = circuitContainer.getGeometry().y;
+
+            // add the left side of the circular cell
+            const circCellLeft = await this.addSequenceFeatureAt("Cir (Circular Backbone Left)", 
+            x, y, circuitContainer, {
+                connectable: false,
+                glyphWidth: 1,
+            });
+            circCellLeft.stayAtBeginning = true;
+
+            // add the right side of the circular cell
+            const circCellRight = await this.addSequenceFeatureAt("Cir (Circular Backbone Right)", 
+            x + circuitContainer.getGeometry().width, y,
+            circuitContainer, {
+                connectable: false,
+                glyphWidth: 1,
+            });
+            circCellRight.stayAtEnd = true;
+
+            // if the only cells are the backbone and the circular backbone the right circular backbone needs
+            // to be repositioned and the size of the circuit container needs to reflect that
+            if(circuitContainer.getGeometry().width == 2) {
+                this.repositionCircularBackbone(circuitContainer);
+            }
         } finally {
             this.graph.getModel().endUpdate();
         }
@@ -673,7 +748,14 @@ export class GraphService extends GraphHelpers {
      * x,y are also used to determine where on the strand the new
      * glyph is added (first, second, etc)
      */
-    async addSequenceFeatureAt(name, x, y, circuitContainer?) {
+    async addSequenceFeatureAt(name, x, y, circuitContainer?, {
+        connectable = true,
+        glyphWidth = GraphBase.sequenceFeatureGlyphWidth,
+        glyphStyle = undefined,
+        cellValue = undefined,
+    } = {}) {
+        let sequenceFeatureCell;
+        let cirBackboneLeftCell;
 
         // ownership change check
         if (this.graph.getCurrentRoot()) {
@@ -717,20 +799,45 @@ export class GraphService extends GraphHelpers {
             const glyphInfo = new GlyphInfo({
                 partRole: name
             });
-            this.addToInfoDict(glyphInfo);
+            this.addToInfoDict(glyphInfo)
 
+            // if the container is a circular backbone then both sides should have the same cellValue
+            if (glyphWidth == 1) {
+                circuitContainer.children
+                    .filter(cell => cell.stayAtBeginning)
+                    .forEach(child => {
+                        cellValue = child.value;
+                        cirBackboneLeftCell = child;
+                    });
+            }
+
+            if(cellValue == null) {
+                // create the glyph info and add it to the dictionary
+                glyphInfo.partRole = name;
+                this.addToInfoDict(glyphInfo);
+            }
+ 
             // Insert new glyph and its components
-            const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_SEQUENCE_FEATURE + name);
+            sequenceFeatureCell = this.graph.insertVertex(
+                circuitContainer,
+                null,
+                cellValue == null ? glyphInfo.getFullURI() : cellValue,
+                x, y, glyphWidth, GraphBase.sequenceFeatureGlyphHeight,
+                glyphStyle || GraphBase.STYLE_SEQUENCE_FEATURE + name
+            );
 
             this.createViewCell(glyphInfo.getFullURI());
-            sequenceFeatureCell.setConnectable(true);
+            sequenceFeatureCell.setConnectable(connectable);
 
             // Sorts the new SequenceFeature into the correct position in parent's array
             this.horizontalSortBasedOnPosition(circuitContainer);
 
             // The new glyph should be selected
             this.graph.clearSelection();
-            this.graph.setSelectionCell(sequenceFeatureCell);
+
+            // if the new sequence feature is a circular backbone both circular backbones should be selected
+            if(cirBackboneLeftCell !== undefined) this.graph.setSelectionCells([cirBackboneLeftCell, sequenceFeatureCell]);
+            else if(glyphWidth !== 1) this.graph.setSelectionCell(sequenceFeatureCell);
 
             // perform the ownership change
             if (this.graph.getCurrentRoot()) {
@@ -752,6 +859,8 @@ export class GraphService extends GraphHelpers {
         } finally {
             this.graph.getModel().endUpdate();
         }
+
+        return sequenceFeatureCell;
     }
 
     /**
@@ -1038,7 +1147,7 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().endUpdate();
         }
     }
-
+x
     /**
      * Find the selected cell, and if there is a glyph selected, update its metadata.
      */
@@ -1275,7 +1384,7 @@ export class GraphService extends GraphHelpers {
 
     /**
      * Decodes the given string (xml) representation of a cell
-     * and uses it ot replace the currently selected cell
+     * and uses it to replace the currently selected cell
      * @param cellString
      */
     async setSelectedToXML(cellString: string) {
