@@ -1,0 +1,20 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="Scar (Assembly Scar)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="11.0" y="19.666666666666668" />
+            <line x="37.0" y="19.666666666666668" />
+        </path>
+        <stroke />
+        <path>
+            <move x="11.0" y="28.333333333333332" />
+            <line x="37.0" y="28.333333333333332" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

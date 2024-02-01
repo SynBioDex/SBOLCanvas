@@ -1,0 +1,22 @@
+<shapes>
+<shape aspect="variable" centered="False" h="48" name="Pro (Promoter)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <path>
+            <move x="31.3663125" y="8.9074375" />
+            <line x="41.0" y="17.4074375" />
+            <line x="31.3663125" y="25.718312499999996" />
+        </path>
+        <stroke />
+        <path>
+            <move x="7.0" y="48.0" />
+            <line x="7.0" y="17.4074375" />
+            <line x="39.8663125" y="17.4074375" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

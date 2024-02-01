@@ -1,0 +1,26 @@
+<shapes>
+<shape aspect="variable" centered="True" h="48" name="NGA (No Glyph Assigned Molecular Species)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+        <strokewidth width="2.88" />
+        <linejoin join="miter" />
+        <linecap cap="butt" />
+        <miterlimit limit="4" />
+        <alpha alpha="1" />
+        <path>
+            <move x="19.69209039548022" y="12.54519774011299" />
+            <line x="13.999999999999998" y="12.54519774011299" />
+            <line x="13.999999999999998" y="35.45480225988701" />
+            <line x="19.69209039548022" y="35.45480225988701" />
+        </path>
+        <stroke />
+        <path>
+            <move x="28.30790960451978" y="12.54519774011299" />
+            <line x="34.0" y="12.54519774011299" />
+            <line x="34.0" y="35.45480225988701" />
+            <line x="28.30790960451978" y="35.45480225988701" />
+        </path>
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

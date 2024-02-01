@@ -1,0 +1,78 @@
+<mat-card>
+
+  <h1 mat-dialog-title>Combinatorial Design Variants: {{componentInfo.displayID}}</h1>
+  <div class="mat-form-field-container">
+    <mat-form-field>
+      <mat-label>Variant Operator</mat-label>
+      <mat-select id="operator" value="{{variableComponentInfo.operator}}" (selectionChange)="setOperator($event.value)">
+        <mat-option *ngFor="let operator of operators" [value]="operator">
+          {{operator}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Derivation Strategy</mat-label>
+      <mat-select id="strategy" (selectionChange)="setStrategy($event.value)" value="{{combinatorialInfo.strategy}}">
+        <mat-option *ngFor="let strategy of strategies" [value]="strategy">
+          {{strategy}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <input matInput id="displayID" placeholder="Display ID" value="{{ combinatorialInfo.displayID }}" (change)="setDisplayID($event)" matTooltipShowDelay="1000" matTooltip="Must be composed of only alphanumeric or underscore characters and MUST NOT begin with a digit.">
+    </mat-form-field>
+
+    <mat-form-field>
+      <input matInput id="name" placeholder="Derivation Name" value="{{ combinatorialInfo.name }}" (change)="setName($event)" matTooltipShowDelay="1000" matTooltip="Optional. Intended to be displayed to a human when visualizing an Identified object.">
+    </mat-form-field>
+
+    <mat-form-field>
+      <textarea matInput id="description" placeholder="Description" value="{{ combinatorialInfo.description }}" (change)="setDescription($event)" matTooltipShowDelay="1000" matTooltip="Optional. Inteded to contain a more thorough text description of an Identified object."></textarea>
+    </mat-form-field>
+
+    <table mat-table [dataSource]="parts" matSort>
+
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+        <td mat-cell *matCellDef="let element">{{element.type}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="displayId">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Display Id</th>
+        <td mat-cell *matCellDef="let element">{{element.displayId}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+        <td mat-cell *matCellDef="let element">{{element.name}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="version">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Version</th>
+        <td mat-cell *matCellDef="let element">{{element.version}}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th mat-header-cell *matHeaderCellDef>Description</th>
+        <td mat-cell *matCellDef="let element">{{element.description}}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="onRowClick(row)"
+        [style.background]="highlightRow(row) ? 'lightblue' : ''"></tr>
+    </table>
+  </div>
+
+  <div *ngIf="working">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+
+  <div mat-dialog-actions>
+    <button mat-button (click)="onAddVariantClick()">Add Variant</button>
+    <button mat-button (click)="onCancelClick()">Cancel</button>
+    <button mat-button [disabled]="!isRowSelected()" (click)="onRemoveClick()">Remove</button>
+    <button mat-button (click)="onSaveClick()">Save</button>
+  </div>
+</mat-card>

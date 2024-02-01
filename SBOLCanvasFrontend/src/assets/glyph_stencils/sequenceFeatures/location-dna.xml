@@ -1,0 +1,17 @@
+<shapes>
+  <shape aspect="variable" centered="False" h="48" name="BS (Base)" strokewidth="inherit" w="48">
+    <connections />
+    <foreground>
+      <strokewidth width="2.88" />
+      <linejoin join="round" />
+      <linecap cap="round" />
+      <path>
+        <move x="24" y="48.0" />
+        <line x="24" y="29.71428571428571" />
+      </path>
+      <fillstroke />
+      <ellipse h="16.0" w="16.0" x="16.0" y="11.990476190476187" />
+      <fillstroke />
+    </foreground>
+  </shape>
+</shapes>

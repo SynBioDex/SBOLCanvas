@@ -1,0 +1,27 @@
+<mat-card>
+    <h1 mat-dialog-title>Login</h1>
+    <div class = "mat-form-field-container">
+
+      <mat-label *ngIf="badLogin" class="warn-label">Invalid login</mat-label>
+
+      <mat-label>Registry: {{data.server}}</mat-label>
+
+      <mat-form-field>
+        <input matInput type="email" placeholder="email" [(ngModel)]="email">
+      </mat-form-field>
+
+      <mat-form-field>
+        <input matInput type="password" placeholder="password" [(ngModel)]="password">
+      </mat-form-field>
+  
+    </div>
+
+    <div *ngIf="working">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    </div>
+
+    <div mat-dialog-actions>
+      <button mat-button (click)="onCancelClick()">Cancel</button>
+      <button mat-button [disabled]="!finishCheck()" (click)="onLoginClick()">Login</button>
+    </div>
+  </mat-card>

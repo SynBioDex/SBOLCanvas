@@ -1,0 +1,8 @@
+{
+    "ext": "java",
+    "watch": [ "src/" ],
+    "exec": "docker build -t canvas-api:working . && docker run --rm --name CanvasAPI -p 8080:8080 canvas-api:working",
+    "events": {
+        "restart": "docker stop CanvasAPI"
+    }
+}
