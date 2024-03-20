@@ -25,8 +25,8 @@ RUN mkdir -p WebContent/WEB-INF/classes
 RUN javac -source 1.8 -target 1.8 -sourcepath src -d WebContent/WEB-INF/classes -cp ".:WebContent/WEB-INF/lib/*:/usr/local/tomcat/lib/*" src/**/*.java
 
 # build WAR file -- directly into tomcat webapps directory
-RUN jar -cf /usr/local/tomcat/webapps/api.war WebContent/*
-
+# modified to set cwd of command to WebContent instead of including it in glob pattern
+RUN jar -cf /usr/local/tomcat/webapps/api.war -C WebContent .
 
 WORKDIR /usr/local/tomcat
 
