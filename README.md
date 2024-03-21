@@ -29,7 +29,7 @@ git clone -b synbio-suite https://github.com/SynBioDex/SBOLCanvas
 Go to the backend directory
 
 ```bash
-cd SBOLCanvas/backend
+cd SBOLCanvas/SBOLCanvasBackend
 ```
 
 Ensure you have nodemon installed
@@ -47,7 +47,7 @@ npx nodemon
 Go to the frontend directory
 
 ```bash
-cd ../SBOLCanvas/frontend
+cd ../SBOLCanvas/SBOLCanvasFrontend
 ```
 
 Install dependencies
@@ -56,7 +56,7 @@ Install dependencies
 npm install
 ```
 
-Start the Angular development server
+Start the Angular development server (ensure your node version < 14)
 
 ```bash
 npm run dev
