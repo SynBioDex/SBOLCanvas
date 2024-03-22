@@ -66,9 +66,31 @@ export class MetadataService {
   private componentDefinitionModeSource = new BehaviorSubject(null);
   componentDefinitionMode = this.componentDefinitionModeSource.asObservable();
 
+  private savedRegistry: string;
+  private savedCollection: { collection: string, history: Array<object> };
+
   // TODO: DNA strand info
 
   constructor(private http: HttpClient) { }
+
+  getSavedRegistry() {
+    return this.savedRegistry;
+  }
+
+  getSavedCollection() {
+    return this.savedCollection;
+  }
+
+  setSavedRegistry(registry: string) {
+    this.savedRegistry = registry;
+  }
+
+  setSavedCollection(collectionInfo: { collection: string, history: Array<object> }) {
+    this.savedCollection = {
+      collection: collectionInfo.collection,
+      history: collectionInfo.history
+    }
+  }
 
   loadTypes(): Observable<any> {
     return this.http.get(this.typesURL);

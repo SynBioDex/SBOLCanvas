@@ -1,0 +1,23 @@
+<shapes>
+    <shape aspect="variable" centered="False" h="48" name="Cir (Circular Backbone)" strokewidth="inherit" w="48">
+        <connections />
+        <foreground>
+            <strokewidth width="2.0" />
+            <linejoin join="round" />
+            <linecap cap="butt" />
+            <miterlimit limit="4" />
+            <alpha alpha="1" />
+                       <path>
+                <move x="30.0" y="15.0" />
+                <arc short-arc-flag="1.0" rx="29.0" ry="12.0" sweep-flag="1.0" x="33" x-axis-rotation="0.0" y="37.5" />
+            </path>
+<stroke />
+               <path>
+                <move x="30.0" y="15.0" />
+                <arc short-arc-flag="1.0" rx="30.0" ry="12.0" sweep-flag="0.0" x="15.6" x-axis-rotation="0.0" y="37.5" />
+            </path>
+            <stroke />
+        </foreground>
+    </shape>
+
+</shapes>
