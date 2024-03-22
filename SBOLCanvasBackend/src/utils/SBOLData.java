@@ -175,11 +175,14 @@ public class SBOLData {
 			parentName = "NGA (No Glyph Assigned)";
 		}
 		TreeSet<String> refinementNames = new TreeSet<String>();
-		Set<URI> descendants = so.getDescendantURIsOf(roles.getValue(parentName));
-		for(URI uri : descendants) {
-			refinementNames.add(so.getName(uri));
+		if (roles.getValue(parentName) != null) {
+			Set<URI> descendants = so.getDescendantURIsOf(roles.getValue(parentName));
+			for(URI uri : descendants) {
+				refinementNames.add(so.getName(uri));
+			}
 		}
 		return refinementNames.toArray(new String[0]);	
+		
 	}
 	
 	/**
