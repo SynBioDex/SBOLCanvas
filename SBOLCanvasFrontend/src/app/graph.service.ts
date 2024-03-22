@@ -1181,7 +1181,7 @@ export class GraphService extends GraphHelpers {
         } finally {
             this.graph.getModel().endUpdate()
             this.graph.refresh(selectedCell)
-            //this.updateAngularMetadata(this.graph.getSelectionCells());
+            this.updateAngularMetadata(this.graph.getSelectionCells());
         }
     }
 
@@ -1286,6 +1286,7 @@ export class GraphService extends GraphHelpers {
         imgExport.drawState(this.graph.getView().getState(this.graph.getCurrentRoot()), svgCanvas)
 
         var xml = encodeURIComponent(mx.mxUtils.getXml(root))
+      
         new mx.mxXmlRequest(environment.backendURL + '/echo', 'filename=' + filename + '.svg&format=svg' + '&xml=' + xml).simulate(document, '_blank')
     }
 
@@ -1312,7 +1313,7 @@ export class GraphService extends GraphHelpers {
         let h = Math.ceil(bounds.height * scale / vs + 2 * b)
 
         let xml = mx.mxUtils.getXml(root)
-
+      
         if (bg != null) {
             bg = '&bg=' + bg
         }
