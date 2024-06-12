@@ -56,7 +56,7 @@ export class DownloadGraphComponent implements OnInit {
   selection = new SelectionModel(false, []);
 
   displayedColumns: string[] = ['type', 'displayId', 'name', 'version', 'description'];
-  @ViewChild(MatSort,{ static: false}) sort: MatSort;
+  @ViewChild(MatSort) sort: MatSort;
 
   working: boolean;
 

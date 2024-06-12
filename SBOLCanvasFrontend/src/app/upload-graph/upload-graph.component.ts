@@ -23,7 +23,7 @@ export class UploadGraphComponent implements OnInit {
   file: File;
 
   displayedColumns: string[] = ['displayId', 'name', 'version', 'description'];
-  @ViewChild(MatSort, {static: false}) sort: MatSort;
+  @ViewChild(MatSort) sort: MatSort;
 
   working: boolean;
 
