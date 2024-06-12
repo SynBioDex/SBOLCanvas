@@ -36,7 +36,7 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ],
-              "optimization": false,
+              "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
               "extractCss": true,
@@ -54,6 +54,12 @@
               ]
             },
             "development": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.dev.ts"
+                }
+              ],
               "buildOptimizer": false,
               "optimization": false,
               "vendorChunk": true,
@@ -72,6 +78,9 @@
           "configurations": {
             "production": {
               "browserTarget": "SBOLCanvasFrontend:build:production"
+            },
+            "development": {
+              "browserTarget": "SBOLCanvasFrontend:build:development"
             }
           }
         },
