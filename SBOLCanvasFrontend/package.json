@@ -29,7 +29,7 @@
         "hammerjs": "^2.0.8",
         "handlebars": "^4.7.8",
         "jquery": "^3.5.0",
-        "material-community-components": "^6.0.1",
+        "material-community-components": "^5.0.1",
         "zone.js": "~0.9.1",
         "minimist": "^1.2.8",
         "mkdirp": "^0.5.6",
