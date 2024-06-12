@@ -24,7 +24,7 @@ export interface LoadDialogData {
 })
 export class ToolbarComponent implements OnInit, AfterViewInit {
 
-  @ViewChild('backbone') backbone: ElementRef;
+  @ViewChild('backbone', {static:false}) backbone: ElementRef;
 
   filename: string;
   popupOpen: boolean;
