@@ -7,7 +7,7 @@ import * as mxCell from 'mxgraph';
 import * as mxDragSource from 'mxgraph';
 import * as mxGraph from 'mxgraph';
 import { ConfirmComponent } from './confirm/confirm.component';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { GraphBase, mx } from './graph-base';
 import { GraphService } from './graph.service';
 import { MetadataService } from './metadata.service';

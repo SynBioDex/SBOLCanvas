@@ -4,7 +4,7 @@ import {GraphService} from '../graph.service';
 import {MatDialog} from '@angular/material/dialog';
 import {ColorPickerComponent} from '../color-picker/color-picker.component';
 import {StyleInfo} from '../style-info';
-import { MatSelectChange } from '@angular/material';
+import { MatSelectChange } from '@angular/material/select';
 
 declare var require: any;
 const mx = require('mxgraph')({

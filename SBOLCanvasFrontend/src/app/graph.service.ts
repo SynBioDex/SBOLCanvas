@@ -13,7 +13,7 @@ import { MetadataService } from './metadata.service';
 import { GlyphService } from './glyph.service';
 import { InteractionInfo } from './interactionInfo';
 import { environment } from 'src/environments/environment';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { GraphEdits } from './graph-edits';
 import { GraphBase, mx } from './graph-base';
 import { GraphHelpers } from './graph-helpers';
