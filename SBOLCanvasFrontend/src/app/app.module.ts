@@ -96,21 +96,7 @@ import { EmbeddedService } from './embedded.service';
     providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, {
         provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
     }],
-    bootstrap: [AppComponent],
-    entryComponents: [
-        ToolbarComponent,
-        UploadGraphComponent,
-        DownloadGraphComponent,
-        ExportImageComponent,
-        ExportDesignComponent,
-        CollectionCreationComponent,
-        LoginComponent,
-        ErrorComponent,
-        ConfirmComponent,
-        FuncCompSelectorComponent,
-        CombinatorialDesignEditorComponent,
-        ColorPickerComponent,
-        LoadGraphComponent]
+    bootstrap: [AppComponent]
 })
 export class AppModule {
 }
