@@ -28,7 +28,7 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { GraphService } from './graph.service';
 
 // Color Picker imports.
-import { MccColorPickerModule } from 'material-community-components';
+import { MccColorPickerModule } from 'material-community-components/color-picker';
 import { MetadataService } from './metadata.service';
 import { BannerComponent } from './banner/banner.component';
 import { ColorPickerComponent } from './color-picker/color-picker.component';
