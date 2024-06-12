@@ -1,7 +1,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import { MccColorPickerModule } from 'material-community-components';
+import { MccColorPickerModule } from 'material-community-components/color-picker';
 import { ColorPickerStartupData } from '../design-menu/design-menu.component';
 import { MaterialModule } from '../material.module';
 
