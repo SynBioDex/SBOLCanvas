@@ -180,11 +180,11 @@ public class SBOLData {
 
 			for(URI uri : descendants) {
 				refinementNames.add(so.getName(uri));
-		
 			}
 		}
 		
 		return refinementNames.toArray(new String[0]);	
+		
 	}
 	
 	/**
