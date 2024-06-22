@@ -7,10 +7,12 @@
             <mat-label>Server</mat-label>
             <mat-select id="registry" [disabled]="registries == null || registries.length < 1"
                 (selectionChange)="setRegistry($event.value)" value="{{registry}}">
+                <mat-option value = ""></mat-option>
                 <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
                     {{registry}}
                 </mat-option>
             </mat-select>
+            
         </mat-form-field>
 
         <mat-form-field *ngIf="data != null && type != classRef.MODULE_TYPE">
@@ -27,8 +29,8 @@
         <mat-form-field>
             <mat-label>Collection</mat-label>
             <mat-select id="collection" value="{{history.length > 0 ? history[history.length-1].uri : ''}}"
-                (selectionChange)="changeCollection($event.value)">
-                <mat-option value="">Root Collections</mat-option>
+                (selectionChange)="changeCollection($event.value)" value = "{{collection.uri}}">
+               <mat-option value = "">{{collection}}</mat-option>
                 <mat-option *ngFor="let collection of history" [value]="collection.uri">
                     {{collection.name}}
                 </mat-option>
@@ -51,16 +53,22 @@
             <mat-select id="roleRefinement" [disabled]="roleRefinements == null || roleRefinements.length < 1"
                 (selectionChange)="setPartRefinement($event.value)" value="{{partRefine}}">
                 <mat-option value="">None</mat-option>
-                <mat-option *ngFor="let refinement of roleRefinements" [value]="refinement">
+                <!-- <mat-option *ngFor="let refinement of roleRefinements" [value]="refinement">
                     {{refinement}}
+                </mat-option> -->
+                <mat-option *ngFor="let partRefine of roleRefinements" [value]="partRefine">
+                    {{partRefine}}
                 </mat-option>
             </mat-select>
         </mat-form-field>
 
-        <mat-form-field>
+        <!-- <mat-form-field>
             <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter" />
-        </mat-form-field>
+        </mat-form-field> -->
 
+        <mat-form-field>
+            <input matInput (keyup)="applyFilter($event.target.value)" placeholder="parts.filter" />
+        </mat-form-field>
 
         <table mat-table [dataSource]="parts" matSort>
 
@@ -109,5 +117,6 @@
             (click)="onDownloadClick()">Download</button>
         <button *ngIf="mode == classRef.SELECT_MODE" mat-button [disabled]="!selectCheck()"
             (click)="onSelectClick()">Select</button>
+        <button mat-button  (click) = "reset()"> Reset </button>
     </div>
 </mat-card>

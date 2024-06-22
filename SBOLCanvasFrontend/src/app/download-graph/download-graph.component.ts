@@ -134,9 +134,21 @@ export class DownloadGraphComponent implements OnInit {
     applyFilter(filterValue: string) {
         this.parts.filter = filterValue.trim().toLowerCase()
     }
+    
+    reset(){
+
+        localStorage.clear()
+        this.collection= ''
+        this.registry = ''
+        this.history = []
+    }
 
     setRegistry(registry: string) {
+
+        localStorage.clear()
         this.registry = registry
+        localStorage.setItem('1registry', this.registry)
+       
         this.metadataService.setSavedRegistry(registry)
         this.updateParts()
     }
@@ -182,6 +194,10 @@ export class DownloadGraphComponent implements OnInit {
         // only allowed to get here when there is one item selected, and it's a collection
         let row = this.selection.selected[0]
         this.history.push(row)
+        localStorage.setItem('3collection', row.uri)
+
+        console.log(localStorage.getItem('3collection'))
+
         this.metadataService.setSavedCollection({ collection: row.uri, history: this.history })
         this.selection.clear()
 
@@ -309,7 +325,7 @@ export class DownloadGraphComponent implements OnInit {
 
     changeCollection(collection: string) {
         this.selection.clear()
-
+       
         let found = false
         for (let i = 0; i < this.history.length; i++) {
             if (this.history[i] === collection) {
@@ -322,12 +338,22 @@ export class DownloadGraphComponent implements OnInit {
             this.history.length = 0
 
         this.collection = collection
+
         this.metadataService.setSavedCollection({ collection: collection, history: this.history })
 
         this.updateParts()
     }
 
     updateParts() {
+
+        if(localStorage.getItem('1registry') != null && localStorage.getItem('1registry').length > 0)
+            this.registry = localStorage.getItem('1registry')
+
+        if(localStorage.getItem('3collection') != null && localStorage.getItem('3collection').length > 0)
+        {
+            this.collection = localStorage.getItem('3collection')
+        }
+
         if (this.partRequest && !this.partRequest.closed) {
             this.partRequest.unsubscribe()
         }
