@@ -177,10 +177,12 @@ public class SBOLData {
 		TreeSet<String> refinementNames = new TreeSet<String>();
 		if (roles.getValue(parentName) != null) {
 			Set<URI> descendants = so.getDescendantURIsOf(roles.getValue(parentName));
+
 			for(URI uri : descendants) {
 				refinementNames.add(so.getName(uri));
 			}
 		}
+		
 		return refinementNames.toArray(new String[0]);	
 		
 	}

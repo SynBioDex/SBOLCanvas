@@ -5,7 +5,7 @@
         <strokewidth width="0.5"/>
         <linejoin join="round"/>
         <miterlimit limit="4"/>
-        <dashpattern pattern="none"/>
+        <dashpattern pattern="0.1 0.1"/>
         <dashed dashed="1"/>
         <alpha alpha="1"/>
         <strokealpha alpha="1"/>
@@ -34,12 +34,12 @@
             <line x="19.34" y="5.54"/>
         </path>
         <stroke/>
-        <dashpattern pattern="none"/>
+        <dashpattern pattern="0.1 0.1"/>
         <path>
             <move x="20.91" y="5.54"/>
             <line x="34.22" y="5.54"/>
         </path>
         <stroke/>
     </foreground>
-</shape>
+    </shape>
 </shapes>
