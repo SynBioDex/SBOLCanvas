@@ -44,7 +44,6 @@
     "popper.js": "^1.15.0",
     "rxjs": "^6.3.3",
     "tinycolor2": "^1.6.0",
-    "ts-mxgraph-typings": "^4.0.6-rc1",
     "tslib": "^1.9.0",
     "zone.js": "~0.11.8"
   },

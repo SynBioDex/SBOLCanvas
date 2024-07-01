@@ -20,8 +20,15 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle'
 import {MatTableModule} from '@angular/material/table';
 import {MatTabsModule} from '@angular/material/tabs';
 import {MatToolbarModule} from '@angular/material/toolbar';
-import {MatTooltipModule} from '@angular/material/tooltip';
+import {MatTooltipModule, MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions} from '@angular/material/tooltip';
 
+// Config for tooltips. Used such that even when hovering over the tooltip itself, it will disappear.
+const myCustomTooltipDefaults: MatTooltipDefaultOptions = {
+    showDelay: 0,
+    hideDelay: 0,
+    touchendHideDelay: 1500,
+    disableTooltipInteractivity: true
+};
 
 @NgModule({
   exports: [
@@ -47,6 +54,9 @@ import {MatTooltipModule} from '@angular/material/tooltip';
     MatTabsModule,
     MatToolbarModule,
     MatTooltipModule,
+  ],
+  providers: [
+    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: myCustomTooltipDefaults }
   ]
 })
 export class MaterialModule {}
