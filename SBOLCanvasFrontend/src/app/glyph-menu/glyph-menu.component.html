@@ -23,11 +23,9 @@
     <!-------------------------------------    Sequence panel   --------------------------------------->
     <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="(sequenceFeatureDict | keyvalue: keepOrder| searchfilter: searchPhrase).length > 0">
       <mat-expansion-panel-header>
-        <mat-panel-title>
-          Sequence Features
+        <mat-panel-title >
+          Sequence Feature
         </mat-panel-title>
-        <mat-panel-description>
-        </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue:keepOrder | searchfilter: searchPhrase" >
@@ -47,8 +45,6 @@
         <mat-panel-title>
           Molecular Species
         </mat-panel-title>
-        <mat-panel-description>
-        </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of molecularSpeciesDict | keyvalue | searchfilter: searchPhrase">
@@ -67,8 +63,6 @@
         <mat-panel-title>
           Interactions
         </mat-panel-title>
-        <mat-panel-description>
-        </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of interactionsDict | keyvalue | searchfilter: searchPhrase">
@@ -87,8 +81,6 @@
         <mat-panel-title>
           Interaction Nodes
         </mat-panel-title>
-        <mat-panel-description>
-        </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of interactionNodeDict | keyvalue | searchfilter: searchPhrase">
