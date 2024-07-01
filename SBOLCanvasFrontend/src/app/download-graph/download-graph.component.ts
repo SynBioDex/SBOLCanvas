@@ -7,7 +7,7 @@ import { FilesService } from '../files.service';
 import { GraphService } from '../graph.service';
 import { MetadataService } from '../metadata.service';
 import { forkJoin, Subscription } from 'rxjs';
-import { ThrowStmt } from '@angular/compiler';
+// import { ThrowStmt } from '@angular/compiler';
 import { IdentifiedInfo } from '../identifiedInfo';
 import { FuncCompSelectorComponent } from '../func-comp-selector/func-comp-selector.component';
 import { SelectionModel } from '@angular/cdk/collections';

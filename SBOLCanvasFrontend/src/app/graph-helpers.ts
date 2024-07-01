@@ -21,7 +21,7 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { InteractionInfo } from './interactionInfo';
-import { SystemJsNgModuleLoader } from '@angular/core';
+// import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.

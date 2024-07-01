@@ -1,6 +1,7 @@
 import * as mxGraph from 'mxgraph';
 import * as mxCell from 'mxgraph';
 
+console.log(window)
 declare var require: any;
 const mx = require('mxgraph')({
   mxImageBasePath: 'mxgraph/images',
