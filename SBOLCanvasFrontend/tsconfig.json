@@ -10,13 +10,14 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "importHelpers": true,
-    "target": "ES6",
+    "target": "ES2022",
     "typeRoots": [
       "node_modules/@types"
     ],
     "lib": [
       "esnext",
       "dom"
-    ]
+    ],
+    "useDefineForClassFields": false
   }
 }
