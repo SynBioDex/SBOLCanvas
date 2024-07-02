@@ -44,6 +44,7 @@ testem.log
 /typings
 *.ps1
 src/environments/versions.ts
+.angular/cache
 
 # System Files
 .DS_Store
