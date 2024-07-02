@@ -7,5 +7,10 @@
   "exclude": [
     "test.ts",
     "**/*.spec.ts"
-  ]
+  ],
+  // Uncomment to get rid of typescript's "unused" warnings, although I think it's nice to have
+  // "files": [
+  //   "main.ts",
+  //   "polyfills.ts"
+  // ]
 }
