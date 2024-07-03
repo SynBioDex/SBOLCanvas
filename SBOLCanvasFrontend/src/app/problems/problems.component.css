@@ -30,10 +30,9 @@
 } */
 
 #problems-expand {
-    width: 100px;
     border-radius: 20px;
     margin: 10px;
-    margin-right: 20px;
+    margin-right: 60px;
     position: absolute;
     right: 0;
 }
