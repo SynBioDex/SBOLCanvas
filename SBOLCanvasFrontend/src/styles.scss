@@ -25,6 +25,7 @@ mat-sidenav-container {
 // For some reason the body styling is adding margin...
 body {
   margin: 0px;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
 .mat-tooltip {
@@ -32,3 +33,10 @@ body {
   white-space: normal !important;
 }
 
+// Angular 15+ changed form field styles, these get rid of the gray background
+.mat-mdc-form-field-focus-overlay {
+  background-color: white;
+}
+.mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background-color: white
+}
