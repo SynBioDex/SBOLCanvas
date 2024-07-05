@@ -11,7 +11,7 @@ import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 import { ThrowStmt } from '@angular/compiler';
 
-
+import { FormControl, Validators, FormGroup } from '@angular/forms';
 @Component({
   selector: 'app-info-editor',
   templateUrl: './info-editor.component.html',
@@ -129,7 +129,12 @@ export class InfoEditorComponent implements OnInit {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
     }
   }
-
+  glyphCtrl = new FormControl('', Validators.required);
+  hasglyphError() {
+    if(this.glyphCtrl.hasError('required')) return true;
+    return false;
+  }
+   
   inputChange(event: any) {
     const id = event.target.id;
 
