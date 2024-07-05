@@ -32,7 +32,7 @@
 
   <mat-form-field>
 
-    <input matInput id="displayID" placeholder="Display ID" value="{{ glyphInfo.displayID }}" (change)="inputChange($event)" [formControl] = "glyphCtrl" required>
+    <input matInput id="displayID" placeholder="Display ID" [formControl] = "glyphCtrl" required (change)="inputChange($event)">
     <mat-error *ngIf = "glyphCtrl.hasError('required')"> This field is required</mat-error>
 
   </mat-form-field>

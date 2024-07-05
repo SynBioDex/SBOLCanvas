@@ -129,6 +129,7 @@ export class InfoEditorComponent implements OnInit {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
     }
   }
+
   glyphCtrl = new FormControl('', Validators.required);
   hasglyphError() {
     if(this.glyphCtrl.hasError('required')) return true;
@@ -136,11 +137,15 @@ export class InfoEditorComponent implements OnInit {
   }
    
   inputChange(event: any) {
-    const id = event.target.id;
 
+    const id = event.target.id;
+    
     switch (id) {
       case 'displayID': {
+        this.glyphInfo.displayID = event.target.value;
+        console.log('displayID1: ', event.target.value);
         const replaced = event.target.value.replace(/[\W_]+/g, '_');
+        console.log('displayID2:', replaced);
         if (this.glyphInfo != null) {
           this.glyphInfo.displayID = replaced;
         } else if (this.interactionInfo != null) {
