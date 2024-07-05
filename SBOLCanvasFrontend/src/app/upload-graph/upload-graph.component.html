@@ -5,7 +5,7 @@
     <h1 mat-dialog-title *ngIf="importMode">Import</h1>
   
     <div mat-dialog-content *ngIf="importMode">
-      <button type="button" mat-raised-button (click)="fileInput.click()">{{filename}}</button>
+      <button mat-stroked-button (click)="fileInput.click()">{{filename}}</button>
       <input hidden (change)="onFileSelected()" #fileInput type="file" id="file">
     </div>
   
