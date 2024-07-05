@@ -1,11 +1,14 @@
 .info-menu-container {
   display: flex;
   flex-direction: column;
-
   overflow-y: hidden;
 }
 
 
 .info-menu-container > * {
   width: 100%;
+}
+
+.URI-spacing{
+  margin-top: 20px;
 }

@@ -38,7 +38,7 @@ body {
   background-color: white;
 }
 .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-  background-color: white
+  background-color: white;
 }
 
 .mdc-tab {
@@ -47,4 +47,8 @@ body {
 
 .mat-mdc-tab-body{
   padding: 20px;
+}
+
+.mat-mdc-form-field-subscript-wrapper{
+  height: 5px;
 }
