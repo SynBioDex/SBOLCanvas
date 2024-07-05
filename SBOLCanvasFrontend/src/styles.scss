@@ -33,7 +33,7 @@ body {
   white-space: normal !important;
 }
 
-// Angular 15+ changed form field styles, these get rid of the gray background
+// Angular 15+ changed some styles, the below is needed to make it look nice again
 .mat-mdc-form-field-focus-overlay {
   background-color: white;
 }
@@ -43,4 +43,8 @@ body {
 
 .mdc-tab {
   min-width: 130px!important;
+}
+
+.mat-mdc-tab-body{
+  padding: 20px;
 }
