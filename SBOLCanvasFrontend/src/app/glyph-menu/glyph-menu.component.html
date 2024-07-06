@@ -103,7 +103,7 @@
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="52px" gutterSize="5px">
         <mat-grid-tile *ngIf="!componentDefinitionMode && stringMatches('backbone dna strand circuit', searchPhrase)">
-          <button mat-icon-button (click)="addStrand()"
+          <button mat-button (click)="addStrand()"
                   [matTooltip]="'Backbone'"
                   style="width:52px;height:52px;">
             <svg #canvasElement [attr.elementType]="elementTypes.BACKBONE" width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>
