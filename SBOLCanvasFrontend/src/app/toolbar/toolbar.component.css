@@ -5,7 +5,7 @@
 
 /* Not sure exactly how this works but it makes the menu
  bigger so that it can fit the buttons. */
-::ng-deep .mat-menu-panel {
+::ng-deep .mat-mdc-menu-panel {
     padding: 0 10px !important;
     width: 100% !important;
 }
