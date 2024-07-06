@@ -185,13 +185,13 @@
 
 
 
-            <div *ngIf="styleInfo.hasFontSize()" [matTooltip]="'Size of selected object\'s text'">
+            <div *ngIf="styleInfo.hasFontSize()" [matTooltip]="'Size of selected object\'s text'" matTooltipPosition= "left">
                 <mat-grid-tile>
-                    <div fxFlex fxLayoutAlign="end">Size: </div>
+                    <div >Size: </div>
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
-                        <mat-form-field appearance="outline" class="number-input">
+                        <mat-form-field appearance="outline" class="number-input dense-3">
                             <input id="fontSize" #endSizeInput matInput type="number" min="1"
                                 oninput="validity.valid||(value='');" (change)="inputChange($event)"
                                 [value]="styleInfo.currentFontSize()">

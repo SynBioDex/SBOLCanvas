@@ -1,4 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
 @import "@angular/material/prebuilt-themes/indigo-pink.css";
 @import '@angular/material/theming';
@@ -26,6 +27,11 @@ mat-sidenav-container {
 body {
   margin: 0px;
   font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+// Primarily used such that form fields are correctly sized
+.dense-3 {
+  @include mat.all-component-densities(-3);
 }
 
 .mat-tooltip {

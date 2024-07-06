@@ -12,7 +12,7 @@
 }
 
 .searchBar {
-    margin: 15px 10px -20px 10px;
+    margin: 15px 10px 0px 10px;
 }
 
 .glyphMenuSection {
@@ -22,12 +22,6 @@
 
 .glyphGrid {
     margin: 0 -10px;
-}
-
-/* TODO(mdc-migration): The following rule targets internal classes of form-field that may no longer apply for the MDC version. */
-:host ::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
-  padding: 0.1em 0 0.1em 0 !important;
-  top: -0.25em;
 }
 
 button {
