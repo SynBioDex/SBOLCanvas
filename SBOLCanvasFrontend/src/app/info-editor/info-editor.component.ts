@@ -11,7 +11,7 @@ import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 import { ThrowStmt } from '@angular/compiler';
 
-
+import { FormControl, Validators, FormGroup } from '@angular/forms';
 @Component({
   selector: 'app-info-editor',
   templateUrl: './info-editor.component.html',
@@ -130,12 +130,22 @@ export class InfoEditorComponent implements OnInit {
     }
   }
 
+  glyphCtrl = new FormControl('', Validators.required);
+  hasglyphError() {
+    if(this.glyphCtrl.hasError('required')) return true;
+    return false;
+  }
+   
   inputChange(event: any) {
-    const id = event.target.id;
 
+    const id = event.target.id;
+    
     switch (id) {
       case 'displayID': {
+        this.glyphInfo.displayID = event.target.value;
+        console.log('displayID1: ', event.target.value);
         const replaced = event.target.value.replace(/[\W_]+/g, '_');
+        console.log('displayID2:', replaced);
         if (this.glyphInfo != null) {
           this.glyphInfo.displayID = replaced;
         } else if (this.interactionInfo != null) {
