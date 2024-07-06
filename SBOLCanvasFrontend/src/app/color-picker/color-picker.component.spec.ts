@@ -1,7 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
-import { MccColorPickerModule } from 'material-community-components/color-picker';
 import { ColorPickerStartupData } from '../design-menu/design-menu.component';
 import { MaterialModule } from '../material.module';
 
@@ -18,7 +17,7 @@ describe('ColorPickerComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [BrowserAnimationsModule, MccColorPickerModule.forRoot({}), MaterialModule],
+      imports: [BrowserAnimationsModule, MaterialModule],
       providers: [
         { provide: MatDialogRef, useValue: {} },
         { provide: MAT_DIALOG_DATA, useValue: data }

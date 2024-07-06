@@ -30,7 +30,6 @@
     "file-saver": "^2.0.2",
     "handlebars": "^4.7.8",
     "jquery": "^3.5.0",
-    "material-community-components": "^10.0.0",
     "minimist": "^1.2.8",
     "mkdirp": "^0.5.6",
     "mxgraph": "^3.9.12",

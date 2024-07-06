@@ -28,7 +28,7 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { GraphService } from './graph.service';
 
 // Color Picker imports.
-import { MccColorPickerModule } from 'material-community-components/color-picker';
+import { ColorPickerModule } from 'ngx-color-picker';
 import { MetadataService } from './metadata.service';
 import { BannerComponent } from './banner/banner.component';
 import { ColorPickerComponent } from './color-picker/color-picker.component';
@@ -86,12 +86,10 @@ import { EmbeddedService } from './embedded.service';
         BrowserModule, // BrowserModule must come before all @angular/material modules for some reason.
         BrowserAnimationsModule,
         HttpClientModule,
-        MccColorPickerModule.forRoot({
-            used_colors: ['#000000', '#123456', '#777666']
-        }),
         ReactiveFormsModule,
         MaterialModule,
-        FlexLayoutModule
+        FlexLayoutModule,
+        ColorPickerModule
     ],
     providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, {
         provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true

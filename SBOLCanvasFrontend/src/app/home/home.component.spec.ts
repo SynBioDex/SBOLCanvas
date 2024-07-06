@@ -4,7 +4,6 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MccColorPickerModule } from 'material-community-components/color-picker';
 import { AppRoutingModule } from '../app-routing.module';
 import { AppComponent } from '../app.component';
 import { BannerComponent } from '../banner/banner.component';
@@ -33,6 +32,7 @@ import { SearchfilterPipe } from '../searchfilter.pipe';
 import { ToolbarComponent } from '../toolbar/toolbar.component';
 import { TutorialComponent } from '../tutorial/tutorial.component';
 import { UploadGraphComponent } from '../upload-graph/upload-graph.component';
+import { ColorPickerModule } from 'ngx-color-picker';
 
 import { HomeComponent } from './home.component';
 
@@ -75,12 +75,10 @@ describe('HomeComponent', () => {
         BrowserModule, // BrowserModule must come before all @angular/material modules for some reason.
         BrowserAnimationsModule,
         HttpClientModule,
-        MccColorPickerModule.forRoot({
-          used_colors: ['#000000', '#123456', '#777666']
-        }),
         ReactiveFormsModule,
         MaterialModule,
-        FlexLayoutModule
+        FlexLayoutModule,
+        ColorPickerModule
       ],
       providers: [PendingChangesGuard, GraphService, MetadataService, {
         provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
