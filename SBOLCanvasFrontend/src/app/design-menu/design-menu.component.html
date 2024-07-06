@@ -16,13 +16,13 @@
                 </mat-grid-tile>
             </div>
 
-            <div *ngIf="styleInfo.hasStrokeWidth()" [matTooltip]="'Width of the selected glyph\'s lines'">
+            <div *ngIf="styleInfo.hasStrokeWidth()" [matTooltip]="'Width of the selected glyph\'s lines'" matTooltipPosition = "left">
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">Width: </div>
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
-                        <mat-form-field appearance="outline" class="number-input">
+                        <mat-form-field appearance="outline" class="number-input dense-3">
                             <input id="strokeWidth" #endSizeInput matInput type="number" min="1" step="0.1"
                                 oninput="validity.valid||(value='');" (change)="inputChange($event)"
                                 [value]="styleInfo.currentStrokeWidth()">
