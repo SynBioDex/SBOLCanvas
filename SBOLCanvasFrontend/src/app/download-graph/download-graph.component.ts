@@ -63,16 +63,6 @@ export class DownloadGraphComponent implements OnInit {
   constructor(@Inject(MAT_DIALOG_DATA) public data: any, private dialog: MatDialog, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent>) { }
 
   ngOnInit() {
-      // check if there is a saved registry and collection information
-      if (this.metadataService.getSavedRegistry() !== undefined) this.registry = this.metadataService.getSavedRegistry()
-        if (this.metadataService.getSavedCollection() !== undefined) {
-            this.collection = this.metadataService.getSavedCollection().collection
-            this.history = this.metadataService.getSavedCollection().history
-        } else {
-            this.collection = ""
-            this.history = []
-        }
-
     this.working = true;
     if (this.data != null) {
       if (this.data.mode != null) {
@@ -120,7 +110,8 @@ export class DownloadGraphComponent implements OnInit {
     }
     this.updateParts();
     this.parts.sort = this.sort;
-
+    this.history = [];
+    this.collection = "";
   }
 
   loginDisabled(): boolean {
@@ -137,7 +128,6 @@ export class DownloadGraphComponent implements OnInit {
 
   setRegistry(registry: string) {
     this.registry = registry;
-    localStorage.setItem('1registry', this.registry)
     this.updateParts();
   }
 
@@ -182,7 +172,6 @@ export class DownloadGraphComponent implements OnInit {
     // only allowed to get here when there is one item selected, and it's a collection
     let row = this.selection.selected[0];
     this.history.push(row);
-    localStorage.setItem('3collection', row.uri)
     this.selection.clear();
     this.updateParts();
   }
@@ -321,24 +310,8 @@ export class DownloadGraphComponent implements OnInit {
 
     this.updateParts();
   }
-  reset(){
 
-    localStorage.clear()
-    this.collection= ''
-    this.registry = ''
-    this.history = []
-}
   updateParts() {
-
-    
-    if(localStorage.getItem('1registry') != null && localStorage.getItem('1registry').length > 0)
-      this.registry = localStorage.getItem('1registry')
-
-    if(localStorage.getItem('3collection') != null && localStorage.getItem('3collection').length > 0)
-    {
-        this.collection = localStorage.getItem('3collection')
-    }
-    
     if (this.partRequest && !this.partRequest.closed) {
       this.partRequest.unsubscribe();
     }
