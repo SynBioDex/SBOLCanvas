@@ -41,10 +41,10 @@ body {
 
 // Angular 15+ changed some styles, the below is needed to make it look nice again
 .mat-mdc-form-field-focus-overlay {
-  background-color: transparent;
+  background-color: transparent !important;
 }
 .mdc-text-field--filled:not(.mdc-text-field--disabled) {
-  background-color: transparent;
+  background-color: transparent !important;
 }
 
 .mdc-tab {
@@ -57,4 +57,8 @@ body {
 
 .mat-mdc-form-field-subscript-wrapper{
   height: 5px;
+}
+
+.mat-expansion-panel{
+  box-shadow: none !important;
 }
