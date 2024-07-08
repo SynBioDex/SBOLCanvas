@@ -25,7 +25,7 @@
     "@angular/platform-browser-dynamic": "~18.0.6",
     "@angular/router": "~18.0.6",
     "file-saver": "^2.0.5",
-    "mxgraph": "^4.2.2",
+    "mxgraph": "^3.9.12",
     "nanoid": "^5.0.7",
     "nanoid-dictionary": "^4.3.0",
     "ngx-color-picker": "^17.0.0",

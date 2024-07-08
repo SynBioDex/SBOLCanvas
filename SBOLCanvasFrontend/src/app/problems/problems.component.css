@@ -4,7 +4,7 @@
 }
 
 .warning {
-    color: #ffca28;
+    color: #ffca28 !important;
 }
 
 .warning span, span.warning {
