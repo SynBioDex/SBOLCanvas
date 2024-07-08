@@ -1,4 +1,4 @@
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
@@ -18,13 +18,14 @@ describe('CollectionCreationComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [BrowserAnimationsModule, MaterialModule, FormsModule, HttpClientModule, MatDialogModule],
-      providers: [
+    declarations: [CollectionCreationComponent],
+    imports: [BrowserAnimationsModule, MaterialModule, FormsModule, MatDialogModule],
+    providers: [
         { provide: MatDialogRef, useValue: {} },
-        { provide: MAT_DIALOG_DATA, useValue: data }
-      ],
-      declarations: [CollectionCreationComponent]
-    })
+        { provide: MAT_DIALOG_DATA, useValue: data },
+        provideHttpClient(withInterceptorsFromDi())
+    ]
+})
       .compileComponents();
   }));
 

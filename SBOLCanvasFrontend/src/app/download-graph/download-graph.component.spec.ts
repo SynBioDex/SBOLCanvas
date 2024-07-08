@@ -1,4 +1,4 @@
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -15,13 +15,14 @@ describe('DownloadGraphComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [BrowserAnimationsModule, MaterialModule, HttpClientModule],
-      providers: [
+    declarations: [DownloadGraphComponent],
+    imports: [BrowserAnimationsModule, MaterialModule],
+    providers: [
         { provide: MatDialogRef, useValue: {} },
-        { provide: MAT_DIALOG_DATA, useValue: data }
-      ],
-      declarations: [DownloadGraphComponent]
-    })
+        { provide: MAT_DIALOG_DATA, useValue: data },
+        provideHttpClient(withInterceptorsFromDi())
+    ]
+})
       .compileComponents();
   }));
 

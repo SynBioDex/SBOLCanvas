@@ -1,4 +1,4 @@
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -42,7 +42,7 @@ describe('HomeComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [
+    declarations: [
         AppComponent,
         ToolbarComponent,
         GlyphMenuComponent,
@@ -67,23 +67,20 @@ describe('HomeComponent', () => {
         CollectionCreationComponent,
         CombinatorialDesignEditorComponent,
         LoadGraphComponent,
-      ],
-      imports: [
-        BrowserModule,
+    ],
+    imports: [BrowserModule,
         FormsModule,
         AppRoutingModule,
         BrowserModule, // BrowserModule must come before all @angular/material modules for some reason.
         BrowserAnimationsModule,
-        HttpClientModule,
         ReactiveFormsModule,
         MaterialModule,
         FlexLayoutModule,
-        ColorPickerModule
-      ],
-      providers: [PendingChangesGuard, GraphService, MetadataService, {
-        provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
-        }],
-    })
+        ColorPickerModule],
+    providers: [PendingChangesGuard, GraphService, MetadataService, {
+            provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
+        }, provideHttpClient(withInterceptorsFromDi())]
+})
     .compileComponents();
   }));
 

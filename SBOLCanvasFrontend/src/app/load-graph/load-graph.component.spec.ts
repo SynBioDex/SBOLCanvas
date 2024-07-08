@@ -1,4 +1,4 @@
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { MaterialModule } from '../material.module';
@@ -16,13 +16,14 @@ describe('LoadGraphComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MaterialModule, HttpClientModule],
-      providers: [
+    declarations: [LoadGraphComponent],
+    imports: [MaterialModule],
+    providers: [
         { provide: MatDialogRef, useValue: {} },
-        { provide: MAT_DIALOG_DATA, useValue: data }
-      ],
-      declarations: [ LoadGraphComponent ]
-    })
+        { provide: MAT_DIALOG_DATA, useValue: data },
+        provideHttpClient(withInterceptorsFromDi())
+    ]
+})
     .compileComponents();
   }));
 

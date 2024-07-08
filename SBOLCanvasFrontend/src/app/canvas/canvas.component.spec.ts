@@ -1,4 +1,4 @@
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogModule } from '@angular/material/dialog';
 
@@ -10,9 +10,10 @@ describe('CanvasComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [MatDialogModule, HttpClientModule],
-      declarations: [CanvasComponent]
-    })
+    declarations: [CanvasComponent],
+    imports: [MatDialogModule],
+    providers: [provideHttpClient(withInterceptorsFromDi())]
+})
       .compileComponents();
   }));
 

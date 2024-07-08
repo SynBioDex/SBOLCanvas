@@ -1,4 +1,4 @@
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MatDialogRef } from '@angular/material';
@@ -13,12 +13,13 @@ describe('ExportImageComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [BrowserAnimationsModule, FormsModule, MaterialModule, HttpClientModule],
-      providers: [
+    declarations: [ExportImageComponent],
+    imports: [BrowserAnimationsModule, FormsModule, MaterialModule],
+    providers: [
         { provide: MatDialogRef, useValue: {} },
-      ],
-      declarations: [ ExportImageComponent ]
-    })
+        provideHttpClient(withInterceptorsFromDi()),
+    ]
+})
     .compileComponents();
   }));
 

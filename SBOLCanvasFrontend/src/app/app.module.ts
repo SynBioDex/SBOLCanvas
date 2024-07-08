@@ -14,7 +14,7 @@ import { HierarchyPreviewComponent } from './hierarchy-preview/hierarchy-preview
 import { ZoomControlsComponent } from './zoom-controls/zoom-controls.component';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { AppHttpInterceptor } from './http.interceptor';
 
 // for warning against leaving the page with unsaved changes
@@ -49,8 +49,7 @@ import { LoadGraphComponent } from './load-graph/load-graph.component';
 import { EmbeddedService } from './embedded.service';
 
 
-@NgModule({
-    declarations: [
+@NgModule({ declarations: [
         AppComponent,
         ToolbarComponent,
         GlyphMenuComponent,
@@ -79,22 +78,16 @@ import { EmbeddedService } from './embedded.service';
         CombinatorialDesignEditorComponent,
         LoadGraphComponent
     ],
-    imports: [
-        BrowserModule,
+    bootstrap: [AppComponent], imports: [BrowserModule,
         FormsModule,
         AppRoutingModule,
         BrowserModule, // BrowserModule must come before all @angular/material modules for some reason.
         BrowserAnimationsModule,
-        HttpClientModule,
         ReactiveFormsModule,
         MaterialModule,
         FlexLayoutModule,
-        ColorPickerModule
-    ],
-    providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, {
-        provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
-    }],
-    bootstrap: [AppComponent]
-})
+        ColorPickerModule], providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, {
+            provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
+        }, provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule {
 }
