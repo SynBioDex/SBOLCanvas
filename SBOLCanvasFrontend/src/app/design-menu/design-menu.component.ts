@@ -5,9 +5,10 @@ import {MatDialog} from '@angular/material/dialog';
 import {ColorPickerComponent} from '../color-picker/color-picker.component';
 import {StyleInfo} from '../style-info';
 import { MatSelectChange } from '@angular/material/select';
+import mxgraph from 'mxgraph'
 
 declare var require: any;
-const mx = require('mxgraph')({
+const mx = mxgraph({
   mxImageBasePath: 'mxgraph/images',
   mxBasePath: 'mxgraph'
 });
