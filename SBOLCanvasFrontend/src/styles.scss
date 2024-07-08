@@ -2,7 +2,7 @@
 @use '@angular/material' as mat;
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
 @import "@angular/material/prebuilt-themes/indigo-pink.css";
-@import '@angular/material/theming';
+// @import '@angular/material/theming'; I guess not needed anymore in Angular 17+?
 
 // App root
 app-root {
@@ -26,7 +26,7 @@ mat-sidenav-container {
 // For some reason the body styling is adding margin...
 body {
   margin: 0px;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: "Roboto", "Helvetica Neue", sans-serif;
 }
 
 // Primarily used such that form fields are correctly sized
