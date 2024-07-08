@@ -30,7 +30,6 @@
 } */
 
 #problems-expand {
-    width: 100px;
     border-radius: 20px;
     margin: 10px;
     margin-right: 20px;
@@ -43,6 +42,6 @@
     line-height: 28px;
     height: 2.5em;
 }
-/deep/ .problems-panel {
+::ng-deep .problems-panel {
     max-width: 500px !important;
 }

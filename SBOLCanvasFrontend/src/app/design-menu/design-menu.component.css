@@ -1,7 +1,6 @@
 .design-menu-container {
   display: flex;
   flex-direction: column;
-  padding: 5px;
 }
 
 .design-menu-container > * {
@@ -9,34 +8,15 @@
 }
 
 .number-input {
-  max-width: 70px;
+  max-width: 90px;
 }
 
 .setting-label {
   text-align: right;
 }
 
-:host ::ng-deep .mat-form-field-wrapper {
-  padding: 0.1em 0 0.1em 0 !important;
-  top: -0.15em;
-}
-
 .design-menu-input {
   text-align: right;
-}
-
-/* This makes it so the select value is right aligned. Blows my mind there is
-no other way to do this when ng-deep is deprecated in Angular 8*/
-:host ::ng-deep .mat-select-value {
-  text-align: right;
-}
-
-/**
-This is needed to reduce the padding for the outline appearance of mat-form-field
- */
-:host ::ng-deep .mat-form-field-appearance-outline .mat-form-field-infix {
-  padding: 0.1em 0 0.1em 0 !important;
-  top: -0.25em;
 }
 
 /* This makes arrows in matInput type=number always show up in chrome.
