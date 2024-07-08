@@ -79,21 +79,21 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "SBOLCanvasFrontend:build"
+            "buildTarget": "SBOLCanvasFrontend:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "SBOLCanvasFrontend:build:production"
+              "buildTarget": "SBOLCanvasFrontend:build:production"
             },
             "development": {
-              "browserTarget": "SBOLCanvasFrontend:build:development"
+              "buildTarget": "SBOLCanvasFrontend:build:development"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "SBOLCanvasFrontend:build"
+            "buildTarget": "SBOLCanvasFrontend:build"
           }
         },
         "test": {
