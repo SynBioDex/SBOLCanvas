@@ -1309,8 +1309,6 @@ export class GraphBase {
                 return "dsNA";
             case "Protein":
                 return "macromolecule";
-            case "Protein":
-                return "NGA (No Glyph Assigned Molecular Species)";
             case "Small molecule":
                 return "small-molecule";
             case "RNA molecule":
