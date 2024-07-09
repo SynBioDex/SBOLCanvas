@@ -66,6 +66,8 @@ export class MetadataService {
   private componentDefinitionModeSource = new BehaviorSubject(null);
   componentDefinitionMode = this.componentDefinitionModeSource.asObservable();
 
+  private savedRegistry: string;
+  private savedCollection: { collection: string, history: Array<object> };
   // TODO: DNA strand info
 
   constructor(private http: HttpClient) { }
@@ -97,7 +99,13 @@ export class MetadataService {
     params = params.append("parent", parent);
     return this.http.get(this.interactionRoleRefinementURL, {params: params});
   }
+  getSavedRegistry() {
+    return this.savedRegistry;
+  }
 
+  getSavedCollection() {
+    return this.savedCollection;
+  }
   setSelectedStyleInfo(newInfo: StyleInfo) {
     this.styleInfoSource.next(newInfo);
   }

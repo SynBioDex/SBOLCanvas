@@ -10,7 +10,7 @@ import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 import { ThrowStmt } from '@angular/compiler';
-
+import { FormControl, Validators, FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-info-editor',
@@ -129,7 +129,7 @@ export class InfoEditorComponent implements OnInit {
       this.graphService.setSelectedCellInfo(this.interactionInfo);
     }
   }
-
+  glyphCtrl = new FormControl('', Validators.required);
   inputChange(event: any) {
     const id = event.target.id;
 
