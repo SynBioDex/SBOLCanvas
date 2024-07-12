@@ -1,9 +1,10 @@
 name: Build Latest Docker Image
 
 on:
-  push:
-    branches: [ final ]
-  workflow_dispatch:
+    pull_request:
+        types: [opened, synchronize, reopened, closed]
+        branches:
+          - final
   
 jobs:
   build-and-push:
