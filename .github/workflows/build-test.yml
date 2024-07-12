@@ -1,0 +1,18 @@
+name: Build Latest Docker Image
+
+on:
+  push:
+    branches: [ final ]
+  workflow_dispatch:
+  
+jobs:
+  build-and-push:
+    name: Build image and push to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      name: Checkout source code
+    - name: Build the Docker image
+      run: |
+        docker build . --tag synbiohub/sbolcanvas:latest
+    - uses: azure/docker-login@v1
