@@ -1,4 +1,4 @@
-FROM node:20-alpine as frontend-build
+FROM node:12-alpine as frontend-build
 
 RUN apk add git
 
