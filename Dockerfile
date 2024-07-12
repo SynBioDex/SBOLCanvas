@@ -7,7 +7,6 @@ COPY . /opt/canvas
 
 # build frontend
 WORKDIR /opt/canvas/SBOLCanvasFrontend
-COPY package*.json ./
 RUN npm install
 RUN npm run gitversion
 RUN npm run build
