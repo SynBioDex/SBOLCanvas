@@ -1,4 +1,4 @@
-
+import { CanDeactivate } from '@angular/router';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { EmbeddedService } from './embedded.service';
@@ -8,7 +8,7 @@ export interface ComponentCanDeactivate {
 }
 
 @Injectable()
-export class PendingChangesGuard  {
+export class PendingChangesGuard implements CanDeactivate<ComponentCanDeactivate> {
 
     constructor(private embeddedService: EmbeddedService) { }
 

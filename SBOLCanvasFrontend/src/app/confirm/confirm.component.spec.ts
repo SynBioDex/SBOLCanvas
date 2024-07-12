@@ -1,5 +1,5 @@
-import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { MaterialModule } from '../material.module';
 
 import { ConfirmComponent } from './confirm.component';
@@ -14,7 +14,7 @@ describe('ConfirmComponent', () => {
     options: ["test option 1", "test option 2"]
   };
 
-  beforeEach(waitForAsync(() => {
+  beforeEach(async(() => {
     TestBed.configureTestingModule({
       imports: [MaterialModule],
       providers: [

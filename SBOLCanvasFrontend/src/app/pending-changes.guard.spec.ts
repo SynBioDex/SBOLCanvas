@@ -1,4 +1,4 @@
-import { TestBed, waitForAsync, inject } from '@angular/core/testing';
+import { TestBed, async, inject } from '@angular/core/testing';
 
 import { PendingChangesGuard } from './pending-changes.guard';
 

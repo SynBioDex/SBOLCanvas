@@ -7,7 +7,7 @@ import * as mxCell from 'mxgraph';
 import * as mxDragSource from 'mxgraph';
 import * as mxGraph from 'mxgraph';
 import { ConfirmComponent } from './confirm/confirm.component';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material';
 import { GraphBase, mx } from './graph-base';
 import { GraphService } from './graph.service';
 import { MetadataService } from './metadata.service';
@@ -21,7 +21,7 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { InteractionInfo } from './interactionInfo';
-// import { SystemJsNgModuleLoader } from '@angular/core';
+import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
  * Extension of the graph base that should contain helper methods to be used in the GraphService.

@@ -1,5 +1,5 @@
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientModule } from '@angular/common/http';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MaterialModule } from '../material.module';
 
 import { DesignMenuComponent } from './design-menu.component';
@@ -8,12 +8,11 @@ describe('DesignMenuComponent', () => {
   let component: DesignMenuComponent;
   let fixture: ComponentFixture<DesignMenuComponent>;
 
-  beforeEach(waitForAsync(() => {
+  beforeEach(async(() => {
     TestBed.configureTestingModule({
-    declarations: [DesignMenuComponent],
-    imports: [MaterialModule],
-    providers: [provideHttpClient(withInterceptorsFromDi())]
-})
+      imports: [MaterialModule, HttpClientModule],
+      declarations: [ DesignMenuComponent ]
+    })
     .compileComponents();
   }));
 

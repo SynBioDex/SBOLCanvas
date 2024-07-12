@@ -5,3 +5,12 @@
   left: 0;
   right: 0;
 }
+
+
+/deep/ .mat-tab-body-wrapper {
+    padding: 20px;
+}
+
+/deep/ .mat-tab-label {
+  min-width: 130px!important;
+}

@@ -1,6 +1,6 @@
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { HttpClientModule } from '@angular/common/http';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { MaterialModule } from '../material.module';
 
 import { LoadGraphComponent } from './load-graph.component';
@@ -14,16 +14,15 @@ describe('LoadGraphComponent', () => {
     file: null
   };
 
-  beforeEach(waitForAsync(() => {
+  beforeEach(async(() => {
     TestBed.configureTestingModule({
-    declarations: [LoadGraphComponent],
-    imports: [MaterialModule],
-    providers: [
+      imports: [MaterialModule, HttpClientModule],
+      providers: [
         { provide: MatDialogRef, useValue: {} },
-        { provide: MAT_DIALOG_DATA, useValue: data },
-        provideHttpClient(withInterceptorsFromDi())
-    ]
-})
+        { provide: MAT_DIALOG_DATA, useValue: data }
+      ],
+      declarations: [ LoadGraphComponent ]
+    })
     .compileComponents();
   }));
 

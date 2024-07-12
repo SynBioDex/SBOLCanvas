@@ -7,15 +7,20 @@
   overflow-y: scroll;
 }
 
-.mat-mdc-cell, .mat-mdc-header-cell {
-  padding: 8px 8px 8px 15px;
+.mat-form-field {
+  font-size: 90%;
+  height: 3.5em;
+}
+
+.mat-cell, .mat-header-cell {
+  padding: 8px 8px 8px 0;
   overflow: hidden;
   width: auto;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.mat-mdc-table{
+.mat-table{
   width: 100%;
   table-layout: fixed;
 }

@@ -1,6 +1,6 @@
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { HttpClientModule } from '@angular/common/http';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { MaterialModule } from '../material.module';
 
 import { CombinatorialDesignEditorComponent } from './combinatorial-design-editor.component';
@@ -9,15 +9,14 @@ describe('CombinatorialDesignEditorComponent', () => {
   let component: CombinatorialDesignEditorComponent;
   let fixture: ComponentFixture<CombinatorialDesignEditorComponent>;
 
-  beforeEach(waitForAsync(() => {
+  beforeEach(async(() => {
     TestBed.configureTestingModule({
-    declarations: [CombinatorialDesignEditorComponent],
-    imports: [MaterialModule],
-    providers: [
+      imports: [MaterialModule, HttpClientModule],
+      providers: [
         { provide: MatDialogRef, useValue: {} },
-        provideHttpClient(withInterceptorsFromDi()),
-    ]
-})
+      ],
+      declarations: [ CombinatorialDesignEditorComponent ]
+    })
     .compileComponents();
   }));
 

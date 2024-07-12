@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { MatDialogRef, MatDialog } from '@angular/material/dialog';
-import { MatTableDataSource } from '@angular/material/table';
+import { MatTableDataSource, MatDialogRef, MatDialog } from '@angular/material';
 import { CombinatorialInfo } from '../combinatorialInfo';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { GlyphInfo } from '../glyphInfo';

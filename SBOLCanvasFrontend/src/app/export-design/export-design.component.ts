@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { GraphService } from '../graph.service';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { FilesService } from '../files.service';
 import { LoginService } from '../login.service';
 

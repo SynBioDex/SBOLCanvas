@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { GraphService } from '../graph.service';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef } from '@angular/material';
 
 @Component({
   selector: 'app-export',

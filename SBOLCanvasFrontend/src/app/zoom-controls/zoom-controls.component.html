@@ -1,18 +1,16 @@
 <div class="zoom-controls">
-    <button mat-icon-button [matTooltip]="'Zoom Out'" (click)="graphService.zoomOut(); displayTooltip()">
-        <mat-icon>zoom_out</mat-icon>
-    </button>
-    <mat-slider aria-label="zoom" min="10" max="400" step="5" #ngSlider>
-        <input matSliderThumb
-        [value]="getZoomSliderValue()"
-        (input)="zoomSliderChanged({source: ngSliderThumb, parent: ngSlider, value: ngSliderThumb.value})"
-        #ngSliderThumb="matSliderThumb"
-        #tooltip = "matTooltip"
-        [matTooltip]="getZoomDisplayValue()"
-        (click) = "displayTooltip()"
-        aria-label="Zoom Level"/>  
-    </mat-slider>
-    <button mat-icon-button [matTooltip]="'Zoom In'" (click)="graphService.zoomIn(); displayTooltip()">
+    <button mat-icon-button [matTooltip]="'Zoom In'" (click)="graphService.zoomIn()">
         <mat-icon>zoom_in</mat-icon>
     </button>
+
+    <mat-slider vertical aria-label="zoom" min="10" max="400" step="5" tickInterval="5"
+        (input)="zoomSliderChanged($event)" [value]="getZoomSliderValue()"></mat-slider>
+
+    <button mat-icon-button [matTooltip]="'Zoom Out'" (click)="graphService.zoomOut()">
+        <mat-icon>zoom_out</mat-icon>
+    </button>
+
+    <mat-form-field class="zoom-input" [matTooltip]="'Camera zoom'">
+        <input matInput (change)="zoomInputChanged($event)" [value]="getZoomDisplayValue()">
+    </mat-form-field>
 </div>

@@ -1,7 +1,7 @@
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientModule } from '@angular/common/http';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MaterialModule } from '../material.module';
 
@@ -16,16 +16,15 @@ describe('ExportDesignComponent', () => {
     mode: "Export"
   };
 
-  beforeEach(waitForAsync(() => {
+  beforeEach(async(() => {
     TestBed.configureTestingModule({
-    declarations: [ExportDesignComponent],
-    imports: [BrowserAnimationsModule, FormsModule, MaterialModule],
-    providers: [
+      imports: [BrowserAnimationsModule, FormsModule, MaterialModule, HttpClientModule],
+      providers: [
         { provide: MatDialogRef, useValue: {} },
-        { provide: MAT_DIALOG_DATA, useValue: data },
-        provideHttpClient(withInterceptorsFromDi())
-    ]
-})
+        { provide: MAT_DIALOG_DATA, useValue: data }
+      ],
+      declarations: [ ExportDesignComponent ]
+    })
     .compileComponents();
   }));
 

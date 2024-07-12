@@ -69,12 +69,9 @@ export class ColorPickerComponent implements OnInit {
   constructor(public dialogRef: MatDialogRef<ColorPickerComponent>,
               @Inject(MAT_DIALOG_DATA) public data: ColorPickerStartupData) { }
 
-
   ngOnInit() {
-    this.dialogRef.beforeClosed().subscribe(() => this.dialogRef.close(this.selectedColor));
     this.selectedColor = this.data.initialColor;
   }
-
 
   onCancelClick() {
     this.dialogRef.close();

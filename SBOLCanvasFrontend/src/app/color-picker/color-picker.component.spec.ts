@@ -1,6 +1,7 @@
-import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
+import { MccColorPickerModule } from 'material-community-components';
 import { ColorPickerStartupData } from '../design-menu/design-menu.component';
 import { MaterialModule } from '../material.module';
 
@@ -15,9 +16,9 @@ describe('ColorPickerComponent', () => {
     initialColor: '#000000'
   };
 
-  beforeEach(waitForAsync(() => {
+  beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [BrowserAnimationsModule, MaterialModule],
+      imports: [BrowserAnimationsModule, MccColorPickerModule.forRoot({}), MaterialModule],
       providers: [
         { provide: MatDialogRef, useValue: {} },
         { provide: MAT_DIALOG_DATA, useValue: data }

@@ -1,13 +1,11 @@
-<mat-card appearance="outlined">
-  <mat-card-content>
-    <h1 mat-dialog-title>Confirm</h1>
-    <mat-dialog-content>
-      {{message}}
-    </mat-dialog-content>
-    <div mat-dialog-actions>
-      <button mat-button *ngFor="let option of options" [value]="option" (click)="onClick(option)">
-        {{option}}
-      </button>
-    </div>
-  </mat-card-content>
+<mat-card>
+  <h1 mat-dialog-title>Confirm</h1>
+  <div>
+    <p>{{message}}</p>
+  </div>
+  <div mat-dialog-actions>
+    <button mat-button *ngFor="let option of options" [value]="option" (click)="onClick(option)">
+      {{option}}
+    </button>
+  </div>
 </mat-card>

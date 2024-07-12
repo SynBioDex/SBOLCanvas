@@ -1,5 +1,5 @@
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
-import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientModule } from '@angular/common/http';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MaterialModule } from '../material.module';
@@ -19,12 +19,11 @@ describe('GlyphMenuComponent', () => {
     await fixture.whenStable();
   }
 
-  beforeEach(waitForAsync(() => {
+  beforeEach(async(() => {
     TestBed.configureTestingModule({
-    declarations: [GlyphMenuComponent, SearchfilterPipe],
-    imports: [BrowserAnimationsModule, MaterialModule],
-    providers: [provideHttpClient(withInterceptorsFromDi())]
-})
+      imports: [BrowserAnimationsModule, MaterialModule, HttpClientModule],
+      declarations: [ GlyphMenuComponent, SearchfilterPipe]
+    })
     .compileComponents();
   }));
 

@@ -2,7 +2,7 @@ import { HttpInterceptor, HttpHandler, HttpRequest, HttpEvent, HttpResponse, Htt
 import { Injectable } from "@angular/core"
 import { Observable, of, throwError } from "rxjs";
 import { tap, catchError } from "rxjs/operators";
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material';
 import { ErrorComponent } from './error/error.component';
 import { ActivatedRoute } from '@angular/router'
 

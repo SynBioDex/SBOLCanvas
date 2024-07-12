@@ -1,5 +1,5 @@
-import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { MaterialModule } from '../material.module';
 
 import { FuncCompSelectorComponent } from './func-comp-selector.component';
@@ -11,7 +11,7 @@ describe('FuncCompSelectorComponent', () => {
   // This will be used as 'data' in the constructor
   const data = null;
 
-  beforeEach(waitForAsync(() => {
+  beforeEach(async(() => {
     TestBed.configureTestingModule({
       imports: [MaterialModule],
       providers: [

@@ -12,7 +12,7 @@ export class CanvasComponent implements OnInit {
         private graphService: GraphService
     ) { }
 
-    @ViewChild('canvasContainer', {static: true}) canvasContainer: ElementRef;
+    @ViewChild('canvasContainer') canvasContainer: ElementRef;
 
     ngOnInit() {
         const canvasContainer = this.canvasContainer.nativeElement;

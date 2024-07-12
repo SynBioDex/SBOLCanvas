@@ -14,7 +14,7 @@ import { HierarchyPreviewComponent } from './hierarchy-preview/hierarchy-preview
 import { ZoomControlsComponent } from './zoom-controls/zoom-controls.component';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
-import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AppHttpInterceptor } from './http.interceptor';
 
 // for warning against leaving the page with unsaved changes
@@ -28,7 +28,7 @@ import { FlexLayoutModule } from '@angular/flex-layout';
 import { GraphService } from './graph.service';
 
 // Color Picker imports.
-import { ColorPickerModule } from 'ngx-color-picker';
+import { MccColorPickerModule } from 'material-community-components';
 import { MetadataService } from './metadata.service';
 import { BannerComponent } from './banner/banner.component';
 import { ColorPickerComponent } from './color-picker/color-picker.component';
@@ -49,7 +49,8 @@ import { LoadGraphComponent } from './load-graph/load-graph.component';
 import { EmbeddedService } from './embedded.service';
 
 
-@NgModule({ declarations: [
+@NgModule({
+    declarations: [
         AppComponent,
         ToolbarComponent,
         GlyphMenuComponent,
@@ -78,16 +79,38 @@ import { EmbeddedService } from './embedded.service';
         CombinatorialDesignEditorComponent,
         LoadGraphComponent
     ],
-    bootstrap: [AppComponent], imports: [BrowserModule,
+    imports: [
+        BrowserModule,
         FormsModule,
         AppRoutingModule,
         BrowserModule, // BrowserModule must come before all @angular/material modules for some reason.
         BrowserAnimationsModule,
+        HttpClientModule,
+        MccColorPickerModule.forRoot({
+            used_colors: ['#000000', '#123456', '#777666']
+        }),
         ReactiveFormsModule,
         MaterialModule,
-        FlexLayoutModule,
-        ColorPickerModule], providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, {
-            provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
-        }, provideHttpClient(withInterceptorsFromDi())] })
+        FlexLayoutModule
+    ],
+    providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, {
+        provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
+    }],
+    bootstrap: [AppComponent],
+    entryComponents: [
+        ToolbarComponent,
+        UploadGraphComponent,
+        DownloadGraphComponent,
+        ExportImageComponent,
+        ExportDesignComponent,
+        CollectionCreationComponent,
+        LoginComponent,
+        ErrorComponent,
+        ConfirmComponent,
+        FuncCompSelectorComponent,
+        CombinatorialDesignEditorComponent,
+        ColorPickerComponent,
+        LoadGraphComponent]
+})
 export class AppModule {
 }

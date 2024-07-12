@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit, forwardRef } from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material';
 import { LoginDialogData, LoginService } from '../login.service';
 
 
