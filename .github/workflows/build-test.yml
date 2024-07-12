@@ -16,3 +16,4 @@ jobs:
     - name: Build the Docker image
       run: |
         docker build . --tag synbiohub/sbolcanvas:latest
+
