@@ -49,3 +49,6 @@ src/environments/versions.ts
 # System Files
 .DS_Store
 Thumbs.db
+
+# Angular folder
+.angular

@@ -6,13 +6,13 @@
       <!-- Adding it back because i like it -Zach -->
       <mat-form-field class="searchBar" floatLabel="never" appearance="outline">
       <!-- <mat-form-field style=" margin-bottom: -1.5em; width: 100%;" floatLabel="never" appearance="outline"> -->
-        <input matInput id="displayID" placeholder="Search..." [value]="searchPhrase" (input)="searchPhrase=$event.target.value">
+        <input matInput placeholder="Search..." [value]="searchPhrase" (input)="searchPhrase=$event.target.value">
 
         <!-- Icon in search bar changes depending on content -->
-        <button mat-button *ngIf="searchPhrase" matSuffix mat-icon-button aria-label="Clear" (click)="searchPhrase=''">
+        <button mat-icon-button *ngIf="searchPhrase" matSuffix mat-icon-button aria-label="Clear" (click)="searchPhrase=''">
           <mat-icon>close</mat-icon>
         </button>
-        <button mat-button *ngIf="!searchPhrase" matSuffix mat-icon-button aria-label="Clear">
+        <button mat-icon-button *ngIf="!searchPhrase" matSuffix mat-icon-button aria-label="Clear">
           <mat-icon>search</mat-icon>
         </button>
       </mat-form-field>
@@ -23,11 +23,9 @@
     <!-------------------------------------    Sequence panel   --------------------------------------->
     <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="(sequenceFeatureDict | keyvalue: keepOrder| searchfilter: searchPhrase).length > 0">
       <mat-expansion-panel-header>
-        <mat-panel-title>
-          Sequence Features
+        <mat-panel-title >
+          Sequence Feature
         </mat-panel-title>
-        <mat-panel-description>
-        </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of sequenceFeatureDict | keyvalue:keepOrder | searchfilter: searchPhrase" >
@@ -47,8 +45,6 @@
         <mat-panel-title>
           Molecular Species
         </mat-panel-title>
-        <mat-panel-description>
-        </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of molecularSpeciesDict | keyvalue | searchfilter: searchPhrase">
@@ -67,8 +63,6 @@
         <mat-panel-title>
           Interactions
         </mat-panel-title>
-        <mat-panel-description>
-        </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of interactionsDict | keyvalue | searchfilter: searchPhrase">
@@ -87,8 +81,6 @@
         <mat-panel-title>
           Interaction Nodes
         </mat-panel-title>
-        <mat-panel-description>
-        </mat-panel-description>
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="60px" gutterSize="5px">
         <mat-grid-tile *ngFor="let pair of interactionNodeDict | keyvalue | searchfilter: searchPhrase">
@@ -111,7 +103,7 @@
       </mat-expansion-panel-header>
       <mat-grid-list class="glyphGrid" cols="4" rowHeight="52px" gutterSize="5px">
         <mat-grid-tile *ngIf="!componentDefinitionMode && stringMatches('backbone dna strand circuit', searchPhrase)">
-          <button mat-icon-button (click)="addStrand()"
+          <button mat-button (click)="addStrand()"
                   [matTooltip]="'Backbone'"
                   style="width:52px;height:52px;">
             <svg #canvasElement [attr.elementType]="elementTypes.BACKBONE" width="52px" height="52px" [innerHTML]="utilsDict['backbone']"></svg>

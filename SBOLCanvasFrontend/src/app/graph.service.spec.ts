@@ -1,13 +1,14 @@
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { MatDialogModule } from '@angular/material';
+import { MatDialogModule } from '@angular/material/dialog';
 
 import { GraphService } from './graph.service';
 
 describe('GraphService', () => {
   beforeEach(() => TestBed.configureTestingModule({
-    imports: [MatDialogModule, HttpClientModule]
-  }));
+    imports: [MatDialogModule],
+    providers: [provideHttpClient(withInterceptorsFromDi())]
+}));
 
   it('should be created', () => {
     const service: GraphService = TestBed.get(GraphService);

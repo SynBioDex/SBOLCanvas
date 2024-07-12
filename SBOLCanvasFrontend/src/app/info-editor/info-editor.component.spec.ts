@@ -1,5 +1,5 @@
-import { HttpClientModule } from '@angular/common/http';
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MaterialModule } from '../material.module';
 
 import { InfoEditorComponent } from './info-editor.component';
@@ -8,11 +8,12 @@ describe('InfoEditorComponent', () => {
   let component: InfoEditorComponent;
   let fixture: ComponentFixture<InfoEditorComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      imports: [MaterialModule, HttpClientModule],
-      declarations: [ InfoEditorComponent ]
-    })
+    declarations: [InfoEditorComponent],
+    imports: [MaterialModule],
+    providers: [provideHttpClient(withInterceptorsFromDi())]
+})
     .compileComponents();
   }));
 

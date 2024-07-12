@@ -1,5 +1,5 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MaterialModule } from '../material.module';
 
 import { ErrorComponent } from './error.component';
@@ -13,7 +13,7 @@ describe('ErrorComponent', () => {
     message: "This is a test error message"
   };
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       imports: [MaterialModule],
       providers: [

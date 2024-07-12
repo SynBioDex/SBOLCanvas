@@ -1,13 +1,20 @@
 <mat-card>
-  <h1 mat-dialog-title>Choose Color</h1>
-  <div mat-dialog-content>
-    <mcc-color-picker (change)="this.selectedColor = $event" [hideButtons]="true" [overlay]="false"
-                      [selectedColor]="this.data.initialColor" hideUsedColors="true">
-      <mcc-color-picker-collection transparent="true" [colors]="defaultColors"></mcc-color-picker-collection>
-    </mcc-color-picker>
-  </div>
-  <div mat-dialog-actions>
-    <button mat-button (click)="onCancelClick()">Cancel</button>
-    <button mat-button [mat-dialog-close]="this.selectedColor">Ok</button>
-  </div>
-</mat-card>
+  <mat-card-content>
+    <h1 mat-dialog-title>Choose Color</h1>
+    <mat-dialog-content>
+      <span 
+        [cpToggle]="true" 
+        [cpDialogDisplay]="'inline'"
+        (colorPickerChange)="this.selectedColor = $event" 
+        [(colorPicker)]="this.data.initialColor"
+        [cpOutputFormat] = "'rgba'"
+        [cpPresetColors] = "defaultColors"  
+        [cpWidth] = "'350px'"
+        >
+      </span>
+      <div mat-dialog-actions>
+        <button mat-button [mat-dialog-close]="this.data.initialColor" (click)="onCancelClick()">Cancel</button>
+        <button mat-button [mat-dialog-close]="this.selectedColor">Ok</button>
+      </div>
+    </mat-dialog-content>
+  </mat-card-content>
