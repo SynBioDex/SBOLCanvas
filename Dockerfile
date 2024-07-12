@@ -1,4 +1,4 @@
-FROM node:12-alpine as frontend-build
+FROM node:20-alpine as frontend-build
 
 RUN apk add git
 
@@ -7,6 +7,7 @@ COPY . /opt/canvas
 
 # build frontend
 WORKDIR /opt/canvas/SBOLCanvasFrontend
+
 RUN npm install
 RUN npm run gitversion
 RUN npm run build

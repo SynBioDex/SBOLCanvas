@@ -1,7 +1,7 @@
-import { HttpClientModule } from '@angular/common/http';
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MaterialModule } from '../material.module';
 
@@ -11,14 +11,15 @@ describe('ExportImageComponent', () => {
   let component: ExportImageComponent;
   let fixture: ComponentFixture<ExportImageComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      imports: [BrowserAnimationsModule, FormsModule, MaterialModule, HttpClientModule],
-      providers: [
+    declarations: [ExportImageComponent],
+    imports: [BrowserAnimationsModule, FormsModule, MaterialModule],
+    providers: [
         { provide: MatDialogRef, useValue: {} },
-      ],
-      declarations: [ ExportImageComponent ]
-    })
+        provideHttpClient(withInterceptorsFromDi()),
+    ]
+})
     .compileComponents();
   }));
 

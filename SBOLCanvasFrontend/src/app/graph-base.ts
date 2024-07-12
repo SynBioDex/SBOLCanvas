@@ -1,6 +1,7 @@
 import * as mxEditor from 'mxgraph';
 import * as mxGraph from 'mxgraph';
 import * as mxCell from 'mxgraph';
+import mxgraph from 'mxgraph'
 import { GlyphInfo } from './glyphInfo';
 import { InteractionInfo } from './interactionInfo';
 import { GlyphService } from './glyph.service';
@@ -15,7 +16,7 @@ import { CustomShapes } from './CustomShapes';
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
 declare var require: any;
-export const mx = require('mxgraph')({
+export const mx = mxgraph({
     mxImageBasePath: 'mxgraph/images',
     mxBasePath: 'mxgraph'
 });
@@ -1308,8 +1309,6 @@ export class GraphBase {
                 return "dsNA";
             case "Protein":
                 return "macromolecule";
-            case "Protein":
-                return "NGA (No Glyph Assigned Molecular Species)";
             case "Small molecule":
                 return "small-molecule";
             case "RNA molecule":

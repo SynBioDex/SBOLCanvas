@@ -1,4 +1,4 @@
-import { GraphHelpers } from './graph-helpers';
+// import { GraphHelpers } from './graph-helpers';
 
 describe('GraphHelpers', () => {
   // The methods in graph helpers are all protected, should be tested through graph service indirectly
