@@ -11,7 +11,7 @@ import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 // import { ThrowStmt } from '@angular/compiler';
-
+import { FormControl, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-info-editor',
@@ -39,6 +39,8 @@ export class InfoEditorComponent implements OnInit {
   glyphInfo: GlyphInfo;
   moduleInfo: ModuleInfo;
   interactionInfo: InteractionInfo;
+  glyphCtrl: FormControl;
+
 
   constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog, private changeDetector: ChangeDetectorRef) { }
 
@@ -51,6 +53,9 @@ export class InfoEditorComponent implements OnInit {
     this.getRoles();
     this.getInteractions();
     this.getInteractionRoles();
+
+    
+  
   }
 
   getTypes() {
@@ -59,6 +64,7 @@ export class InfoEditorComponent implements OnInit {
 
   getRoles() {
     this.metadataService.loadRoles().subscribe(roles => this.partRoles = roles);
+   
   }
 
   getRefinements(role: string) {
@@ -131,13 +137,16 @@ export class InfoEditorComponent implements OnInit {
     }
   }
 
+
+
   inputChange(event: any) {
     const id = event.target.id;
-
+    console.log("displayID:" , this.glyphInfo.displayID);
     switch (id) {
       case 'displayID': {
         const replaced = event.target.value.replace(/[\W_]+/g, '_');
         if (this.glyphInfo != null) {
+       
           this.glyphInfo.displayID = replaced;
         } else if (this.interactionInfo != null) {
           this.interactionInfo.displayID = replaced;
@@ -213,6 +222,8 @@ export class InfoEditorComponent implements OnInit {
    */
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
+    
+    this.glyphCtrl = new FormControl( `${this.glyphInfo.displayID}`, Validators.required);
     if (glyphInfo != null) {
       if (glyphInfo.partRole != null) {
         this.getRefinements(glyphInfo.partRole);
