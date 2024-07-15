@@ -32,7 +32,7 @@ RUN jar -cf /usr/local/tomcat/webapps/api.war -C WebContent .
 WORKDIR /usr/local/tomcat
 
 # copy built frontend files
-COPY --from=frontend-build /opt/canvas/SBOLCanvasFrontend/dist webapps/canvas
+COPY --from=frontend-build /opt/canvas/SBOLCanvasFrontend/dist/browser webapps/canvas
 
 # copy configs for tomcat
 ARG TOMCAT_AUTOMATION_DIR=resources/server_automation/tomcat
