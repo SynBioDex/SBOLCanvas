@@ -61,6 +61,14 @@ Start the Angular development server
 ```bash
 npm run dev
 ```
+Or, if you plan to develop the frontend, use 
+
+~~~bash
+ng serve -c development
+~~~
+
+This allows for the use of the Angular DevTools and provides a better debugging experience via the regular DevTools.
+
 Alternatively, you can build both the frontend and backend together on one Docker container, from the root directory, run
 
 ```bash
