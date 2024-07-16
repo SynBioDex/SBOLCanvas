@@ -56,11 +56,26 @@ Install dependencies
 npm install
 ```
 
-Start the Angular development server (ensure your node version < 14)
+Start the Angular development server
 
 ```bash
 npm run dev
 ```
+Alternatively, you can build both the frontend and backend together on one Docker container, from the root directory, run
+
+```bash
+docker build -t sbolcanvas .
+```
+and then
+```bash
+docker run --rm --name canvas --publish 4040:8080 sbolcanvas
+```
+A local instance will be availaible on http://localhost:4040/
+
+If you plan to contribute to this repository, this is recommended before you open a Pull Request. GitHub Actions will use a similar process to check the Docker build and deployment.
+
+
+
 ## Deployment
 
 To build the frontend, from the frontend directory, run
@@ -74,10 +89,11 @@ a static web app can be deployed. Genetic Logic Lab's weapon of choice is
 [Azure Static Web Apps](https://azure.microsoft.com/en-us/products/app-service/static/).
 
 To build the backend, from the backend directory, run
-
 ```bash
 docker build -t sbolcanvas .
 ```
 
 The resulting Docker image can be deployed anywhere you can run Docker containers.
 Genetic Logic Lab uses [Azure Container Apps](https://azure.microsoft.com/en-us/products/container-apps/).
+
+
