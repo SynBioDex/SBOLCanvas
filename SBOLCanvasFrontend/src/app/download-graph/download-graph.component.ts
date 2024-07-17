@@ -237,7 +237,7 @@ export class DownloadGraphComponent implements OnInit {
     if (row.type === DownloadGraphComponent.collectionType) {
       this.history.push(row);
       this.collection = row.uri;
-      localStorage.setItem('3collection', row.uri);
+      localStorage.setItem('3collection_history', JSON.stringify(this.history));
       this.selection.clear();
       this.updateParts();
     } else if (row.type === DownloadGraphComponent.componentType) {
@@ -341,9 +341,12 @@ export class DownloadGraphComponent implements OnInit {
     if(localStorage.getItem('1registry') != null && localStorage.getItem('1registry').length > 0)
       this.registry = localStorage.getItem('1registry')
 
-    if(localStorage.getItem('3collection') != null && localStorage.getItem('3collection').length > 0)
+    if(localStorage.getItem('3collection_history') != null && localStorage.getItem('3collection_history').length > 0)
     {
-        this.collection = localStorage.getItem('3collection')
+        let collection_history = localStorage.getItem('3collection_history')
+        let historyArray = JSON.parse(collection_history);
+        //this.collection = localStorage.getItem('3collection');
+        this.history = historyArray;
     }
 
     if (this.partRequest && !this.partRequest.closed) {
