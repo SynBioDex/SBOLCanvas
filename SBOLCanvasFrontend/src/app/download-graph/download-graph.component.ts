@@ -315,14 +315,12 @@ export class DownloadGraphComponent implements OnInit {
     let found = false;
     let index;
     for (let i = 0; i < this.history.length; i++) {
-      
       if (this.history[i].uri === collection) {
         this.history.length = i + 1;
         found = true;
         index = i;
         break;
       }
-      
     }
     if(found){
       this.history = this.history.filter((_, i)=> i <= index);
@@ -332,9 +330,33 @@ export class DownloadGraphComponent implements OnInit {
    
     if (!found)
       this.history.length = 0;
-    this.collection = collection;
+      this.collection = collection;
 
     this.updateParts();
+  }
+
+  checkForDuplicateCollection(){
+    
+    let seen = [];
+    let namesArray = [];
+
+    for(let i = 0; i < this.history.length; i++){
+      namesArray.push(this.history[i].name);
+    }
+
+    for(let i = 0;  i < namesArray.length; i++){
+      let value = namesArray[i];
+      let index = 0;
+      if(seen.indexOf(value) !== -1){
+        index = seen.indexOf(value);
+        this.history = this.history.filter((_, x)=> x >= i);
+        localStorage.setItem('3collection_history', JSON.stringify(this.history));
+
+      }
+      seen.push(value);
+    }
+    
+
   }
 
   reset(){
@@ -353,10 +375,14 @@ export class DownloadGraphComponent implements OnInit {
 
     if(localStorage.getItem('3collection_history') != null && localStorage.getItem('3collection_history').length > 0)
     {
+     
         let collection_history = localStorage.getItem('3collection_history')
         let historyArray = JSON.parse(collection_history);
         this.history = historyArray;
     }
+    
+
+    this.checkForDuplicateCollection();
 
     if (this.partRequest && !this.partRequest.closed) {
       this.partRequest.unsubscribe();

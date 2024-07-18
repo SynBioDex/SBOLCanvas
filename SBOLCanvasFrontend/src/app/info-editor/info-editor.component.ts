@@ -141,7 +141,7 @@ export class InfoEditorComponent implements OnInit {
 
   inputChange(event: any) {
     const id = event.target.id;
-    console.log("displayID:" , this.glyphInfo.displayID);
+   
     switch (id) {
       case 'displayID': {
         const replaced = event.target.value.replace(/[\W_]+/g, '_');
