@@ -28,7 +28,7 @@
             <mat-label>Collection</mat-label>
             <mat-select id="collection" value="{{history.length > 0 ? history[history.length-1].uri : ''}}"
             (selectionChange)="changeCollection($event.value)">
-              <mat-option value="">Root collection</mat-option>
+              <mat-option value = "">Root collection </mat-option>
               <mat-option *ngFor="let collection of history" [value]="collection.uri">
                 {{collection.name}}
               </mat-option>
