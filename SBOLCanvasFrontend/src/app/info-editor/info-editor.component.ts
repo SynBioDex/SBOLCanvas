@@ -11,6 +11,7 @@ import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 // import { ThrowStmt } from '@angular/compiler';
+
 import { FormControl, Validators } from '@angular/forms';
 
 @Component({
@@ -138,7 +139,6 @@ export class InfoEditorComponent implements OnInit {
   }
 
 
-
   inputChange(event: any) {
     const id = event.target.id;
    
@@ -146,8 +146,10 @@ export class InfoEditorComponent implements OnInit {
       case 'displayID': {
         const replaced = event.target.value.replace(/[\W_]+/g, '_');
         if (this.glyphInfo != null) {
-       
-          this.glyphInfo.displayID = replaced;
+          if(replaced !== ''){
+            //this.promptDisplayID();  
+            this.glyphInfo.displayID = replaced;
+          }
         } else if (this.interactionInfo != null) {
           this.interactionInfo.displayID = replaced;
         } else if (this.moduleInfo) {
