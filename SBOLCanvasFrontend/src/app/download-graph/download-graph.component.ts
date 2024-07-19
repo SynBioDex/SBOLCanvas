@@ -371,10 +371,7 @@ export class DownloadGraphComponent implements OnInit {
     }
     
   }
-  collectionReset(){
-    this.collection = "";
-    localStorage.setItem('3collection', this.collection);
-  }
+
   reset(){
 
     localStorage.clear()
@@ -383,9 +380,6 @@ export class DownloadGraphComponent implements OnInit {
     this.history = []
 }
 
-collectionreset(){
- this.selection.clear();
-}
 
   updateParts() {
     if(localStorage.getItem('1registry') != null && localStorage.getItem('1registry').length > 0)
