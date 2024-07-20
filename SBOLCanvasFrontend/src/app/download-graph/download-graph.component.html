@@ -6,7 +6,7 @@
           <mat-form-field subscriptSizing = "dynamic">
             <mat-label>Server</mat-label>
             <mat-select id="registry" [disabled]="registries == null || registries.length < 1"
-              (selectionChange)="setRegistry($event.value)">
+              (selectionChange)="setRegistry($event.value)" value="{{registry}}">
               <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
                 {{registry}}
               </mat-option>
@@ -28,13 +28,14 @@
             <mat-label>Collection</mat-label>
             <mat-select id="collection" value="{{history.length > 0 ? history[history.length-1].uri : ''}}"
             (selectionChange)="changeCollection($event.value)">
-              <mat-option value="">Root Collections</mat-option>
+              <mat-option value = "">Root collection </mat-option>
               <mat-option *ngFor="let collection of history" [value]="collection.uri">
                 {{collection.name}}
               </mat-option>
             </mat-select>
           </mat-form-field>
-      
+
+          
           <mat-form-field subscriptSizing = "dynamic" *ngIf="data != null && type != classRef.MODULE_TYPE">
             <mat-label>Part role</mat-label>
             <mat-select id="partRole" [disabled]="partRoles == null || partRoles.length < 1"
@@ -106,6 +107,9 @@
           <button mat-button [disabled]="!enterCollectionEnabled()" (click)="onEnterCollectionClick()">Enter Collection</button>
           <button *ngIf="mode != classRef.SELECT_MODE" mat-button [disabled]="!finishCheck()" (click)="onDownloadClick()">Download</button>
           <button *ngIf="mode == classRef.SELECT_MODE" mat-button [disabled]="!selectCheck()" (click)="onSelectClick()">Select</button>
+    
+          <button mat-button  (click) = "reset()"> Reset </button>
+        
         </div>
   </mat-card-content>
 </mat-card>

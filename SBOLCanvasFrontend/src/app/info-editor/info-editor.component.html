@@ -34,7 +34,9 @@
     <mat-label>
       Display ID
     </mat-label>
-    <input matInput id="displayID" value="{{ glyphInfo.displayID }}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Must be composed of only alphanumeric or underscore characters and MUST NOT begin with a digit.">
+    <input matInput id="displayID" (change)="inputChange($event)" [formControl]= "glyphCtrl"  matTooltipShowDelay="1000" matTooltip="Must be composed of only alphanumeric or underscore characters and MUST NOT begin with a digit.">
+    <mat-error *ngIf = "glyphCtrl.hasError('required')"> This field is required</mat-error>
+      
   </mat-form-field>
 
   <mat-form-field>

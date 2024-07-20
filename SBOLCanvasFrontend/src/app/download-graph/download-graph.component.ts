@@ -65,6 +65,16 @@ export class DownloadGraphComponent implements OnInit {
   constructor(@Inject(MAT_DIALOG_DATA) public data: any, private dialog: MatDialog, private metadataService: MetadataService, private graphService: GraphService, private filesService: FilesService, private loginService: LoginService, public dialogRef: MatDialogRef<DownloadGraphComponent>) { }
 
   ngOnInit() {
+
+    if (this.metadataService.getSavedRegistry() !== undefined) this.registry = this.metadataService.getSavedRegistry()
+      if (this.metadataService.getSavedCollection() !== undefined) {
+          this.collection = this.metadataService.getSavedCollection().collection
+          this.history = this.metadataService.getSavedCollection().history
+      } else {
+          this.collection = ""
+          this.history = []
+      }
+
     this.working = true;
     if (this.data != null) {
       if (this.data.mode != null) {
@@ -112,8 +122,8 @@ export class DownloadGraphComponent implements OnInit {
     }
     this.updateParts();
     this.parts.sort = this.sort;
-    this.history = [];
-    this.collection = "";
+    // this.history = [];
+    // this.collection = "";
   }
 
   loginDisabled(): boolean {
@@ -130,6 +140,7 @@ export class DownloadGraphComponent implements OnInit {
 
   setRegistry(registry: string) {
     this.registry = registry;
+    localStorage.setItem('1registry', this.registry)
     this.updateParts();
   }
 
@@ -174,6 +185,7 @@ export class DownloadGraphComponent implements OnInit {
     // only allowed to get here when there is one item selected, and it's a collection
     let row = this.selection.selected[0];
     this.history.push(row);
+  
     this.selection.clear();
     this.updateParts();
   }
@@ -224,6 +236,9 @@ export class DownloadGraphComponent implements OnInit {
     if (row.type === DownloadGraphComponent.collectionType) {
       this.history.push(row);
       this.collection = row.uri;
+      localStorage.setItem('3collection', this.collection);
+      localStorage.setItem('3collection_history', JSON.stringify(this.history));
+      
       this.selection.clear();
       this.updateParts();
     } else if (row.type === DownloadGraphComponent.componentType) {
@@ -297,23 +312,91 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   changeCollection(collection: string) {
+    
+    
+    if(collection === ""){
+      this.collection = "";
+      localStorage.setItem("3collection", this.collection);
+    }
+    
     this.selection.clear();
+
     let found = false;
+    let index;
     for (let i = 0; i < this.history.length; i++) {
-      if (this.history[i] === collection) {
+      if (this.history[i].uri === collection) {
         this.history.length = i + 1;
         found = true;
+        index = i;
         break;
       }
     }
+    if(found){
+      this.history = this.history.filter((_, i)=> i <= index);
+      this.collection = this.history[index].uri;
+      localStorage.setItem('3collection', this.collection);
+      localStorage.setItem('3collection_history', JSON.stringify(this.history));
+    }
+    
+   
     if (!found)
       this.history.length = 0;
-    this.collection = collection;
+      this.collection = collection;
 
     this.updateParts();
   }
 
+  checkForDuplicateCollection(){
+    
+    let seen = [];
+    let namesArray = [];
+
+    for(let i = 0; i < this.history.length; i++){
+      namesArray.push(this.history[i].name);
+    }
+
+    for(let i = 0;  i < namesArray.length; i++){
+      let value = namesArray[i];
+      let index = 0;
+      if(seen.indexOf(value) !== -1){
+
+        index = seen.indexOf(value);
+        this.history = this.history.filter((_, x)=> x >= i);
+        this.collection = this.history[index].uri;
+        localStorage.setItem('3collection', this.collection);
+        localStorage.setItem('3collection_history', JSON.stringify(this.history));
+
+      }
+      seen.push(value);
+    }
+    
+  }
+
+  reset(){
+
+    localStorage.clear()
+    this.collection= ''
+    this.registry = ''
+    this.history = []
+}
+
+
   updateParts() {
+    if(localStorage.getItem('1registry') != null && localStorage.getItem('1registry').length > 0)
+      this.registry = localStorage.getItem('1registry')
+
+    if(localStorage.getItem('3collection_history') != null && localStorage.getItem('3collection_history').length > 0)
+    {
+        let collection_history = localStorage.getItem('3collection_history')
+        let historyArray = JSON.parse(collection_history);
+        this.history = historyArray;
+    }
+    if(localStorage.getItem('3collection') != null && localStorage.getItem('3collection').length > 0)
+      this.collection = localStorage.getItem('3collection')
+
+
+    this.checkForDuplicateCollection();
+    
     if (this.partRequest && !this.partRequest.closed) {
       this.partRequest.unsubscribe();
     }
@@ -329,8 +412,10 @@ export class DownloadGraphComponent implements OnInit {
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "components")
         ).subscribe(parts => {
           let partCache = [];
+       
           parts[0].forEach(part => {
             part.type = DownloadGraphComponent.collectionType;
+            //console.log("parts.............", part);
             partCache.push(part);
           });
           parts[1].forEach(part => {

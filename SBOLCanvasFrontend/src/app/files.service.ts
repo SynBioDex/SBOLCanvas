@@ -158,10 +158,13 @@ export class FilesService {
       headers = headers.set("Authorization", user);
     let params = new HttpParams();
     params = params.append("server", server);
+
     if (collection != null && collection.length > 0)
       params = params.append("collection", collection);
+      
     if (type != null && type.length > 0)
       params = params.append("type", type);
+   
     if (role != null && role.length > 0)
       params = params.append("role", role);
     params = params.append("mode", mode);
