@@ -12,6 +12,8 @@ export enum KEY_CODE {
   BACKSPACE = "Backspace",
   UNDO = "Undo",
   REDO = "Redo",
+  COPY = "Copy",
+  PASTE = "Paste"
 }
 
 @Component({
@@ -51,6 +53,17 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
     this.handleEvent(event, KEY_CODE.REDO);
   }
 
+  @HostListener('window:keydown.control.c', ['$event'])
+  onControlCHandler(event: KeyboardEvent) {
+    console.debug('Copy');
+    this.handleEvent(event, KEY_CODE.COPY);
+  }
+  @HostListener('window:keydown.control.v', ['$event'])
+  onControlVHandler(event: KeyboardEvent) {
+    console.debug('Paste');
+    this.handleEvent(event, KEY_CODE.PASTE);
+  }
+
   handleEvent(event: KeyboardEvent, code: string) {
 
     const target = event.target as HTMLElement;
@@ -60,6 +73,7 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
     if ((target == null || (target.tagName != "INPUT" && target.tagName != "TEXTAREA" && target.tagName != "DIV")) && !this.toolbar.popupOpen) {
       // prevent default actions on keypresses using preventDefault()
 
+
       if (code === KEY_CODE.DELETE || code === KEY_CODE.BACKSPACE) {
         this.graphService.delete();
       }
@@ -68,6 +82,12 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
       }
       else if (code == KEY_CODE.REDO) {
         this.graphService.redo();
+      }
+      else if (code == KEY_CODE.COPY) {
+        this.graphService.copy();
+      }
+      else if (code == KEY_CODE.PASTE) {
+        this.graphService.paste();
       }
     }
   }

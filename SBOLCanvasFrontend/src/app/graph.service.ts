@@ -25,6 +25,7 @@ import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
 import { Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { mxClipboard } from 'src/mxgraph';
 
 @Injectable({
     providedIn: 'root'
@@ -571,6 +572,35 @@ export class GraphService extends GraphHelpers {
         this.filterSelectionCells();
     }
 
+    copy(){
+        mx.mxClipboard.copy(this.graph)
+        console.log(mx.mxClipboard.getCells())
+        console.log(mx.mxClipboard.getCells()[0].isInteraction())
+        // this.addSequenceFeature(cell.style.split("Glyph")[1].trim()) 
+    }
+
+    paste(){
+        let cells = mx.mxClipboard.getCells()
+        this.graph.clearSelection()
+        // this.addBackbone()
+        for(let cell of cells){
+            if (cell.isCircuitContainer()){
+                for(let children of cell.children){
+                    if(!children.isBackbone()){
+                        this.addSequenceFeature(children.style.split("Glyph")[1].trim()) 
+                    }
+                    
+                    
+                }
+            }
+            else{  
+                console.log("add")
+                this.addSequenceFeature(cell.style.split("Glyph")[1].trim()) 
+            }
+
+        }
+    }
+
     zoomIn() {
         this.graph.zoomIn();
     }
@@ -626,9 +656,10 @@ export class GraphService extends GraphHelpers {
      * The new glyph's location is based off the user's selection.
      */
     addSequenceFeature(name) {
+        console.log(name)
         this.graph.getModel().beginUpdate();
         try {
-            if (!this.atLeastOneCircuitContainerInGraph()) {
+            if (!this.atLeastOneCircuitContainerInGraph() || this.graph.getSelectionCells().length === 0 ) {
                 // if there is no strand, quietly make one
                 // stupid user
                 this.addBackbone();
@@ -674,7 +705,6 @@ export class GraphService extends GraphHelpers {
      * glyph is added (first, second, etc)
      */
     async addSequenceFeatureAt(name, x, y, circuitContainer?) {
-
         // ownership change check
         if (this.graph.getCurrentRoot()) {
             let glyphInfo;
