@@ -65,7 +65,7 @@
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
-                        <mat-form-field appearance="outline" style="max-width:85px;">
+                        <mat-form-field appearance="outline" style="max-width:85px; max-height: 52px;" class="dense-3">
                             <mat-select id="edgeStyle" value="{{styleInfo.currentEdgeStyle()}}"
                                 (selectionChange)="dropDownChange($event)">
                                 <mat-select-trigger>
@@ -107,7 +107,7 @@
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
-                        <mat-select id="bendStyle" style="max-width: 90px;" class="auto-width"
+                        <mat-select id="bendStyle" style="max-width: 100px;" class="dense-3"
                             value="{{styleInfo.currentBendStyle()}}" (selectionChange)="dropDownChange($event)">
                             <mat-option value="sharp">Sharp</mat-option>
                             <mat-option value="rounded">Rounded</mat-option>
@@ -123,7 +123,7 @@
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
-                        <mat-form-field appearance="outline" class="number-input">
+                        <mat-form-field appearance="outline" class="number-input dense-3">
                             <input id="endSize" #endSizeInput matInput type="number" min="0"
                                 oninput="validity.valid||(value='');" (change)="inputChange($event)"
                                 [value]="styleInfo.currentEndSize()">
@@ -139,7 +139,7 @@
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
-                        <mat-form-field appearance="outline" class="number-input">
+                        <mat-form-field appearance="outline" class="number-input dense-3">
                             <input id="sourceSpacing" #endSizeInput matInput type="number"
                                 (change)="inputChange($event)" [value]="styleInfo.currentSourceSpacing()">
                         </mat-form-field>
@@ -155,7 +155,7 @@
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
-                        <mat-form-field appearance="outline" class="number-input">
+                        <mat-form-field appearance="outline" class="number-input dense-3">
                             <input id="targetSpacing" #endSizeInput matInput type="number"
                                 (change)="inputChange($event)" [value]="styleInfo.currentTargetSpacing()">
                         </mat-form-field>

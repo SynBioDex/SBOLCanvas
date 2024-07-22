@@ -128,7 +128,7 @@
     </mat-select>
   </mat-form-field>
 
-  <mat-label *ngIf="graphService.isSelectedSourceEdge()">Source Role: {{getSourceInteractionRole()}}</mat-label>
+  <mat-label class="label-spacing" *ngIf="graphService.isSelectedSourceEdge()">Source Role: {{getSourceInteractionRole()}}</mat-label>
 
   <mat-form-field *ngIf="hasSourceRefinements() && graphService.isSelectedSourceEdge()">
     <mat-label>Source Refinement</mat-label>
