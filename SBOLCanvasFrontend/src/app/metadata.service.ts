@@ -65,11 +65,18 @@ export class MetadataService {
   // Definition cannot have multiple strands.
   private componentDefinitionModeSource = new BehaviorSubject(null);
   componentDefinitionMode = this.componentDefinitionModeSource.asObservable();
-
+  private savedRegistry: string;
+  private savedCollection: { collection: string, history: Array<object> };
   // TODO: DNA strand info
 
   constructor(private http: HttpClient) { }
+  getSavedRegistry() {
+    return this.savedRegistry;
+  }
 
+  getSavedCollection() {
+    return this.savedCollection;
+  }
   loadTypes(): Observable<any> {
     return this.http.get(this.typesURL);
   }
