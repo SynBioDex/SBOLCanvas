@@ -573,32 +573,50 @@ export class GraphService extends GraphHelpers {
     }
 
     copy(){
-        mx.mxClipboard.copy(this.graph)
-        console.log(mx.mxClipboard.getCells())
-        console.log(mx.mxClipboard.getCells()[0].isInteraction())
-        // this.addSequenceFeature(cell.style.split("Glyph")[1].trim()) 
+        mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
     }
 
     paste(){
-        let cells = mx.mxClipboard.getCells()
         this.graph.clearSelection()
-        // this.addBackbone()
+        let cells = mx.mxClipboard.getCells()
+        let interactions = []
         for(let cell of cells){
-            if (cell.isCircuitContainer()){
-                for(let children of cell.children){
-                    if(!children.isBackbone()){
-                        this.addSequenceFeature(children.style.split("Glyph")[1].trim()) 
+            if (cell.isCircuitContainer()){ // circuit container refers to the blue box, the children being the cells in that box
+                for(let childCell of cell.children){
+                    if(!childCell.isBackbone()){
+                        const edges = childCell?.edges // an array of interaction glyphs, may be undefined
+
+                        this.addSequenceFeature(childCell.style.split("Glyph")[1].trim())
+                        const parentOfEdge = this.graph.getSelectionCell()
+                        
+                        if(edges){
+                            for(let edge of edges){
+                                this.addInteraction(edge.style.split("Glyph")[1].trim())
+                                interactions.push(this.graph.getSelectionCell()) 
+                            }
+                            this.graph.setSelectionCell(parentOfEdge)
+                        }
                     }
-                    
-                    
                 }
             }
-            else{  
-                console.log("add")
+            else if (cell.isSequenceFeatureGlyph()){  
                 this.addSequenceFeature(cell.style.split("Glyph")[1].trim()) 
             }
-
+            else if(cell.isMolecularSpeciesGlyph()){
+                if(cell.edges){
+                    const edge = cell.edges[0]
+                    this.addMolecularSpeciesAt(cell.style.split("Glyph")[1].trim(), edge.geometry.x, edge.geometry.y)
+                }
+                else{
+                    this.addMolecularSpecies(cell.style.split("Glyph")[1].trim()) 
+                }
+            }
+            else if(cell.isInteractionNode()){
+                this.addMolecularSpecies(cell.style.split("Glyph")[1].trim()) 
+            }
         }
+        this.graph.setSelectionCell(this.graph.getSelectionCell().parent)
+        this.graph.addSelectionCells(interactions)
     }
 
     zoomIn() {
@@ -656,7 +674,6 @@ export class GraphService extends GraphHelpers {
      * The new glyph's location is based off the user's selection.
      */
     addSequenceFeature(name) {
-        console.log(name)
         this.graph.getModel().beginUpdate();
         try {
             if (!this.atLeastOneCircuitContainerInGraph() || this.graph.getSelectionCells().length === 0 ) {
