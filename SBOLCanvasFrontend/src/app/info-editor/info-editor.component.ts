@@ -11,7 +11,6 @@ import { ModuleInfo } from '../moduleInfo';
 import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 // import { ThrowStmt } from '@angular/compiler';
-
 import { FormControl, Validators } from '@angular/forms';
 
 @Component({
@@ -19,6 +18,8 @@ import { FormControl, Validators } from '@angular/forms';
   templateUrl: './info-editor.component.html',
   styleUrls: ['./info-editor.component.css']
 })
+
+
 
 export class InfoEditorComponent implements OnInit {
 
@@ -42,7 +43,6 @@ export class InfoEditorComponent implements OnInit {
   interactionInfo: InteractionInfo;
   glyphCtrl: FormControl;
 
-
   constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog, private changeDetector: ChangeDetectorRef) { }
 
   ngOnInit() {
@@ -54,9 +54,6 @@ export class InfoEditorComponent implements OnInit {
     this.getRoles();
     this.getInteractions();
     this.getInteractionRoles();
-
-    
-  
   }
 
   getTypes() {
@@ -101,6 +98,7 @@ export class InfoEditorComponent implements OnInit {
         this.glyphInfo.partRefine = '';
         if (event.value !== '') {
           this.getRefinements(event.value);
+        
         } else {
           this.partRefinements = [];
         }
@@ -139,15 +137,14 @@ export class InfoEditorComponent implements OnInit {
   }
 
 
-  inputChange(event: any) {
+inputChange(event: any) {
+
     const id = event.target.id;
-   
     switch (id) {
       case 'displayID': {
         const replaced = event.target.value.replace(/[\W_]+/g, '_');
         if (this.glyphInfo != null) {
           if(replaced !== ''){
-            //this.promptDisplayID();  
             this.glyphInfo.displayID = replaced;
           }
         } else if (this.interactionInfo != null) {
@@ -223,13 +220,20 @@ export class InfoEditorComponent implements OnInit {
    * @param glyphInfo
    */
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
+
     this.glyphInfo = glyphInfo;
+
+    if(this.glyphInfo.partType === 'Protein'){
+        this.glyphInfo.name = this.glyphInfo.getMacromolecules(); 
+    }
     
     this.glyphCtrl = new FormControl( `${this.glyphInfo.displayID}`, Validators.required);
+ 
     if (glyphInfo != null) {
       if (glyphInfo.partRole != null) {
         this.getRefinements(glyphInfo.partRole);
-      } else {
+      } 
+      else {
         this.partRefinements = [];
       }
     }

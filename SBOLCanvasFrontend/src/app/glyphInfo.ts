@@ -5,6 +5,15 @@ import { environment } from 'src/environments/environment';
 import { customAlphabet } from 'nanoid';
 import { alphanumeric } from 'nanoid-dictionary';
 
+const macromolecules = {
+    NGA : "nga",
+    complex: "comp",
+    dsNA : "dna",
+    macrocmolecule : "prot",
+    small_molecule : "chem",
+    ssNA : "rna"
+}
+
 export class GlyphInfo extends Info {
     // Remember that when you change this you need to change the encode function in graph service
     static counter: number = 0;
@@ -53,6 +62,11 @@ export class GlyphInfo extends Info {
 
         // make a name so the displayed stuff is cleaner
         this.name = partRolePrefix || " "
+    }
+
+    getMacromolecules(){
+        //??
+        return macromolecules.NGA || macromolecules.complex || macromolecules.dsNA;
     }
 
     makeCopy() {
