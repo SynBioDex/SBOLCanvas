@@ -64,9 +64,21 @@ export class GlyphInfo extends Info {
         this.name = partRolePrefix || " "
     }
 
-    getMacromolecules(){
-        //??
-        return macromolecules.NGA || macromolecules.complex || macromolecules.dsNA;
+    getMacromoleculesName(){
+        if(this.partType == 'Complex'){
+            this.name = 'comp';
+        }else if(this.partType == 'macromolecule'){
+            this.name = 'prot';
+        }else if(this.partType == 'dsNA'){
+            this.name = 'dna';
+        }else if(this.partType == 'ssNA'){
+            this.name = 'rna';
+        }else if(this.partType == 'small_molecule'){
+            this.name = 'chem';
+        }else if(this.partType == 'NGA'){
+            this.name = 'nga';
+        }
+        
     }
 
     makeCopy() {

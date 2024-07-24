@@ -219,13 +219,29 @@ inputChange(event: any) {
    * Updates both the glyph info in the form and in the graph.
    * @param glyphInfo
    */
+  getMacromoleculesName(){
+
+    if(this.glyphInfo.partType == 'Complex'){
+        this.glyphInfo.name = 'comp';
+    }else if(this.glyphInfo.partType == 'Protein' || this.glyphInfo.partType == 'macromoleule'){
+        this.glyphInfo.name = 'prot';
+    }else if(this.glyphInfo.partType == 'dsNA' || this.glyphInfo.partType ==  'DNA molecule'){
+        this.glyphInfo.name = 'dna';
+    }else if(this.glyphInfo.partType == 'ssNA' || this.glyphInfo.partType == 'RNA molecule'){
+        this.glyphInfo.name = 'rna';
+    }else if(this.glyphInfo.partType == 'Small molecule'){
+        this.glyphInfo.name = 'chem';
+    }else if(this.glyphInfo.partType == 'NGA'){
+        this.glyphInfo.name = 'nga';
+    }
+    
+}
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
 
     this.glyphInfo = glyphInfo;
 
-    if(this.glyphInfo.partType === 'Protein'){
-        this.glyphInfo.name = this.glyphInfo.getMacromolecules(); 
-    }
+    
+    this.getMacromoleculesName(); 
     
     this.glyphCtrl = new FormControl( `${this.glyphInfo.displayID}`, Validators.required);
  
