@@ -577,37 +577,68 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
+        console.log(this.graph.getSelectionCells())
     }
 
     /*
         Paste cells from the mxClipboard
         Goes through the array of cells and adds each individual one
         Will add to whatever is currently selected
-        Once something is added, it will become the new selection
+        Once something is added, it will immediately become selected
     */
     paste(){
-        this.graph.clearSelection() // to make it add to a newly created backbone
-        const cells = mx.mxClipboard.getCells()
-        const interactions = [] // used for selection at the very end
+        //TODO: paste should appear next to copy, only need to add at for the first sequence feature
+        //TODO: maybe for interactions and macromolecules check if only 1 thing is selected and then allow paste?
+        // Shorter alias
+        const selectedCell = () => this.graph.getSelectionCell()
 
+        // Clear to make a new backbone on which the glyphs will be created on
+        this.graph.clearSelection() 
+        const cells = mx.mxClipboard.getCells()
+        
+        // Used to add all glyphs to the whole selection at the very end
+        const interactions = []
+        const molecularSpecies = []
+        
         for(let cell of cells){
             const cellName = cell.style.split("Glyph")[1]?.trim()
+            
+            // circuit container refers to the blue box, the children being the cells in that box
+            if (cell.isCircuitContainer()){
+                if(this.atLeastOneCircuitContainerInGraph()){
+                    this.addBackbone()
+                }
 
-            if (cell.isCircuitContainer()){ // circuit container refers to the blue box, the children being the cells in that box
                 for(let childCell of cell.children){
                     if(!childCell.isBackbone()){
+                        
                         const childCellName = childCell.style.split("Glyph")[1].trim()
                         const edges = childCell?.edges // an array of interaction glyphs connected to the current child, may be undefined
 
                         this.addSequenceFeature(childCellName)
-                        const parentOfEdge = this.graph.getSelectionCell()
-                        
+
                         if(edges){
+                            const parentOfEdge = selectedCell()
+
                             for(let edge of edges){
                                 const edgeName = edge.style.split("Glyph")[1].trim()
 
                                 this.addInteraction(edgeName)
-                                interactions.push(this.graph.getSelectionCell()) 
+                                interactions.push(selectedCell()) 
+
+                                // Get the x and y coordinates of the target point of the edge
+                                // Used to correctly add a glyph at the point
+                                const interactionPoint = selectedCell().geometry.targetPoint
+
+                                if(edge.target){
+                                    const targetName = edge.target.style.split("Glyph")[1].trim()
+                                    if(edge.target.isMolecularSpeciesGlyph()){
+                                        const currentEdge = selectedCell()
+                                        this.addMolecularSpeciesAt(targetName, interactionPoint.x - 25, interactionPoint.y - 35)
+                                        molecularSpecies.push(selectedCell())
+                                        currentEdge.target = selectedCell()
+                                    }
+                                }
                                 this.graph.setSelectionCell(parentOfEdge)
                             }
                         }
@@ -616,26 +647,22 @@ export class GraphService extends GraphHelpers {
             }
 
             else if (cell.isSequenceFeatureGlyph()){  
+                this.addBackbone()
                 this.addSequenceFeature(cellName) 
             }
 
-            else if(cell.isMolecularSpeciesGlyph()){
-                if(cell.edges){
-                    const edge = cell.edges[0]
-                    this.addMolecularSpeciesAt(cellName, edge.geometry.x, edge.geometry.y)
-                }
-                else{
-                    this.addMolecularSpecies(cellName) 
-                }
-            }
+            // else if(cell.isMolecularSpeciesGlyph()){
+            //         this.addMolecularSpecies(cellName) 
+            // }
             
             else if(cell.isInteractionNode()){
                 this.addInteractionNode(cellName) 
             }
         }
-        // Sequence and Interactions selected to move the copy easily
-        this.graph.setSelectionCell(this.graph.getSelectionCell().parent) // circuit container is parent
+        // Add everything to the selection to move them as a whole
+        this.graph.setSelectionCell(selectedCell().parent) // circuit container is parent
         this.graph.addSelectionCells(interactions)
+        this.graph.addSelectionCells(molecularSpecies)
     }
 
     zoomIn() {
@@ -695,7 +722,7 @@ export class GraphService extends GraphHelpers {
     addSequenceFeature(name) {
         this.graph.getModel().beginUpdate();
         try {
-            if (!this.atLeastOneCircuitContainerInGraph() || this.graph.getSelectionCells().length === 0 ) {
+            if (!this.atLeastOneCircuitContainerInGraph()) {
                 // if there is no strand, quietly make one
                 // stupid user
                 this.addBackbone();
