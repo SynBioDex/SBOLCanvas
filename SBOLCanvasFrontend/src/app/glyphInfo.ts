@@ -5,14 +5,7 @@ import { environment } from 'src/environments/environment';
 import { customAlphabet } from 'nanoid';
 import { alphanumeric } from 'nanoid-dictionary';
 
-const macromolecules = {
-    NGA : "nga",
-    complex: "comp",
-    dsNA : "dna",
-    macrocmolecule : "prot",
-    small_molecule : "chem",
-    ssNA : "rna"
-}
+
 
 export class GlyphInfo extends Info {
     // Remember that when you change this you need to change the encode function in graph service
@@ -64,22 +57,7 @@ export class GlyphInfo extends Info {
         this.name = partRolePrefix || " "
     }
 
-    getMacromoleculesName(){
-        if(this.partType == 'Complex'){
-            this.name = 'comp';
-        }else if(this.partType == 'macromolecule'){
-            this.name = 'prot';
-        }else if(this.partType == 'dsNA'){
-            this.name = 'dna';
-        }else if(this.partType == 'ssNA'){
-            this.name = 'rna';
-        }else if(this.partType == 'small_molecule'){
-            this.name = 'chem';
-        }else if(this.partType == 'NGA'){
-            this.name = 'nga';
-        }
-        
-    }
+
 
     makeCopy() {
         const copy: GlyphInfo = new GlyphInfo();
