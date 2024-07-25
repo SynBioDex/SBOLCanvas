@@ -589,6 +589,7 @@ export class GraphService extends GraphHelpers {
     paste(){
         //TODO: paste should appear next to copy, only need to add at for the first sequence feature
         //TODO: maybe for interactions and macromolecules check if only 1 thing is selected and then allow paste?
+        //NOTE: should i make it such that copy and pasting only works if a circuit container is selected? i.e only when blue box around
         // Shorter alias
         const selectedCell = () => this.graph.getSelectionCell()
 
@@ -599,30 +600,29 @@ export class GraphService extends GraphHelpers {
         // Used to add all glyphs to the whole selection at the very end
         const interactions = []
         const molecularSpecies = []
+        const sequenceGlyphs = []
+        const circuitContainers = []
         
         for(let cell of cells){
             const cellName = cell.style.split("Glyph")[1]?.trim()
             
             // circuit container refers to the blue box, the children being the cells in that box
             if (cell.isCircuitContainer()){
-                if(this.atLeastOneCircuitContainerInGraph()){
-                    this.addBackbone()
-                }
 
                 for(let childCell of cell.children){
                     if(!childCell.isBackbone()){
                         
                         const childCellName = childCell.style.split("Glyph")[1].trim()
                         const edges = childCell?.edges // an array of interaction glyphs connected to the current child, may be undefined
-
+    
                         this.addSequenceFeature(childCellName)
-
+                        
                         if(edges){
                             const parentOfEdge = selectedCell()
 
                             for(let edge of edges){
                                 const edgeName = edge.style.split("Glyph")[1].trim()
-
+                                
                                 this.addInteraction(edgeName)
                                 interactions.push(selectedCell()) 
 
@@ -643,26 +643,33 @@ export class GraphService extends GraphHelpers {
                             }
                         }
                     }
+                    else{
+                        this.addBackbone()
+                    }
                 }
+                circuitContainers.push(selectedCell().parent)
             }
 
             else if (cell.isSequenceFeatureGlyph()){  
                 this.addBackbone()
                 this.addSequenceFeature(cellName) 
+                sequenceGlyphs.push(selectedCell())
             }
 
-            // else if(cell.isMolecularSpeciesGlyph()){
-            //         this.addMolecularSpecies(cellName) 
-            // }
+            else if(cell.isMolecularSpeciesGlyph() && !cell.edges){
+                this.addMolecularSpecies(cellName)                     
+            }
             
-            else if(cell.isInteractionNode()){
+            else if(cell.isInteractionNode() && !cell.edges){
                 this.addInteractionNode(cellName) 
             }
         }
         // Add everything to the selection to move them as a whole
-        this.graph.setSelectionCell(selectedCell().parent) // circuit container is parent
+        this.graph.clearSelection()
+        this.graph.addSelectionCells(circuitContainers) 
         this.graph.addSelectionCells(interactions)
         this.graph.addSelectionCells(molecularSpecies)
+        this.graph.addSelectionCells(sequenceGlyphs)
     }
 
     zoomIn() {
