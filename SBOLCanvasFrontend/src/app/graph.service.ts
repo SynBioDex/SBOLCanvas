@@ -604,7 +604,7 @@ export class GraphService extends GraphHelpers {
         const circuitContainers = []
         
         for(let cell of cells){
-            const cellName = cell.style.split("Glyph")[1]?.trim()
+            const cellName = cell.style.split("Glyph")[1]?.split(";")[0]?.trim()
             
             // circuit container refers to the blue box, the children being the cells in that box
             if (cell.isCircuitContainer()){
@@ -612,7 +612,7 @@ export class GraphService extends GraphHelpers {
                 for(let childCell of cell.children){
                     if(!childCell.isBackbone()){
                         
-                        const childCellName = childCell.style.split("Glyph")[1].trim()
+                        const childCellName = childCell.style.split("Glyph")[1]?.split(";")[0]?.trim()
                         const edges = childCell?.edges // an array of interaction glyphs connected to the current child, may be undefined
     
                         this.addSequenceFeature(childCellName)
@@ -622,6 +622,8 @@ export class GraphService extends GraphHelpers {
 
                             for(let edge of edges){
                                 const edgeName = edge.style.split("Glyph")[1].trim()
+                                
+                                if(edge.target === childCell) continue
                                 
                                 this.addInteraction(edgeName)
                                 interactions.push(selectedCell()) 

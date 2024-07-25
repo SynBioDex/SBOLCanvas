@@ -1,6 +1,7 @@
 import {Component, Inject, OnInit} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {ColorPickerStartupData} from '../design-menu/design-menu.component';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-color-picker',
@@ -71,7 +72,7 @@ export class ColorPickerComponent implements OnInit {
 
 
   ngOnInit() {
-    this.dialogRef.beforeClosed().subscribe(() => this.dialogRef.close(this.selectedColor));
+    this.dialogRef.beforeClosed().pipe(take(1)).subscribe(() => this.dialogRef.close(this.selectedColor));
     this.selectedColor = this.data.initialColor;
   }
 
