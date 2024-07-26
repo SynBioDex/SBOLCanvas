@@ -1180,7 +1180,7 @@ export class GraphService extends GraphHelpers {
 
     exportImage(filename: string, format: string) {
         let bg = '#ffffff';
-        let scale = 1;
+        let scale = 3;
         let b = 1;
 
         let imgExport = new mx.mxImageExport();
@@ -1193,7 +1193,7 @@ export class GraphService extends GraphHelpers {
 
         let xmlCanvas = new mx.mxXmlCanvas2D(root);
         xmlCanvas.translate(Math.floor((b / scale - bounds.x) / vs), Math.floor((b / scale - bounds.y) / vs));
-        xmlCanvas.scale(1 / vs);
+        xmlCanvas.scale(scale / vs);
 
         imgExport.drawState(this.graph.getView().getState(this.graph.getCurrentRoot()), xmlCanvas);
 
