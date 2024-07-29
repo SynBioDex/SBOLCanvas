@@ -1281,7 +1281,7 @@ export class GraphService extends GraphHelpers {
     async setSelectedToXML(cellString: string) {
         const selectionCells = this.graph.getSelectionCells();
 
-        if (selectionCells.length == 0 || (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule()))) {
+        if (selectionCells.length == 0 || (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isMolecularSpeciesGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule()))) {
             // We're making a new cell to replace the selected one
             let selectedCell;
             if (selectionCells.length > 0) {
@@ -1335,12 +1335,13 @@ export class GraphService extends GraphHelpers {
                 const subGraph = new mx.mxGraph();
                 codec.decode(doc.documentElement, subGraph.getModel());
 
-                // get the new cell
+                // get the new cell, this is the imported component
                 let newCell = subGraph.getModel().cloneCell(subGraph.getModel().getCell("1").children[0]);
 
                 // not part of a module or a top level component definition
+                // Molecular species should not be able to be transformed into other part roles
                 let origParent;
-                if (selectedCell.isSequenceFeatureGlyph()) {
+                if (selectedCell.isSequenceFeatureGlyph() || (selectedCell.isMolecularSpeciesGlyph() && newCell.isMolecularSpeciesGlyph())) {
                     // store old cell's parent
                     origParent = selectedCell.getParent();
 
@@ -1375,7 +1376,8 @@ export class GraphService extends GraphHelpers {
                             }
                         });
                     }
-                } else if (selectedCell.isModule()) {
+                }
+                else if (selectedCell.isModule()) {
                     // store old cell's parent
                     origParent = selectedCell.getParent();
 
@@ -1533,6 +1535,10 @@ export class GraphService extends GraphHelpers {
                     origParent.refreshCircuitContainer(this.graph);
                     this.graph.setSelectionCell(newCell);
                     this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(newCell.value)).partRole);
+                }
+
+                if (selectedCell.isMolecularSpeciesGlyph() && newCell.isMolecularSpeciesGlyph()) {
+                    this.graph.setSelectionCell(newCell);
                 }
 
                 // if we zoomed out zoom back in
