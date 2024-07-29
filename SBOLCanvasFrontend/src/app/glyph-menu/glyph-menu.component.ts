@@ -44,7 +44,8 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   }
 
   onSequenceFeatureGlyphClicked(name: string) {
-    this.graphService.addSequenceFeature(name);
+    //this.graphService.addSequenceFeature(name);
+    this.graphService.addSequenceFeatureWithoutBackbone(name);
   }
 
   onMolecularSpeciesGlyphClicked(name: string) {

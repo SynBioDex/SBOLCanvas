@@ -753,7 +753,33 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().endUpdate();
         }
     }
+  /**
+     * Creates sequence feature without backbone
+     */
+  addSequenceFeatureWithoutBackbone(name){
+    const pt = this.getDefaultNewCellCoords();
+    this.addSequenceFeatureWithoutBackboneAt(name, pt.x, pt.y);
+}
 
+addSequenceFeatureWithoutBackboneAt(name, x,y){
+    this.graph.getModel().beginUpdate();
+    try{
+        const glyphInfo = new GlyphInfo({
+            partRole: name
+        });
+        this.addToInfoDict(glyphInfo);
+
+        const sequenceFeatureCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_SEQUENCE_FEATURE + name);
+
+        this.createViewCell(glyphInfo.getFullURI());
+        sequenceFeatureCell.setConnectable(true);
+        
+        this.graph.clearSelection();
+        this.graph.setSelectionCell(sequenceFeatureCell)
+    } finally {
+        this.graph.getModel().endUpdate();
+    }
+}
     /**
      * Turns the given element into a dragsource for creating molecular species glyphs
      */
