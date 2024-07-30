@@ -572,25 +572,29 @@ export class GraphService extends GraphHelpers {
         this.filterSelectionCells();
     }
 
-    /*
-        Uses mxClipboard to store selected cells as an array
+    /** 
+       * Uses mxClipboard to store selected cells as an array
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
-        console.log(this.graph.getSelectionCells())
     }
 
-    /*
-        Paste cells from the mxClipboard
-        Goes through the array of cells and adds each individual one
-        Will add to whatever is currently selected
-        Once something is added, it will immediately become selected
+    /** 
+        * Paste cells from mxClipboard
+    
+        * Goes through the array of cells and adds each individual one
+        
+        * Will add to whatever is currently selected
+        
+        * Once something is added, it will immediately become selected
     */
     paste(){
         //TODO: paste should appear next to copy, only need to add at for the first sequence feature
         //TODO: maybe for interactions and macromolecules check if only 1 thing is selected and then allow paste?
         //NOTE: should i make it such that copy and pasting only works if a circuit container is selected? i.e only when blue box around
-        // Shorter alias
+        /** 
+           * Shorter alias to get currently selected cell
+        */
         const selectedCell = () => this.graph.getSelectionCell()
 
         // Clear to make a new backbone on which the glyphs will be created on
@@ -602,7 +606,7 @@ export class GraphService extends GraphHelpers {
         const molecularSpecies = []
         const sequenceGlyphs = []
         const circuitContainers = []
-        
+        let map = new Map()
         for(let cell of cells){
             const cellName = cell.style.split("Glyph")[1]?.split(";")[0]?.trim()
             
@@ -618,31 +622,9 @@ export class GraphService extends GraphHelpers {
                         this.addSequenceFeature(childCellName)
                         
                         if(edges){
-                            const parentOfEdge = selectedCell()
-
-                            for(let edge of edges){
-                                const edgeName = edge.style.split("Glyph")[1].trim()
-                                
-                                if(edge.target === childCell) continue
-                                
-                                this.addInteraction(edgeName)
-                                interactions.push(selectedCell()) 
-
-                                // Get the x and y coordinates of the target point of the edge
-                                // Used to correctly add a glyph at the point
-                                const interactionPoint = selectedCell().geometry.targetPoint
-
-                                if(edge.target){
-                                    const targetName = edge.target.style.split("Glyph")[1].trim()
-                                    if(edge.target.isMolecularSpeciesGlyph()){
-                                        const currentEdge = selectedCell()
-                                        this.addMolecularSpeciesAt(targetName, interactionPoint.x - 25, interactionPoint.y - 35)
-                                        molecularSpecies.push(selectedCell())
-                                        currentEdge.target = selectedCell()
-                                    }
-                                }
-                                this.graph.setSelectionCell(parentOfEdge)
-                            }
+                            const oldCell = childCell
+                            const newCell = selectedCell()
+                            map.set(oldCell, newCell)
                         }
                     }
                     else{
@@ -658,14 +640,27 @@ export class GraphService extends GraphHelpers {
                 sequenceGlyphs.push(selectedCell())
             }
 
-            else if(cell.isMolecularSpeciesGlyph() && !cell.edges){
+            else if(cell.isMolecularSpeciesGlyph()){
                 this.addMolecularSpecies(cellName)                     
+                const newCell = selectedCell()
+                map.set(cell, newCell)
+            }
+
+            else if (cell.isInteraction()){
+                this.graph.clearSelection()
+                this.addInteraction(cellName) 
+                const newSource = map.get(cell.source)
+                const newTarget = map.get(cell.target)
+                const newInteraction = selectedCell()
+                this.graph.getModel().setTerminals(newInteraction, newSource, newTarget)
+                
             }
             
-            else if(cell.isInteractionNode() && !cell.edges){
+            else if(cell.isInteractionNode()){
                 this.addInteractionNode(cellName) 
             }
         }
+
         // Add everything to the selection to move them as a whole
         this.graph.clearSelection()
         this.graph.addSelectionCells(circuitContainers) 
