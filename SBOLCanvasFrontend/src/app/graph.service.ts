@@ -577,6 +577,7 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
+        console.log(this.graph.getSelectionCell())
     }
 
     /** 
@@ -600,13 +601,19 @@ export class GraphService extends GraphHelpers {
         // Clear to make a new backbone on which the glyphs will be created on
         this.graph.clearSelection() 
         const cells = mx.mxClipboard.getCells()
+        this.graph.getModel().beginUpdate()
         
         // Used to add all glyphs to the whole selection at the very end
         const interactions = []
+        const newInteractions = []
         const molecularSpecies = []
         const sequenceGlyphs = []
         const circuitContainers = []
+        
+        // map the old/copied cells with edges to the newly created ones,
+        // This is to keep track and preserve interactions after paste
         let map = new Map()
+
         for(let cell of cells){
             const cellName = cell.style.split("Glyph")[1]?.split(";")[0]?.trim()
             
@@ -637,36 +644,62 @@ export class GraphService extends GraphHelpers {
             else if (cell.isSequenceFeatureGlyph()){  
                 this.addBackbone()
                 this.addSequenceFeature(cellName) 
-                sequenceGlyphs.push(selectedCell())
+                const newCell = selectedCell()
+                sequenceGlyphs.push(newCell)
+                map.set(cell, newCell)
             }
 
             else if(cell.isMolecularSpeciesGlyph()){
-                this.addMolecularSpecies(cellName)                     
+                this.addMolecularSpecies(cellName);                    
                 const newCell = selectedCell()
+                molecularSpecies.push(newCell)
                 map.set(cell, newCell)
             }
 
             else if (cell.isInteraction()){
-                this.graph.clearSelection()
-                this.addInteraction(cellName) 
-                const newSource = map.get(cell.source)
-                const newTarget = map.get(cell.target)
-                const newInteraction = selectedCell()
-                this.graph.getModel().setTerminals(newInteraction, newSource, newTarget)
-                
+                interactions.push(cell)
             }
             
             else if(cell.isInteractionNode()){
                 this.addInteractionNode(cellName) 
             }
         }
+        
+        // Add interactions and connect them at the end
+        for(let interaction of interactions){
+            this.graph.clearSelection()
+            const interactionName = interaction.style.split("Glyph")[1]?.split(";")[0]?.trim()
+            
+            this.addInteraction(interactionName) 
+            const newSource = map.get(interaction.source)
+            const newTarget = map.get(interaction.target)
+            const newInteraction = selectedCell()
+            newInteractions.push(newInteraction)
+            this.graph.getModel().setTerminals(newInteraction, newSource, newTarget)
 
+            // Place the molecular species higher up, makes it easier to see after paste
+            if(newTarget?.isMolecularSpeciesGlyph()){
+                let newGeometry = newInteraction.target.geometry
+                newGeometry.x = newSource.parent.geometry.x + newInteraction.source.geometry.x
+                newGeometry.y = newInteraction.geometry.sourcePoint.y - 250
+                this.graph.getModel().setGeometry(newInteraction.target, newGeometry )
+            }
+            if(newSource?.isMolecularSpeciesGlyph() && !newTarget){
+                let newGeometry = newInteraction.geometry
+                newGeometry.targetPoint.x = newSource.geometry.x + (newSource.geometry.width / 2)
+                newGeometry.targetPoint.y = newSource.geometry.y - (newSource.geometry.height)
+
+                this.graph.getModel().setGeometry(newInteraction.target, newGeometry)
+            }
+        }
         // Add everything to the selection to move them as a whole
         this.graph.clearSelection()
         this.graph.addSelectionCells(circuitContainers) 
-        this.graph.addSelectionCells(interactions)
+        this.graph.addSelectionCells(newInteractions)
         this.graph.addSelectionCells(molecularSpecies)
         this.graph.addSelectionCells(sequenceGlyphs)
+
+        this.graph.getModel().endUpdate()
     }
 
     zoomIn() {
