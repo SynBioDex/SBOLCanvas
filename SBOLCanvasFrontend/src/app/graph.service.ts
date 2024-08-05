@@ -576,6 +576,7 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
+        console.log(this.graph.getSelectionCell())
     }
     
     // Map old cells to newly created cells in the paste method 
@@ -609,8 +610,13 @@ export class GraphService extends GraphHelpers {
         const interactions = []
 
         // Add cells from clipboard
+        const offset = 20
         for(let cell of cells){
             const cellName = cell.style.split("Glyph")[1]?.split(";")[0]?.trim()
+            
+            // Paste new cells next to old cells
+            const x = cell.geometry.x + offset
+            const y = cell.geometry.y + offset
            
             
             // circuit container refers to the blue box, the children being the cells in that box
@@ -633,19 +639,23 @@ export class GraphService extends GraphHelpers {
                         this.addBackbone()
                     }
                 }
-                selectAll.push(selectedCell().parent)
+                const newCircuitContainer = selectedCell().parent
+                selectAll.push(newCircuitContainer)
+                newCircuitContainer.geometry.x = x
+                newCircuitContainer.geometry.y = y
+                
                 this.graph.clearSelection()
             }
             else{
 
                 let newCell: any
                 if (cell.isSequenceFeatureGlyph()){  
-                    this.addBackbone()
+                    this.addBackboneAt(x, y)
                     this.addSequenceFeature(cellName) 
                 }
     
                 else if(cell.isMolecularSpeciesGlyph()){
-                    this.addMolecularSpecies(cellName);                   
+                    this.addMolecularSpeciesAt(cellName, x, y);                   
                 }
     
                 else if (cell.isInteraction()){
@@ -653,7 +663,7 @@ export class GraphService extends GraphHelpers {
                 }
                 
                 else if(cell.isInteractionNode()){
-                    this.addInteractionNode(cellName) 
+                    this.addInteractionNodeAt(cellName, x, y) 
                 }
         
                 newCell = selectedCell()
@@ -673,45 +683,17 @@ export class GraphService extends GraphHelpers {
             const newSource = this.map.get(interaction.source)
             const newTarget = this.map.get(interaction.target)
             const newInteraction = selectedCell()
+
+            if(!newTarget){
+                newInteraction.geometry.targetPoint.x = interaction.geometry.targetPoint.x + offset
+                newInteraction.geometry.targetPoint.y = interaction.geometry.targetPoint.y + offset
+            }
+
             selectAll.push(newInteraction)
 
             // Connect interaction
             this.graph.getModel().setTerminals(newInteraction, newSource, newTarget)
 
-            // Want to move target cells such that it looks nicer
-            let newGeometry: any
-            // Move the target glyph above the source glyph
-            if(newTarget?.isMolecularSpeciesGlyph() || newTarget?.isInteractionNode()){
-                newGeometry = newTarget.geometry
-                
-                if(newSource.isSequenceFeatureGlyph()){
-                    // glyphs in a backbone have x coordinates relative to the start of the circuit container
-                    // They do not have y coordinates so have to use the circuit container
-                    newGeometry.x = newSource.parent.geometry.x + newSource.geometry.x
-                    newGeometry.y = newSource.parent.geometry.y - (newSource.geometry.height * 2)
-                }
-                else{
-                    newGeometry.x = newSource.geometry.x 
-                    newGeometry.y = newSource.geometry.y - (newSource.geometry.height * 2)
-                }
-            }
-            
-            // Straigtens interactions if they have no target
-            if((newSource?.isMolecularSpeciesGlyph() || newSource?.isInteractionNode()) && !newTarget){
-                newGeometry = newInteraction.geometry
-                newGeometry.targetPoint.x = newSource.geometry.x + (newSource.geometry.width / 2)
-                newGeometry.targetPoint.y = newSource.geometry.y - newSource.geometry.height
-            }
-            else if(newSource?.isSequenceFeatureGlyph() && !newTarget){
-                newGeometry = newInteraction.geometry
-                newGeometry.targetPoint.x = newSource.parent.geometry.x + newSource.geometry.x + (newSource.geometry.width / 2)
-                newGeometry.targetPoint.y = newSource.parent.geometry.y - newSource.geometry.height
-            }
-            
-            // Apply changes
-            if(newGeometry){
-                this.graph.getModel().setGeometry(newInteraction.target, newGeometry)
-            }
         }
         
         // Add everything to the selection to move them as a whole
