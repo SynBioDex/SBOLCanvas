@@ -225,7 +225,7 @@ export class InfoEditorComponent implements OnInit {
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
     
-    this.glyphCtrl = new FormControl( `${this.glyphInfo.displayID}`, Validators.required);
+    this.glyphCtrl = new FormControl( `${this.glyphInfo?.displayID}`, Validators.required);
     if (glyphInfo != null) {
       if (glyphInfo.partRole != null) {
         this.getRefinements(glyphInfo.partRole);
