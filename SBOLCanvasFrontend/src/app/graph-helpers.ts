@@ -50,6 +50,7 @@ export class GraphHelpers extends GraphBase {
         const rootModuleInfo = new ModuleInfo();
         this.addToInfoDict(rootModuleInfo);
         const rootViewCell = this.graph.insertVertex(cell1, rootModuleInfo.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
+        rootViewCell.setConnectable(false)
         this.graph.enterGroup(rootViewCell);
         this.viewStack = [];
         this.viewStack.push(rootViewCell);

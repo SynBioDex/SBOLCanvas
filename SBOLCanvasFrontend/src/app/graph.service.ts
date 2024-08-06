@@ -576,6 +576,7 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
+        console.log(this.graph.getSelectionCell())
     }
     
     // Map old cells to newly created cells in the paste method 
@@ -1770,6 +1771,7 @@ export class GraphService extends GraphHelpers {
             let rootModuleInfo = new ModuleInfo();
             this.addToInfoDict(rootModuleInfo);
             rootViewCell = this.graph.insertVertex(cell1, rootModuleInfo.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
+            rootViewCell.setConnectable(false)
             this.graph.enterGroup(rootViewCell);
             this.viewStack.push(rootViewCell);
         } else { // User picked New Component Design
