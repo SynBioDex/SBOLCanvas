@@ -1249,6 +1249,11 @@ export class GraphBase {
         if (source && target && source.isInteractionNode() && target.isInteractionNode()) {
             return 'Interaction nodes aren\'t allowed to connect.';
         }
+        
+        // Prevent connecting of an edge to circuit container by clicking it and then an interaction 
+        if(source.isCircuitContainer()){
+            return 'Edge type disallowed to connect to a circuit container. Please connect to the glyph itself.';
+        }
 
         return null;
     }

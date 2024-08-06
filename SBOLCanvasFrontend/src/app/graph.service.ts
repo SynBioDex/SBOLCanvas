@@ -1370,6 +1370,7 @@ export class GraphService extends GraphHelpers {
         for (let child of viewCells) {
             if (!child.isViewCell()) {
                 rootViewCell = this.graph.getModel().getCell(child.getValue());
+                rootViewCell.setConnectable(false)
                 this.graph.getModel().remove(child);
                 break;
             }
@@ -1382,8 +1383,19 @@ export class GraphService extends GraphHelpers {
         let children = this.graph.getModel().getChildren(this.graph.getDefaultParent());
         if (children) {
             children.forEach(element => {
-                if (element.isCircuitContainer())
+                if (element.isCircuitContainer()){
                     element.refreshCircuitContainer(this.graph);
+                    
+                    // Doesn't remember cell specific properties like if they were connectable
+                    // Might be a way to set this in the xml? This if fine for one property though
+                    element.setConnectable(false)
+                    for(let child of element.children){
+                        if(child.isBackbone()){
+                            child.setConnectable(false)
+                            break;
+                        }
+                    }
+                }
             });
         }
 
