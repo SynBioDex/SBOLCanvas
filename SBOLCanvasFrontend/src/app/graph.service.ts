@@ -576,7 +576,6 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
-        console.log(this.graph.getSelectionCell())
     }
     
     // Map old cells to newly created cells in the paste method 
@@ -1387,14 +1386,9 @@ export class GraphService extends GraphHelpers {
                     element.refreshCircuitContainer(this.graph);
                     
                     // Doesn't remember cell specific properties like if they were connectable
-                    // Might be a way to set this in the xml? This if fine for one property though
+                    // since it's being converted from SBOL to mxGraph XML
                     element.setConnectable(false)
-                    for(let child of element.children){
-                        if(child.isBackbone()){
-                            child.setConnectable(false)
-                            break;
-                        }
-                    }
+                    element.getBackbone().setConnectable(false)
                 }
             });
         }
