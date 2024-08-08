@@ -1369,6 +1369,7 @@ export class GraphService extends GraphHelpers {
         for (let child of viewCells) {
             if (!child.isViewCell()) {
                 rootViewCell = this.graph.getModel().getCell(child.getValue());
+                rootViewCell.setConnectable(false)
                 this.graph.getModel().remove(child);
                 break;
             }
@@ -1381,8 +1382,14 @@ export class GraphService extends GraphHelpers {
         let children = this.graph.getModel().getChildren(this.graph.getDefaultParent());
         if (children) {
             children.forEach(element => {
-                if (element.isCircuitContainer())
+                if (element.isCircuitContainer()){
                     element.refreshCircuitContainer(this.graph);
+                    
+                    // Doesn't remember cell specific properties like if they were connectable
+                    // since it's being converted from SBOL to mxGraph XML
+                    element.setConnectable(false)
+                    element.getBackbone().setConnectable(false)
+                }
             });
         }
 
@@ -1770,6 +1777,7 @@ export class GraphService extends GraphHelpers {
             let rootModuleInfo = new ModuleInfo();
             this.addToInfoDict(rootModuleInfo);
             rootViewCell = this.graph.insertVertex(cell1, rootModuleInfo.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_MODULE_VIEW);
+            rootViewCell.setConnectable(false)
             this.graph.enterGroup(rootViewCell);
             this.viewStack.push(rootViewCell);
         } else { // User picked New Component Design
