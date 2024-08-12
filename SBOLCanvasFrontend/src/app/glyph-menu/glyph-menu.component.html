@@ -1,5 +1,5 @@
 <div class="glyphContainer">
-  <div class="flexWrapper" style="margin: auto">
+    <div class="flexWrapper" style="margin: auto">
 
     <!-- Lawwwwdd -->
       <!-- The style in here eliminates all the terrible crap angular material devs do. https://github.com/angular/components/issues/7975 -->
@@ -38,8 +38,8 @@
 
 
 
-    <!-------------------------------------    Molecular Species panel   --------------------------------------->
-    <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="!componentDefinitionMode &&
+        <!-------------------------------------    Molecular Species panel   --------------------------------------->
+        <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="!componentDefinitionMode &&
             (molecularSpeciesDict | keyvalue | searchfilter: searchPhrase).length > 0">
       <mat-expansion-panel-header>
         <mat-panel-title>
@@ -56,8 +56,8 @@
     </mat-expansion-panel>
 
 
-    <!-------------------------------------    Interactions panel   --------------------------------------->
-    <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="!componentDefinitionMode &&
+        <!-------------------------------------    Interactions panel   --------------------------------------->
+        <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="!componentDefinitionMode &&
             (interactionsDict | keyvalue | searchfilter: searchPhrase).length > 0">
       <mat-expansion-panel-header>
         <mat-panel-title>
@@ -74,8 +74,8 @@
     </mat-expansion-panel>
 
 
-    <!-------------------------------------    Interaction nodes panel   --------------------------------------->
-    <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="!componentDefinitionMode &&
+        <!-------------------------------------    Interaction nodes panel   --------------------------------------->
+        <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="!componentDefinitionMode &&
             (interactionNodeDict | keyvalue | searchfilter: searchPhrase).length > 0">
       <mat-expansion-panel-header>
         <mat-panel-title>
@@ -92,8 +92,8 @@
     </mat-expansion-panel>
 
 
-    <!-------------------------------------    Utils panel   --------------------------------------->
-    <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="
+        <!-------------------------------------    Utils panel   --------------------------------------->
+        <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="
                     (!componentDefinitionMode && stringMatches('backbone dna strand circuit', searchPhrase))
                     || stringMatches('textbox text box', searchPhrase)">
       <mat-expansion-panel-header>
@@ -125,5 +125,5 @@
     </mat-expansion-panel>
 
 
-  </div>
+    </div>
 </div>

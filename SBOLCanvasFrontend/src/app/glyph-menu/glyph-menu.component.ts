@@ -149,6 +149,10 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     this.graphService.addBackbone();
   }
 
+  addCircularPlasmid() {
+    this.graphService.addCircularPlasmid();
+  }
+
   addTextBox() {
     this.graphService.addTextBox();
   }
@@ -171,7 +175,4 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
   keepOrder = (a, b) => {
     return a;
   }
-  /**
-   * Returns true if
-   */
 }
