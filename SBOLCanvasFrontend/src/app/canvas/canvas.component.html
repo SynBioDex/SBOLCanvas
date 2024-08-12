@@ -1,1 +1,5 @@
-<div #canvasContainer></div>
+<div #canvasContainer>
+    <div *ngIf = onHierarchy()>
+        <app-hierarchy-glyph-preview></app-hierarchy-glyph-preview>
+      </div>
+</div>

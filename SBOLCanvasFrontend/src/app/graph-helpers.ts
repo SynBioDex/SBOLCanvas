@@ -1091,30 +1091,30 @@ export class GraphHelpers extends GraphBase {
         var cellsRemoved = evt.getProperty('added');
         var cellsAdded = evt.getProperty('removed');
 
-        console.debug("----handleSelectionChange-----");
+        // console.debug("----handleSelectionChange-----");
 
-        console.debug("cells removed: ");
+        // console.debug("cells removed: ");
         if (cellsRemoved) {
             for (var i = 0; i < cellsRemoved.length; i++) {
                 console.debug(cellsRemoved[i]);
             }
         }
 
-        console.debug("cells added: ");
+        // console.debug("cells added: ");
         if (cellsAdded) {
             for (var i = 0; i < cellsAdded.length; i++) {
                 console.debug(cellsAdded[i]);
             }
         }
 
-        console.debug("Current root: ");
-        console.debug(this.graph.getCurrentRoot());
+        // console.debug("Current root: ");
+        // console.debug(this.graph.getCurrentRoot());
 
-        console.debug("Undo manager: ");
-        console.debug(this.editor.undoManager);
+        // console.debug("Undo manager: ");
+        // console.debug(this.editor.undoManager);
 
-        console.debug("Graph Model: ");
-        console.debug(this.graph.getModel());
+        // console.debug("Graph Model: ");
+        // console.debug(this.graph.getModel());
 
         // Don't just use the new cells though, use all currently selected ones.
         this.updateAngularMetadata(this.graph.getSelectionCells());

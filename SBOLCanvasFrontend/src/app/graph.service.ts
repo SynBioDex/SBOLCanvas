@@ -33,7 +33,7 @@ export class GraphService extends GraphHelpers {
 
     constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService) {
         super(dialog, metadataService, glyphService);
-
+     
         // handle selection changes
         this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
 
@@ -72,6 +72,7 @@ export class GraphService extends GraphHelpers {
             })
         })
     }
+
 
     isSelectedAGlyph(): boolean {
         let selected = this.graph.getSelectionCells();
@@ -321,23 +322,52 @@ export class GraphService extends GraphHelpers {
     /**
      * "Drills in" to replace the canvas with the selected glyph's component/module view
      */
+    onhierarchyOpen(){
+        return this.should_open;
+    }
+
+    onhierarchyOpenAgain(){
+        return this.should_open_more;
+    }
+
+    getSelectedGlyphName(){
+        return this.selectedGlyphInfoName;
+    }
+
+    getSelectedGlyphNameSet(){
+        return this.selectionGlyphInfoStack;
+    }
+
     enterGlyph() {
+
+        this.should_open = true;
         let selection = this.graph.getSelectionCells();
+        console.log("stack size----", this.viewStack.length);
+       
+
         if (selection.length != 1) {
             return;
         }
-
+        if(this.viewStack.length == 2){
+            this.should_open_more = true;
+        }
         if (!selection[0].isSequenceFeatureGlyph() && !selection[0].isModule()) {
             return;
         }
-
+        
         this.graph.getModel().beginUpdate();
         try {
             let viewCell = this.graph.getModel().getCell(selection[0].getValue());
             // doing this in the graph edit breaks things in the undo, so we put it here
             viewCell.refreshViewCell(this.graph);
             let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
+            let glyphInfo = (<GlyphInfo>this.getFromInfoDict(selection[0].getValue())); 
+            this.selectedGlyphInfoName = glyphInfo.partRole;
+            this.selectionGlyphInfoStack.push(this.selectedGlyphInfoName);
             this.graph.getModel().execute(zoomEdit);
+            console.log("selection[0]", selection[0]);
+            console.log("selection stack: ", this.selectionStack);
+            console.log("selectedGlyphInfo Name", this.selectionGlyphInfoStack);
         } finally {
             this.graph.getModel().endUpdate();
         }
@@ -350,10 +380,14 @@ export class GraphService extends GraphHelpers {
      */
     exitGlyph() {
         // the root view should always be left on the viewStack
+
+        if(this.selectionStack.length == 1){
+            this.should_open = false;
+        }
         if (this.viewStack.length > 1) {
             let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), null, this);
             this.graph.getModel().execute(zoomEdit);
-        }
+        } 
     }
 
     /**
@@ -770,17 +804,15 @@ export class GraphService extends GraphHelpers {
             // let the graph choose an arbitrary cell from the selection,
             // we'll pretend it's the only one selected
             const selection = this.graph.getSelectionCell();
-
             // if selection is nonexistent, or is not part of a strand, there is no suitable place.
             if (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer())) {
                 return;
             }
 
             const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent();
-
             // use y coord of the strand
             let y = circuitContainer.getGeometry().y;
-
+           
             // x depends on the exact selection
             let x;
             if (selection.isCircuitContainer()) {
@@ -791,10 +823,12 @@ export class GraphService extends GraphHelpers {
 
             // Add it
             this.addSequenceFeatureAt(name, x, y, circuitContainer);
+        
         } finally {
             this.graph.getModel().endUpdate();
         }
     }
+
 
     /**
      * Adds a sequenceFeatureGlyph.
@@ -843,7 +877,6 @@ export class GraphService extends GraphHelpers {
             // transform coords to be relative to parent
             x = x - circuitContainer.getGeometry().x;
             y = y - circuitContainer.getGeometry().y;
-
             // create the glyph info and add it to the dictionary
             const glyphInfo = new GlyphInfo({
                 partRole: name
@@ -880,6 +913,32 @@ export class GraphService extends GraphHelpers {
 
             // synchronize circuit containers
             this.syncCircuitContainer(circuitContainer);
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+    }
+    addSequenceFeaturesNoBackBone(name){
+        
+        this.addSequenceFeaturesAtWithOutBackBoneAt(name, 350, -300);
+    }
+
+    addSequenceFeaturesAtWithOutBackBoneAt(name, x, y) {
+        this.graph.getModel().beginUpdate();
+        try {
+            const glyphInfo = new GlyphInfo({
+                partRole: name
+            });
+            this.addToInfoDict(glyphInfo);
+            //TODO partRoles for proteins
+            
+            const sequenceFeatureCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_SEQUENCE_FEATURE + name);
+
+            this.createViewCell(glyphInfo.getFullURI());
+            sequenceFeatureCell.setConnectable(true);
+
+            // The new glyph should be selected
+            this.graph.clearSelection();
+            this.graph.setSelectionCell(sequenceFeatureCell);
         } finally {
             this.graph.getModel().endUpdate();
         }

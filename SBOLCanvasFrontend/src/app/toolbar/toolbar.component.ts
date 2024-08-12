@@ -25,11 +25,11 @@ export interface LoadDialogData {
 export class ToolbarComponent implements OnInit, AfterViewInit {
 
   @ViewChild('backbone') backbone: ElementRef;
-
+  @ViewChild('canvasContainer', {static: true}) canvasContainer: ElementRef;
   filename: string;
   popupOpen: boolean;
   users: {};
-
+  newGlyphName: string;
   constructor(public graphService: GraphService, private filesService: FilesService,
               public dialog: MatDialog, public embeddedService: EmbeddedService) {
   }
@@ -128,5 +128,11 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   testMethod(){
     this.graphService.addMolecularSpecies("replacement-glyph");
     this.graphService.addInteractionNode("replacement-glyph");
+  }
+
+  enterGlyph(){
+    this.graphService.enterGlyph();
+    this.newGlyphName = this.graphService.getSelectedGlyphName();
+    console.log("tool bar updated glyph name", this.graphService.getSelectedGlyphName());
   }
 }

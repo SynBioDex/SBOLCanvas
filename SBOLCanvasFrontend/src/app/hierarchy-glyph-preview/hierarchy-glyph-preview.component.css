@@ -1,0 +1,15 @@
+.hierarchy-glyphs {
+    position: absolute;
+    top : 60px;
+    bottom: 10;
+    right: 15px;
+    width: 70px;
+    height : 70px;
+    border-radius: 8px;
+    background-color: white;
+    border: 3px solid #ddd;
+    color: grey;
+    display: flex;
+    align-items: left;
+    justify-content: right;
+}

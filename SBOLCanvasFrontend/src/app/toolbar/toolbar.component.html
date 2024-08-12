@@ -106,10 +106,11 @@
 
             <button mat-stroked-button class="toolbar-row-button"
                 [matTooltip]="'Focus in the selected part to view and edit its subparts'"
-                (click)="graphService.enterGlyph()">
+                (click)="enterGlyph()">
+                <app-hierarchy-glyph-preview [glyphName] = "newGlyphName"></app-hierarchy-glyph-preview>
                 <mat-icon>save_alt</mat-icon>
-            </button>
-
+                
+         </button>
             <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Focus out to the parent part'"
                 (click)="graphService.exitGlyph()">
                 <mat-icon>open_in_browser</mat-icon>
