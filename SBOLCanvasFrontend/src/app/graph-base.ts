@@ -90,6 +90,11 @@ export class GraphBase {
     // This object handles the hotkeys for the graph.
     keyHandler: any;
 
+    should_open = false;
+    should_open_more = false;
+    selectedGlyphInfoName : string;
+    selectionGlyphInfoStack: string[] = [];
+
     // when decoding we add any unformatted view cells to this set
     static unFormatedCells = new Set<string>();
 

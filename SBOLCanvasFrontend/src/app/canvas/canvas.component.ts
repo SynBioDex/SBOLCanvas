@@ -35,4 +35,7 @@ export class CanvasComponent implements OnInit {
         // set the zoom
         this.graphService.setZoom(newZoom);
     }
+    onHierarchy(){
+        return this.graphService.onhierarchyOpen();
+      }
 }
