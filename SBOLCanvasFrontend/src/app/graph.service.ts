@@ -594,7 +594,6 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
-        console.log(this.graph.getSelectionCell())
     }
     
     // Map old cells to newly created cells in the paste method 
@@ -606,7 +605,7 @@ export class GraphService extends GraphHelpers {
         * Will add to whatever is currently selected.
         * Once something is added, it will immediately become selected.
     */
-    paste(){
+    async paste(){
 
         // Paste should not be available for Component Design Mode
         if(this.graph.getCurrentRoot().isComponentView()){
@@ -644,8 +643,13 @@ export class GraphService extends GraphHelpers {
                     if(!childCell.isBackbone()){
                         
                         const childCellName = childCell.style.split("Glyph")[1]?.split(";")[0]?.trim()
-    
-                        this.addSequenceFeature(childCellName)
+                        
+                        // A circular backbone is considered a sequence feature
+                        // "Cir (Circular Backbone Right/Left)" refers to the connection to the backbone
+                        // It's possible to have a circular backbone as a standalone glyph
+                        if(!childCell.isCircularBackbone() || childCellName === "Cir (Circular Backbone)"){
+                            this.addSequenceFeature(childCellName)
+                        }
                         
                         if(childCell.edges){
                             const oldCell = childCell
@@ -658,6 +662,10 @@ export class GraphService extends GraphHelpers {
                     }
                 }
                 const newCircuitContainer = selectedCell().parent
+
+                if(cell.isCircularBackboneOnCircuitContainer()){
+                    await this.addCircularPlasmid()
+                }
                 selectAll.push(newCircuitContainer)
                 newCircuitContainer.geometry.x = x
                 newCircuitContainer.geometry.y = y
