@@ -1105,7 +1105,6 @@ export class GraphHelpers extends GraphBase {
         if (cellsAdded) {
             for (var i = 0; i < cellsAdded.length; i++) {
                 console.debug(cellsAdded[i]);
-                this.isGen = cellsAdded[i].isCircuitContainer();
             }
         }
 
