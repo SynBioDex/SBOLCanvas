@@ -1,8 +1,8 @@
-<div class="hierarchy-controls">
+<div class="hierarchy-controls" >
+   
     <div *ngFor="let depth of getViewStack(); let i = index" (click)="switchView(i)" class="level">
         <span>
-            {{i == 0 && "Top" || i}}
-            <!-- <svg #canvasElement [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg> -->
+            <svg [innerHTML] = 'selectedHTMLStack[i]' width="52px" height="52px"></svg>
         </span>
     </div>
 </div>

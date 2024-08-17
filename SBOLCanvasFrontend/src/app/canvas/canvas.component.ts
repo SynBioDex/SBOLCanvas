@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, HostListener } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, HostListener, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { GraphService } from '../graph.service';
 
 @Component({
@@ -6,18 +6,21 @@ import { GraphService } from '../graph.service';
     templateUrl: './canvas.component.html',
     styleUrls: ['./canvas.component.css']
 })
-export class CanvasComponent implements OnInit {
+export class CanvasComponent implements OnInit, OnChanges {
 
     constructor(
         private graphService: GraphService
     ) { }
-
+    
     @ViewChild('canvasContainer', {static: true}) canvasContainer: ElementRef;
 
     ngOnInit() {
         const canvasContainer = this.canvasContainer.nativeElement;
         const svg = this.graphService.getGraphDOM();
         canvasContainer.appendChild(svg);
+    }
+    ngOnChanges(): void {
+        
     }
 
     @HostListener('wheel', ['$event']) onMouseWheel(event: WheelEvent) {
@@ -35,7 +38,5 @@ export class CanvasComponent implements OnInit {
         // set the zoom
         this.graphService.setZoom(newZoom);
     }
-    onHierarchy(){
-        return this.graphService.onhierarchyOpen();
-      }
+ 
 }

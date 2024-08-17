@@ -1,19 +1,27 @@
-import { Component } from '@angular/core'
+import { Component, Input, OnInit } from '@angular/core'
 import { GraphService } from '../graph.service'
-
-
+import { GlyphService } from '../glyph.service';
+import { DomSanitizer } from '@angular/platform-browser';
 @Component({
     selector: 'app-hierarchy-preview',
     templateUrl: './hierarchy-preview.component.html',
     styleUrls: ['./hierarchy-preview.component.css']
 })
 
-export class HierarchyPreviewComponent {
+export class HierarchyPreviewComponent   {
+  
+    
+    constructor(private graphService: GraphService, private glyphService: GlyphService, private sanitizer : DomSanitizer) { }
 
-    constructor(private graphService: GraphService) { }
+    glyphName: string;
+    selectedStack = [];
+    selectedHTMLStack = [];
+    
+    getViewStack() {       
+        this.glyphName = this.graphService.getSelectedGlyphName();
+        this.selectedStack = this.graphService.getSelectedGlyphNameSet();
+        this.selectedHTMLStack = this.graphService.getSelectedHTMLSet();
 
-    getViewStack() {
-        // console.log(this.glyphMenu.sequenceFeatureDict)
         return this.graphService.viewStack
     }
 
