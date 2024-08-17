@@ -74,9 +74,6 @@ export class GraphService extends GraphHelpers {
         })
     }
 
-    sequenceFeatureDict = {};
-    selectedHTMLStack = [];
-
     isSelectedAGlyph(): boolean {
         let selected = this.graph.getSelectionCells();
         if (selected.length != 1) {

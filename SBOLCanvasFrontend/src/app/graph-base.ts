@@ -93,6 +93,8 @@ export class GraphBase {
 
     selectedGlyphInfoName : string;
     selectionGlyphInfoStack: string[] = [];
+    sequenceFeatureDict = {};
+    selectedHTMLStack = [];
     isGen :boolean = false;
     // when decoding we add any unformatted view cells to this set
     static unFormatedCells = new Set<string>();

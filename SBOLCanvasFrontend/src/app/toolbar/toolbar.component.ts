@@ -10,7 +10,7 @@ import { ConfirmComponent } from '../confirm/confirm.component';
 import { LoadGraphComponent } from '../load-graph/load-graph.component';
 import { EmbeddedService } from '../embedded.service';
 import { GlyphService } from '../glyph.service';
-import {DomSanitizer} from '@angular/platform-browser';
+
 
 export interface SaveDialogData {
   filename: string;
@@ -37,8 +37,7 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   sequenceFeatureDict = {};
   
   constructor(public graphService: GraphService, private filesService: FilesService,
-              public dialog: MatDialog, public embeddedService: EmbeddedService, private glyphService: GlyphService,
-            private sanitizer: DomSanitizer) {
+              public dialog: MatDialog, public embeddedService: EmbeddedService, private glyphService: GlyphService) {
   }
 
   ngOnInit() {
