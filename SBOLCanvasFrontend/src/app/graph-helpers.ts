@@ -21,6 +21,7 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { InteractionInfo } from './interactionInfo';
+import { ignoreElements } from 'rxjs';
 // import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
@@ -1100,10 +1101,11 @@ export class GraphHelpers extends GraphBase {
             }
         }
 
-        // console.debug("cells added: ");
+        console.debug("cells added: ");
         if (cellsAdded) {
             for (var i = 0; i < cellsAdded.length; i++) {
                 console.debug(cellsAdded[i]);
+                this.isGen = cellsAdded[i].isCircuitContainer();
             }
         }
 
@@ -1117,6 +1119,7 @@ export class GraphHelpers extends GraphBase {
         // console.debug(this.graph.getModel());
 
         // Don't just use the new cells though, use all currently selected ones.
+        
         this.updateAngularMetadata(this.graph.getSelectionCells());
     }
 
@@ -1161,8 +1164,14 @@ export class GraphHelpers extends GraphBase {
             let glyphInfo;
             if (!cell)
                 glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
-            else
+            else{
                 glyphInfo = this.getFromInfoDict(cell.value);
+        
+                if(cell.isCircuitContainer()){
+                    glyphInfo.partRole = 'Gen (Engineered Region)';
+                }
+
+            }
             if (glyphInfo) {
                 this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
             }

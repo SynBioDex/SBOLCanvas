@@ -10,8 +10,8 @@
 }
 
 .hierarchy-controls .level {
-    width: 4em;
-    height: 3em;
+    width: 6em;
+    height: 4em;
     margin: 8px;
     font-family: 'Roboto';
     cursor: pointer;

@@ -25,13 +25,14 @@ import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
 import { Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
-
+import { DomSanitizer } from '@angular/platform-browser';
 @Injectable({
     providedIn: 'root'
 })
 export class GraphService extends GraphHelpers {
 
-    constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService) {
+    constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService,
+        private sanitizer: DomSanitizer) {
         super(dialog, metadataService, glyphService);
      
         // handle selection changes
@@ -73,6 +74,8 @@ export class GraphService extends GraphHelpers {
         })
     }
 
+    sequenceFeatureDict = {};
+    selectedHTMLStack = [];
 
     isSelectedAGlyph(): boolean {
         let selected = this.graph.getSelectionCells();
@@ -322,13 +325,6 @@ export class GraphService extends GraphHelpers {
     /**
      * "Drills in" to replace the canvas with the selected glyph's component/module view
      */
-    onhierarchyOpen(){
-        return this.should_open;
-    }
-
-    onhierarchyOpenAgain(){
-        return this.should_open_more;
-    }
 
     getSelectedGlyphName(){
         return this.selectedGlyphInfoName;
@@ -337,37 +333,43 @@ export class GraphService extends GraphHelpers {
     getSelectedGlyphNameSet(){
         return this.selectionGlyphInfoStack;
     }
+    getSelectedHTMLSet(){
+        return this.selectedHTMLStack;
+    }
+
 
     enterGlyph() {
 
-        this.should_open = true;
         let selection = this.graph.getSelectionCells();
-        console.log("stack size----", this.viewStack.length);
-       
-
+        console.log(selection[0].isCircuitContainer());
+        console.log("isSequenceFeatureGlyph? " , selection[0].isSequenceFeatureGlyph());
         if (selection.length != 1) {
             return;
         }
-        if(this.viewStack.length == 2){
-            this.should_open_more = true;
-        }
-        if (!selection[0].isSequenceFeatureGlyph() && !selection[0].isModule()) {
-            return;
-        }
+    
+        // if (!selection[0].isSequenceFeatureGlyph() && !selection[0].isModule()) {
+        //     return;
+        // }
         
         this.graph.getModel().beginUpdate();
         try {
             let viewCell = this.graph.getModel().getCell(selection[0].getValue());
+            console.log("ViewCell", viewCell);
             // doing this in the graph edit breaks things in the undo, so we put it here
             viewCell.refreshViewCell(this.graph);
             let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
             let glyphInfo = (<GlyphInfo>this.getFromInfoDict(selection[0].getValue())); 
             this.selectedGlyphInfoName = glyphInfo.partRole;
+    
             this.selectionGlyphInfoStack.push(this.selectedGlyphInfoName);
             this.graph.getModel().execute(zoomEdit);
-            console.log("selection[0]", selection[0]);
-            console.log("selection stack: ", this.selectionStack);
-            console.log("selectedGlyphInfo Name", this.selectionGlyphInfoStack);
+           
+            const sequenceFeatureElts   = this.glyphService.getSequenceFeatureElements(); 
+            let svg = sequenceFeatureElts[this.selectedGlyphInfoName];
+            this.sequenceFeatureDict[this.selectedGlyphInfoName] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+            this.selectedHTMLStack.push(this.sequenceFeatureDict[this.selectedGlyphInfoName]);
+            
+
         } finally {
             this.graph.getModel().endUpdate();
         }
@@ -381,13 +383,14 @@ export class GraphService extends GraphHelpers {
     exitGlyph() {
         // the root view should always be left on the viewStack
 
-        if(this.selectionStack.length == 1){
-            this.should_open = false;
-        }
+        
         if (this.viewStack.length > 1) {
             let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), null, this);
             this.graph.getModel().execute(zoomEdit);
         } 
+        else{
+            this.selectedHTMLStack = [];
+        }
     }
 
     /**
@@ -450,6 +453,7 @@ export class GraphService extends GraphHelpers {
      */
     async delete() {
         const selectedCells = this.graph.getSelectionCells();
+       
         if (selectedCells == null) {
             return;
         }
@@ -882,7 +886,6 @@ export class GraphService extends GraphHelpers {
                 partRole: name
             });
             this.addToInfoDict(glyphInfo);
-
             // Insert new glyph and its components
             const sequenceFeatureCell = this.graph.insertVertex(circuitContainer, null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_SEQUENCE_FEATURE + name);
 
@@ -917,33 +920,7 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().endUpdate();
         }
     }
-    addSequenceFeaturesNoBackBone(name){
-        
-        this.addSequenceFeaturesAtWithOutBackBoneAt(name, 350, -300);
-    }
-
-    addSequenceFeaturesAtWithOutBackBoneAt(name, x, y) {
-        this.graph.getModel().beginUpdate();
-        try {
-            const glyphInfo = new GlyphInfo({
-                partRole: name
-            });
-            this.addToInfoDict(glyphInfo);
-            //TODO partRoles for proteins
-            
-            const sequenceFeatureCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, glyphInfo.getFullURI(), x, y, GraphBase.sequenceFeatureGlyphWidth, GraphBase.sequenceFeatureGlyphHeight, GraphBase.STYLE_SEQUENCE_FEATURE + name);
-
-            this.createViewCell(glyphInfo.getFullURI());
-            sequenceFeatureCell.setConnectable(true);
-
-            // The new glyph should be selected
-            this.graph.clearSelection();
-            this.graph.setSelectionCell(sequenceFeatureCell);
-        } finally {
-            this.graph.getModel().endUpdate();
-        }
-    }
-
+   
     /**
      * Turns the given element into a dragsource for creating molecular species glyphs
      */
@@ -1234,7 +1211,6 @@ export class GraphService extends GraphHelpers {
      */
     async setSelectedCellInfo(info: Info) {
         const selectedCell = this.graph.getSelectionCell();
-
         this.graph.getModel().beginUpdate();
         try {
             // figure out which type of info object it is

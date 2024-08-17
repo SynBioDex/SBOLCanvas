@@ -126,6 +126,7 @@ export class GraphEdits {
                 // Zoom into the glyph
                 // get the view cell for the selected cell
                 let childViewCell;
+                console.log("glyphCell.value", this.glyphCell.value);
                 if (!this.glyphCell.value) {
                     childViewCell = this.glyphCell;
                 } else {

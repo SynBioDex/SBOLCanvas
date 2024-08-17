@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnInit, QueryList, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, QueryList, Sanitizer, ViewChild } from '@angular/core';
 import { GraphService } from '../graph.service';
 import { FilesService } from '../files.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -9,6 +9,8 @@ import { ExportDesignComponent } from '../export-design/export-design.component'
 import { ConfirmComponent } from '../confirm/confirm.component';
 import { LoadGraphComponent } from '../load-graph/load-graph.component';
 import { EmbeddedService } from '../embedded.service';
+import { GlyphService } from '../glyph.service';
+import {DomSanitizer} from '@angular/platform-browser';
 
 export interface SaveDialogData {
   filename: string;
@@ -25,16 +27,22 @@ export interface LoadDialogData {
 export class ToolbarComponent implements OnInit, AfterViewInit {
 
   @ViewChild('backbone') backbone: ElementRef;
-  @ViewChild('canvasContainer', {static: true}) canvasContainer: ElementRef;
+ 
+
   filename: string;
   popupOpen: boolean;
   users: {};
   newGlyphName: string;
+  newHTML: string;
+  sequenceFeatureDict = {};
+  
   constructor(public graphService: GraphService, private filesService: FilesService,
-              public dialog: MatDialog, public embeddedService: EmbeddedService) {
+              public dialog: MatDialog, public embeddedService: EmbeddedService, private glyphService: GlyphService,
+            private sanitizer: DomSanitizer) {
   }
 
   ngOnInit() {
+   
   }
 
   ngAfterViewInit() {
@@ -130,9 +138,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
     this.graphService.addInteractionNode("replacement-glyph");
   }
 
-  enterGlyph(){
-    this.graphService.enterGlyph();
-    this.newGlyphName = this.graphService.getSelectedGlyphName();
-    console.log("tool bar updated glyph name", this.graphService.getSelectedGlyphName());
-  }
+
+
 }

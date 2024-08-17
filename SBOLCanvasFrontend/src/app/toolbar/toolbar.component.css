@@ -29,3 +29,27 @@
 .toolbar-row-section.grow {
     flex-grow: 1;
 }
+
+#canvasContainer {
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  .hierarchy-glyphs {
+    position: absolute;
+    top : 60px;
+    bottom: 10;
+    right: 15px;
+    width: 100px;
+    height : 100px;
+    border-radius: 8px;
+    background-color: white;
+    border: 3px solid #ddd;
+    color: grey;
+    display: flex;
+    align-items: left;
+    justify-content: right;
+}
