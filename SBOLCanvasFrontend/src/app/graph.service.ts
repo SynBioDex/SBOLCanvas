@@ -380,10 +380,13 @@ export class GraphService extends GraphHelpers {
     exitGlyph() {
         // the root view should always be left on the viewStack
 
-        
         if (this.viewStack.length > 1) {
             let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), null, this);
             this.graph.getModel().execute(zoomEdit);
+            
+            this.selectionGlyphInfoStack.pop();
+            this.selectedHTMLStack.pop();
+            
         } 
         else{
             this.selectedHTMLStack = [];
