@@ -27,8 +27,9 @@ export class HierarchyPreviewComponent   {
 
     switchView(depth) {
         let levels = this.graphService.viewStack.length - depth - 1
-
-        for (let i = 0; i < levels; i++)
+        
+        for (let i = 0; i < levels; i++){
             this.graphService.exitGlyph()
+        }
     }
 }
