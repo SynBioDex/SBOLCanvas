@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -162,18 +163,42 @@ public class MxToSBOL extends Converter {
 		// Arrays.stream is the java 8 way to cast Object[] to some other array
 		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
 				.toArray(mxCell[]::new);
-
-		// filter the circuit containers and create component definitions
+		
+				// filter the circuit containers and create component definitions
+		AtomicBoolean cirFound = new AtomicBoolean(false);
 		for (mxCell viewCell : viewCells) {
+			System.out.println("IN HERE");
 			mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
-					.toArray(mxCell[]::new);
+			.toArray(mxCell[]::new);
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
-					.toArray(mxCell[]::new);
+			.toArray(mxCell[]::new);
+
+
+			
+				circuitContainers = Arrays.stream(circuitContainers)
+				.filter(cell -> {
+					if (cell.getValue().toString().contains("Cir")) {
+						return cirFound.compareAndSet(false, true);
+					}
+					return true;
+				})
+				.toArray(mxCell[]::new);
+			
+			
+			
 			for (mxCell circuitContainer : circuitContainers) {
+				System.out.println("HERE" + circuitContainer);
 				// avoid duplicates from aliases in modules
 				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null)
 					continue;
+					
+				
+				//mxCell [id=3, value=https://sbolcanvas.org/Pro_g4nP/1, geometry=mxGeometry [x=0.0, y=0.0, width=50.0, height=100.0]]
+				//mxCell [id=5, value=https://sbolcanvas.org/BjcJPg08/1, geometry=mxGeometry [x=0.0, y=0.0, width=100.0, height=100.0]]
+				//mxCell [id=9, value=https://sbolcanvas.org/Cir_7xD5/1, geometry=mxGeometry [x=0.0, y=0.0, width=50.0, height=100.0]]
+			
 				createComponentDefinition(document, graph, model, circuitContainer);
+	
 			}
 		}
 
@@ -196,13 +221,45 @@ public class MxToSBOL extends Converter {
 
 		// link the component definitions (create components and set up references)
 		Set<String> handledContainers = new HashSet<String>();
+		// circFound = false;
 		for (mxCell viewCell : viewCells) {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 					.toArray(mxCell[]::new);
+
+			AtomicBoolean firstCirFound = new AtomicBoolean(false);
+
+			
+				circuitContainers = Arrays.stream(circuitContainers)
+				.filter(cell -> {
+					if (cell.getValue().toString().contains("Cir")) {
+						if(!firstCirFound.get()){
+							return firstCirFound.getAndSet(true);
+						}
+						else{
+							return true;
+						}
+					}
+					return true;
+				})
+				.toArray(mxCell[]::new);
+			
 			for (mxCell circuitContainer : circuitContainers) {
 				if (handledContainers.contains((String) circuitContainer.getValue()))
 					continue;
+				
+				// if(circuitContainer.getValue().toString().contains("Cir")){
+				// 	if(!circFound){
+				// 		linkComponentDefinition(document, graph, model, circuitContainer);
+				// 		circFound = true;
+				// 		handledContainers.add((String) circuitContainer.getValue());
+				// 	}
+				// }
+				// else{
+				// 	linkComponentDefinition(document, graph, model, circuitContainer);
+				// 	handledContainers.add((String) circuitContainer.getValue());
+				// }
+				System.out.println(circuitContainer);
 				linkComponentDefinition(document, graph, model, circuitContainer);
 				handledContainers.add((String) circuitContainer.getValue());
 			}
@@ -255,7 +312,7 @@ public class MxToSBOL extends Converter {
 				.toArray(mxCell[]::new);
 
 		ModuleInfo modInfo = (ModuleInfo) infoDict.get(viewCell.getId());
-
+				
 		// if the uri is one of the synbiohub ones, just add the layout
 		boolean layoutOnly = false;
 		for (String registry : SBOLData.registries) {
@@ -270,19 +327,19 @@ public class MxToSBOL extends Converter {
 				}
 			}
 		}
-
+		
 		if (modInfo.getUriPrefix() == null || modInfo.getUriPrefix().equals(""))
-			modInfo.setUriPrefix(URI_PREFIX);
+		modInfo.setUriPrefix(URI_PREFIX);
 		
 		ModuleDefinition modDef = null;
 		if(layoutOnly) {
 			modDef = document.getModuleDefinition(new URI(modInfo.getFullURI()));
 		}else {
 			modDef = document.createModuleDefinition(modInfo.getUriPrefix(), modInfo.getDisplayID(),
-					modInfo.getVersion());			
+			modInfo.getVersion());		
 		}
 		layoutHelper.createGraphicalLayout(modDef.getIdentity(), modDef.getDisplayId() + "_Layout");
-
+		
 		// text boxes
 		if (textBoxes.length > 0) {
 			attachTextBoxAnnotation(model, viewCell, modDef.getIdentity());
@@ -293,20 +350,20 @@ public class MxToSBOL extends Converter {
 			// proteins also have glyphInfos
 			GlyphInfo proteinInfo = (GlyphInfo) infoDict.get(protein.getValue());
 			if (proteinInfo.getUriPrefix() == null)
-				proteinInfo.setUriPrefix(URI_PREFIX);
+			proteinInfo.setUriPrefix(URI_PREFIX);
 			FunctionalComponent proteinFuncComp = null;
 			if (!layoutOnly) {
 				ComponentDefinition proteinCD = document.getComponentDefinition(new URI((String) protein.getValue()));
 				if (proteinCD == null) {
 					proteinCD = document.createComponentDefinition(proteinInfo.getUriPrefix(),
-							proteinInfo.getDisplayID(), proteinInfo.getVersion(),
-							SBOLData.types.getValue(proteinInfo.getPartType()));
+					proteinInfo.getDisplayID(), proteinInfo.getVersion(),
+					SBOLData.types.getValue(proteinInfo.getPartType()));
 					proteinCD.setDescription(proteinInfo.getDescription());
 					proteinCD.setName(proteinInfo.getName());
 					proteinCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
 				}
 				proteinFuncComp = modDef.createFunctionalComponent(proteinCD.getDisplayId() + "_" + protein.getId(),
-						AccessType.PUBLIC, proteinCD.getIdentity(), DirectionType.INOUT);
+				AccessType.PUBLIC, proteinCD.getIdentity(), DirectionType.INOUT);
 			} else {
 				// find the correct functionalComponent from the set of functional components
 				Set<FunctionalComponent> funcComps = modDef.getFunctionalComponents();
@@ -318,6 +375,9 @@ public class MxToSBOL extends Converter {
 				}
 			}
 			// the layout information in the component definition
+			if(proteinFuncComp == null){
+				throw new NullPointerException("Cannot upload an edited import, it is not owned by you! Create a copy or make a new design.");
+			}
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), proteinFuncComp.getDisplayId(), protein);
 		}
 
@@ -569,10 +629,36 @@ public class MxToSBOL extends Converter {
 		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
 				.toArray(mxCell[]::new);
 
+		AtomicBoolean firstCirFound = new AtomicBoolean(false);
+		
+		// If there is a circ as first element filter
+		// if(glyphs[0].getValue().toString().contains("Cir")){
+
+		// }
+		mxCell[] filterCir = Arrays.stream(glyphs)
+			.filter(cell -> {
+				if (cell.getValue().toString().contains("Cir")) {
+					if(!firstCirFound.get()){
+						return firstCirFound.getAndSet(true);
+					}
+					else{
+						return true;
+					}
+				}
+				return true;
+			})
+			.toArray(mxCell[]::new);
+
+
+		// for(mxCell glyph: filterCir){
+		// 	System.out.println(glyph);
+		// }
+		
 		if (compDef.getComponents().size() > 0) {
 			// the component definition was pulled in from a registry
 			List<Component> components = compDef.getSortedComponents();
-			for (mxCell glyph : glyphs) {
+			for (mxCell glyph : filterCir) {
+				// System.out.println(glyph);
 				GlyphInfo info = (GlyphInfo) infoDict.get(glyph.getValue());
 				Component component = components.get(glyph.getParent().getIndex(glyph) - 1);
 
@@ -586,7 +672,7 @@ public class MxToSBOL extends Converter {
 			// the component definition was created by us and has no components
 			Component previous = null;
 			int count = 0, start = 0, end = 0;
-			for (mxCell glyph : glyphs) {
+			for (mxCell glyph : filterCir) {
 
 				GlyphInfo info = (GlyphInfo) infoDict.get(glyph.getValue());				
                 // ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
@@ -598,6 +684,7 @@ public class MxToSBOL extends Converter {
 				// cell annotation
 				layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
 				GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
+				System.out.println(layout.getIdentity());
 				layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
 						component.getDefinition().getDisplayId() + "_Reference");
 
