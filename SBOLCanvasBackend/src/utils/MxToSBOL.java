@@ -164,25 +164,30 @@ public class MxToSBOL extends Converter {
 		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
 				.toArray(mxCell[]::new);
 		
-				// filter the circuit containers and create component definitions
+		
+		
+		// filter the circuit containers and create component definitions
 		AtomicBoolean cirFound = new AtomicBoolean(false);
 		for (mxCell viewCell : viewCells) {
-			System.out.println("IN HERE");
 			mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
 			.toArray(mxCell[]::new);
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+			.map(mxCell.class::cast)
+			.filter(cell ->{
+				if (cell.getValue().toString().contains("Cir")) {
+					if(cirFound.get()){
+						cirFound.set(false);
+						return false;
+					}
+					return cirFound.compareAndSet(false, true);
+				}
+				return true;
+			})
 			.toArray(mxCell[]::new);
 
 
-			
-				circuitContainers = Arrays.stream(circuitContainers)
-				.filter(cell -> {
-					if (cell.getValue().toString().contains("Cir")) {
-						return cirFound.compareAndSet(false, true);
-					}
-					return true;
-				})
-				.toArray(mxCell[]::new);
+				// TODO: perhaps if first of a pair is found, set it back to false? in case of multiple circ backbones
+
 			
 			
 			
@@ -221,45 +226,34 @@ public class MxToSBOL extends Converter {
 
 		// link the component definitions (create components and set up references)
 		Set<String> handledContainers = new HashSet<String>();
+		// AtomicBoolean firstCirFound = new AtomicBoolean(false);
+		cirFound.set(false);
 		// circFound = false;
 		for (mxCell viewCell : viewCells) {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 					.toArray(mxCell[]::new);
 
-			AtomicBoolean firstCirFound = new AtomicBoolean(false);
 
 			
-				circuitContainers = Arrays.stream(circuitContainers)
-				.filter(cell -> {
-					if (cell.getValue().toString().contains("Cir")) {
-						if(!firstCirFound.get()){
-							return firstCirFound.getAndSet(true);
-						}
-						else{
-							return true;
-						}
+			circuitContainers = Arrays.stream(circuitContainers)
+			.filter(cell -> {
+				if (cell.getValue().toString().contains("Cir")) {
+					if(cirFound.get()){
+						cirFound.set(false);
+						return false;
 					}
-					return true;
-				})
-				.toArray(mxCell[]::new);
+					return cirFound.compareAndSet(false, true);
+				}
+				return true;
+			})
+			.toArray(mxCell[]::new);
 			
 			for (mxCell circuitContainer : circuitContainers) {
 				if (handledContainers.contains((String) circuitContainer.getValue()))
 					continue;
 				
-				// if(circuitContainer.getValue().toString().contains("Cir")){
-				// 	if(!circFound){
-				// 		linkComponentDefinition(document, graph, model, circuitContainer);
-				// 		circFound = true;
-				// 		handledContainers.add((String) circuitContainer.getValue());
-				// 	}
-				// }
-				// else{
-				// 	linkComponentDefinition(document, graph, model, circuitContainer);
-				// 	handledContainers.add((String) circuitContainer.getValue());
-				// }
-				System.out.println(circuitContainer);
+				System.out.println("befroe link" + circuitContainer);
 				linkComponentDefinition(document, graph, model, circuitContainer);
 				handledContainers.add((String) circuitContainer.getValue());
 			}
@@ -625,6 +619,9 @@ public class MxToSBOL extends Converter {
 			TransformerException, URISyntaxException {
 
 		ComponentDefinition compDef = document.getComponentDefinition(URI.create((String) circuitContainer.getValue()));
+		// System.out.println(circuitContainer.getValue());
+		// System.out.println(document);
+		// System.out.println("Comp" + compDef);
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
 				.toArray(mxCell[]::new);
@@ -653,6 +650,7 @@ public class MxToSBOL extends Converter {
 		// for(mxCell glyph: filterCir){
 		// 	System.out.println(glyph);
 		// }
+
 		
 		if (compDef.getComponents().size() > 0) {
 			// the component definition was pulled in from a registry
@@ -684,7 +682,6 @@ public class MxToSBOL extends Converter {
 				// cell annotation
 				layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
 				GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
-				System.out.println(layout.getIdentity());
 				layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
 						component.getDefinition().getDisplayId() + "_Reference");
 

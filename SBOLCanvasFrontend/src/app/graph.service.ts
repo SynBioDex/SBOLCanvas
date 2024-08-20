@@ -594,6 +594,8 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
+        console.log(this.graph.getSelectionCells())
+       
     }
     
     // Map old cells to newly created cells in the paste method 
@@ -867,7 +869,10 @@ export class GraphService extends GraphHelpers {
                 glyphWidth: 1,
             })
             circCellRight.stayAtEnd = true
-
+            
+            const encoder = new mx.mxCodec()
+            const result = encoder.encode(this.graph.getModel())
+            console.log("asdakdsam",mx.mxUtils.getXml(result))
             // if the only cells are the backbone and the circular backbone the right circular backbone needs
             // to be repositioned and the size of the circuit container needs to reflect that
             if (circuitContainer.getGeometry().width == 2) {
@@ -1791,7 +1796,7 @@ export class GraphService extends GraphHelpers {
                 if (selectedCell.isSequenceFeatureGlyph()) {
                     origParent.refreshCircuitContainer(this.graph)
                     this.graph.setSelectionCell(newCell)
-                    this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(newCell.value)).partRole)
+                    // this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(newCell.value)).partRole)
                 }
 
                 if (selectedCell.isMolecularSpeciesGlyph() && newCell.isMolecularSpeciesGlyph()) {

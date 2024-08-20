@@ -65,7 +65,7 @@ export class InfoEditorComponent implements OnInit {
 
   getRoles() {
     this.metadataService.loadRoles().subscribe(roles => {
-      this.partRoles = roles.filter(role => !role.includes("Cir (Circular Backbone "));
+      this.partRoles = roles.filter(role => !role.includes("Cir (Circular Backbone Left") && !role.includes("Cir (Circular Backbone Right)"));
     });
   }
 
@@ -228,7 +228,7 @@ export class InfoEditorComponent implements OnInit {
     this.glyphCtrl = new FormControl( `${this.glyphInfo?.displayID}`, Validators.required);
     if (glyphInfo != null) {
       if (glyphInfo.partRole != null) {
-        if(this.glyphInfo.partRole.includes("Cir (Circular Backbone ")) {
+        if(this.glyphInfo.partRole.includes("Cir (Circular Backbone")) {
           // fixes the part role name so it will show up in the info-editor
           this.glyphInfo.partRole = "Cir (Circular Backbone)";
 

@@ -84,7 +84,7 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().beginUpdate()
         try {
             let selectedCells = this.graph.getSelectionCells()
-            if (selectedCells.length > 1 || selectedCells.length < 0) {
+            if ((selectedCells.length > 1 || selectedCells.length < 0) && !selectedCells[0].isCircularBackbone()) {
                 console.error("Trying to change info on too many or too few cells!")
                 return
             }
@@ -266,7 +266,7 @@ export class GraphHelpers extends GraphBase {
                 // update the glyph graphics
                 let newCoupledCells = this.getCoupledGlyphs(newGlyphURI)
                 info = <GlyphInfo>this.getFromInfoDict(newGlyphURI)
-                this.mutateSequenceFeatureGlyph(info.partRole, newCoupledCells, this.graph)
+                // this.mutateSequenceFeatureGlyph(info.partRole, newCoupledCells, this.graph)
 
                 // sync the circuitcontainers
                 if (selectedCell.isCircuitContainer()) {
@@ -340,7 +340,7 @@ export class GraphHelpers extends GraphBase {
 
             // there may be coupled cells that need to also be mutated
             // the glyphInfo may be different than info, so use getFromGlyphDict
-            this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(selectedCell.value)).partRole, this.getCoupledGlyphs(selectedCell.value))
+            // this.mutateSequenceFeatureGlyph((<GlyphInfo>this.getFromInfoDict(selectedCell.value)).partRole, this.getCoupledGlyphs(selectedCell.value))
 
             // change the ownership
             this.changeOwnership(selectedCell.getValue())
@@ -1005,55 +1005,55 @@ export class GraphHelpers extends GraphBase {
     /**
        * Changes the selected sequence feature's style based on the one selected in the info menu.
        */
-    protected mutateSequenceFeatureGlyph(name: string)
-    protected mutateSequenceFeatureGlyph(name: string, cells: mxCell)
-    protected mutateSequenceFeatureGlyph(name: string, cells: mxCell, graph: mxGraph)
-    protected mutateSequenceFeatureGlyph(name: string, cells?: mxCell, graph?: mxGraph) {
-        if (!graph) {
-            graph = this.graph
-        }
-        if (!cells) {
-            const selectionCells = this.graph.getSelectionCells()
-            if (selectionCells.length > 0) {
-                this.mutateSequenceFeatureGlyph(name, selectionCells)
-            }
-            return
-        }
-        try {
-            graph.getModel().beginUpdate()
-            // make sure the glyph style matches the partRole
-            let newStyleName = GraphBase.STYLE_SEQUENCE_FEATURE + name
+    // protected mutateSequenceFeatureGlyph(name: string)
+    // protected mutateSequenceFeatureGlyph(name: string, cells: mxCell)
+    // protected mutateSequenceFeatureGlyph(name: string, cells: mxCell, graph: mxGraph)
+    // protected mutateSequenceFeatureGlyph(name: string, cells?: mxCell, graph?: mxGraph) {
+    //     if (!graph) {
+    //         graph = this.graph
+    //     }
+    //     if (!cells) {
+    //         const selectionCells = this.graph.getSelectionCells()
+    //         if (selectionCells.length > 0) {
+    //             this.mutateSequenceFeatureGlyph(name, selectionCells)
+    //         }
+    //         return
+    //     }
+    //     try {
+    //         graph.getModel().beginUpdate()
+    //         // make sure the glyph style matches the partRole
+    //         let newStyleName = GraphBase.STYLE_SEQUENCE_FEATURE + name
 
-            // if there's no style for the partRole, use noGlyphAssigned
-            let cellStyle = graph.getStylesheet().getCellStyle(newStyleName)
-            // if there is no registered style for the newStyleName, getCellStyle returns an empty object.
-            // all of our registered styles have several fields, use fillcolor as an example to check
-            if (!cellStyle.fillColor)
-                newStyleName = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.STYLE_NGA
+    //         // if there's no style for the partRole, use noGlyphAssigned
+    //         let cellStyle = graph.getStylesheet().getCellStyle(newStyleName)
+    //         // if there is no registered style for the newStyleName, getCellStyle returns an empty object.
+    //         // all of our registered styles have several fields, use fillcolor as an example to check
+    //         if (!cellStyle.fillColor)
+    //             newStyleName = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.STYLE_NGA
 
-            cells.forEach(function (cell) {
-                if (cell.isSequenceFeatureGlyph()) {
-                    // Modify the style string
-                    let styleString = cell.style.slice()
-                    if (!styleString.includes(';')) {
-                        // nothing special needed, the original style only had the glyphStyleName
-                        styleString = newStyleName
-                    } else {
-                        // the string is something like "strokecolor=#000000;glyphStyleName;fillcolor=#ffffff;etc;etc;"
-                        // we only want to replace the 'glyphStyleName' bit
-                        let startIdx = styleString.indexOf(GraphBase.STYLE_SEQUENCE_FEATURE)
-                        let endIdx = styleString.indexOf(';', startIdx)
-                        let stringToReplace = styleString.slice(startIdx, endIdx - startIdx)
-                        styleString = styleString.replace(stringToReplace, newStyleName)
-                    }
+    //         cells.forEach(function (cell) {
+    //             if (cell.isSequenceFeatureGlyph()) {
+    //                 // Modify the style string
+    //                 let styleString = cell.style.slice()
+    //                 if (!styleString.includes(';')) {
+    //                     // nothing special needed, the original style only had the glyphStyleName
+    //                     styleString = newStyleName
+    //                 } else {
+    //                     // the string is something like "strokecolor=#000000;glyphStyleName;fillcolor=#ffffff;etc;etc;"
+    //                     // we only want to replace the 'glyphStyleName' bit
+    //                     let startIdx = styleString.indexOf(GraphBase.STYLE_SEQUENCE_FEATURE)
+    //                     let endIdx = styleString.indexOf(';', startIdx)
+    //                     let stringToReplace = styleString.slice(startIdx, endIdx - startIdx)
+    //                     styleString = styleString.replace(stringToReplace, newStyleName)
+    //                 }
 
-                    graph.getModel().setStyle(cell, styleString)
-                }
-            })
-        } finally {
-            graph.getModel().endUpdate()
-        }
-    }
+    //                 graph.getModel().setStyle(cell, styleString)
+    //             }
+    //         })
+    //     } finally {
+    //         graph.getModel().endUpdate()
+    //     }
+    // }
 
     protected makeGeneralDragsource(element, insertFunc) {
         const xOffset = -1 * element.getBoundingClientRect().width / 2
