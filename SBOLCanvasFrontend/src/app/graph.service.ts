@@ -25,13 +25,14 @@ import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
 import { Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { DomSanitizer } from '@angular/platform-browser';
 
 @Injectable({
     providedIn: 'root'
 })
 export class GraphService extends GraphHelpers {
 
-    constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService) {
+    constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService, private sanitizer : DomSanitizer) {
         super(dialog, metadataService, glyphService);
 
         // handle selection changes
@@ -317,7 +318,20 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().endUpdate();
         }
     }
+    getSelectedGlyphName(){
+        return this.selectedGlyphInfoName;
+    }
 
+    getSelectedGlyphNameSet(){
+        return this.selectionGlyphInfoStack;
+    }
+    getSelectedHTMLSet(){
+        return this.selectedHTMLStack;
+    }
+    getChildrenLength(){
+        let selection = this.graph.getSelectionCells();
+        return selection[0].getCircuitContainer(this.graph).children.length > 1
+    }
     /**
      * "Drills in" to replace the canvas with the selected glyph's component/module view
      */
@@ -337,6 +351,14 @@ export class GraphService extends GraphHelpers {
             // doing this in the graph edit breaks things in the undo, so we put it here
             viewCell.refreshViewCell(this.graph);
             let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
+            let glyphInfo = (<GlyphInfo>this.getFromInfoDict(selection[0].getValue())); 
+            this.selectedGlyphInfoName = glyphInfo.partRole;
+
+            this.selectionGlyphInfoStack.push(this.selectedGlyphInfoName);
+            const sequenceFeatureElts   = this.glyphService.getSequenceFeatureElements(); 
+            let svg = sequenceFeatureElts[this.selectedGlyphInfoName];
+            this.sequenceFeatureDict[this.selectedGlyphInfoName] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+            this.selectedHTMLStack.push(this.sequenceFeatureDict[this.selectedGlyphInfoName]);
             this.graph.getModel().execute(zoomEdit);
         } finally {
             this.graph.getModel().endUpdate();
@@ -758,6 +780,7 @@ export class GraphService extends GraphHelpers {
      * The new glyph's location is based off the user's selection.
      */
     addSequenceFeature(name) {
+        this.clickedSequenceFeature = name;
         this.graph.getModel().beginUpdate();
         try {
             if (!this.atLeastOneCircuitContainerInGraph()) {
