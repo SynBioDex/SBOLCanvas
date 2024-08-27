@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -142,7 +141,7 @@ public class MxToSBOL extends Converter {
 		infoDict = loadDictionary(dataContainer, INFO_DICT_INDEX);
 		combinatorialDict = loadDictionary(dataContainer, COMBINATORIAL_DICT_INDEX);
 		interactionDict = loadDictionary(dataContainer, INTERACTION_DICT_INDEX);
-
+	
 		// cells may show up in the child array not based on their x location
 		enforceChildOrdering(model, graph);
 
@@ -163,58 +162,35 @@ public class MxToSBOL extends Converter {
 		// Arrays.stream is the java 8 way to cast Object[] to some other array
 		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
 				.toArray(mxCell[]::new);
-		
-		
-		
-		// filter the circuit containers and create component definitions
-		AtomicBoolean cirFound = new AtomicBoolean(false);
+
+		// Get cells and create component definitions
 		for (mxCell viewCell : viewCells) {
 			mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
 			.toArray(mxCell[]::new);
-			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
-			.map(mxCell.class::cast)
-			.filter(cell ->{
-				if (cell.getValue().toString().contains("Cir")) {
-					if(cirFound.get()){
-						cirFound.set(false);
-						return false;
-					}
-					return cirFound.compareAndSet(false, true);
-				}
-				return true;
-			})
+
+			mxCell[] cells = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 			.toArray(mxCell[]::new);
-
-
-				// TODO: perhaps if first of a pair is found, set it back to false? in case of multiple circ backbones
-
-			
-			
-			
-			for (mxCell circuitContainer : circuitContainers) {
-				System.out.println("HERE" + circuitContainer);
-				// avoid duplicates from aliases in modules
-				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null)
-					continue;
-					
 				
-				//mxCell [id=3, value=https://sbolcanvas.org/Pro_g4nP/1, geometry=mxGeometry [x=0.0, y=0.0, width=50.0, height=100.0]]
-				//mxCell [id=5, value=https://sbolcanvas.org/BjcJPg08/1, geometry=mxGeometry [x=0.0, y=0.0, width=100.0, height=100.0]]
-				//mxCell [id=9, value=https://sbolcanvas.org/Cir_7xD5/1, geometry=mxGeometry [x=0.0, y=0.0, width=50.0, height=100.0]]
-			
-				createComponentDefinition(document, graph, model, circuitContainer);
-	
+		
+			for (mxCell cell : cells) {
+				// avoid duplicates from aliases in modules
+				if (layoutHelper.getGraphicalLayout(URI.create((String) cell.getValue())) != null)
+				continue;
+				createComponentDefinition(document, graph, model, cell);
+				
 			}
 		}
-
+		
 		// construct the module definitions, and add text annotations for component
 		// definitions
 		for (mxCell viewCell : viewCells) {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, true);
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 					.toArray(mxCell[]::new);
+	
 			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
-					.toArray(mxCell[]::new);
+			.toArray(mxCell[]::new);
+
 			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || proteins.length > 0) {
 				// module definitions
 				createModuleDefinition(document, graph, model, viewCell);
@@ -223,39 +199,21 @@ public class MxToSBOL extends Converter {
 				attachTextBoxAnnotation(model, viewCell, URI.create(viewCell.getId()));
 			}
 		}
-
+		
 		// link the component definitions (create components and set up references)
 		Set<String> handledContainers = new HashSet<String>();
-		// AtomicBoolean firstCirFound = new AtomicBoolean(false);
-		cirFound.set(false);
-		// circFound = false;
 		for (mxCell viewCell : viewCells) {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
-			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
-					.toArray(mxCell[]::new);
-
-
-			
-			circuitContainers = Arrays.stream(circuitContainers)
-			.filter(cell -> {
-				if (cell.getValue().toString().contains("Cir")) {
-					if(cirFound.get()){
-						cirFound.set(false);
-						return false;
-					}
-					return cirFound.compareAndSet(false, true);
-				}
-				return true;
-			})
+			mxCell[] cells = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 			.toArray(mxCell[]::new);
+
 			
-			for (mxCell circuitContainer : circuitContainers) {
-				if (handledContainers.contains((String) circuitContainer.getValue()))
+			
+			for (mxCell cell : cells) {
+				if (handledContainers.contains((String) cell.getValue()))
 					continue;
-				
-				System.out.println("befroe link" + circuitContainer);
-				linkComponentDefinition(document, graph, model, circuitContainer);
-				handledContainers.add((String) circuitContainer.getValue());
+				linkComponentDefinition(document, graph, model, cell);
+				handledContainers.add((String) cell.getValue());
 			}
 		}
 
@@ -619,44 +577,15 @@ public class MxToSBOL extends Converter {
 			TransformerException, URISyntaxException {
 
 		ComponentDefinition compDef = document.getComponentDefinition(URI.create((String) circuitContainer.getValue()));
-		// System.out.println(circuitContainer.getValue());
-		// System.out.println(document);
-		// System.out.println("Comp" + compDef);
 		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
 				.toArray(mxCell[]::new);
-
-		AtomicBoolean firstCirFound = new AtomicBoolean(false);
-		
-		// If there is a circ as first element filter
-		// if(glyphs[0].getValue().toString().contains("Cir")){
-
-		// }
-		mxCell[] filterCir = Arrays.stream(glyphs)
-			.filter(cell -> {
-				if (cell.getValue().toString().contains("Cir")) {
-					if(!firstCirFound.get()){
-						return firstCirFound.getAndSet(true);
-					}
-					else{
-						return true;
-					}
-				}
-				return true;
-			})
-			.toArray(mxCell[]::new);
-
-
-		// for(mxCell glyph: filterCir){
-		// 	System.out.println(glyph);
-		// }
 
 		
 		if (compDef.getComponents().size() > 0) {
 			// the component definition was pulled in from a registry
 			List<Component> components = compDef.getSortedComponents();
-			for (mxCell glyph : filterCir) {
-				// System.out.println(glyph);
+			for (mxCell glyph : glyphs) {
 				GlyphInfo info = (GlyphInfo) infoDict.get(glyph.getValue());
 				Component component = components.get(glyph.getParent().getIndex(glyph) - 1);
 
@@ -670,18 +599,17 @@ public class MxToSBOL extends Converter {
 			// the component definition was created by us and has no components
 			Component previous = null;
 			int count = 0, start = 0, end = 0;
-			for (mxCell glyph : filterCir) {
-
+			for (mxCell glyph : glyphs) {
 				GlyphInfo info = (GlyphInfo) infoDict.get(glyph.getValue());				
                 // ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
                 ComponentDefinition glyphCD = getComponentDefinitionBetter(document, URI.create((String) glyph.getValue()));
                 Component component = compDef.createComponent(
-						info.getDisplayID() + "_" + glyph.getParent().getIndex(glyph), AccessType.PUBLIC,
-						URI.create((String) glyph.getValue()));
-
-				// cell annotation
-				layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
-				GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
+					info.getDisplayID() + "_" + glyph.getParent().getIndex(glyph), AccessType.PUBLIC,
+					URI.create((String) glyph.getValue()));
+					
+					// cell annotation
+					layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
+					GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
 				layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
 						component.getDefinition().getDisplayId() + "_Reference");
 
