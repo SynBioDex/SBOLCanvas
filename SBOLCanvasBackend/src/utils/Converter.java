@@ -2,6 +2,7 @@ package utils;
 
 import java.net.URI;
 import java.util.Hashtable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
@@ -80,14 +81,45 @@ public class Converter {
 	};
 
 	/**
-	 * Filters mxCells that contain "circuitContainer" in the style string
+	 * Filters mxCells that contain "circuitContainer" in the style string.
+	 * This are usually Sequence Features and the Circular Backbone
+	 * Additionally calls the circularBackboneFilter method.
 	 */
 	static Filter containerFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER);
+			//NOTE: Due to how the frontend is setup, every sequenceFeature are of style circuitContainer
+			// When directly looking at the children of actual Circuit Containers, the styles are correct
+			if(arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER)) {
+				if (((mxCell) arg0).getValue().toString().contains("Cir")) {
+					return circularBackboneFilter((mxCell) arg0);
+				}
+				else{
+					return true;
+				}
+			}
+			return false;
 		}
 	};
+
+
+	protected static AtomicBoolean circularFound = new AtomicBoolean(false);
+	/**
+	 * Filters mxCells that are Circular Backbones. Circular Backbones contain two parts, the left and right.
+	 * Will only return the left side and ignore the right for each pair.
+	 * @param cell Mxcell to be checked
+	 * @return boolean
+	 */
+	static public boolean circularBackboneFilter(mxCell cell){
+		if(circularFound.get()){
+			circularFound.set(false);
+			return false;
+		}
+		return circularFound.compareAndSet(false, true);
+	
+	
+	
+	}
 
 	/**
 	 * Filters mxCells that contain "backbone" in the style string
@@ -105,10 +137,24 @@ public class Converter {
 	static Filter sequenceFeatureFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE);
+			if(arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE)){
+				if (((mxCell) arg0).getValue().toString().contains("Cir")) {
+					return skipFirstCircularBackbone((mxCell) arg0);
+				}
+				else{
+					return true;
+				}
+			}
+			return false;
+		
 		}
 	};
-	
+
+	private static AtomicBoolean firstCirFound = new AtomicBoolean(false);
+	static public boolean skipFirstCircularBackbone(mxCell cell){
+		return firstCirFound.getAndSet(!firstCirFound.get());	
+	}
+
 	static Filter interactionNodeFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
