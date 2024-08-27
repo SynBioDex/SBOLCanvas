@@ -870,9 +870,6 @@ export class GraphService extends GraphHelpers {
             })
             circCellRight.stayAtEnd = true
             
-            const encoder = new mx.mxCodec()
-            const result = encoder.encode(this.graph.getModel())
-            console.log("asdakdsam",mx.mxUtils.getXml(result))
             // if the only cells are the backbone and the circular backbone the right circular backbone needs
             // to be repositioned and the size of the circuit container needs to reflect that
             if (circuitContainer.getGeometry().width == 2) {

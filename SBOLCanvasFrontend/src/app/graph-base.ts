@@ -267,8 +267,10 @@ export class GraphBase {
         // For circuitContainers, the order of the children matters.
         // We want it to match the order of the children's geometries
         const defaultDecodeCell = mx.mxCodec.prototype.decodeCell
+        let firstCirFound = false
         mx.mxCodec.prototype.decodeCell = function (node, restoreStructures) {
             const cell = defaultDecodeCell.apply(this, arguments)
+            
 
             // find cell 0 for the glyph dict
             let cell0 = cell
@@ -315,6 +317,16 @@ export class GraphBase {
                             cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole
                         } else {
                             cell.style = cell.style.replace(GraphBase.STYLE_SEQUENCE_FEATURE, GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole)
+                            if (cell.style === "sequenceFeatureGlyphCir (Circular Backbone Left)"){
+                                if (firstCirFound){
+                                    cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
+                                    firstCirFound = !firstCirFound
+                                }
+                                else{
+                                    firstCirFound = true
+                                }
+
+                            }
                         }
                         if (cell.geometry.width == 0)
                             cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth
