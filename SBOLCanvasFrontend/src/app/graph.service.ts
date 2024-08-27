@@ -329,9 +329,24 @@ export class GraphService extends GraphHelpers {
         return this.selectedHTMLStack;
     }
     getChildrenLength(){
+        
         let selection = this.graph.getSelectionCells();
-        return selection[0].getCircuitContainer(this.graph).children.length > 1
+        if(selection[0] && selection[0].isCircuitContainer()){
+            return selection[0].getCircuitContainer(this.graph).children.length > 1
+        }return 0;
+        
     }
+
+    isModuleView(){
+        let cell = this.graph.getSelectionCells();
+        return (!cell[0] && this.graph.getCurrentRoot().isModuleView()) || (cell[0] && cell[0].isModule());
+    }
+
+    isComponentView(){
+        let cell = this.graph.getSelectionCells()[0];
+        return (!cell && this.graph.getCurrentRoot().isComponentView()) || (cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()))
+    }
+
     /**
      * "Drills in" to replace the canvas with the selected glyph's component/module view
      */
@@ -359,6 +374,7 @@ export class GraphService extends GraphHelpers {
             let svg = sequenceFeatureElts[this.selectedGlyphInfoName];
             this.sequenceFeatureDict[this.selectedGlyphInfoName] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
             this.selectedHTMLStack.push(this.sequenceFeatureDict[this.selectedGlyphInfoName]);
+            console.log("view Stack::", this.viewStack);
             this.graph.getModel().execute(zoomEdit);
         } finally {
             this.graph.getModel().endUpdate();
@@ -375,6 +391,12 @@ export class GraphService extends GraphHelpers {
         if (this.viewStack.length > 1) {
             let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), null, this);
             this.graph.getModel().execute(zoomEdit);
+            this.selectionGlyphInfoStack.pop();
+            this.selectedHTMLStack.pop();
+
+        } 
+        else{
+            this.selectedHTMLStack = [];
         }
     }
 
@@ -1777,10 +1799,13 @@ export class GraphService extends GraphHelpers {
     resetGraph(moduleMode: boolean = true) {
         this.graph.home();
         this.graph.getModel().clear();
-
+        let topcell = this.viewStack[1];
+        console.log("top Cell: ", topcell);
+        
         this.viewStack = [];
         this.selectionStack = [];
-
+       
+        this.clickedSequenceFeature = "";
         // initalize the GlyphInfoDictionary
         const cell0 = this.graph.getModel().getCell(0);
         const infoDict = [];
@@ -1809,6 +1834,7 @@ export class GraphService extends GraphHelpers {
             rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
             this.graph.enterGroup(rootViewCell);
             this.viewStack.push(rootViewCell);
+            this.viewStack.push(topcell);
             this.addBackbone();
         }
 
