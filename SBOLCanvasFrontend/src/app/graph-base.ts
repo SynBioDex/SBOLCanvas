@@ -1287,7 +1287,7 @@ export class GraphBase {
         }
         
         // Prevent connecting of an edge to circuit container by clicking it and then an interaction 
-        if(source.isCircuitContainer()){
+        if(source?.isCircuitContainer()){
             return 'Edge type disallowed to connect to a circuit container. Please connect to the glyph itself.';
         }
 
