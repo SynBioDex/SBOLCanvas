@@ -5,7 +5,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px;
+    padding: 6px;
     max-height: 500px;
 }
 
@@ -25,7 +25,23 @@
     justify-content: center;
 }
 
-.hierarchy-controls .level:last-child {
+.hierarchy-controls .level:last-child{
     border-color: black;
     color: black;
+}
+.hierarchy-controls .new {
+    width: 5em;
+    height: 4em;
+    margin: 8px;
+    font-family: 'Roboto';
+    cursor: pointer;
+    border-radius: 8px;
+
+    border: 3px solid #ddd;
+    border-color: black;
+    color: black;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

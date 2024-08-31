@@ -79,7 +79,7 @@ export class GraphBase {
     // Keeps track of the cell order we entered
     viewStack: mxCell[];
     selectionStack: mxCell[];
-
+    tempViewStack = [];
     // Boolean for keeping track of whether we are showing scars or not in the graph.
     showingScars: boolean = true;
 
@@ -94,6 +94,8 @@ export class GraphBase {
     sequenceFeatureDict = {};
     selectedHTMLStack = [];
     clickedSequenceFeature: string;
+    selectedHTML : string;
+    tempHTMLStack = [];
     // when decoding we add any unformatted view cells to this set
     static unFormatedCells = new Set<string>();
 

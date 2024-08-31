@@ -336,7 +336,9 @@ export class GraphService extends GraphHelpers {
         }return 0;
         
     }
-
+    getTempStack(){
+        return this.tempHTMLStack;
+    }
     isModuleView(){
         let cell = this.graph.getSelectionCells();
         return (!cell[0] && this.graph.getCurrentRoot().isModuleView()) || (cell[0] && cell[0].isModule());
@@ -351,6 +353,7 @@ export class GraphService extends GraphHelpers {
      * "Drills in" to replace the canvas with the selected glyph's component/module view
      */
     enterGlyph() {
+       
         let selection = this.graph.getSelectionCells();
         if (selection.length != 1) {
             return;
@@ -368,14 +371,15 @@ export class GraphService extends GraphHelpers {
             let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
             let glyphInfo = (<GlyphInfo>this.getFromInfoDict(selection[0].getValue())); 
             this.selectedGlyphInfoName = glyphInfo.partRole;
-
             this.selectionGlyphInfoStack.push(this.selectedGlyphInfoName);
-            const sequenceFeatureElts   = this.glyphService.getSequenceFeatureElements(); 
-            let svg = sequenceFeatureElts[this.selectedGlyphInfoName];
-            this.sequenceFeatureDict[this.selectedGlyphInfoName] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+            this.registerSVG(this.selectedGlyphInfoName);
+            this.tempHTMLStack = [];
             this.selectedHTMLStack.push(this.sequenceFeatureDict[this.selectedGlyphInfoName]);
-            console.log("view Stack::", this.viewStack);
+            for(let i = 0; i < this.selectedHTMLStack.length - 1; i++){
+                this.tempHTMLStack.push(this.selectedHTMLStack[i]);
+            }
             this.graph.getModel().execute(zoomEdit);
+
         } finally {
             this.graph.getModel().endUpdate();
         }
@@ -393,7 +397,6 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().execute(zoomEdit);
             this.selectionGlyphInfoStack.pop();
             this.selectedHTMLStack.pop();
-
         } 
         else{
             this.selectedHTMLStack = [];
@@ -1797,14 +1800,16 @@ export class GraphService extends GraphHelpers {
     }
 
     resetGraph(moduleMode: boolean = true) {
+
+        let topcell = this.viewStack[1];
+        let glyphInfo = (<GlyphInfo>this.getFromInfoDict(topcell.getId())); 
         this.graph.home();
         this.graph.getModel().clear();
-        let topcell = this.viewStack[1];
-        console.log("top Cell: ", topcell);
-        
+       
         this.viewStack = [];
         this.selectionStack = [];
-       
+        this.selectedHTMLStack = [];
+        this.tempViewStack = [];
         this.clickedSequenceFeature = "";
         // initalize the GlyphInfoDictionary
         const cell0 = this.graph.getModel().getCell(0);
@@ -1835,6 +1840,12 @@ export class GraphService extends GraphHelpers {
             this.graph.enterGroup(rootViewCell);
             this.viewStack.push(rootViewCell);
             this.viewStack.push(topcell);
+            this.tempViewStack.push(topcell);
+            let name = glyphInfo.partRole;
+            console.log("name.....", name);
+            this.selectedHTML = this.registerSVG(name);
+            this.selectedHTMLStack.push(this.selectedHTML);
+            
             this.addBackbone();
         }
 
@@ -1845,6 +1856,12 @@ export class GraphService extends GraphHelpers {
         this.editor.undoManager.clear();
     }
 
+    registerSVG(name: string){
+        const sequenceFeatureElts = this.glyphService.getSequenceFeatureElements(); 
+        let svg = sequenceFeatureElts[name];
+        this.sequenceFeatureDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+        return this.sequenceFeatureDict[name];
+    }
     /**
      * Sets the graph to component definition mode or module mode.
      * wrapper for metadataService.setComponentDefinitionMode.

@@ -139,7 +139,11 @@ export class GraphEdits {
                 // add the info to the view stack
                 let previousView = this.graphService.viewStack[this.graphService.viewStack.length -1 ];
                 this.graphService.viewStack.push(childViewCell);
-
+               
+                if(childViewCell.getStyle() == 'componentViewCell'){
+                    this.graphService.tempViewStack.push(childViewCell);
+                }
+               
                 // change the view
                 this.view.clear(this.view.currentRoot, true);
                 this.view.currentRoot = childViewCell;
@@ -166,7 +170,7 @@ export class GraphEdits {
                 // remove the last items on the stack
                 let previousView = this.graphService.viewStack.pop();
                 const newSelectedCell = this.graphService.selectionStack.pop();
-
+                this.graphService.tempViewStack.pop();
                 // change the view
                 this.view.clear(this.view.currentRoot, true);
                 this.view.currentRoot = this.graphService.viewStack[this.graphService.viewStack.length - 1];

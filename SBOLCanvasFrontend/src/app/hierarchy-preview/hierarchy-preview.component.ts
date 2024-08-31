@@ -3,6 +3,8 @@ import { GraphService } from '../graph.service'
 
 import { DomSanitizer } from '@angular/platform-browser';
 import { GlyphService } from '../glyph.service';
+import { element } from 'protractor';
+
 @Component({
     selector: 'app-hierarchy-preview',
     templateUrl: './hierarchy-preview.component.html',
@@ -22,32 +24,37 @@ export class HierarchyPreviewComponent {
     newLevelHTML: string;
     isModule: boolean;
     isComponent: boolean;
-    topLevelHTML: string;
+
+    selectedHTML : string;
+    tempHTMLStack = [];
+  
     getViewStack() {
         this.glyphName = this.graphService.getSelectedGlyphName();
         this.selectedStack = this.graphService.getSelectedGlyphNameSet();
         this.selectedHTMLStack = this.graphService.getSelectedHTMLSet();
         this.newLevelGlyph = this.graphService.clickedSequenceFeature;
         this.isModule = this.graphService.isModuleView();
+       
         if(this.graphService.getChildrenLength()) {
             let name = 'Gen (Engineered Region)';
-            this.newLevelHTML = this.registerSVG(name);
+            this.newLevelHTML = this.graphService.registerSVG(name);
         } else if(this.newLevelGlyph){
-            this.newLevelHTML = this.registerSVG(this.newLevelGlyph);
+            this.newLevelHTML = this.graphService.registerSVG(this.newLevelGlyph);
         } 
         if(this.isModule){
             this.newLevelHTML = "";
-        }       
+        }    
+        this.selectedHTML = this.selectedHTMLStack[this.selectedHTMLStack.length-1];
+        this.tempHTMLStack = this.graphService.tempHTMLStack;
+      
         return this.graphService.viewStack
     }
 
-    registerSVG(name: string){
-        const sequenceFeatureElts = this.glyphService.getSequenceFeatureElements(); 
-        let svg = sequenceFeatureElts[name];
-        this.sfDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
-        return this.sfDict[name];
-    }
+    getTempStack(){
+       this.getViewStack();
 
+       return this.graphService.tempViewStack;
+    }
     switchView(depth) {
         let levels = this.graphService.viewStack.length - depth - 1
 
