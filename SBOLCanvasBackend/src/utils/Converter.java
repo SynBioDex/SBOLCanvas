@@ -102,7 +102,9 @@ public class Converter {
 		}
 	};
 
-
+	public void resetFilter(){
+		circularFound.set(false);
+	}
 	protected static AtomicBoolean circularFound = new AtomicBoolean(false);
 	/**
 	 * Filters mxCells that are Circular Backbones. Circular Backbones contain two parts, the left and right.

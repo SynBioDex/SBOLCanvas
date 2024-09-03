@@ -268,6 +268,7 @@ export class GraphBase {
         // We want it to match the order of the children's geometries
         const defaultDecodeCell = mx.mxCodec.prototype.decodeCell
         let firstCirFound = false
+        let mySet = new Set()
         mx.mxCodec.prototype.decodeCell = function (node, restoreStructures) {
             const cell = defaultDecodeCell.apply(this, arguments)
             
@@ -303,6 +304,7 @@ export class GraphBase {
 
             // reconstruct the cell style
             if (reconstructCellStyle) {
+                
                 if (glyphDict[cell.value] != null) {
                     if (glyphDict[cell.value] instanceof ModuleInfo) {
                         // module
@@ -317,15 +319,19 @@ export class GraphBase {
                             cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole
                         } else {
                             cell.style = cell.style.replace(GraphBase.STYLE_SEQUENCE_FEATURE, GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole)
-                            if (cell.style === "sequenceFeatureGlyphCir (Circular Backbone Left)"){
-                                if (firstCirFound){
-                                    cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
-                                    firstCirFound = !firstCirFound
+                            
+                            if(cell.isCircularBackbone()){
+                                if(mySet.size === 1){
+                                    cell.style = cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
+                                    mySet.clear()
                                 }
                                 else{
-                                    firstCirFound = true
+                                    cell.style = "sequenceFeatureGlyphCir (Circular Backbone Left)"
+                                    mySet.add(cell.value)
+                                    cell.geometry.x = 0
                                 }
-
+                                
+                               console.log(mySet)
                             }
                         }
                         if (cell.geometry.width == 0)

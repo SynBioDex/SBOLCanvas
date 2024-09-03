@@ -170,7 +170,8 @@ public class MxToSBOL extends Converter {
 
 			mxCell[] cells = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 			.toArray(mxCell[]::new);
-				
+			
+			this.resetFilter();
 		
 			for (mxCell cell : cells) {
 				// avoid duplicates from aliases in modules
