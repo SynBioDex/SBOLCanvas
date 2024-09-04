@@ -323,10 +323,12 @@ export class GraphBase {
                             if(cell.isCircularBackbone()){
                                 if(mySet.size === 1){
                                     cell.style = cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
+                                    cell.stayAtEnd = true
                                     mySet.clear()
                                 }
                                 else{
                                     cell.style = "sequenceFeatureGlyphCir (Circular Backbone Left)"
+                                    cell.stayAtBeginning = true
                                     mySet.add(cell.value)
                                     cell.geometry.x = 0
                                 }
