@@ -250,7 +250,7 @@ export class FilesService {
       params = params.append("version", version);
       params = params.append("name", name);
       params = params.append("description", description);
-      params = params.append("citations", citations);
+      params = params.append("citations", citations ? citations : '');
       params = params.append("overwrite", overwrite ? "true" : "false");
       return this.http.post(this.createCollectionURL, "", {responseType: 'text', headers: headers, params: params }).subscribe(result => {
         observer.next();
