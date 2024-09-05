@@ -1,8 +1,8 @@
 <div class="hierarchy-controls">
     <div *ngIf = '!isModule && getViewStack().length > 1 'class = "level"> <p>{{"top"}}</p></div>
     <div *ngIf = 'getViewStack().length == 1' class = "new" id = "div-new">
-        <p *ngIf = 'isModule'> {{"top"}}</p>
-        <svg *ngIf = '!isModule'  [innerHTML] = 'newLevelHTML'  width="52px" height="52px" ></svg>
+        <p > {{"top"}}</p>
+        <!-- <svg *ngIf = '!isModule'  [innerHTML] = 'newLevelHTML'  width="52px" height="52px" ></svg> -->
     </div>
 
         <div *ngFor="let depth of getTempStack(); let i = index" (click)="switchView(i)" class="level">
