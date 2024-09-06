@@ -409,7 +409,6 @@ public class SBOLToMx extends Converter {
 
 		for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 			Component glyphComponent = glyphArray[glyphIndex];
-			// System.out.println(glyphComponent);
 			mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(), glyphComponent.getDisplayId());
 			double maxX = 0;
 			if (glyphCell != null) {

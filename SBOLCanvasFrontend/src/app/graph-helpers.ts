@@ -1188,7 +1188,7 @@ export class GraphHelpers extends GraphBase {
             else
                 glyphInfo = this.getFromInfoDict(cell.value)
             if (glyphInfo) {
-                if (cell.style === "circuitContainer") {
+                if (cell?.style === "circuitContainer") {
                     glyphInfo.sequence = ""
 
                     // appends the sequence of every child to the circuit containers sequence

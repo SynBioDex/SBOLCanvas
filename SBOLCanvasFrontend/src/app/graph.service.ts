@@ -594,10 +594,6 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
-        console.log(this.graph.getSelectionCells())
-        console.log(this.getGraphXML())
-        this.graph.refresh()
-       
     }
     
     // Map old cells to newly created cells in the paste method 

@@ -141,43 +141,51 @@ public class MxToSBOL extends Converter {
 		infoDict = loadDictionary(dataContainer, INFO_DICT_INDEX);
 		combinatorialDict = loadDictionary(dataContainer, COMBINATORIAL_DICT_INDEX);
 		interactionDict = loadDictionary(dataContainer, INTERACTION_DICT_INDEX);
-	
+
 		// cells may show up in the child array not based on their x location
 		enforceChildOrdering(model, graph);
-
+		
 		// create the document
 		SBOLDocument document = new SBOLDocument();
 		document.setDefaultURIprefix(URI_PREFIX);
 		document.setComplete(false);
 		document.setCreateDefaults(true);
-
+		
 		// add registries that we're logged into
 		for (String key : userTokens.keySet()) {
 			SynBioHubFrontend registry = document.addRegistry(key);
 			registry.setUser(userTokens.get(key));
 		}
-
+		
 		layoutHelper = new LayoutHelper(document, graph);
-
+		
 		// Arrays.stream is the java 8 way to cast Object[] to some other array
 		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
-				.toArray(mxCell[]::new);
-
+		.toArray(mxCell[]::new);
+		
 		// Get cells and create component definitions
 		for (mxCell viewCell : viewCells) {
 			mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
 			.toArray(mxCell[]::new);
-
-			mxCell[] cells = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
-			.toArray(mxCell[]::new);
 			
-			this.resetFilter();
-		
-			for (mxCell cell : cells) {
-				// avoid duplicates from aliases in modules
-				if (layoutHelper.getGraphicalLayout(URI.create((String) cell.getValue())) != null)
+			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+			.toArray(mxCell[]::new);
+
+			for (mxCell circuitContainer : circuitContainers) {
+				
+				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null)
 				continue;
-				createComponentDefinition(document, graph, model, cell);
+
+				Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
+				mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
+				.toArray(mxCell[]::new);
+
+				// Create Component Definition for the container itself
+				createComponentDefinition(document, graph, model, circuitContainer);
+
+				for(mxCell glyph: glyphs){
+					createComponentDefinition(document, graph, model, glyph);
+				}
 				
 			}
 		}
@@ -207,9 +215,7 @@ public class MxToSBOL extends Converter {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
 			mxCell[] cells = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 			.toArray(mxCell[]::new);
-
-			
-			
+		
 			for (mxCell cell : cells) {
 				if (handledContainers.contains((String) cell.getValue()))
 					continue;
@@ -369,12 +375,15 @@ public class MxToSBOL extends Converter {
 		GlyphInfo glyphInfo = (GlyphInfo) infoDict.get(circuitContainer.getValue());
 
 		// store extra mxGraph information
-		Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
-		mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
 		URI identity = URI.create(glyphInfo.getFullURI());
 		layoutHelper.createGraphicalLayout(identity, glyphInfo.getDisplayID() + "_Layout");
-		layoutHelper.addGraphicalNode(identity, "container", circuitContainer);
-		layoutHelper.addGraphicalNode(identity, "backbone", backboneCell);
+		if(circuitContainer.getStyle().equals(STYLE_CIRCUIT_CONTAINER)){
+			
+			Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
+			mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
+			layoutHelper.addGraphicalNode(identity, "container", circuitContainer);
+			layoutHelper.addGraphicalNode(identity, "backbone", backboneCell);
+		}
 
 		// if the uri is one of the synbiohub ones, skip the object
 		for (String registry : SBOLData.registries) {

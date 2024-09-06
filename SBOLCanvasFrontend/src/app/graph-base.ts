@@ -268,7 +268,6 @@ export class GraphBase {
         // We want it to match the order of the children's geometries
         const defaultDecodeCell = mx.mxCodec.prototype.decodeCell
         let firstCirFound = false
-        let mySet = new Set()
         mx.mxCodec.prototype.decodeCell = function (node, restoreStructures) {
             const cell = defaultDecodeCell.apply(this, arguments)
             
@@ -321,19 +320,17 @@ export class GraphBase {
                             cell.style = cell.style.replace(GraphBase.STYLE_SEQUENCE_FEATURE, GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole)
                             
                             if(cell.isCircularBackbone()){
-                                if(mySet.size === 1){
+                                if(firstCirFound){
                                     cell.style = cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
                                     cell.stayAtEnd = true
-                                    mySet.clear()
+                                    firstCirFound = false
                                 }
                                 else{
                                     cell.style = "sequenceFeatureGlyphCir (Circular Backbone Left)"
                                     cell.stayAtBeginning = true
-                                    mySet.add(cell.value)
+                                    firstCirFound = true
                                     cell.geometry.x = 0
-                                }
-                                
-                               console.log(mySet)
+                                }                                
                             }
                         }
                         if (cell.geometry.width == 0)
