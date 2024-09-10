@@ -1192,14 +1192,18 @@ export class GraphHelpers extends GraphBase {
                     glyphInfo.sequence = ""
 
                     // appends the sequence of every child to the circuit containers sequence
-                    cell.children.forEach(child => {
+                    for(let child of cell.children){
+                        // Ignore the sequence of the left part of the circular backbone to prevent duplicate sequence
+                        if(child.style.includes("Circular Backbone Left")){
+                            continue
+                        }
                         let childGlyphInfo
                         if (child) childGlyphInfo = this.getFromInfoDict(child.value)
 
                         if (childGlyphInfo !== undefined && childGlyphInfo.sequence) {
                             glyphInfo.sequence += childGlyphInfo.sequence
                         }
-                    })
+                    }
                 }
 
                 this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy())

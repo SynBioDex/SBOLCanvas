@@ -539,7 +539,6 @@ public class SBOLToMx extends Converter {
 		return moduleInfo;
 	}
 
-	AtomicBoolean leftCircularFound = new AtomicBoolean(false);
 	private GlyphInfo genGlyphInfo(ComponentDefinition glyphCD) {
 		GlyphInfo glyphInfo = new GlyphInfo();
 		glyphInfo.setDescription(glyphCD.getDescription());
@@ -550,19 +549,7 @@ public class SBOLToMx extends Converter {
 		ArrayList<String> otherRoles = new ArrayList<String>();
 		for (URI glyphRole : glyphCD.getRoles()) {
 			if (SBOLData.roles.containsValue(glyphRole)) {
-				if (glyphRole.toString().equals("http://identifiers.org/so/SO:0000755")) {
-					if(!leftCircularFound.get()){
-						glyphInfo.setPartRole("Cir (Circular Backbone Left)");
-					}
-					else{
-						glyphInfo.setPartRole("Cir (Circular Backbone Right)");
-					}
-					leftCircularFound.set(!leftCircularFound.get());
-
-				}
-				else{
-					glyphInfo.setPartRole(SBOLData.roles.getKey(glyphRole));
-				}
+				glyphInfo.setPartRole(SBOLData.roles.getKey(glyphRole));
 			} else if (SBOLData.refinements.containsValue(glyphRole)) {
 				glyphInfo.setPartRole(SBOLData.roles.getKey(SBOLData.parents.get(glyphRole)));
 				glyphInfo.setPartRefine(SBOLData.refinements.getKey(glyphRole));
