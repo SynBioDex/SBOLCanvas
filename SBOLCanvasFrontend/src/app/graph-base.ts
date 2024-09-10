@@ -318,8 +318,10 @@ export class GraphBase {
                             cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole
                         } else {
                             cell.style = cell.style.replace(GraphBase.STYLE_SEQUENCE_FEATURE, GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole)
-                            
+                                                        
+                            // Fixes visual bugs when importing a circular backbone
                             if(cell.isCircularBackbone()){
+                                cell.geometry.width = 1
                                 if(!leftCirFound){
                                     cell.style = "sequenceFeatureGlyphCir (Circular Backbone Left)"
                                     cell.stayAtBeginning = true
