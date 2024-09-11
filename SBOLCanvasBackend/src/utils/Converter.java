@@ -80,14 +80,15 @@ public class Converter {
 	};
 
 	/**
-	 * Filters mxCells that contain "circuitContainer" in the style string
+	 * Filters mxCells that are Circuit Containers
 	 */
 	static Filter containerFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER);
+			return (arg0 instanceof mxCell && (((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER)) && (((mxCell) arg0).getChildCount() > 1));
 		}
 	};
+
 
 	/**
 	 * Filters mxCells that contain "backbone" in the style string
@@ -101,14 +102,21 @@ public class Converter {
 
 	/**
 	 * Filters mxCells that contain "sequenceFeatureGlyph" in the style string
+	 * Additionally filters out the left portion of a Circular Backbone
 	 */
 	static Filter sequenceFeatureFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE);
+			if(arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE)){
+				if (((mxCell) arg0).getStyle().contains("Cir (Circular Backbone Left)")) {
+					return false;
+				}
+				return true;
+			}
+			return false;
 		}
 	};
-	
+
 	static Filter interactionNodeFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {

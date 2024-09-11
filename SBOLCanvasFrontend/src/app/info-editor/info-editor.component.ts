@@ -64,8 +64,9 @@ export class InfoEditorComponent implements OnInit {
   }
 
   getRoles() {
-    this.metadataService.loadRoles().subscribe(roles => this.partRoles = roles);
-   
+    this.metadataService.loadRoles().subscribe(roles => {
+      this.partRoles = roles.filter(role => !role.includes("Cir (Circular Backbone Left") && !role.includes("Cir (Circular Backbone Right)"));
+    });
   }
 
   getRefinements(role: string) {
@@ -90,7 +91,6 @@ export class InfoEditorComponent implements OnInit {
 
   dropDownChange(event: MatSelectChange) {
     const id = event.source.id;
-
     switch (id) {
       case 'partType': {
         this.glyphInfo.partType = event.value;
@@ -228,11 +228,23 @@ export class InfoEditorComponent implements OnInit {
     this.glyphCtrl = new FormControl( `${this.glyphInfo?.displayID}`, Validators.required);
     if (glyphInfo != null) {
       if (glyphInfo.partRole != null) {
-        this.getRefinements(glyphInfo.partRole);
+        if(this.glyphInfo.partRole.includes("Cir (Circular Backbone")) {
+          // fixes the part role name so it will show up in the info-editor
+          this.glyphInfo.partRole = "Cir (Circular Backbone)";
+
+          // for some reason part refinements are not gotten for circular backbones correctly
+          if(this.glyphInfo.partRefine !== undefined && !this.partRefinements.includes(this.glyphInfo.partRefine)) {
+            // if partRefine is not undefined the part refinement list needs to be manually set
+            this.partRefinements = [this.glyphInfo.partRefine];
+          }
+        }
+
+        if(this.glyphInfo.partRefine == undefined) this.getRefinements(this.glyphInfo.partRole);
       } else {
         this.partRefinements = [];
       }
     }
+
     // this needs to be called because we may have gotten here from an async function
     // an async function doesn't update the view for some reason
     this.changeDetector.detectChanges();
