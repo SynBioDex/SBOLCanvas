@@ -1,7 +1,7 @@
 <div class="hierarchy-controls">
-    <div *ngIf = '!isModule && getViewStack().length > 1 'class = "level"> <p>{{"top"}}</p></div>
+    <div *ngIf = '!isModule && getViewStack().length > 1 'class = "level"> <p>{{"Top"}}</p></div>
     <div *ngIf = 'getViewStack().length == 1' class = "new" id = "div-new">
-        <p > {{"top"}}</p>
+        <p > {{"Top"}}</p>
     </div>
 
         <div *ngFor="let depth of getTempStack(); let i = index" (click)="switchView(i)" class="level">

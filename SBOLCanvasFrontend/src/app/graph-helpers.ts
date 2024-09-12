@@ -1163,9 +1163,9 @@ export class GraphHelpers extends GraphBase {
                 glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
             else {
                 glyphInfo = this.getFromInfoDict(cell.value);
-                if(cell.getCircuitContainer(this.graph).children.length > 1){
-                    glyphInfo.partRole = 'Gen (Engineered Region)';
-                }
+                // if(cell.getCircuitContainer(this.graph).children.length > 1){
+                //     glyphInfo.partRole = 'Gen (Engineered Region)';
+                // }
             }
             if (glyphInfo) {
                 this.metadataService.setSelectedGlyphInfo(glyphInfo.makeCopy());
