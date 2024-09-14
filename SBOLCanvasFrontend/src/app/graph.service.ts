@@ -1801,8 +1801,14 @@ export class GraphService extends GraphHelpers {
 
     resetGraph(moduleMode: boolean = true) {
 
-        let topcell = this.viewStack[1];
-        let glyphInfo = (<GlyphInfo>this.getFromInfoDict(topcell.getId())); 
+        
+        let topcell;
+        let glyphInfo;
+        if(this.viewStack.length > 1){
+            topcell = this.viewStack[1];
+            glyphInfo = (<GlyphInfo>this.getFromInfoDict(topcell.getId())); 
+        }
+      
         this.graph.home();
         this.graph.getModel().clear();
        
@@ -1834,17 +1840,20 @@ export class GraphService extends GraphHelpers {
             this.graph.enterGroup(rootViewCell);
             this.viewStack.push(rootViewCell);
         } else { // User picked New Component Design
+            
             let info = new GlyphInfo();
             this.addToInfoDict(info);
             rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
             this.graph.enterGroup(rootViewCell);
             this.viewStack.push(rootViewCell);
-            this.viewStack.push(topcell);
-            this.tempViewStack.push(topcell);
-            let name = glyphInfo.partRole;
-            console.log("name.....", name);
-            this.selectedHTML = this.registerSVG(name);
-            this.selectedHTMLStack.push(this.selectedHTML);
+            if(topcell != null){
+                this.viewStack.push(topcell);
+                this.tempViewStack.push(topcell);
+                let name = glyphInfo.partRole;
+                this.selectedHTML = this.registerSVG(name);
+                this.selectedHTMLStack.push(this.selectedHTML);
+            }
+           
             
             this.addBackbone();
         }
