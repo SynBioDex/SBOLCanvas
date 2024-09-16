@@ -25,14 +25,15 @@ import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
 import { Observable } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { DomSanitizer } from '@angular/platform-browser';
 
 @Injectable({
     providedIn: 'root'
 })
 export class GraphService extends GraphHelpers {
-
-    constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService) {
-        super(dialog, metadataService, glyphService)
+  
+    constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService, private sanitizer : DomSanitizer) {
+        super(dialog, metadataService, glyphService);
 
         // handle selection changes
         this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange))
@@ -329,12 +330,43 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().endUpdate()
         }
     }
+    getSelectedGlyphName(){
+        return this.selectedGlyphInfoName;
+    }
+
+    getSelectedGlyphNameSet(){
+        return this.selectionGlyphInfoStack;
+    }
+    getSelectedHTMLSet(){
+        return this.selectedHTMLStack;
+    }
+    getChildrenLength(){
+        
+        let selection = this.graph.getSelectionCells();
+        if(selection[0] && selection[0].isCircuitContainer()){
+            return selection[0].getCircuitContainer(this.graph).children.length > 1
+        }return 0;
+        
+    }
+    getTempStack(){
+        return this.tempHTMLStack;
+    }
+    isModuleView(){
+        let cell = this.graph.getSelectionCells();
+        return (!cell[0] && this.graph.getCurrentRoot().isModuleView()) || (cell[0] && cell[0].isModule());
+    }
+
+    isComponentView(){
+        let cell = this.graph.getSelectionCells()[0];
+        return (!cell && this.graph.getCurrentRoot().isComponentView()) || (cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()))
+    }
 
     /**
      * "Drills in" to replace the canvas with the selected glyph's component/module view
      */
     enterGlyph() {
         let selection = this.graph.getSelectionCells()
+
         if (selection.length != 1) {
             return
         }
@@ -347,9 +379,20 @@ export class GraphService extends GraphHelpers {
         try {
             let viewCell = this.graph.getModel().getCell(selection[0].getValue())
             // doing this in the graph edit breaks things in the undo, so we put it here
-            viewCell.refreshViewCell(this.graph)
-            let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this)
-            this.graph.getModel().execute(zoomEdit)
+            viewCell.refreshViewCell(this.graph);
+            let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
+            let glyphInfo = (<GlyphInfo>this.getFromInfoDict(selection[0].getValue())); 
+            this.selectedGlyphInfoName = glyphInfo.partRole;
+            this.selectionGlyphInfoStack.push(this.selectedGlyphInfoName);
+            this.registerSVG(this.selectedGlyphInfoName);
+            this.tempHTMLStack = [];
+            this.selectedHTMLStack.push(this.sequenceFeatureDict[this.selectedGlyphInfoName]);
+            for(let i = 0; i < this.selectedHTMLStack.length - 1; i++){
+                this.tempHTMLStack.push(this.selectedHTMLStack[i]);
+            }
+            this.graph.getModel().execute(zoomEdit);
+
+
         } finally {
             this.graph.getModel().endUpdate()
         }
@@ -363,8 +406,13 @@ export class GraphService extends GraphHelpers {
     exitGlyph() {
         // the root view should always be left on the viewStack
         if (this.viewStack.length > 1) {
-            let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), null, this)
-            this.graph.getModel().execute(zoomEdit)
+            let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), null, this);
+            this.graph.getModel().execute(zoomEdit);
+            this.selectionGlyphInfoStack.pop();
+            this.selectedHTMLStack.pop();
+        } 
+        else{
+            this.selectedHTMLStack = [];
         }
     }
 
@@ -783,7 +831,9 @@ export class GraphService extends GraphHelpers {
      * The new glyph's location is based off the user's selection.
      */
     async addSequenceFeature(name) {
-        this.graph.getModel().beginUpdate()
+        this.clickedSequenceFeature = name;
+        this.graph.getModel().beginUpdate();
+
         try {
             if (!this.atLeastOneCircuitContainerInGraph()) {
                 // if there is no strand, quietly make one
@@ -1871,12 +1921,17 @@ export class GraphService extends GraphHelpers {
     }
 
     resetGraph(moduleMode: boolean = true) {
-        this.graph.home()
-        this.graph.getModel().clear()
 
-        this.viewStack = []
-        this.selectionStack = []
-
+      
+        this.graph.home();
+        this.graph.getModel().clear();
+       
+        this.viewStack = [];
+        this.selectionStack = [];
+        this.selectedHTMLStack = [];
+        this.tempViewStack = [];
+        this.clickedSequenceFeature = "";
+      
         // initalize the GlyphInfoDictionary
         const cell0 = this.graph.getModel().getCell(0);
         const infoDict = [];
@@ -1900,11 +1955,13 @@ export class GraphService extends GraphHelpers {
             this.graph.enterGroup(rootViewCell);
             this.viewStack.push(rootViewCell);
         } else { // User picked New Component Design
+            
             let info = new GlyphInfo();
             this.addToInfoDict(info);
             rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
             this.graph.enterGroup(rootViewCell);
             this.viewStack.push(rootViewCell);
+            
             this.addBackbone();
         }
 
@@ -1915,6 +1972,12 @@ export class GraphService extends GraphHelpers {
         this.editor.undoManager.clear()
     }
 
+    registerSVG(name: string){
+        const sequenceFeatureElts = this.glyphService.getSequenceFeatureElements(); 
+        let svg = sequenceFeatureElts[name];
+        this.sequenceFeatureDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+        return this.sequenceFeatureDict[name];
+    }
     /**
      * Sets the graph to component definition mode or module mode.
      * wrapper for metadataService.setComponentDefinitionMode.

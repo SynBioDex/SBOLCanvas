@@ -1184,9 +1184,10 @@ export class GraphHelpers extends GraphBase {
         } else if ((!cell && this.graph.getCurrentRoot().isComponentView()) || (cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()))) {
             let glyphInfo
             if (!cell)
-                glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId())
-            else
-                glyphInfo = this.getFromInfoDict(cell.value)
+                glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
+            else 
+                glyphInfo = this.getFromInfoDict(cell.value);
+         
             if (glyphInfo) {
                 if (cell?.style === "circuitContainer") {
                     glyphInfo.sequence = ""

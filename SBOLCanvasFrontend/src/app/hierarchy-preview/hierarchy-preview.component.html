@@ -1,8 +1,13 @@
 <div class="hierarchy-controls">
-    <div *ngFor="let depth of getViewStack(); let i = index" (click)="switchView(i)" class="level">
+    <div *ngIf = '!isModule && getViewStack().length > 1 'class = "level"> <p>{{"Top"}}</p></div>
+    <div *ngIf = 'getViewStack().length == 1' class = "new" id = "div-new">
+        <p > {{"Top"}}</p>
+    </div>
+
+        <div *ngFor="let depth of getTempStack(); let i = index" (click)="switchView(i)" class="level">
         <span>
-            {{i == 0 && "Top" || i}}
-            <!-- <svg #canvasElement [attr.glyphStyle]="pair.key" width="52px" height="52px" [innerHTML]="pair.value"></svg> -->
+            <svg *ngIf = 'i != getTempStack().length -1'[innerHTML] = 'tempHTMLStack[i]' width="52px" height="52px"></svg>
+            <svg *ngIf = 'i == getTempStack().length -1' [innerHTML] = 'selectedHTML' width="52px" height="52px" ></svg>
         </span>
     </div>
 </div>
