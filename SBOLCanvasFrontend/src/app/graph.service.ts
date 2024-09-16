@@ -942,6 +942,8 @@ export class GraphService extends GraphHelpers {
 
             // if the container is a circular backbone then both sides should have the same cellValue
             if (glyphWidth == 1) {
+                glyphInfo.partType = "Circular"
+                this.addToInfoDict(glyphInfo)
                 circuitContainer.children
                     .filter(cell => cell.stayAtBeginning)
                     .forEach(child => {

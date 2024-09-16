@@ -312,7 +312,7 @@ export class GraphBase {
                         }
                         cell.geometry.width = GraphBase.defaultModuleWidth
                         cell.geometry.height = GraphBase.defaultModuleHeight
-                    } else if (glyphDict[cell.value] instanceof GlyphInfo && glyphDict[cell.value].partType === 'DNA region') {
+                    } else if (glyphDict[cell.value] instanceof GlyphInfo && glyphDict[cell.value].partType === 'DNA region' || glyphDict[cell.value].partType === 'Circular') {
                         // sequence feature
                         if (!cell.style) {
                             cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole
