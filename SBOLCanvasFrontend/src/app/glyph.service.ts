@@ -46,7 +46,6 @@ export class GlyphService {
         'assets/glyph_stencils/sequence_feature/ribonuclease-site.xml',
         'assets/glyph_stencils/sequence_feature/rna-stability-element.xml',
         //'assets/glyph_stencils/sequence_feature/chromosomal-locus.xml',
-        //'assets/glyph_stencils/sequence_feature/circular-plasmid.xml',
         'assets/glyph_stencils/sequence_feature/transcription-end.xml',
         'assets/glyph_stencils/sequence_feature/translation-end.xml',
         //'assets/glyph_stencils/sequence_feature/test.xml',
@@ -79,7 +78,7 @@ export class GlyphService {
         'assets/glyph_stencils/interaction_nodes/dissociation.xml',
         'assets/glyph_stencils/interaction_nodes/process.xml',
         'assets/glyph_stencils/molecular_species/replacement-glyph.xml',
-    ]
+    ];
 
     private indicatorXMLBundle: string = "assets/glyph_stencils/indicators/bundle.xml";
     private indicatorXMLs: string[] = [
@@ -91,6 +90,8 @@ export class GlyphService {
     private utilXMLBundle: string = "assets/glyph_stencils/util/bundle.xml";
     private utilXMLs: string[] = [
         'assets/backbone.xml',
+        'assets/circular-plasmid-left.xml',
+        'assets/circular-plasmid-right.xml',
         'assets/textBox.xml',
         'assets/module.xml',
     ];
@@ -105,7 +106,7 @@ export class GlyphService {
     private xmlBundle: string = "assets/glyph_stencils/bundle.xml"
 
     constructor() {
-        this.loadXMLBundle(this.xmlBundle)
+        this.loadXMLBundle(this.xmlBundle);
     }
 
     loadXMLBundle(bundleFile) {
@@ -119,6 +120,7 @@ export class GlyphService {
                 const subDir = shape.getAttribute('subdir');
                 const centered = shape.getAttribute('centered');
 
+                
                 const stencil = new mx.mxStencil(shape);
                 this[subDir][name] = [stencil, (centered && centered.toLowerCase() == 'true')];
             }
@@ -126,10 +128,12 @@ export class GlyphService {
         }
     }
 
+    // unused now
     loadXMLs(xml_list, glyph_list) {
         xml_list.forEach((filename) => this.loadXML(filename, glyph_list));
     }
 
+    // unused now
     loadXML(xmlFile, glyph_list) {
         let req = mx.mxUtils.load(xmlFile);
         let root = req.getDocumentElement();
@@ -160,7 +164,7 @@ export class GlyphService {
 
             canvas.setStrokeColor('#000000');
             canvas.setFillColor('none');
-
+            
             stencil.drawShape(canvas, shape, 0, 0, 50, 50);
 
             svgs[name] = elt;
@@ -183,6 +187,10 @@ export class GlyphService {
 
     getInteractionNodeGlyphs() {
         return this.interactionNodes;
+    }
+
+    getUtilGlyphs() {
+        return this.utils;
     }
 
     getUtilElements() {

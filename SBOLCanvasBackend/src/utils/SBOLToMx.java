@@ -14,6 +14,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
@@ -266,9 +267,22 @@ public class SBOLToMx extends Converter {
 
 			// glyphs
 			Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
+			List<Component> newList = new ArrayList<>(Arrays.asList(glyphArray));
+			Component duplicateToAdd = null;
+			for(Component glyph: newList){
+				if(glyph.getDisplayId().toString().contains("Cir")){
+					duplicateToAdd = glyph;
+	
+				}
+			}
+			if(duplicateToAdd != null){
+				newList.add(0,duplicateToAdd);
+				glyphArray = newList.toArray(new Component[0]);
+			}
 			double maxX = 0;
 			for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 				Component glyphComponent = glyphArray[glyphIndex];
+
 				mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(),
 						glyphComponent.getDisplayId());
 				if (glyphCell != null) {
@@ -380,6 +394,19 @@ public class SBOLToMx extends Converter {
 
 		// glyphs
 		Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
+		List<Component> newList = new ArrayList<>(Arrays.asList(glyphArray));
+		Component duplicateToAdd = null;
+		for(Component glyph: newList){
+			if(glyph.getDisplayId().toString().contains("Cir")){
+				duplicateToAdd = glyph;
+
+			}
+		}
+		if(duplicateToAdd != null){
+			newList.add(0,duplicateToAdd);
+			glyphArray = newList.toArray(new Component[0]);
+		}
+
 		for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 			Component glyphComponent = glyphArray[glyphIndex];
 			mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(), glyphComponent.getDisplayId());
