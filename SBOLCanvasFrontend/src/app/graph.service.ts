@@ -1921,12 +1921,7 @@ export class GraphService extends GraphHelpers {
     }
 
     resetGraph(moduleMode: boolean = true) {
-        let topcell;
-        let glyphInfo;
-        if(this.viewStack.length > 1){
-            topcell = this.viewStack[1];
-            glyphInfo = (<GlyphInfo>this.getFromInfoDict(topcell.getId())); 
-        }
+
       
         this.graph.home();
         this.graph.getModel().clear();
@@ -1966,14 +1961,6 @@ export class GraphService extends GraphHelpers {
             rootViewCell = this.graph.insertVertex(cell1, info.getFullURI(), "", 0, 0, 0, 0, GraphBase.STYLE_COMPONENT_VIEW);
             this.graph.enterGroup(rootViewCell);
             this.viewStack.push(rootViewCell);
-            if(topcell != null){
-                this.viewStack.push(topcell);
-                this.tempViewStack.push(topcell);
-                let name = glyphInfo.partRole;
-                this.selectedHTML = this.registerSVG(name);
-                this.selectedHTMLStack.push(this.selectedHTML);
-            }
-           
             
             this.addBackbone();
         }
