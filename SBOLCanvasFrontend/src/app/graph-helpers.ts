@@ -79,6 +79,11 @@ export class GraphHelpers extends GraphBase {
         }
         return glyphInfo
     }
+    
+    protected getGlyphInfo(cell: mxCell): GlyphInfo {
+        const glyphInfo = this.getFromInfoDict(cell.getValue()) as GlyphInfo
+        return glyphInfo
+    }
 
     protected async updateSelectedGlyphInfo(this: GraphService, info: GlyphInfo) {
         this.graph.getModel().beginUpdate()

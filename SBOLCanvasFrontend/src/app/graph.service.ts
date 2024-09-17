@@ -842,6 +842,10 @@ export class GraphService extends GraphHelpers {
 
             const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent()
 
+            // Change the Part Type
+            const circuitContainerGlyphInfo = (this.getGlyphInfo(circuitContainer))
+            circuitContainerGlyphInfo.partType = "Circular"
+
             // there cannot be more than one circular backbone on a circuit container
             if(circuitContainer.isCircularBackboneOnCircuitContainer()) return
 
