@@ -329,7 +329,7 @@ export class GraphBase {
                                     cell.geometry.x = 0
                                 }
                                 else{
-                                    cell.style = cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
+                                    cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
                                     cell.stayAtEnd = true
                                     leftCirFound = false
                                 }                                

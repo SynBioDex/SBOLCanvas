@@ -406,7 +406,7 @@ public class MxToSBOL extends Converter {
 				glyphInfo.getDisplayID(), glyphInfo.getVersion(), SBOLData.types.getValue(glyphInfo.getPartType()));
 		if (glyphInfo.getOtherTypes() != null) {
 			for (String type : glyphInfo.getOtherTypes()) {
-				compDef.addType(new URI(type));
+				compDef.addType(SBOLData.types.getValue(type));
 			}
 		}
 

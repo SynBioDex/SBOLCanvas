@@ -38,6 +38,7 @@ export class GlyphInfo extends Info {
         this.version = version
         this.partType = partType
         this.partRole = partRole
+        this.otherTypes = []
 
         // try to make a prefix from the part role
         const partRolePrefix = partRole && (partRole.match(/(\w+?) \(/) || [])[1];
