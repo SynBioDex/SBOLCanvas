@@ -1390,5 +1390,24 @@ export class GraphBase {
                 return "NGA (No Glyph Assigned Molecular Species)"
         }
     }
-
+    protected moleculeLabelName(name: string) {
+        switch (name) {
+            case "dsNA":
+                return "dna"
+            case "macromolecule":
+                return "prot"
+            case "NGA (No Glyph Assigned Molecular Species)":
+                return "nga"
+            case "small-molecule":
+                return "chem"
+            case "ssNA":
+                return "rna"
+            case "replacement-glyph":
+                return "All_types"
+            case "complex":
+                return "comp"
+            default:
+                return "Protein"
+        }
+    }
 }

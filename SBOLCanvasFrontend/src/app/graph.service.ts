@@ -1081,6 +1081,7 @@ export class GraphService extends GraphHelpers {
             let proteinInfo = new GlyphInfo({
                 partType: this.moleculeNameToType(name)
             })
+            proteinInfo.name = this.moleculeLabelName(name);
             this.addToInfoDict(proteinInfo)
 
             const molecularSpeciesGlyph = this.graph.insertVertex(this.graph.getDefaultParent(), null, proteinInfo.getFullURI(), x, y,
