@@ -467,8 +467,14 @@ export class GraphService extends GraphHelpers {
                         if (combinatorial)
                             combinatorial.removeVariableComponentInfo(cell.getId())
 
-                        if (cell.stayAtBeginning || cell.stayAtEnd) cell.getParent().circularBackbone = false
-
+                        if (cell.stayAtBeginning || cell.stayAtEnd) {
+                            cell.getParent().circularBackbone = false     
+                            
+                            // remove the circular type from "otherTypes" since circular parts are deleted
+                            const otherTypes = this.getGlyphInfo(cell.getParent()).otherTypes
+                            const index = otherTypes.indexOf("Circular")
+                            otherTypes.splice(index, 1)
+                        }
                         circuitContainers.push(cell.getParent())
                     }
                 } else if (cell.isCircuitContainer() && this.graph.getCurrentRoot() && this.graph.getCurrentRoot().isComponentView())
@@ -553,6 +559,9 @@ export class GraphService extends GraphHelpers {
         // clearing the selection avoids a lot of exceptions from mxgraph code for some reason.
         this.graph.clearSelection()
         this.editor.execute('undo')
+
+        // Undo does not affect glyph info, if circular backbone is not present, remove it from "otherTypes" property
+        this.removeCircularType()
 
         //console.log(this.editor.undoManager);
 
@@ -844,7 +853,9 @@ export class GraphService extends GraphHelpers {
 
             // Add additional type to Circuit Container if Circular present
             const circuitContainerGlyphInfo = (this.getGlyphInfo(circuitContainer))
-            circuitContainerGlyphInfo.otherTypes.push("Circular")
+            if(!circuitContainerGlyphInfo.otherTypes.includes("Circular")){
+                circuitContainerGlyphInfo.otherTypes.push("Circular")
+            }
 
             // there cannot be more than one circular backbone on a circuit container
             if(circuitContainer.isCircularBackboneOnCircuitContainer()) return

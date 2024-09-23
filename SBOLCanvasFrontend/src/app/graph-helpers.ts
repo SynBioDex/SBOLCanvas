@@ -1882,6 +1882,23 @@ export class GraphHelpers extends GraphBase {
         return false
     }
 
+    /**
+     * Made specifically for undo, since it does not affect glyph info.
+     * Removes "Circular" from the "otherTypes" property of Circuit Containers.
+     */
+    protected removeCircularType() {
+        let allGraphCells = this.graph.getDefaultParent().children
+        if (allGraphCells != null) {
+            for (let i = 0; i < allGraphCells.length; i++) {
+                if (allGraphCells[i].isCircuitContainer() && !allGraphCells[i].isCircularBackboneOnCircuitContainer()) {
+                    const otherTypes = this.getGlyphInfo(allGraphCells[i]).otherTypes
+                    const index = otherTypes.indexOf("Circular")
+                    otherTypes.splice(index, 1)
+                }
+            }
+        }
+    }
+
     protected flipInteractionEdge(cell) {
         if (!cell.isInteraction()) {
             console.error("flipInteraction attempted on something other than an interaction!")
