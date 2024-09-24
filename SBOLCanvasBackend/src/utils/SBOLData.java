@@ -43,6 +43,7 @@ public class SBOLData {
 		types.put("RNA molecule", ComponentDefinition.RNA_MOLECULE);
 		types.put("RNA region", ComponentDefinition.RNA_REGION);
 		types.put("Small molecule", ComponentDefinition.SMALL_MOLECULE);
+		types.put("Circular", URI.create("http://identifiers.org/so/SO:0000988"));
 		
 		roles = new BiMap<String, URI>();
 		roles.put("Gen (Engineered Region)", SequenceOntology.ENGINEERED_REGION);

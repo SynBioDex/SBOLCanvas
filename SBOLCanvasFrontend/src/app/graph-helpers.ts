@@ -79,6 +79,11 @@ export class GraphHelpers extends GraphBase {
         }
         return glyphInfo
     }
+    
+    protected getGlyphInfo(cell: mxCell): GlyphInfo {
+        const glyphInfo = this.getFromInfoDict(cell.getValue()) as GlyphInfo
+        return glyphInfo
+    }
 
     protected async updateSelectedGlyphInfo(this: GraphService, info: GlyphInfo) {
         this.graph.getModel().beginUpdate()
@@ -1876,6 +1881,39 @@ export class GraphHelpers extends GraphBase {
             }
         }
         return false
+    }
+
+    /**
+     * Made specifically for undo, since it does not affect glyph info.
+     * Removes "Circular" from the "otherTypes" property of Circuit Containers.
+     */
+    protected removeCircularType() {
+        let allGraphCells = this.graph.getDefaultParent().children
+        if (allGraphCells != null) {
+            for (let i = 0; i < allGraphCells.length; i++) {
+                if (allGraphCells[i].isCircuitContainer() && !allGraphCells[i].isCircularBackboneOnCircuitContainer()) {
+                    const otherTypes = this.getGlyphInfo(allGraphCells[i]).otherTypes
+                    const index = otherTypes.indexOf("Circular")
+                    otherTypes.splice(index, 1)
+                }
+            }
+        }
+    }
+
+    /**
+     * Made specifically for redo.
+     * Adds the circular type back to Circuit Container if circular is present again.
+     */
+    protected addCircularType() {
+        let allGraphCells = this.graph.getDefaultParent().children
+        if (allGraphCells != null) {
+            for (let i = 0; i < allGraphCells.length; i++) {
+                if (allGraphCells[i].isCircuitContainer() && allGraphCells[i].isCircularBackboneOnCircuitContainer()) {
+                    const otherTypes = this.getGlyphInfo(allGraphCells[i]).otherTypes
+                    otherTypes.push("Circular")
+                }
+            }
+        }
     }
 
     protected flipInteractionEdge(cell) {

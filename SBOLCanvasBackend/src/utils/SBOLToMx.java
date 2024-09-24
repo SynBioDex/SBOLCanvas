@@ -562,10 +562,10 @@ public class SBOLToMx extends Converter {
 		// There will only be one important type
 		ArrayList<String> otherTypes = new ArrayList<String>();
 		for (URI glyphType : glyphCD.getTypes()) {
-			if (SBOLData.types.containsValue(glyphType)) {
+			if (SBOLData.types.containsValue(glyphType) && glyphInfo.getPartType() == null) {
 				glyphInfo.setPartType(SBOLData.types.getKey(glyphType));
 			} else {
-				otherTypes.add(glyphType.toString());
+				otherTypes.add(SBOLData.types.getKey(glyphType));
 			}
 		}
 		glyphInfo.setOtherTypes(otherTypes.toArray(new String[0]));

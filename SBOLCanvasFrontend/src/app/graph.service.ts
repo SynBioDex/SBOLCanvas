@@ -515,8 +515,14 @@ export class GraphService extends GraphHelpers {
                         if (combinatorial)
                             combinatorial.removeVariableComponentInfo(cell.getId())
 
-                        if (cell.stayAtBeginning || cell.stayAtEnd) cell.getParent().circularBackbone = false
-
+                        if (cell.stayAtBeginning || cell.stayAtEnd) {
+                            cell.getParent().circularBackbone = false     
+                            
+                            // remove the circular type from "otherTypes" since circular parts are deleted
+                            const otherTypes = this.getGlyphInfo(cell.getParent()).otherTypes
+                            const index = otherTypes.indexOf("Circular")
+                            otherTypes.splice(index, 1)
+                        }
                         circuitContainers.push(cell.getParent())
                     }
                 } else if (cell.isCircuitContainer() && this.graph.getCurrentRoot() && this.graph.getCurrentRoot().isComponentView())
@@ -602,6 +608,9 @@ export class GraphService extends GraphHelpers {
         this.graph.clearSelection()
         this.editor.execute('undo')
 
+        // Undo does not affect glyph info, if circular backbone is not present, remove it from "otherTypes" property
+        this.removeCircularType()
+
         //console.log(this.editor.undoManager);
 
         // If the undo caused scars to become visible, we should update
@@ -627,6 +636,9 @@ export class GraphService extends GraphHelpers {
 
         // If the undo caused scars to become visible, we should update
         this.showingScars = this.getScarsVisible()
+        
+        // Add Circular type property back if needed
+        this.addCircularType()
 
         // refresh to update cell labels
         if (this.graph.getCurrentRoot()) {
@@ -692,10 +704,9 @@ export class GraphService extends GraphHelpers {
                         
                         const childCellName = childCell.style.split("Glyph")[1]?.split(";")[0]?.trim()
                         
-                        // A circular backbone is considered a sequence feature
-                        // "Cir (Circular Backbone Right/Left)" refers to the connection to the backbone
-                        // It's possible to have a circular backbone as a standalone glyph
-                        if(!childCell.isCircularBackbone() || childCellName === "Cir (Circular Backbone)"){
+                        // Circular Backbone be added after all other children are created
+                        // Prevents both the left and right side from being added
+                        if(!childCell.isCircularBackbone()){
                             this.addSequenceFeature(childCellName)
                         }
                         
@@ -891,6 +902,12 @@ export class GraphService extends GraphHelpers {
             }
 
             const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent()
+
+            // Add additional type to Circuit Container if Circular present
+            const circuitContainerGlyphInfo = (this.getGlyphInfo(circuitContainer))
+            if(!circuitContainerGlyphInfo.otherTypes.includes("Circular")){
+                circuitContainerGlyphInfo.otherTypes.push("Circular")
+            }
 
             // there cannot be more than one circular backbone on a circuit container
             if(circuitContainer.isCircularBackboneOnCircuitContainer()) return
