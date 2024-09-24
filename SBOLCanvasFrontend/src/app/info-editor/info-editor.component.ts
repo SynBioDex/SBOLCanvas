@@ -60,7 +60,7 @@ export class InfoEditorComponent implements OnInit {
   }
 
   getTypes() {
-    this.metadataService.loadTypes().subscribe(types => this.partTypes = types);
+    this.metadataService.loadTypes().subscribe(types => this.partTypes = types.filter(type => type != "Circular"));
   }
 
   getRoles() {
