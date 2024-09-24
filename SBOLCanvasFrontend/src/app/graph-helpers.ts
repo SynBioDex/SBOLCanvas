@@ -1899,6 +1899,22 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    /**
+     * Made specifically for redo.
+     * Adds the circular type back to Circuit Container if circular is present again.
+     */
+    protected addCircularType() {
+        let allGraphCells = this.graph.getDefaultParent().children
+        if (allGraphCells != null) {
+            for (let i = 0; i < allGraphCells.length; i++) {
+                if (allGraphCells[i].isCircuitContainer() && allGraphCells[i].isCircularBackboneOnCircuitContainer()) {
+                    const otherTypes = this.getGlyphInfo(allGraphCells[i]).otherTypes
+                    otherTypes.push("Circular")
+                }
+            }
+        }
+    }
+
     protected flipInteractionEdge(cell) {
         if (!cell.isInteraction()) {
             console.error("flipInteraction attempted on something other than an interaction!")

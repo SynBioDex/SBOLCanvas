@@ -588,6 +588,9 @@ export class GraphService extends GraphHelpers {
 
         // If the undo caused scars to become visible, we should update
         this.showingScars = this.getScarsVisible()
+        
+        // Add Circular type property back if needed
+        this.addCircularType()
 
         // refresh to update cell labels
         if (this.graph.getCurrentRoot()) {
@@ -653,10 +656,9 @@ export class GraphService extends GraphHelpers {
                         
                         const childCellName = childCell.style.split("Glyph")[1]?.split(";")[0]?.trim()
                         
-                        // A circular backbone is considered a sequence feature
-                        // "Cir (Circular Backbone Right/Left)" refers to the connection to the backbone
-                        // It's possible to have a circular backbone as a standalone glyph
-                        if(!childCell.isCircularBackbone() || childCellName === "Cir (Circular Backbone)"){
+                        // Circular Backbone be added after all other children are created
+                        // Prevents both the left and right side from being added
+                        if(!childCell.isCircularBackbone()){
                             this.addSequenceFeature(childCellName)
                         }
                         
