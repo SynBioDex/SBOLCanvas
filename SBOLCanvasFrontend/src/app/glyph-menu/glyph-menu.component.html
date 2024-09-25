@@ -122,6 +122,14 @@
                   [innerHTML]="utilsDict['Cir (Circular Backbone)']"></svg>
           </button>
         </mat-grid-tile>
+
+        <mat-grid-tile *ngIf="stringMatches('Chromosomal Locus', searchPhrase)">
+          <button mat-button (click)="addChromosomalLocus()" matTooltip="Chromosomal Locus">
+              <svg #canvasElement [attr.elementType]="elementTypes.SEQUENCE_FEATURE"
+                  glyphStyle="Chromosomal-locus" width="52px" height="52px" 
+                  [innerHTML]="utilsDict['Chromosomal-locus']"></svg>
+          </button>
+        </mat-grid-tile>
         
         <mat-grid-tile *ngIf="!componentDefinitionMode && stringMatches('module definition', searchPhrase)">
           <button mat-button (click)="addModule()"

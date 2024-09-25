@@ -1097,7 +1097,7 @@ export class GraphHelpers extends GraphBase {
         var cellsAdded = evt.getProperty('removed')
 
         // checks if either the left or right side of a circular backbone was selected
-        const cirBackboneFilter = sender.cells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd)
+        const cirBackboneFilter = sender.cells.filter(cell => cell.isCircularBackbone())
 
         if (cirBackboneFilter.length > 0) {
             const parentCell = cirBackboneFilter[0].parent.children
@@ -1899,7 +1899,7 @@ export class GraphHelpers extends GraphBase {
         let allGraphCells = this.graph.getDefaultParent().children
         if (allGraphCells != null) {
             for (let i = 0; i < allGraphCells.length; i++) {
-                if (allGraphCells[i].isCircuitContainer() && !allGraphCells[i].isCircularBackboneOnCircuitContainer()) {
+                if (allGraphCells[i].isCircuitContainer() && !allGraphCells[i].hasCircularBackbone()) {
                     const otherTypes = this.getGlyphInfo(allGraphCells[i]).otherTypes
                     const index = otherTypes.indexOf("Circular")
                     otherTypes.splice(index, 1)
@@ -1916,7 +1916,7 @@ export class GraphHelpers extends GraphBase {
         let allGraphCells = this.graph.getDefaultParent().children
         if (allGraphCells != null) {
             for (let i = 0; i < allGraphCells.length; i++) {
-                if (allGraphCells[i].isCircuitContainer() && allGraphCells[i].isCircularBackboneOnCircuitContainer()) {
+                if (allGraphCells[i].isCircuitContainer() && allGraphCells[i].hasCircularBackbone()) {
                     const otherTypes = this.getGlyphInfo(allGraphCells[i]).otherTypes
                     otherTypes.push("Circular")
                 }

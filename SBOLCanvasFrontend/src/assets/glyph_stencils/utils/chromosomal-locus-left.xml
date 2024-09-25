@@ -1,0 +1,23 @@
+<shapes>
+    <shape aspect="variable" centered="False" h="48" name="Chromosomal-locus-left" strokewidth="inherit" w="1">
+        <connections />
+        <foreground>
+            <strokewidth width="2.00" />
+            <linejoin join="round" />
+            <linecap cap="round" />
+            <miterlimit limit="4" />
+            <alpha alpha="1" />
+            <path>
+                <move x="2.86891529321579" y="48.35147566117286" /> 
+                <curve x1="2.86891529321579" x2="-30.31008049060943" x3="-30.441165197393637" 
+                       y1="48.35147566117286" y2="51.08968953622077" y3="55.37178995783825" /> 
+                <curve x1="-30.572249904177845" x2="3.0" x3="3.0" 
+                       y1="59.6684553468762" y2="60.71713300114986" y3="65.78574166347259" /> 
+                <curve x1="3.0" x2="-35.0" x3="-35.0" 
+                       y1="70.86891529321579" y2="71.0" y3="71.0" /> 
+            </path>
+            <stroke />
+        </foreground>
+    </shape>
+    </shapes>
+    

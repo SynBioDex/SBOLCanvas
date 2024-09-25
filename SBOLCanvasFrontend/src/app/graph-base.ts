@@ -52,6 +52,7 @@ export class GraphBase {
 
     static readonly STYLE_CIRCUIT_CONTAINER = 'circuitContainer';
     static readonly STYLE_CIRCULAR_BACKBONE = 'sequenceFeatureGlyphCir';
+    static readonly STYLE_CHROMOSOMAL_LOCUS = 'sequenceFeatureGlyphChromo';
     static readonly STYLE_BACKBONE = 'backbone';
     static readonly STYLE_TEXTBOX = 'textBox';
     static readonly STYLE_MODULE = 'moduleGlyph';
@@ -420,6 +421,10 @@ export class GraphBase {
             return this.isStyle(GraphBase.STYLE_CIRCULAR_BACKBONE)
         }
 
+        mx.mxCell.prototype.isChromosomalLocus = function () {
+            return this.isStyle(GraphBase.STYLE_CHROMOSOMAL_LOCUS)
+        }
+
         mx.mxCell.prototype.isSequenceFeatureGlyph = function () {
             return this.isStyle(GraphBase.STYLE_SEQUENCE_FEATURE)
         }
@@ -467,10 +472,24 @@ export class GraphBase {
         /**
          * Returns true if there is a circular backbone on the current circuit container
         */
-        mx.mxCell.prototype.isCircularBackboneOnCircuitContainer = function() {
+        mx.mxCell.prototype.hasCircularBackbone = function() {
         if (this.isCircuitContainer()) {
             for (let cell of this.children) {
                 if (cell.isCircularBackbone()) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+        /**
+         * Returns true if a Chromosomal Locus is present
+         */
+        mx.mxCell.prototype.hasChromosomalLocus = function() {
+        if (this.isCircuitContainer()) {
+            for (let cell of this.children) {
+                if (cell.isChromosomalLocus()) {
                     return true
                 }
             }
@@ -1229,13 +1248,13 @@ export class GraphBase {
 
                     // special case where an empty circular backbone's circuit container is moved
                     // fixes the containers position and the right circular backbones x position
-                    if ((cell.isCircularBackboneOnCircuitContainer() && cell.children.length === 3)) {
+                    if ((cell.hasCircularBackbone() || cell.hasChromosomalLocus() && cell.children.length === 3)) {
                         this.repositionCircularBackbone(cell)
                     }
                 }
 
                 // special case where a circular backbone is repositioned within a circuit container
-                if (movedCells[0].getParent().isCircularBackboneOnCircuitContainer()
+                if (movedCells[0].getParent().hasCircularBackbone() || movedCells[0].getParent().hasChromosomalLocus()
                     && movedCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0
                     && movedCells[0].getParent().children.length === 3) {
                     this.repositionCircularBackbone(movedCells[0].getParent())
