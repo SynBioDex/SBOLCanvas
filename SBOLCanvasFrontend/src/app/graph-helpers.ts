@@ -1207,7 +1207,15 @@ export class GraphHelpers extends GraphBase {
                         if (child) childGlyphInfo = this.getFromInfoDict(child.value)
 
                         if (childGlyphInfo !== undefined && childGlyphInfo.sequence) {
-                            glyphInfo.sequence += childGlyphInfo.sequence
+                            let direction = this.graph.getCellStyle(child)[mx.mxConstants.STYLE_DIRECTION]
+                            
+                            // Cell is flipped
+                            if(direction === "west"){
+                                glyphInfo.sequence += this.reverseComplement(childGlyphInfo.sequence)
+                            }
+                            else{
+                                glyphInfo.sequence += childGlyphInfo.sequence
+                            }
                         }
                     }
                 }
@@ -2164,6 +2172,19 @@ export class GraphHelpers extends GraphBase {
             })
 
         circuitContainer.refreshCircuitContainer(this.graph)
+    }
+
+    private reverseComplement(glyphSequence: string){
+        glyphSequence = glyphSequence.split("").reverse().join("")
+        let reverseComplement = ""
+        
+        const complementDict = {"a":"t", "t":"a", "c":"g", "g":"c"}
+
+        for(let base of glyphSequence.toLowerCase()){
+            reverseComplement += complementDict[base] || base
+        }
+
+        return glyphSequence === glyphSequence.toUpperCase() ? reverseComplement.toUpperCase() : reverseComplement
     }
 
     protected createViewCell(uri: string, module: boolean = false): mxCell {

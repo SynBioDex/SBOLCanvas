@@ -14,7 +14,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;

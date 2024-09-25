@@ -297,13 +297,7 @@ export class GraphService extends GraphHelpers {
                         this.graph.setCellStyles(mx.mxConstants.STYLE_DIRECTION, "east", [cell])
                         console.debug("turning east")
                     }
-
-                    // if a glyph has been flipped its sequence needs to be reversed
-                    let glyphInfo
-                    if (cell) glyphInfo = this.getFromInfoDict(cell.value)
-                    glyphInfo.sequence = glyphInfo.sequence.split("").reverse().join("")
-
-                    this.metadataService.setSelectedGlyphInfo(glyphInfo)
+                    
                 } else if (cell.isInteraction()) {
                     this.flipInteractionEdge(cell)
                 } else if (cell.isInteractionNode()) {
@@ -654,6 +648,7 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
+        console.log(this.graph.getSelectionCell())
     }
     
     // Map old cells to newly created cells in the paste method 
