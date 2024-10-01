@@ -52,7 +52,11 @@ export class GraphBase {
 
     static readonly STYLE_CIRCUIT_CONTAINER = 'circuitContainer';
     static readonly STYLE_CIRCULAR_BACKBONE = 'sequenceFeatureGlyphCir';
+    static readonly STYLE_CIRCULAR_BACKBONE_LEFT = 'Cir (Circular Backbone Left)';
+    static readonly STYLE_CIRCULAR_BACKBONE_RIGHT = 'Cir (Circular Backbone Right)';
     static readonly STYLE_CHROMOSOMAL_LOCUS = 'sequenceFeatureGlyphChromo';
+    static readonly ROLE_CHROMOSOMAL_LOCUS_LEFT = 'Chromosomal Locus (Left)';
+    static readonly ROLE_CHROMOSOMAL_LOCUS_RIGHT = 'Chromosomal Locus (Right)';
     static readonly STYLE_BACKBONE = 'backbone';
     static readonly STYLE_TEXTBOX = 'textBox';
     static readonly STYLE_MODULE = 'moduleGlyph';
@@ -334,33 +338,32 @@ export class GraphBase {
                             if(cell.isCircularBackbone()){
                                 cell.geometry.width = 1
                                 if(!leftCirFound){
-                                    cell.style = "sequenceFeatureGlyphCir (Circular Backbone Left)"
+                                    cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.STYLE_CIRCULAR_BACKBONE_LEFT
                                     cell.stayAtBeginning = true
                                     leftCirFound = true
                                     cell.geometry.x = 0
                                 }
                                 else{
-                                    cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
+                                    cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.STYLE_CIRCULAR_BACKBONE_RIGHT
                                     cell.stayAtEnd = true
                                     leftCirFound = false
                                 }             
                             }
                             
-                            // Fixes visual bugs when importing a chromosomal locus
+                            // Fixes visual bugs and glyph info when importing a chromosomal locus
                             if(cell.isChromosomalLocus()){
                                 cell.geometry.width = 1
                                 if(!leftChromosomalFound){
-                                    cell.style = "sequenceFeatureGlyphChromosomal Locus (Left)"
-                                    cell.stayAtBeginning = true
+                                    cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.ROLE_CHROMOSOMAL_LOCUS_LEFT
                                     leftChromosomalFound = true
                                     cell.geometry.x = 0
-                                    glyphDict[cell.value].partRole = "Chromosomal Locus (Left)"
+                                    glyphDict[cell.value].partRole = GraphBase.ROLE_CHROMOSOMAL_LOCUS_LEFT
                                 }
                                 else{
-                                    cell.style = "sequenceFeatureGlyphChromosomal Locus (Right)"
+                                    cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.ROLE_CHROMOSOMAL_LOCUS_RIGHT
                                     cell.stayAtEnd = true
                                     leftChromosomalFound = false
-                                    glyphDict[cell.value].partRole = "Chromosomal Locus (Right)"
+                                    glyphDict[cell.value].partRole = GraphBase.ROLE_CHROMOSOMAL_LOCUS_RIGHT
                                     
                                 }   
                             }

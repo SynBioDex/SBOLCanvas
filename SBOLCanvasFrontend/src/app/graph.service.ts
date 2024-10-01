@@ -1086,7 +1086,7 @@ export class GraphService extends GraphHelpers {
             }
 
             if (cellValue == null) {
-                // create the glyh info and add it to the dictionary
+                // create the glyph info and add it to the dictionary
                 glyphInfo.partRole = name
                 this.addToInfoDict(glyphInfo)
             }
