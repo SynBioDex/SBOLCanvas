@@ -278,6 +278,7 @@ export class GraphBase {
         // We want it to match the order of the children's geometries
         const defaultDecodeCell = mx.mxCodec.prototype.decodeCell
         let leftCirFound = false
+        let leftChromosomalFound = false
         mx.mxCodec.prototype.decodeCell = function (node, restoreStructures) {
             const cell = defaultDecodeCell.apply(this, arguments)
             
@@ -328,7 +329,7 @@ export class GraphBase {
                             cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole
                         } else {
                             cell.style = cell.style.replace(GraphBase.STYLE_SEQUENCE_FEATURE, GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole)
-                                                        
+                            
                             // Fixes visual bugs when importing a circular backbone
                             if(cell.isCircularBackbone()){
                                 cell.geometry.width = 1
@@ -342,8 +343,28 @@ export class GraphBase {
                                     cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
                                     cell.stayAtEnd = true
                                     leftCirFound = false
-                                }                                
+                                }             
                             }
+                            
+                            // Fixes visual bugs when importing a chromosomal locus
+                            if(cell.isChromosomalLocus()){
+                                cell.geometry.width = 1
+                                if(!leftChromosomalFound){
+                                    cell.style = "sequenceFeatureGlyphChromosomal Locus (Left)"
+                                    cell.stayAtBeginning = true
+                                    leftChromosomalFound = true
+                                    cell.geometry.x = 0
+                                    glyphDict[cell.value].partRole = "Chromosomal Locus (Left)"
+                                }
+                                else{
+                                    cell.style = "sequenceFeatureGlyphChromosomal Locus (Right)"
+                                    cell.stayAtEnd = true
+                                    leftChromosomalFound = false
+                                    glyphDict[cell.value].partRole = "Chromosomal Locus (Right)"
+                                    
+                                }   
+                            }
+                             
                         }
                         if (cell.geometry.width == 0)
                             cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth

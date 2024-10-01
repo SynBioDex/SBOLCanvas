@@ -1,5 +1,5 @@
 <shapes>
-    <shape aspect="variable" centered="False" h="48" name="Chromosomal-locus-left" strokewidth="inherit" w="1">
+    <shape aspect="variable" centered="False" h="48" name="Chromosomal Locus (Left)" strokewidth="inherit" w="1">
         <connections />
         <foreground>
             <strokewidth width="2.00" />

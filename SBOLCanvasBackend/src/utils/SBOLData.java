@@ -54,6 +54,8 @@ public class SBOLData {
 		roles.put("Cir (Circular Backbone)", URI.create("http://identifiers.org/so/SO:0000755"));
 		roles.put("Cir (Circular Backbone Left)", URI.create("http://identifiers.org/so/SO:0000755"));
 		roles.put("Cir (Circular Backbone Right)", URI.create("http://identifiers.org/so/SO:0000755"));
+		roles.put("Chromosomal Locus (Left)", URI.create("http://identifiers.org/so/SO:0000704"));
+		roles.put("Chromosomal Locus (Right)", URI.create("http://identifiers.org/so/SO:0000704"));
 		roles.put("gRNA (Non-Coding RNA gene)", URI.create("http://identifiers.org/so/SO:0001263"));
 		roles.put("Ori (Origin of Replication)", SequenceOntology.ORIGIN_OF_REPLICATION);
 		roles.put("OriT (Origin of Transfer)", URI.create("http://identifiers.org/so/SO:0000724"));

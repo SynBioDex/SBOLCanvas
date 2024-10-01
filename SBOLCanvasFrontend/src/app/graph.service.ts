@@ -663,7 +663,6 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
-        console.log(this.graph.getSelectionCell())
     }
     
     // Map old cells to newly created cells in the paste method 
@@ -987,7 +986,7 @@ export class GraphService extends GraphHelpers {
             let y = circuitContainer.getGeometry().y
 
             // add the left side of the chromosomal cell
-            const chromosomalCellLeft = await this.addSequenceFeatureAt("Chromosomal-locus-left",
+            const chromosomalCellLeft = await this.addSequenceFeatureAt("Chromosomal Locus (Left)",
                 x, y, circuitContainer, {
                 connectable: false,
                 glyphWidth: 1
@@ -995,7 +994,7 @@ export class GraphService extends GraphHelpers {
             chromosomalCellLeft.stayAtBeginning = true
 
             // add the right side of the chromosomal cell
-            const chromosomalCellRight = await this.addSequenceFeatureAt("Chromosomal-locus-right",
+            const chromosomalCellRight = await this.addSequenceFeatureAt("Chromosomal Locus (Right)",
                 x + circuitContainer.getGeometry().width, y,
                 circuitContainer, {
                 connectable: false,
@@ -1087,7 +1086,7 @@ export class GraphService extends GraphHelpers {
             }
 
             if (cellValue == null) {
-                // create the glyph info and add it to the dictionary
+                // create the glyh info and add it to the dictionary
                 glyphInfo.partRole = name
                 this.addToInfoDict(glyphInfo)
             }
