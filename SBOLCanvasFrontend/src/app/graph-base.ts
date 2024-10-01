@@ -1273,15 +1273,15 @@ export class GraphBase {
                     // special case where an empty circular backbone's circuit container is moved
                     // fixes the containers position and the right circular backbones x position
                     if ((cell.hasCircularBackbone() || cell.hasChromosomalLocus() && cell.children.length === 3)) {
-                        this.repositionCircularBackbone(cell)
+                        this.repositionCircularBackboneOrChromosomal(cell)
                     }
                 }
 
                 // special case where a circular backbone is repositioned within a circuit container
-                if (movedCells[0].getParent().hasCircularBackbone() || movedCells[0].getParent().hasChromosomalLocus()
+                if ((movedCells[0].getParent().hasCircularBackbone() || movedCells[0].getParent().hasChromosomalLocus())
                     && movedCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0
                     && movedCells[0].getParent().children.length === 3) {
-                    this.repositionCircularBackbone(movedCells[0].getParent())
+                    this.repositionCircularBackboneOrChromosomal(movedCells[0].getParent())
                 }
 
                 // change ownership

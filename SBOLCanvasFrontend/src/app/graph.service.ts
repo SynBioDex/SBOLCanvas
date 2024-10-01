@@ -599,7 +599,7 @@ export class GraphService extends GraphHelpers {
             // repositions the circular backbone if the circular backbone is now empty
             if (circuitContainers.length > 0 && circuitContainers[0].children.length === 3
                 && circuitContainers[0].circularBackbone) {
-                this.repositionCircularBackbone(circuitContainers[0])
+                this.repositionCircularBackboneOrChromosomal(circuitContainers[0])
             }
         } finally {
             this.graph.getModel().endUpdate()
@@ -949,7 +949,7 @@ export class GraphService extends GraphHelpers {
             // if the only cells are the backbone and the circular backbone the right circular backbone needs
             // to be repositioned and the size of the circuit container needs to reflect that
             if (circuitContainer.getGeometry().width == 2) {
-                this.repositionCircularBackbone(circuitContainer)
+                this.repositionCircularBackboneOrChromosomal(circuitContainer)
             }
         } finally {
             this.graph.getModel().endUpdate()
@@ -1005,7 +1005,7 @@ export class GraphService extends GraphHelpers {
             // if the only cells are the backbone and the locus, the right locus needs
             // to be repositioned and the size of the circuit container needs to reflect that
             if (circuitContainer.getGeometry().width == 2) {
-                this.repositionCircularBackbone(circuitContainer)
+                this.repositionCircularBackboneOrChromosomal(circuitContainer)
             }
             this.graph.setSelectionCell(circuitContainer)
         } finally {
