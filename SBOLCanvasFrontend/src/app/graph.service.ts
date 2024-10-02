@@ -529,8 +529,10 @@ export class GraphService extends GraphHelpers {
                             
                             // remove the circular type from "otherTypes" since circular parts are deleted
                             const otherTypes = this.getGlyphInfo(cell.getParent()).otherTypes
-                            const index = otherTypes.indexOf("Circular")
-                            otherTypes.splice(index, 1)
+                            if(otherTypes.includes("Circular")){
+                                const index = otherTypes.indexOf("Circular")
+                                otherTypes.splice(index, 1)
+                            }
                         }
                         circuitContainers.push(cell.getParent())
                     }
@@ -617,7 +619,6 @@ export class GraphService extends GraphHelpers {
         this.graph.clearSelection()
         this.editor.execute('undo')
 
-        // Undo does not affect glyph info, if circular backbone is not present, remove it from "otherTypes" property
         this.removeCircularType()
 
         //console.log(this.editor.undoManager);
@@ -914,14 +915,15 @@ export class GraphService extends GraphHelpers {
 
             const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent()
 
+            
+            // Don't add if circular or locus exists already
+            if(circuitContainer.hasCircularBackbone() || circuitContainer.hasChromosomalLocus()) return
+            
             // Add additional type to Circuit Container if Circular present
             const circuitContainerGlyphInfo = (this.getGlyphInfo(circuitContainer))
             if(!circuitContainerGlyphInfo.otherTypes.includes("Circular")){
                 circuitContainerGlyphInfo.otherTypes.push("Circular")
             }
-
-            // Don't add if circular or locus exists already
-            if(circuitContainer.hasCircularBackbone() || circuitContainer.hasChromosomalLocus()) return
 
             // x is at the beginning of the circuit container
             let x = circuitContainer.getGeometry().x
@@ -975,10 +977,10 @@ export class GraphService extends GraphHelpers {
             }
 
             const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent()
-
+            
             // Don't add if circular or locus exists already
             if(circuitContainer.hasChromosomalLocus() || circuitContainer.hasCircularBackbone()) return
-
+            
             // x is at the beginning of the circuit container
             let x = circuitContainer.getGeometry().x
 

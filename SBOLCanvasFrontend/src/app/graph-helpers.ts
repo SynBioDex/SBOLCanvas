@@ -1899,10 +1899,12 @@ export class GraphHelpers extends GraphBase {
         let allGraphCells = this.graph.getDefaultParent().children
         if (allGraphCells != null) {
             for (let i = 0; i < allGraphCells.length; i++) {
-                if (allGraphCells[i].isCircuitContainer() && !allGraphCells[i].hasCircularBackbone()) {
+                if (allGraphCells[i].isCircuitContainer() && (!allGraphCells[i].hasCircularBackbone() || !allGraphCells[i].hasChromosomalLocus())){
                     const otherTypes = this.getGlyphInfo(allGraphCells[i]).otherTypes
-                    const index = otherTypes.indexOf("Circular")
-                    otherTypes.splice(index, 1)
+                    if(otherTypes.includes("Circular")){
+                        const index = otherTypes.indexOf("Circular")
+                        otherTypes.splice(index, 1)
+                    }
                 }
             }
         }
