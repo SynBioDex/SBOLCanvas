@@ -1272,7 +1272,7 @@ export class GraphBase {
 
                     // special case where an empty circular backbone's circuit container is moved
                     // fixes the containers position and the right circular backbones x position
-                    if ((cell.hasCircularBackbone() || cell.hasChromosomalLocus() && cell.children.length === 3)) {
+                    if ((cell.hasCircularBackbone() || cell.hasChromosomalLocus()) && cell.children.length === 3) {
                         this.repositionCircularBackboneOrChromosomal(cell)
                     }
                 }
