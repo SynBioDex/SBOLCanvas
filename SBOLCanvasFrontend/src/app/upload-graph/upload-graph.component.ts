@@ -6,6 +6,7 @@ import { FilesService } from '../files.service';
 import { LoginService } from '../login.service';
 import { GraphService } from '../graph.service';
 import { CollectionCreationComponent } from '../collection-creation/collection-creation.component';
+import { AddRegistryComponentComponent } from '../add-registry-component/add-registry-component.component';
 
 @Component({
   selector: 'app-upload-graph',
@@ -116,6 +117,10 @@ export class UploadGraphComponent implements OnInit {
       if(result)
         this.updateCollections();
     });
+  }
+
+  onAddRegistryClick(){
+    this.dialog.open(AddRegistryComponentComponent)
   }
 
   onFileSelected(){
