@@ -41,8 +41,7 @@ export class GlyphInfo extends Info {
         this.otherTypes = []
 
         // try to make a prefix from the part role
-        const partRolePrefix = partRole && (partRole.match(/(\w+?) \(/) || [])[1];
-
+        const partRolePrefix = partRole && (partRole.match(/^(\w+)/)|| [])[1];
         // generate id
         this.displayID = id || partRolePrefix ?
             `${partRolePrefix}_${customAlphabet(alphanumeric, 4)()}` :      // either use prefix and short ID

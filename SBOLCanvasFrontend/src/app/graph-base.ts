@@ -52,6 +52,11 @@ export class GraphBase {
 
     static readonly STYLE_CIRCUIT_CONTAINER = 'circuitContainer';
     static readonly STYLE_CIRCULAR_BACKBONE = 'sequenceFeatureGlyphCir';
+    static readonly STYLE_CIRCULAR_BACKBONE_LEFT = 'Cir (Circular Backbone Left)';
+    static readonly STYLE_CIRCULAR_BACKBONE_RIGHT = 'Cir (Circular Backbone Right)';
+    static readonly STYLE_CHROMOSOMAL_LOCUS = 'sequenceFeatureGlyphChromo';
+    static readonly ROLE_CHROMOSOMAL_LOCUS_LEFT = 'Chromosomal Locus (Left)';
+    static readonly ROLE_CHROMOSOMAL_LOCUS_RIGHT = 'Chromosomal Locus (Right)';
     static readonly STYLE_BACKBONE = 'backbone';
     static readonly STYLE_TEXTBOX = 'textBox';
     static readonly STYLE_MODULE = 'moduleGlyph';
@@ -277,6 +282,7 @@ export class GraphBase {
         // We want it to match the order of the children's geometries
         const defaultDecodeCell = mx.mxCodec.prototype.decodeCell
         let leftCirFound = false
+        let leftChromosomalFound = false
         mx.mxCodec.prototype.decodeCell = function (node, restoreStructures) {
             const cell = defaultDecodeCell.apply(this, arguments)
             
@@ -327,22 +333,41 @@ export class GraphBase {
                             cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole
                         } else {
                             cell.style = cell.style.replace(GraphBase.STYLE_SEQUENCE_FEATURE, GraphBase.STYLE_SEQUENCE_FEATURE + glyphDict[cell.value].partRole)
-                                                        
+                            
                             // Fixes visual bugs when importing a circular backbone
                             if(cell.isCircularBackbone()){
                                 cell.geometry.width = 1
                                 if(!leftCirFound){
-                                    cell.style = "sequenceFeatureGlyphCir (Circular Backbone Left)"
+                                    cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.STYLE_CIRCULAR_BACKBONE_LEFT
                                     cell.stayAtBeginning = true
                                     leftCirFound = true
                                     cell.geometry.x = 0
                                 }
                                 else{
-                                    cell.style = "sequenceFeatureGlyphCir (Circular Backbone Right)"
+                                    cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.STYLE_CIRCULAR_BACKBONE_RIGHT
                                     cell.stayAtEnd = true
                                     leftCirFound = false
-                                }                                
+                                }             
                             }
+                            
+                            // Fixes visual bugs and glyph info when importing a chromosomal locus
+                            if(cell.isChromosomalLocus()){
+                                cell.geometry.width = 1
+                                if(!leftChromosomalFound){
+                                    cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.ROLE_CHROMOSOMAL_LOCUS_LEFT
+                                    leftChromosomalFound = true
+                                    cell.geometry.x = 0
+                                    glyphDict[cell.value].partRole = GraphBase.ROLE_CHROMOSOMAL_LOCUS_LEFT
+                                }
+                                else{
+                                    cell.style = GraphBase.STYLE_SEQUENCE_FEATURE + GraphBase.ROLE_CHROMOSOMAL_LOCUS_RIGHT
+                                    cell.stayAtEnd = true
+                                    leftChromosomalFound = false
+                                    glyphDict[cell.value].partRole = GraphBase.ROLE_CHROMOSOMAL_LOCUS_RIGHT
+                                    
+                                }   
+                            }
+                             
                         }
                         if (cell.geometry.width == 0)
                             cell.geometry.width = GraphBase.sequenceFeatureGlyphWidth
@@ -420,6 +445,10 @@ export class GraphBase {
             return this.isStyle(GraphBase.STYLE_CIRCULAR_BACKBONE)
         }
 
+        mx.mxCell.prototype.isChromosomalLocus = function () {
+            return this.isStyle(GraphBase.STYLE_CHROMOSOMAL_LOCUS)
+        }
+
         mx.mxCell.prototype.isSequenceFeatureGlyph = function () {
             return this.isStyle(GraphBase.STYLE_SEQUENCE_FEATURE)
         }
@@ -467,10 +496,24 @@ export class GraphBase {
         /**
          * Returns true if there is a circular backbone on the current circuit container
         */
-        mx.mxCell.prototype.isCircularBackboneOnCircuitContainer = function() {
+        mx.mxCell.prototype.hasCircularBackbone = function() {
         if (this.isCircuitContainer()) {
             for (let cell of this.children) {
                 if (cell.isCircularBackbone()) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+        /**
+         * Returns true if a Chromosomal Locus is present
+         */
+        mx.mxCell.prototype.hasChromosomalLocus = function() {
+        if (this.isCircuitContainer()) {
+            for (let cell of this.children) {
+                if (cell.isChromosomalLocus()) {
                     return true
                 }
             }
@@ -1229,16 +1272,16 @@ export class GraphBase {
 
                     // special case where an empty circular backbone's circuit container is moved
                     // fixes the containers position and the right circular backbones x position
-                    if ((cell.isCircularBackboneOnCircuitContainer() && cell.children.length === 3)) {
-                        this.repositionCircularBackbone(cell)
+                    if ((cell.hasCircularBackbone() || cell.hasChromosomalLocus()) && cell.children.length === 3) {
+                        this.repositionCircularBackboneOrChromosomal(cell)
                     }
                 }
 
                 // special case where a circular backbone is repositioned within a circuit container
-                if (movedCells[0].getParent().isCircularBackboneOnCircuitContainer()
+                if ((movedCells[0].getParent().hasCircularBackbone() || movedCells[0].getParent().hasChromosomalLocus())
                     && movedCells.filter(cell => cell.stayAtBeginning || cell.stayAtEnd).length > 0
                     && movedCells[0].getParent().children.length === 3) {
-                    this.repositionCircularBackbone(movedCells[0].getParent())
+                    this.repositionCircularBackboneOrChromosomal(movedCells[0].getParent())
                 }
 
                 // change ownership

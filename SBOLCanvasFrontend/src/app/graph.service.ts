@@ -361,7 +361,7 @@ export class GraphService extends GraphHelpers {
     enterGlyph() {
         let selection = this.graph.getSelectionCells()
 
-        if (selection.length != 1) {
+        if (selection.length != 1 || selection[0].isChromosomalLocus()) {
             return
         }
 
@@ -469,10 +469,25 @@ export class GraphService extends GraphHelpers {
      * Deletes the currently selected cell
      */
     async delete() {
-        const selectedCells = this.graph.getSelectionCells()
+        let selectedCells = this.graph.getSelectionCells()
+        
         if (selectedCells == null) {
             return
         }
+
+        // If one side of a chromosomal locus is deleted, delete the other side
+        const newSelectionCells = selectedCells.map((cell) =>{
+            if(cell.isChromosomalLocus()){
+                const circuitContainer = cell.getParent()
+                const otherSide = cell.stayAtBeginning ? circuitContainer.children.at(-1) : circuitContainer.children[1]
+                return otherSide
+            }
+            return cell
+           
+        })
+
+        this.graph.setSelectionCells([...selectedCells, ...newSelectionCells])
+        selectedCells = this.graph.getSelectionCells()
 
         // check for ownership prompt
         let containers = new Set<string>()
@@ -514,8 +529,10 @@ export class GraphService extends GraphHelpers {
                             
                             // remove the circular type from "otherTypes" since circular parts are deleted
                             const otherTypes = this.getGlyphInfo(cell.getParent()).otherTypes
-                            const index = otherTypes.indexOf("Circular")
-                            otherTypes.splice(index, 1)
+                            if(otherTypes.includes("Circular")){
+                                const index = otherTypes.indexOf("Circular")
+                                otherTypes.splice(index, 1)
+                            }
                         }
                         circuitContainers.push(cell.getParent())
                     }
@@ -540,7 +557,7 @@ export class GraphService extends GraphHelpers {
                         } else if (cell.isCircuitContainer()) {
                             circuitContainer = cell
                         }
-
+                        
                         // If we find a backbone is selected, add all it's children
                         if (circuitContainer.children) {
                             for (let child of circuitContainer.children) {
@@ -584,7 +601,7 @@ export class GraphService extends GraphHelpers {
             // repositions the circular backbone if the circular backbone is now empty
             if (circuitContainers.length > 0 && circuitContainers[0].children.length === 3
                 && circuitContainers[0].circularBackbone) {
-                this.repositionCircularBackbone(circuitContainers[0])
+                this.repositionCircularBackboneOrChromosomal(circuitContainers[0])
             }
         } finally {
             this.graph.getModel().endUpdate()
@@ -602,7 +619,6 @@ export class GraphService extends GraphHelpers {
         this.graph.clearSelection()
         this.editor.execute('undo')
 
-        // Undo does not affect glyph info, if circular backbone is not present, remove it from "otherTypes" property
         this.removeCircularType()
 
         //console.log(this.editor.undoManager);
@@ -648,7 +664,6 @@ export class GraphService extends GraphHelpers {
     */
     copy(){
         mx.mxClipboard.copy(this.graph, this.graph.getSelectionCells())
-        console.log(this.graph.getSelectionCell())
     }
     
     // Map old cells to newly created cells in the paste method 
@@ -699,9 +714,8 @@ export class GraphService extends GraphHelpers {
                         
                         const childCellName = childCell.style.split("Glyph")[1]?.split(";")[0]?.trim()
                         
-                        // Circular Backbone be added after all other children are created
-                        // Prevents both the left and right side from being added
-                        if(!childCell.isCircularBackbone()){
+                        // Circular Backbone/Chromosomal Locus should be added using their own specific methods
+                        if(!childCell.isCircularBackbone() && !childCell.isChromosomalLocus()){
                             this.addSequenceFeature(childCellName)
                         }
                         
@@ -717,8 +731,11 @@ export class GraphService extends GraphHelpers {
                 }
                 const newCircuitContainer = selectedCell().parent
 
-                if(cell.isCircularBackboneOnCircuitContainer()){
+                if(cell.hasCircularBackbone()){
                     await this.addCircularPlasmid()
+                }
+                else if(cell.hasChromosomalLocus()){
+                    await this.addChromosomalLocus()
                 }
                 selectAll.push(newCircuitContainer)
                 newCircuitContainer.geometry.x = x
@@ -898,14 +915,15 @@ export class GraphService extends GraphHelpers {
 
             const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent()
 
+            
+            // Don't add if circular or locus exists already
+            if(circuitContainer.hasCircularBackbone() || circuitContainer.hasChromosomalLocus()) return
+            
             // Add additional type to Circuit Container if Circular present
             const circuitContainerGlyphInfo = (this.getGlyphInfo(circuitContainer))
             if(!circuitContainerGlyphInfo.otherTypes.includes("Circular")){
                 circuitContainerGlyphInfo.otherTypes.push("Circular")
             }
-
-            // there cannot be more than one circular backbone on a circuit container
-            if(circuitContainer.isCircularBackboneOnCircuitContainer()) return
 
             // x is at the beginning of the circuit container
             let x = circuitContainer.getGeometry().x
@@ -917,7 +935,7 @@ export class GraphService extends GraphHelpers {
             const circCellLeft = await this.addSequenceFeatureAt("Cir (Circular Backbone Left)",
                 x, y, circuitContainer, {
                 connectable: false,
-                glyphWidth: 1,
+                glyphWidth: 1
             })
             circCellLeft.stayAtBeginning = true
 
@@ -933,8 +951,65 @@ export class GraphService extends GraphHelpers {
             // if the only cells are the backbone and the circular backbone the right circular backbone needs
             // to be repositioned and the size of the circuit container needs to reflect that
             if (circuitContainer.getGeometry().width == 2) {
-                this.repositionCircularBackbone(circuitContainer)
+                this.repositionCircularBackboneOrChromosomal(circuitContainer)
             }
+        } finally {
+            this.graph.getModel().endUpdate()
+        }
+    }
+    async addChromosomalLocus() {
+        this.graph.getModel().beginUpdate()
+        try {
+            if (!this.atLeastOneCircuitContainerInGraph()) {
+                // if there is no strand, quietly make one
+                // stupid user
+                this.addBackbone()
+                // this changes the selection, so the rest of this method works fine
+            }
+
+            // let the graph choose an arbitrary cell from the selection,
+            // we'll pretend it's the only one selected
+            const selection = this.graph.getSelectionCell()
+
+            // if selection is nonexistent, or is not part of a strand, there is no suitable place.
+            if (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer())) {
+                return
+            }
+
+            const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent()
+            
+            // Don't add if circular or locus exists already
+            if(circuitContainer.hasChromosomalLocus() || circuitContainer.hasCircularBackbone()) return
+            
+            // x is at the beginning of the circuit container
+            let x = circuitContainer.getGeometry().x
+
+            // use y coord of the strand
+            let y = circuitContainer.getGeometry().y
+
+            // add the left side of the chromosomal cell
+            const chromosomalCellLeft = await this.addSequenceFeatureAt("Chromosomal Locus (Left)",
+                x, y, circuitContainer, {
+                connectable: false,
+                glyphWidth: 1
+            })
+            chromosomalCellLeft.stayAtBeginning = true
+
+            // add the right side of the chromosomal cell
+            const chromosomalCellRight = await this.addSequenceFeatureAt("Chromosomal Locus (Right)",
+                x + circuitContainer.getGeometry().width, y,
+                circuitContainer, {
+                connectable: false,
+                glyphWidth: 1,
+            })
+            chromosomalCellRight.stayAtEnd = true
+            
+            // if the only cells are the backbone and the locus, the right locus needs
+            // to be repositioned and the size of the circuit container needs to reflect that
+            if (circuitContainer.getGeometry().width == 2) {
+                this.repositionCircularBackboneOrChromosomal(circuitContainer)
+            }
+            this.graph.setSelectionCell(circuitContainer)
         } finally {
             this.graph.getModel().endUpdate()
         }
@@ -1003,7 +1078,7 @@ export class GraphService extends GraphHelpers {
             this.addToInfoDict(glyphInfo)
 
             // if the container is a circular backbone then both sides should have the same cellValue
-            if (glyphWidth == 1) {
+            if (glyphWidth == 1 && circuitContainer.hasCircularBackbone()) {
                 circuitContainer.children
                     .filter(cell => cell.stayAtBeginning)
                     .forEach(child => {

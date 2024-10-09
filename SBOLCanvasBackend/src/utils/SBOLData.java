@@ -44,6 +44,7 @@ public class SBOLData {
 		types.put("RNA region", ComponentDefinition.RNA_REGION);
 		types.put("Small molecule", ComponentDefinition.SMALL_MOLECULE);
 		types.put("Circular", URI.create("http://identifiers.org/so/SO:0000988"));
+		types.put("Chromosomal", URI.create("http://identifiers.org/so/SO:0000830"));
 		
 		roles = new BiMap<String, URI>();
 		roles.put("Gen (Engineered Region)", SequenceOntology.ENGINEERED_REGION);
@@ -54,6 +55,8 @@ public class SBOLData {
 		roles.put("Cir (Circular Backbone)", URI.create("http://identifiers.org/so/SO:0000755"));
 		roles.put("Cir (Circular Backbone Left)", URI.create("http://identifiers.org/so/SO:0000755"));
 		roles.put("Cir (Circular Backbone Right)", URI.create("http://identifiers.org/so/SO:0000755"));
+		roles.put("Chromosomal Locus (Left)", URI.create("http://identifiers.org/so/SO:0000830"));
+		roles.put("Chromosomal Locus (Right)", URI.create("http://identifiers.org/so/SO:0000830"));
 		roles.put("gRNA (Non-Coding RNA gene)", URI.create("http://identifiers.org/so/SO:0001263"));
 		roles.put("Ori (Origin of Replication)", SequenceOntology.ORIGIN_OF_REPLICATION);
 		roles.put("OriT (Origin of Transfer)", URI.create("http://identifiers.org/so/SO:0000724"));
