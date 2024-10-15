@@ -12,14 +12,14 @@ import { MatButton } from '@angular/material/button';
   selector: 'app-add-registry-component',
   standalone: true,
   imports: [MatCardModule, MatFormField, FormsModule, MatInputModule, MatButton],
-  templateUrl: './add-registry-component.component.html',
-  styleUrl: './add-registry-component.component.css'
+  templateUrl: './add-registry.component.html',
+  styleUrl: './add-registry.component.css'
 })
-export class AddRegistryComponentComponent {
+export class AddRegistryComponent {
   registryURL: string
   registries: string[] = []
 
-  constructor(public dialogRef: MatDialogRef<AddRegistryComponentComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {
+  constructor(public dialogRef: MatDialogRef<AddRegistryComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {
     if(data){
       this.registryURL = data.registry;
     }

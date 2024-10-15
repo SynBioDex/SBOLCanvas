@@ -6,7 +6,8 @@ import { FilesService } from '../files.service';
 import { LoginService } from '../login.service';
 import { GraphService } from '../graph.service';
 import { CollectionCreationComponent } from '../collection-creation/collection-creation.component';
-import { AddRegistryComponentComponent } from '../add-registry-component/add-registry-component.component';
+import { AddRegistryComponent } from '../add-registry-component/add-registry.component';
+import { DeleteRegistryComponent } from '../delete-registry/delete-registry.component';
 
 @Component({
   selector: 'app-upload-graph',
@@ -17,6 +18,7 @@ export class UploadGraphComponent implements OnInit {
 
   registries: string[];
   registry: string;
+  defaultRegistry: string[];
   collections = new MatTableDataSource([]);
   collection: string;
   componentMode: boolean;
@@ -45,6 +47,8 @@ export class UploadGraphComponent implements OnInit {
     this.working = true;
     this.filesService.getRegistries().subscribe(result => {
       this.registries = result;
+      this.defaultRegistry = result
+      this.updateRegistries()
       this.working = false;
     });
     this.collections.sort = this.sort;
@@ -120,7 +124,18 @@ export class UploadGraphComponent implements OnInit {
   }
 
   onAddRegistryClick(){
-    this.dialog.open(AddRegistryComponentComponent)
+    const dialogRef = this.dialog.open(AddRegistryComponent)
+    dialogRef.afterClosed().subscribe(() =>{
+      this.updateRegistries()
+    })
+
+  }
+  
+  onDeleteRegistryClick(){
+    const dialogRef = this.dialog.open(DeleteRegistryComponent)
+    dialogRef.afterClosed().subscribe(() =>{
+      this.updateRegistries()
+    })
   }
 
   onFileSelected(){
@@ -138,6 +153,14 @@ export class UploadGraphComponent implements OnInit {
       });
     } else {
       this.collections.data = [];
+    }
+  }
+
+  updateRegistries(){
+    if(localStorage.getItem("registries")){
+      // Add Registries on localStorage
+      const additionalRegistries = JSON.parse(localStorage.getItem("registries"))
+      this.registries = [...this.defaultRegistry, ...additionalRegistries]
     }
   }
 

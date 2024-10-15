@@ -66,6 +66,9 @@
       <button *ngIf="importMode" mat-button [disabled]="!finishCheck()" (click)="onImportClick()">Import</button>
       <button mat-button [disabled]="!createCollectionCheck()" (click)="onCreateCollectionClick()">Create Collection</button>
       <button mat-button (click)="onAddRegistryClick()">Add Registry</button>
+      @if (registries?.length > 1) {
+        <button mat-button (click)="onDeleteRegistryClick()">Delete Registries</button>
+      }
     </div>
   </mat-card-content>
 
