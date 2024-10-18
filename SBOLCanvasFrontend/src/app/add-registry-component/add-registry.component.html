@@ -4,11 +4,16 @@
       <div class="mat-form-field-container">
         <mat-form-field>
           <input matInput 
+          type="url"
+          pattern="https?://.+"
           #registryURLInput="ngModel" 
           required 
           [(ngModel)] = "registryURL" 
           placeholder="Registry URL"
           />
+        <mat-error>
+          Must be URL
+        </mat-error>
         </mat-form-field>
       </div>
       <div mat-dialog-actions>

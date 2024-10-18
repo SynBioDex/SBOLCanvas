@@ -18,7 +18,7 @@ export class UploadGraphComponent implements OnInit {
 
   registries: string[];
   registry: string;
-  defaultRegistry: string[];
+  defaultRegistries: string[];
   collections = new MatTableDataSource([]);
   collection: string;
   componentMode: boolean;
@@ -47,7 +47,7 @@ export class UploadGraphComponent implements OnInit {
     this.working = true;
     this.filesService.getRegistries().subscribe(result => {
       this.registries = result;
-      this.defaultRegistry = result
+      this.defaultRegistries = [...this.registries];
       this.updateRegistries()
       this.working = false;
     });
@@ -160,7 +160,7 @@ export class UploadGraphComponent implements OnInit {
     if(localStorage.getItem("registries")){
       // Add Registries on localStorage
       const additionalRegistries = JSON.parse(localStorage.getItem("registries"))
-      this.registries = [...this.defaultRegistry, ...additionalRegistries]
+      this.registries = [...this.defaultRegistries, ...additionalRegistries]
     }
   }
 
