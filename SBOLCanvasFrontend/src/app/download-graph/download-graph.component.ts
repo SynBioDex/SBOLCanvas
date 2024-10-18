@@ -11,6 +11,8 @@ import { forkJoin, Subscription } from 'rxjs';
 import { IdentifiedInfo } from '../identifiedInfo';
 import { FuncCompSelectorComponent } from '../func-comp-selector/func-comp-selector.component';
 import { SelectionModel } from '@angular/cdk/collections';
+import { AddRegistryComponent } from '../add-registry-component/add-registry.component';
+import { DeleteRegistryComponent } from '../delete-registry/delete-registry.component';
 
 @Component({
   selector: 'app-download-graph',
@@ -42,6 +44,7 @@ export class DownloadGraphComponent implements OnInit {
 
   registries: string[];
   registry: string;
+  defaultRegistries: string[];
   partTypes: string[];
   history: any[];
   partRoles: string[];
@@ -117,6 +120,8 @@ export class DownloadGraphComponent implements OnInit {
       this.mode = DownloadGraphComponent.DOWNLOAD_MODE;
       this.filesService.getRegistries().subscribe(registries => {
         this.registries = registries;
+        this.defaultRegistries = [...registries]
+        this.updateRegistries()
         this.working = false;
       });
     }
@@ -141,6 +146,7 @@ export class DownloadGraphComponent implements OnInit {
   setRegistry(registry: string) {
     this.registry = registry;
     localStorage.setItem('1registry', this.registry)
+    this.reset()
     this.updateParts();
   }
 
@@ -373,8 +379,9 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   reset(){
-
-    localStorage.clear()
+    // Clear collection history, this will also be called when users switch Registries
+    localStorage.removeItem("3collection_history")
+    localStorage.removeItem("3collection")
     this.collection= ''
     this.registry = ''
     this.history = []
@@ -490,4 +497,26 @@ export class DownloadGraphComponent implements OnInit {
     return true;
   }
 
+  updateRegistries(){
+    if(localStorage.getItem("registries")){
+      // Add Registries on localStorage
+      const additionalRegistries = JSON.parse(localStorage.getItem("registries"))
+      this.registries = [...this.defaultRegistries, ...additionalRegistries]
+    }
+  }
+
+  onAddRegistryClick(){
+    const dialogRef = this.dialog.open(AddRegistryComponent)
+    dialogRef.afterClosed().subscribe(() =>{
+      this.updateRegistries()
+    })
+
+  }
+  
+  onDeleteRegistryClick(){
+    const dialogRef = this.dialog.open(DeleteRegistryComponent)
+    dialogRef.afterClosed().subscribe(() =>{
+      this.updateRegistries()
+    })
+  }
 }
