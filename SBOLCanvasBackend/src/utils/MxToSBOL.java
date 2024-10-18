@@ -167,26 +167,25 @@ public class MxToSBOL extends Converter {
 		for (mxCell viewCell : viewCells) {
 			mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
 			.toArray(mxCell[]::new);
-			
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 			.toArray(mxCell[]::new);
 
-			for (mxCell circuitContainer : circuitContainers) {
-				
-				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null)
-				continue;
-
+			for (mxCell circuitContainer : circuitContainers) {				
 				Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
+
 				mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
 				.toArray(mxCell[]::new);
-
-				// Create Component Definition for the container itself
-				createComponentDefinition(document, graph, model, circuitContainer);
-
+	
 				for(mxCell glyph: glyphs){
 					createComponentDefinition(document, graph, model, glyph);
 				}
-				
+
+				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null){
+					continue;
+				}
+
+				// Create Component Definition for the container itself
+				createComponentDefinition(document, graph, model, circuitContainer);
 			}
 		}
 		
