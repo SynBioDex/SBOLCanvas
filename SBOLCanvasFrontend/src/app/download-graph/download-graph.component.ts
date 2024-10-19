@@ -113,6 +113,8 @@ export class DownloadGraphComponent implements OnInit {
       } else {
         this.filesService.getRegistries().subscribe(registries => {
           this.registries = registries;
+          this.defaultRegistries = [...this.registries]
+          this.updateRegistries()
           this.working = false;
         });
       }

@@ -5,7 +5,7 @@
       <div class="mat-form-field-container">
         <mat-form-field>
             <mat-label>Registries</mat-label>
-            <mat-select panelWidth="null" [(value)]="deletedRegistries">
+            <mat-select panelWidth="null" multiple [(value)]="deletedRegistries">
               @for (registry of registries; track $index) {
                 <mat-option [value]="registry">{{registry}}</mat-option>
               }
