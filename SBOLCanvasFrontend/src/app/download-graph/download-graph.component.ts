@@ -105,6 +105,8 @@ export class DownloadGraphComponent implements OnInit {
           this.metadataService.loadRefinements(this.partRole)
         ).subscribe(results => {
           this.registries = results[0];
+          this.defaultRegistries = [...this.registries]
+          this.updateRegistries()
           this.partTypes = results[1];
           this.partRoles = results[2];
           this.roleRefinements = results[3];
