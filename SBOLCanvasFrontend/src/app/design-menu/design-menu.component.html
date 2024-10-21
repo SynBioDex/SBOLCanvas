@@ -3,9 +3,9 @@
 
         <h4>Stroke</h4>
         <mat-grid-list cols="2" rowHeight="52px">
-            <div *ngIf="styleInfo.hasStrokeColor()" [matTooltip]="'Change Color/Opacity of the selected glyph\'s lines'" matTooltipPosition= "left">
+            <div *ngIf="styleInfo.hasStrokeColor()" [matTooltip]="'Color of the selected glyph\'s lines'">
                 <mat-grid-tile>
-                    <div fxFlex fxLayoutAlign="end">Color/Opacity: </div>
+                    <div fxFlex fxLayoutAlign="end">Color: </div>
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
@@ -16,7 +16,22 @@
                 </mat-grid-tile>
             </div>
 
-            <div *ngIf="styleInfo.hasStrokeWidth()" [matTooltip]="'Width of the selected glyph\'s lines'" matTooltipPosition = "left">
+            <div *ngIf="styleInfo.hasStrokeOpacity()" [matTooltip]="'Opacity of the selected glyph\'s lines'">
+                <mat-grid-tile>
+                    <div fxFlex fxLayoutAlign="end">Opacity: </div>
+                </mat-grid-tile>
+                <mat-grid-tile>
+                    <div fxFlex fxLayoutAlign="end">
+                        <mat-form-field appearance="outline" class="number-input dense-3">
+                            <input id="strokeOpacity" #endSizeInput matInput type="number" min="0" max="100"
+                                oninput="validity.valid||(value='');" (change)="inputChange($event)"
+                                [value]="styleInfo.currentStrokeOpacity()">
+                        </mat-form-field>
+                    </div>
+                </mat-grid-tile>
+            </div>
+
+            <div *ngIf="styleInfo.hasStrokeWidth()" [matTooltip]="'Width of the selected glyph\'s lines'">
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">Width: </div>
                 </mat-grid-tile>
@@ -38,9 +53,9 @@
 
         <h4>Fill</h4>
         <mat-grid-list cols="2" rowHeight="52px">
-            <div *ngIf="styleInfo.hasFillColor()" [matTooltip]="'Change Color/Opacity of the selected glyph\'s interior'" matTooltipPosition= "left">
+            <div *ngIf="styleInfo.hasFillColor()" [matTooltip]="'Color of the selected glyph\'s interior'">
                 <mat-grid-tile>
-                    <div fxFlex fxLayoutAlign="end">Color/Opacity: </div>
+                    <div fxFlex fxLayoutAlign="end">Color: </div>
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
@@ -48,6 +63,22 @@
                             (click)="setFillColorClicked()">&nbsp;</button>
                     </div>
                 </mat-grid-tile>
+            </div>
+
+            <div *ngIf="styleInfo.hasFillOpacity()" [matTooltip]="'Opacity of the selected glyph\'s interior'">
+                <mat-grid-tile>
+                    <div fxFlex fxLayoutAlign="end">Opacity: </div>
+                </mat-grid-tile>
+                <mat-grid-tile>
+                    <div fxFlex fxLayoutAlign="end">
+                        <mat-form-field appearance="outline" class="number-input dense-3">
+                            <input id="fillOpacity" #endSizeInput matInput type="number" min="0" max="100"
+                                oninput="validity.valid||(value='');" (change)="inputChange($event)"
+                                [value]="styleInfo.currentFillOpacity()">
+                        </mat-form-field>
+                    </div>
+                </mat-grid-tile>
+                <br>
             </div>
 
         </mat-grid-list>
@@ -65,8 +96,8 @@
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
-                        <mat-form-field appearance="outline" style="max-width:85px; max-height: 52px;" class="dense-3">
-                            <mat-select id="edgeStyle" value="{{styleInfo.currentEdgeStyle()}}"
+                        <mat-form-field appearance="outline" style="max-width:85px;">
+                            <mat-select class="auto-width" id="edgeStyle" value="{{styleInfo.currentEdgeStyle()}}"
                                 (selectionChange)="dropDownChange($event)">
                                 <mat-select-trigger>
                                     <img src="assets/icons/{{styleInfo.currentEdgeStyle()}}.png" />
@@ -107,7 +138,7 @@
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
-                        <mat-select id="bendStyle" style="max-width: 100px;" class="dense-3"
+                        <mat-select id="bendStyle" style="max-width: 90px;" class="auto-width"
                             value="{{styleInfo.currentBendStyle()}}" (selectionChange)="dropDownChange($event)">
                             <mat-option value="sharp">Sharp</mat-option>
                             <mat-option value="rounded">Rounded</mat-option>
@@ -171,9 +202,9 @@
         
         <h4>Font</h4>
         <mat-grid-list cols="2" rowHeight="52px">
-            <div *ngIf="styleInfo.hasFontColor()" [matTooltip]="'Change Color/Opacity of selected object\'s text'" matTooltipPosition= "left">
+            <div *ngIf="styleInfo.hasFontColor()" [matTooltip]="'Color of selected object\'s text'">
                 <mat-grid-tile>
-                    <div fxFlex fxLayoutAlign="end">Color/Opacity: </div>
+                    <div fxFlex fxLayoutAlign="end">Color: </div>
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
@@ -183,15 +214,28 @@
                 </mat-grid-tile>
             </div>
 
-
-
-            <div *ngIf="styleInfo.hasFontSize()" [matTooltip]="'Size of selected object\'s text'" matTooltipPosition= "left">
+            <div *ngIf="styleInfo.hasFontOpacity()" [matTooltip]="'Opacity of selected object\'s text'">
                 <mat-grid-tile>
-                    <div >Size: </div>
+                    <div fxFlex fxLayoutAlign="end">Opacity: </div>
                 </mat-grid-tile>
                 <mat-grid-tile>
                     <div fxFlex fxLayoutAlign="end">
                         <mat-form-field appearance="outline" class="number-input dense-3">
+                            <input id="fontOpacity" #endSizeInput matInput type="number" min="0" max="100"
+                                oninput="validity.valid||(value='');" (change)="inputChange($event)"
+                                [value]="styleInfo.currentFontOpacity()">
+                        </mat-form-field>
+                    </div>
+                </mat-grid-tile>
+            </div>
+
+            <div *ngIf="styleInfo.hasFontSize()" [matTooltip]="'Size of selected object\'s text'">
+                <mat-grid-tile>
+                    <div fxFlex fxLayoutAlign="end">Size: </div>
+                </mat-grid-tile>
+                <mat-grid-tile>
+                    <div fxFlex fxLayoutAlign="end">
+                        <mat-form-field appearance="outline" class="number-input dense-3" >
                             <input id="fontSize" #endSizeInput matInput type="number" min="1"
                                 oninput="validity.valid||(value='');" (change)="inputChange($event)"
                                 [value]="styleInfo.currentFontSize()">
