@@ -296,9 +296,9 @@ public class SynBioHub extends HttpServlet {
 			}
 			else{
 				response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+				e.printStackTrace();
 			}
 
-			e.printStackTrace();
 		}
 	}
 

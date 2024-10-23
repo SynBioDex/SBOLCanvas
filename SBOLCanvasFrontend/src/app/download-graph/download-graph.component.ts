@@ -441,8 +441,9 @@ export class DownloadGraphComponent implements OnInit {
         // collections and modules
         this.partRequest = forkJoin([
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules")]
-        ).subscribe(parts =>{
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules")])
+          .subscribe({
+          next: (parts) =>{
           let partCache = [];
           parts[0].forEach(part => {
             part.type = DownloadGraphComponent.collectionType;
@@ -454,14 +455,19 @@ export class DownloadGraphComponent implements OnInit {
           });
           this.parts.data = partCache;
           this.working = false;
+        },
+          error: () =>{
+            // Stops the loading bar
+            this.working = false
+          }
         });
       }else{
         // collection, modules, and components
         this.partRequest = forkJoin([
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules"),
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "components")]
-        ).subscribe({
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "components")])
+          .subscribe({
           next:(parts) => {
           let partCache = [];
           parts[0].forEach(part => {
@@ -480,15 +486,8 @@ export class DownloadGraphComponent implements OnInit {
           this.working = false;
         },
         error:(error) =>{
+          // Stops the loading bar
           this.working = false
-
-          // Unauthorized
-          if(error.status == 401){
-            this.dialog.open(ErrorComponent, {data: "Cannot access collections. Try logging in"})  
-          }
-          else{
-            this.dialog.open(ErrorComponent, {data: `Cannot access ${this.registry}`})  
-          }
         }
       });
       }
@@ -525,6 +524,8 @@ export class DownloadGraphComponent implements OnInit {
 
   onAddRegistryClick(){
     const dialogRef = this.dialog.open(AddRegistryComponent)
+    // Check if the added registry can be accessed
+    // Throw error if not a SynBioHub Instance
     dialogRef.afterClosed().subscribe(() =>{
       const lastAddedRegistry = JSON.parse(localStorage.getItem("registries")).pop() 
       this.partRequest = this.filesService.listParts(this.loginService.users[lastAddedRegistry], lastAddedRegistry, this.collection, null, null, "collections")
