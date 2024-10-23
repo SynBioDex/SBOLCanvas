@@ -13,6 +13,7 @@ import { FuncCompSelectorComponent } from '../func-comp-selector/func-comp-selec
 import { SelectionModel } from '@angular/cdk/collections';
 import { AddRegistryComponent } from '../add-registry-component/add-registry.component';
 import { DeleteRegistryComponent } from '../delete-registry/delete-registry.component';
+import { ErrorComponent } from '../error/error.component';
 
 @Component({
   selector: 'app-download-graph',
@@ -418,9 +419,9 @@ export class DownloadGraphComponent implements OnInit {
       if (this.type == DownloadGraphComponent.COMPONENT_TYPE) {
         // collection and components
         let roleOrRefine = this.partRefine != null && this.partRefine.length > 0 ? this.partRefine : this.partRole;
-        this.partRequest = forkJoin(
+        this.partRequest = forkJoin([
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "components")
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "components")]
         ).subscribe(parts => {
           let partCache = [];
        
@@ -438,9 +439,9 @@ export class DownloadGraphComponent implements OnInit {
         })
       } else if(this.type == DownloadGraphComponent.MODULE_TYPE){
         // collections and modules
-        this.partRequest = forkJoin(
+        this.partRequest = forkJoin([
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules")
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules")]
         ).subscribe(parts =>{
           let partCache = [];
           parts[0].forEach(part => {
@@ -456,11 +457,12 @@ export class DownloadGraphComponent implements OnInit {
         });
       }else{
         // collection, modules, and components
-        this.partRequest = forkJoin(
+        this.partRequest = forkJoin([
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections"),
           this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules"),
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "components")
-        ).subscribe(parts => {
+          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "components")]
+        ).subscribe({
+          next:(parts) => {
           let partCache = [];
           parts[0].forEach(part => {
             part.type = DownloadGraphComponent.collectionType;
@@ -476,7 +478,19 @@ export class DownloadGraphComponent implements OnInit {
           })
           this.parts.data = partCache;
           this.working = false;
-        });
+        },
+        error:(error) =>{
+          this.working = false
+
+          // Unauthorized
+          if(error.status == 401){
+            this.dialog.open(ErrorComponent, {data: "Cannot access collections. Try logging in"})  
+          }
+          else{
+            this.dialog.open(ErrorComponent, {data: `Cannot access ${this.registry}`})  
+          }
+        }
+      });
       }
     } else {
       this.parts.data = [];
@@ -512,7 +526,29 @@ export class DownloadGraphComponent implements OnInit {
   onAddRegistryClick(){
     const dialogRef = this.dialog.open(AddRegistryComponent)
     dialogRef.afterClosed().subscribe(() =>{
-      this.updateRegistries()
+      const lastAddedRegistry = JSON.parse(localStorage.getItem("registries")).pop() 
+      this.partRequest = this.filesService.listParts(this.loginService.users[lastAddedRegistry], lastAddedRegistry, this.collection, null, null, "collections")
+      .subscribe({
+      error:(error) =>{
+        this.working = false
+
+        // Simply cannot access the URL, so don't add it to the registry
+        if(error.status !== 401){
+          this.dialog.open(ErrorComponent, {data: `Cannot access ${lastAddedRegistry} and will not be added.`})  
+          const registries = JSON.parse(localStorage.getItem("registries"))
+          registries.pop()
+          localStorage.setItem("registries", JSON.stringify(registries))
+        }
+        // Unauthorized but still add it to the registry, users just need to log in
+        else{
+          this.updateRegistries()
+        }
+      },
+      complete: () =>{
+        // If adding a registry was successful and had no errors
+        this.updateRegistries()
+      }
+    });
     })
 
   }

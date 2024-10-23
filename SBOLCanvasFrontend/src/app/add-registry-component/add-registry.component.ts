@@ -32,7 +32,9 @@ export class AddRegistryComponent {
   onCreateClick() {
     if(localStorage.getItem('registries')){
       this.registries = JSON.parse(localStorage.getItem("registries"));
-      this.registries.push(this.registryURL)
+      if(!this.registries.includes(this.registryURL)){
+        this.registries.push(this.registryURL)
+      }
       localStorage.setItem('registries', JSON.stringify(this.registries))
     }
     else{

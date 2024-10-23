@@ -4,7 +4,7 @@
         <h1 *ngIf="mode != classRef.SELECT_MODE" mat-dialog-title>Download</h1>
         <div class="mat-form-field-container">
           <mat-form-field subscriptSizing = "dynamic">
-            <mat-label>Register</mat-label>
+            <mat-label>Registry</mat-label>
             <mat-select id="registry" [disabled]="registries == null || registries.length < 1"
               (selectionChange)="setRegistry($event.value)" value="{{registry}}">
               <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
