@@ -12,7 +12,7 @@
     <div class="mat-form-field-container">
   
       <mat-form-field>
-        <mat-label>Server</mat-label>
+        <mat-label>Registry</mat-label>
         <mat-select id="registry" [disabled]="registries == null || registries.length < 1"
           (selectionChange)="setRegistry($event.value)">
           <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
@@ -65,6 +65,10 @@
       <button *ngIf="!importMode" mat-button [disabled]="!finishCheck()" (click)="onUploadClick()">Upload</button>
       <button *ngIf="importMode" mat-button [disabled]="!finishCheck()" (click)="onImportClick()">Import</button>
       <button mat-button [disabled]="!createCollectionCheck()" (click)="onCreateCollectionClick()">Create Collection</button>
+      <button mat-button (click)="onAddRegistryClick()">Add Registry</button>
+      @if (registries?.length > 1) {
+        <button mat-button (click)="onDeleteRegistryClick()">Delete Registries</button>
+      }
     </div>
   </mat-card-content>
 

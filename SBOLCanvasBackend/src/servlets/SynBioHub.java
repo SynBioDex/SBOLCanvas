@@ -291,10 +291,14 @@ public class SynBioHub extends HttpServlet {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
 			IOUtils.copy(inputStream, outputStream);
+			if(e.getMessage().equals("org.synbiohub.frontend.PermissionException")){
+				response.setStatus(HttpStatus.SC_UNAUTHORIZED);
+			}
+			else{
+				response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+				e.printStackTrace();
+			}
 
-			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-			
-			e.printStackTrace();
 		}
 	}
 
