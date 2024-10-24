@@ -23,8 +23,6 @@ jobs:
         with:
           submodules: true
           lfs: false
-      - name: Configure git
-        run: sudo git config --system --add safe.directory '*'
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1

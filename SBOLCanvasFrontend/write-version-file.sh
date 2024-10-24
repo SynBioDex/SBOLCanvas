@@ -1,9 +1,11 @@
 #!/bin/bash
 
+git config --global --add safe.directory "$(pwd)"
+git config --system --add safe.directory "$(pwd)"
 git_hash=$(git rev-parse --short "$GITHUB_SHA")
 git_branch=${GITHUB_REF#refs/heads/}
 
-sudo apt-get install jq
+apt-get install jq
 version=$(jq -r '.version' package.json)
 
 file_contents=$(cat <<EOF
