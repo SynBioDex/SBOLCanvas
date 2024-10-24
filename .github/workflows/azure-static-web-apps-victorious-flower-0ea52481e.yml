@@ -24,7 +24,7 @@ jobs:
           submodules: true
           lfs: false
       - name: Write version file
-        run: npm run gitversion -- ${{ github.sha }} ${{ github.head_ref }}
+        run: cd SBOLCanvasFrontend && npm run gitversion -- ${{ github.sha }} ${{ github.head_ref }}
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
