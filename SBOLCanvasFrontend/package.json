@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "bundle-report": "ng build --configuration production --stats-json && webpack-bundle-analyzer dist/SBOLCanvasFrontend/stats.json",
-    "prebuild": "npm rebuild sass && node assetBundler.js && sudo bash ./write-version-file.sh",
+    "prebuild": "npm rebuild sass && node assetBundler.js && bash ./write-version-file.sh",
     "build": "ng build --configuration production --base-href=/canvas/",
     "predev": "npm run prebuild",
     "dev": "ng serve -o",
