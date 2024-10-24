@@ -1,5 +1,5 @@
 export const environment = {
     production: true,
-    backendURL: '/api',
+    backendURL: process.env.CANVAS_BACKEND_URL || '/api',
     baseURI: "https://sbolcanvas.org"
 };
