@@ -74,6 +74,9 @@
                   "maximumError": "5mb"
                 }
               ]
+            },
+            "split": {
+              "sourceMap": true
             }
           }
         },

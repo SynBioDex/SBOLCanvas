@@ -10,7 +10,7 @@ WORKDIR /opt/canvas/SBOLCanvasFrontend
 
 RUN npm install
 RUN npm run gitversion
-RUN npm run build
+RUN npm run build -- --configuration production
 # RUN npm run debug-build
 
 
