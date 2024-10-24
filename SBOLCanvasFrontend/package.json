@@ -7,7 +7,7 @@
     "build": "ng build --configuration production --base-href=/canvas/",
     "predev": "npm run prebuild",
     "dev": "ng serve -o",
-    "gitversion": "ts-node -O \"{\\\"module\\\":\\\"commonjs\\\"}\" git.version.ts",
+    "gitversion": "node git.version.js",
     "postinstall": "patch-package"
   },
   "private": true,
