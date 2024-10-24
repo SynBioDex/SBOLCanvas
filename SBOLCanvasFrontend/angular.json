@@ -76,6 +76,12 @@
               ]
             },
             "split": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.split.ts"
+                }
+              ],
               "sourceMap": true
             }
           }
