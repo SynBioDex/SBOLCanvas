@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - final
+      - frontend-build-fix
+    paths:
+      - '.github/**'
+      - 'SBOLCanvasFrontend/**'
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
@@ -20,7 +24,7 @@ jobs:
           submodules: true
           lfs: false
       - name: Configure git
-        run: sudo git config --system --add safe.directory /github/workspace
+        run: sudo git config --system --add safe.directory '*'
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
