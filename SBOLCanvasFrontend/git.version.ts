@@ -5,9 +5,12 @@ import * as child from 'child_process';
 const exec = promisify(child.exec);
 
 async function createVersionsFile(filename: string) {
-  const revision = (await exec('git rev-parse --short HEAD')).stdout.toString().trim();
-  const branch = (await exec('git rev-parse --abbrev-ref HEAD')).stdout.toString().trim();
-  let version = (await exec('git tag --points-at HEAD')).stdout.toString().trim();
+  const revision = process.argv[2]
+    ?? (await exec('git rev-parse --short HEAD')).stdout.toString().trim();
+  const branch = process.argv[3]
+    ??(await exec('git rev-parse --abbrev-ref HEAD')).stdout.toString().trim();
+  let version = process.env.npm_package_version
+    ?? (await exec('git tag --points-at HEAD')).stdout.toString().trim();
 
   if(version == ''){
     version = 'Latest';
