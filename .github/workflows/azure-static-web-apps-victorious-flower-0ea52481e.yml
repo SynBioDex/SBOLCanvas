@@ -5,6 +5,7 @@ on:
     branches:
       - final
       - frontend-build-fix
+      - fix-tutorial-and-about
     paths:
       - '.github/**'
       - 'SBOLCanvasFrontend/**'
