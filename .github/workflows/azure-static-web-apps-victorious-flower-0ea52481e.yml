@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - final
-      - frontend-build-fix
     paths:
       - '.github/**'
       - 'SBOLCanvasFrontend/**'
