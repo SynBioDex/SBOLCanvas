@@ -7,10 +7,7 @@ on:
     paths:
       - '.github/**'
       - 'SBOLCanvasFrontend/**'
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - final
+
 
 jobs:
   build_and_deploy_job:
