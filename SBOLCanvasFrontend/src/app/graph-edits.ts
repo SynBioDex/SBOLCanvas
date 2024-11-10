@@ -140,7 +140,7 @@ export class GraphEdits {
                 let previousView = this.graphService.viewStack[this.graphService.viewStack.length -1 ];
                 this.graphService.viewStack.push(childViewCell);
                
-                if(childViewCell.getStyle() == 'componentViewCell'){
+                if(childViewCell.getStyle() == 'componentViewCell' || childViewCell.getStyle() == 'moduleViewCell'){
                     this.graphService.tempViewStack.push(childViewCell);
                 }
                

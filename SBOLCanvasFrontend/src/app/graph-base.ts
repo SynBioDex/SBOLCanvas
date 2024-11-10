@@ -99,7 +99,7 @@ export class GraphBase {
     keyHandler: any;
     selectedGlyphInfoName : string;
     selectionGlyphInfoStack: string[] = [];
-    sequenceFeatureDict = {};
+    glyphPreviewDict = {};
     selectedHTMLStack = [];
     clickedSequenceFeature: string;
     selectedHTML : string;
