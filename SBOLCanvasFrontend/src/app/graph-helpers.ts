@@ -1892,6 +1892,22 @@ export class GraphHelpers extends GraphBase {
     }
 
     /**
+     * Returns true if there is a Chromosomal Locus or Circular Backbone
+     * in the current graph view 
+     */
+    protected atLeastOneCircularOrChromosomalInGraph() {
+        let allGraphCells = this.graph.getDefaultParent().children
+        if (allGraphCells != null) {
+            for (let i = 0; i < allGraphCells.length; i++) {
+                if (allGraphCells[i].hasCircularBackbone() || allGraphCells[i].hasChromosomalLocus()) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /**
      * Made specifically for undo, since it does not affect glyph info.
      * Removes "Circular" from the "otherTypes" property of Circuit Containers.
      */
