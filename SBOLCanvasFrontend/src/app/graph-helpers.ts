@@ -901,9 +901,17 @@ export class GraphHelpers extends GraphBase {
         let options = []
         if (viewCell.children) {
             for (let viewChild of viewCell.children) {
-                if (viewChild.isCircuitContainer() || viewChild.isMolecularSpeciesGlyph()) {
-                    let info = <GlyphInfo>this.getFromInfoDict(viewChild.getValue()).makeCopy()
+                if (viewChild.isCircuitContainer()) {
+                    for (let child of viewChild.children){
+                        if (child.isSequenceFeatureGlyph() && !(child.isCircularBackbone() || child.isChromosomalLocus())){
+                            let info = <GlyphInfo>this.getFromInfoDict(child.getValue()).makeCopy()
+                            options.push({ id: viewChild.getId(), info: info })
+                        }
+                    }
                     //TODO if(info.visibility == public && (info.direction == in || inout && from == false) || out)
+                }
+                else if(viewChild.isMolecularSpeciesGlyph()){
+                    let info = <GlyphInfo>this.getFromInfoDict(viewChild.getValue()).makeCopy()
                     options.push({ id: viewChild.getId(), info: info })
                 }
                 //TODO what do we do if it's a module?
