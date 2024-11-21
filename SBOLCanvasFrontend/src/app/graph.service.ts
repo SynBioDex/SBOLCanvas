@@ -1526,6 +1526,12 @@ export class GraphService extends GraphHelpers {
         var bounds = this.graph.getGraphBounds()
         var vs = this.graph.view.scale
 
+        // To prevent the plasmid edges from being cut off in exported images
+        if(this.atLeastOneCircularOrChromosomalInGraph()){
+            bounds.x -= 50
+            bounds.width += 100
+        }
+
         // Prepares SVG document that holds the output
         var svgDoc = mx.mxUtils.createXmlDocument()
         var root = (svgDoc.createElementNS != null) ?
@@ -1579,6 +1585,12 @@ export class GraphService extends GraphHelpers {
         let imgExport = new mx.mxImageExport()
         let bounds = this.graph.getGraphBounds()
         let vs = this.graph.view.scale
+
+        // To prevent the plasmid edges from being cut off in exported images
+        if(this.atLeastOneCircularOrChromosomalInGraph()){
+            bounds.x -= 50
+            bounds.width += 100
+        }
 
         let xmlDoc = mx.mxUtils.createXmlDocument()
         let root = xmlDoc.createElement('output')
