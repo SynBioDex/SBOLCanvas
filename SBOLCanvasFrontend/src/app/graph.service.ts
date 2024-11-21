@@ -376,11 +376,16 @@ export class GraphService extends GraphHelpers {
             viewCell.refreshViewCell(this.graph);
             let zoomEdit = new GraphEdits.zoomEdit(this.graph.getView(), selection[0], this);
             let glyphInfo = (<GlyphInfo>this.getFromInfoDict(selection[0].getValue())); 
-            this.selectedGlyphInfoName = glyphInfo.partRole;
+            if(this.graph.getSelectionCell().isModule()){
+                this.selectedGlyphInfoName = "module";
+            }
+            else{
+                this.selectedGlyphInfoName = glyphInfo.partRole;
+            }
             this.selectionGlyphInfoStack.push(this.selectedGlyphInfoName);
             this.registerSVG(this.selectedGlyphInfoName);
             this.tempHTMLStack = [];
-            this.selectedHTMLStack.push(this.sequenceFeatureDict[this.selectedGlyphInfoName]);
+            this.selectedHTMLStack.push(this.glyphPreviewDict[this.selectedGlyphInfoName]);
             for(let i = 0; i < this.selectedHTMLStack.length - 1; i++){
                 this.tempHTMLStack.push(this.selectedHTMLStack[i]);
             }
@@ -2061,10 +2066,10 @@ export class GraphService extends GraphHelpers {
     }
 
     registerSVG(name: string){
-        const sequenceFeatureElts = this.glyphService.getSequenceFeatureElements(); 
-        let svg = sequenceFeatureElts[name];
-        this.sequenceFeatureDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
-        return this.sequenceFeatureDict[name];
+        const svgs = {...this.glyphService.getSequenceFeatureElements(), ...this.glyphService.getUtilElements()}; 
+        let svg = svgs[name];
+        this.glyphPreviewDict[name] = this.sanitizer.bypassSecurityTrustHtml(svg.innerHTML);
+        return this.glyphPreviewDict[name];
     }
     /**
      * Sets the graph to component definition mode or module mode.

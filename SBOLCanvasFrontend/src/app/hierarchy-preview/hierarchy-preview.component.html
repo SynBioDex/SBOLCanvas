@@ -1,5 +1,5 @@
 <div class="hierarchy-controls">
-    <div *ngIf = '!isModule && getViewStack().length > 1 'class = "level"> <p>{{"Top"}}</p></div>
+    <div *ngIf = 'getViewStack().length > 1 'class = "level"> <p>{{"Top"}}</p></div>
     <div *ngIf = 'getViewStack().length == 1' class = "new" id = "div-new">
         <p > {{"Top"}}</p>
     </div>
