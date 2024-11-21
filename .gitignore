@@ -1,3 +1,4 @@
 desktop.ini
 *.war
 *.class
+.vscode/tasks.json 
