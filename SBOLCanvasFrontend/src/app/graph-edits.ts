@@ -193,9 +193,8 @@ export class GraphEdits {
                 } else {
                     this.glyphCell = previousView;
                 }
-                
-                this.graphService.fitCamera();
             }
+            this.graphService.fitCamera();
         }
     }
 
