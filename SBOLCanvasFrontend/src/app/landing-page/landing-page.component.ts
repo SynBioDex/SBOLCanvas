@@ -19,6 +19,17 @@ export class LandingPageComponent implements OnInit {
     this.version = versions.version;
   }
 
+
+  // Add any additional contributors here
+  contributors: Array<String>  = [
+    "Jared Earl", 
+    "Logan Terry", 
+    "Samuel Thayer", 
+    "Zach Sents", 
+    "Derick Sayavong"
+  ]
+  
+  
   ngOnInit() {
   }
 
