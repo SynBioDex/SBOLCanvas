@@ -22,11 +22,14 @@ export class LandingPageComponent implements OnInit {
 
   // Add any additional contributors here
   contributors: Array<String>  = [
+    "Suhyun Bae",
+    "Samuel Bridge",
     "Jared Earl", 
-    "Logan Terry", 
-    "Samuel Thayer", 
+    "Alex Elbel",
+    "Derick Sayavong",
     "Zach Sents", 
-    "Derick Sayavong"
+    "Logan Terry", 
+    "Samuel Thayer"
   ]
   
   
