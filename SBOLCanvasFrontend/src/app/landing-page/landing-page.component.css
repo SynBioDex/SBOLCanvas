@@ -27,6 +27,10 @@
   font-size: 16pt;
 }
 
+.about-text > u{
+  font-size: 20pt;
+}
+
 .botton-half {
   background: #D3D3D3;
 }
