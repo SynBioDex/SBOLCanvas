@@ -35,14 +35,19 @@ export class GraphService extends GraphHelpers {
     constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService, private sanitizer : DomSanitizer) {
         super(dialog, metadataService, glyphService);
 
+        
+        
         // handle selection changes
         this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange))
-
+        
         // handle double click on glyph to enter it
         this.graph.addListener(mx.mxEvent.DOUBLE_CLICK, mx.mxUtils.bind(this, this.enterGlyph))
-
-
+        
+        
         // --- For when SBOLCanvas is embedded in another app ---
+
+        // Plasmid files from SynBioSuite should only open in Component Mode
+        const plasmidObjectId: string =  "synbio.object-type.plasmid"
 
         // send changes in mxgraph model to parent
         // doing this via an Observable so we can debounce
@@ -51,23 +56,29 @@ export class GraphService extends GraphHelpers {
                 observer.next(this.getGraphXML())
             }))
         })
-            .pipe(debounceTime(100))
-            .subscribe(graphXml => {
-                if (embeddedService.isAppEmbedded()) {
-                    console.debug('[GraphService] Model changed. Sending to parent.')
-                    fileService.exportDesignToString({}, 'SBOL2', graphXml).subscribe(sbol => {
-                        embeddedService.postMessage({ sbol })
-                    })
-                }
-            })
-
+        .pipe(debounceTime(100))
+        .subscribe(graphXml => {
+            if (embeddedService.isAppEmbedded()) {
+                console.debug('[GraphService] Model changed. Sending to parent.')
+                fileService.exportDesignToString({}, 'SBOL2', graphXml).subscribe(sbol => {
+                    embeddedService.postMessage({ sbol })
+                })
+            }
+        })
+        
         // observe changes in parent SBOL
         embeddedService.sbol.subscribe(sbolContent => {
             console.debug('[GraphService] Loading SBOL from external message...')
-            fileService.convertToMxGraph(sbolContent).subscribe(result => {
-                this.setGraphToXML(result)
+            if (!sbolContent.sbol && sbolContent.panelType === plasmidObjectId){ // Account for empty sbol, but plasmids opened
+                this.setComponentDefinitionMode(true);
+            }
+            fileService.convertToMxGraph(sbolContent.sbol).subscribe(result => {
+                this.setGraphToXML(result) // Will automatically set to Module mode, so need to set to component again if plasmid file opened
+                if (sbolContent.panelType === plasmidObjectId){
+                    this.setComponentDefinitionMode(true);
+                }
                 console.debug('[GraphService] Done.')
-
+                
                 // post message back letting parent know it loaded
                 embeddedService.postMessage('graphServiceLoadedSBOL')
             })
