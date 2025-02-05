@@ -26,6 +26,10 @@ export class EmbeddedService {
                 if(source != window) {
                     this.parent = source
 
+                    // Check if no sbol, but plasmids panel was open
+                    if(data && data.panelType && !data.sbol){
+                        observer.next({sbol: null, panelType: data.panelType})
+                    }
                     // check if message includes SBOL
                     if(data && data.sbol) {
                         console.debug('[Embedded] Received SBOL from up above:', data.sbol.substring(0, 20) + '...')

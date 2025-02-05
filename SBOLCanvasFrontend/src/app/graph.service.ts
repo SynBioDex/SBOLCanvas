@@ -69,8 +69,11 @@ export class GraphService extends GraphHelpers {
         // observe changes in parent SBOL
         embeddedService.sbol.subscribe(sbolContent => {
             console.debug('[GraphService] Loading SBOL from external message...')
+            if (!sbolContent.sbol && sbolContent.panelType === plasmidObjectId){ // Account for empty sbol, but plasmids opened
+                this.setComponentDefinitionMode(true);
+            }
             fileService.convertToMxGraph(sbolContent.sbol).subscribe(result => {
-                this.setGraphToXML(result)
+                this.setGraphToXML(result) // Will automatically set to Module mode, so need to set to component again if plasmid file opened
                 if (sbolContent.panelType === plasmidObjectId){
                     this.setComponentDefinitionMode(true);
                 }
