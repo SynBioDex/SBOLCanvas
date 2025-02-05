@@ -45,7 +45,10 @@ export class GraphService extends GraphHelpers {
         
         
         // --- For when SBOLCanvas is embedded in another app ---
-        
+
+        // Plasmid files from SynBioSuite should only open in Component Mode
+        const plasmidObjectId: string =  "synbio.object-type.plasmid"
+
         // send changes in mxgraph model to parent
         // doing this via an Observable so we can debounce
         new Observable<any>(observer => {
@@ -66,20 +69,16 @@ export class GraphService extends GraphHelpers {
         // observe changes in parent SBOL
         embeddedService.sbol.subscribe(sbolContent => {
             console.debug('[GraphService] Loading SBOL from external message...')
-            if (sbolContent.panelType === "synbio.object-type.plasmid"){
-                const isEmbedded = window.self !== window.top;
-                if (isEmbedded) {
-                    this.setComponentDefinitionMode(true);
-                }
-            }
             fileService.convertToMxGraph(sbolContent.sbol).subscribe(result => {
                 this.setGraphToXML(result)
+                if (sbolContent.panelType === plasmidObjectId){
+                    this.setComponentDefinitionMode(true);
+                }
                 console.debug('[GraphService] Done.')
                 
                 // post message back letting parent know it loaded
                 embeddedService.postMessage('graphServiceLoadedSBOL')
             })
-            // this.setComponentDefinitionMode(true)
         })
     }
 

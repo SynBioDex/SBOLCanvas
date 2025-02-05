@@ -28,7 +28,6 @@ export class EmbeddedService {
 
                     // check if message includes SBOL
                     if(data && data.sbol) {
-                        console.log("HSEBHSABED", data.panelType)
                         console.debug('[Embedded] Received SBOL from up above:', data.sbol.substring(0, 20) + '...')
                         observer.next({sbol: data.sbol, panelType: data.panelType });
                     }
