@@ -3,6 +3,10 @@ import { GraphService } from './graph.service'
 import { ActivatedRoute } from '@angular/router'
 import { Observable } from 'rxjs'
 
+type data = {
+    sbol: string,
+    panelType: string
+}
 
 @Injectable({
     providedIn: 'root'
@@ -11,12 +15,12 @@ import { Observable } from 'rxjs'
 export class EmbeddedService {
 
     private parent: any
-    public sbol: Observable<string>
+    public sbol: Observable<data>
 
     constructor(private route: ActivatedRoute) {
 
         // create observable that watches for messages
-        this.sbol = new Observable<string>(observer => {
+        this.sbol = new Observable<data>(observer => {
             window.addEventListener('message', ({data, source}) => {
                 // check that message is coming from external window
                 if(source != window) {
@@ -24,8 +28,9 @@ export class EmbeddedService {
 
                     // check if message includes SBOL
                     if(data && data.sbol) {
+                        console.log("HSEBHSABED", data.panelType)
                         console.debug('[Embedded] Received SBOL from up above:', data.sbol.substring(0, 20) + '...')
-                        observer.next(data.sbol)
+                        observer.next({sbol: data.sbol, panelType: data.panelType });
                     }
                 }
             })
