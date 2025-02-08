@@ -8,9 +8,8 @@ async function createVersionsFile(filename) {
     ?? (await exec('git rev-parse --short HEAD')).stdout.toString().trim();
   const branch = process.argv[3]
     ?? (await exec('git rev-parse --abbrev-ref HEAD')).stdout.toString().trim();
-  let version = process.env.npm_package_version
-    ?? (await exec('git tag --points-at HEAD')).stdout.toString().trim();
-
+  let version = (await exec('git tag --points-at HEAD')).stdout.toString().trim()
+    ?? process.env.npm_package_version;
   if (version == '') {
     version = 'Latest';
   }
