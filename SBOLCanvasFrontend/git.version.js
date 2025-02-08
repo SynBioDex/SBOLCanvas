@@ -1,6 +1,7 @@
 const { writeFileSync } = require('fs');
 const { promisify } = require('util');
 const child = require('child_process');
+const { version } = require('os');
 const exec = promisify(child.exec);
 
 async function createVersionsFile(filename) {
@@ -8,8 +9,16 @@ async function createVersionsFile(filename) {
     ?? (await exec('git rev-parse --short HEAD')).stdout.toString().trim();
   const branch = process.argv[3]
     ?? (await exec('git rev-parse --abbrev-ref HEAD')).stdout.toString().trim();
-  let version = (await exec('git tag --points-at HEAD')).stdout.toString().trim()
-    ?? process.env.npm_package_version;
+  
+  let version = ''
+  try{
+    const {stdout} = (await exec('git describe --tags --abbrev=0')) 
+    version = stdout.trim()
+  }
+  catch{
+    version = process.env.npm_package_version
+  }
+
   if (version == '') {
     version = 'Latest';
   }
