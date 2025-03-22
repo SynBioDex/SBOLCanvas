@@ -1711,7 +1711,7 @@ export class GraphService extends GraphHelpers {
                 || selectionCells[0].isModule())) ||
                 (selectionCells.length == 2 && selectionCells[0].isCircularBackbone())) {
             // We're making a new cell to replace the selected one
-            let selectedCircularCells: mxCell[] = [] // Used only if importing Ciruclar Backbones
+            let selectedCircularCells: mxCell[] = undefined // Used only if importing Ciruclar Backbones
             let selectedCell
             if (selectionCells.length > 0) {
                 selectedCell = selectionCells[0]
@@ -1781,8 +1781,10 @@ export class GraphService extends GraphHelpers {
                     // generated cells don't have a proper geometry
                     newCell.setStyle(selectedCell.getStyle())
                     this.graph.getModel().setGeometry(newCell, selectedCell.geometry)
-                    console.log(newCell)
-                    newCell.stayAtBeginning = true
+                    if(selectedCell.isCircularBackbone()){
+                        newCell.stayAtBeginning = true
+                        selectedCircularCells[0].value = newCell.value // right side of the backbone should have same value as left side
+                    }
 
                     // add new cell to the graph
                     this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell))
@@ -1855,10 +1857,7 @@ export class GraphService extends GraphHelpers {
                         this.removeFromInfoDict(viewCells[i].getId())
                     }
                     this.addToInfoDict(subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()])
-                    // Sync up the right side of a circular backbone to have the same info
-                    if(selectedCircularCells){
-                        this.getGlyphInfo(selectedCircularCells[0]).name = subGlyphDict[GraphBase.INFO_DICT_INDEX][viewCells[i].getId()].displayID
-                    }
+
                     // add any molecular species or interactions to the info dict
                     for (let child of viewClone.children) {
                         if (child.isMolecularSpeciesGlyph()) {
