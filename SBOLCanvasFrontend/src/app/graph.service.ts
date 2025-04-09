@@ -1703,17 +1703,27 @@ export class GraphService extends GraphHelpers {
      */
     async setSelectedToXML(cellString: string) {
         const selectionCells = this.graph.getSelectionCells()
-
-        if (selectionCells.length == 0 || (selectionCells.length == 1 && (selectionCells[0].isSequenceFeatureGlyph() || selectionCells[0].isMolecularSpeciesGlyph() || selectionCells[0].isCircuitContainer() || selectionCells[0].isModule()))) {
+        if (selectionCells.length == 0 || 
+            (selectionCells.length == 1 && 
+                (selectionCells[0].isSequenceFeatureGlyph() 
+                || selectionCells[0].isMolecularSpeciesGlyph() 
+                || selectionCells[0].isCircuitContainer() 
+                || selectionCells[0].isModule())) ||
+                (selectionCells.length == 2 && selectionCells[0].isCircularBackbone())) {
             // We're making a new cell to replace the selected one
+            let selectedCircularCells: mxCell[] = undefined // Used only if importing Ciruclar Backbones
             let selectedCell
             if (selectionCells.length > 0) {
                 selectedCell = selectionCells[0]
+            
+            if (selectionCells.length == 2 && selectionCells[1].isCircularBackbone() && selectionCells[0].isCircularBackbone()){
+                selectedCircularCells = selectionCells
+                selectedCell = selectionCells[1] // The left part of the backbone
+            }
             } else {
                 // nothing selected means we're replacing the view cell
                 selectedCell = this.graph.getCurrentRoot()
             }
-
             this.graph.getModel().beginUpdate()
             try {
                 let inModuleView = this.graph.getCurrentRoot().isModuleView()
@@ -1764,13 +1774,17 @@ export class GraphService extends GraphHelpers {
                 // not part of a module or a top level component definition
                 // Molecular species should not be able to be transformed into other part roles
                 let origParent;
-                if (selectedCell.isSequenceFeatureGlyph() || (selectedCell.isMolecularSpeciesGlyph() && newCell.isMolecularSpeciesGlyph())) {
+                if (selectedCell.isSequenceFeatureGlyph() || (selectedCell.isMolecularSpeciesGlyph() && newCell.isMolecularSpeciesGlyph() || selectedCell.isCircularBackbone())) {
                     // store old cell's parent
                     origParent = selectedCell.getParent()
 
                     // generated cells don't have a proper geometry
                     newCell.setStyle(selectedCell.getStyle())
                     this.graph.getModel().setGeometry(newCell, selectedCell.geometry)
+                    if(selectedCell.isCircularBackbone()){
+                        newCell.stayAtBeginning = true
+                        selectedCircularCells[0].value = newCell.value // right side of the backbone should have same value as left side
+                    }
 
                     // add new cell to the graph
                     this.graph.getModel().add(origParent, newCell, origParent.getIndex(selectedCell))

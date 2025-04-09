@@ -268,10 +268,12 @@ public class SBOLToMx extends Converter {
 			Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
 			List<Component> newList = new ArrayList<>(Arrays.asList(glyphArray));
 			Component duplicateToAdd = null;
+
+			// Check if a circular backbone is present, if so add a duplicate for the right end in SBOLCanvas
 			for(Component glyph: newList){
-				if(glyph.getDisplayId().toString().contains("Cir")){
+				ComponentDefinition cd = (glyph.getDefinition());
+				if (cd != null && cd.getRoles().iterator().next().equals(SBOLData.roles.getValue("Cir (Circular Backbone)"))) {
 					duplicateToAdd = glyph;
-	
 				}
 			}
 			if(duplicateToAdd != null){
@@ -395,10 +397,12 @@ public class SBOLToMx extends Converter {
 		Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
 		List<Component> newList = new ArrayList<>(Arrays.asList(glyphArray));
 		Component duplicateToAdd = null;
-		for(Component glyph: newList){
-			if(glyph.getDisplayId().toString().contains("Cir")){
-				duplicateToAdd = glyph;
 
+		// Check if a circular backbone is present, if so add a duplicate for the right end in SBOLCanvas
+		for(Component glyph: newList){
+			ComponentDefinition cd = glyph.getDefinition();
+			if (cd != null && cd.getRoles().iterator().next().equals(SBOLData.roles.getValue("Cir (Circular Backbone)"))) {
+				duplicateToAdd = glyph;
 			}
 		}
 		if(duplicateToAdd != null){
