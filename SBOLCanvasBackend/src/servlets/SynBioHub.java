@@ -168,7 +168,7 @@ public class SynBioHub extends HttpServlet {
 						}
 					} else if (mode.equals("components") && collections != null) {
 						results.addAll(
-								sbhf.getMatchingComponentDefinitionMetadata(null, roles, types, collections, null, null));
+								sbhf.getMatchingComponentDefinitionMetadata(null, roles, types, collections, null, 10000));
 					} else if (mode.equals("modules") && collections != null) {
 						// SynbioHubFrontend doesn't have anything easy for modules
 						SearchQuery query = new SearchQuery();
@@ -186,7 +186,7 @@ public class SynBioHub extends HttpServlet {
 								query.getCriteria().add(collectionCriteria);
 							}
 						}
-
+						query.setLimit(10000);
 						results.addAll(sbhf.search(query));
 					}
 
