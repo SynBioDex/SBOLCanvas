@@ -94,6 +94,7 @@ export class InfoEditorComponent implements OnInit {
   }
 
   dropDownChange(event: MatSelectChange) {
+    this.filteredPartRefinements = this.partRefinements // Reset filter input when clicking on dropdown again
     const id = event.source.id;
     switch (id) {
       case 'partType': {
@@ -335,7 +336,7 @@ export class InfoEditorComponent implements OnInit {
   }
 
   applyFilter(filterValue: string){
-    this.filteredPartRefinements = this.partRefinements.filter(refinements => refinements.toLowerCase().includes(filterValue.toLowerCase()))
+    this.filteredPartRefinements = this.partRefinements.filter(refinements => 
+      refinements.toLowerCase().includes(filterValue.toLowerCase()))
   }
-
 }
