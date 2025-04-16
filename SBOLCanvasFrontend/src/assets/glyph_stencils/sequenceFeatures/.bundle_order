@@ -30,6 +30,7 @@ ribonuclease-site
 rna-stability-element
 transcription-end
 translation-end
+inert-dna-spacer
 
 !test
 !dna-stability-element
