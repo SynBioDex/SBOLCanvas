@@ -28,6 +28,7 @@ export class InfoEditorComponent implements OnInit {
   partTypes: string[];
   partRoles: string[];
   partRefinements: string[]; // these depend on role
+  filteredPartRefinements: string[];
   interactionTypes: string[];
   filteredInteractionTypes: string[];
   interactionRoles: {};
@@ -70,7 +71,10 @@ export class InfoEditorComponent implements OnInit {
   }
 
   getRefinements(role: string) {
-    this.metadataService.loadRefinements(role).subscribe(refinements => this.partRefinements = refinements);
+    this.metadataService.loadRefinements(role).subscribe(refinements => {
+      this.partRefinements = refinements
+      this.filteredPartRefinements = refinements
+    });
   }
 
   getInteractions() {
@@ -90,6 +94,7 @@ export class InfoEditorComponent implements OnInit {
   }
 
   dropDownChange(event: MatSelectChange) {
+    this.filteredPartRefinements = this.partRefinements // Reset filter input when clicking on dropdown again
     const id = event.source.id;
     switch (id) {
       case 'partType': {
@@ -330,4 +335,8 @@ export class InfoEditorComponent implements OnInit {
     return this.interactionTargetRefinements && this.interactionTargetRefinements.length > 0;
   }
 
+  applyFilter(filterValue: string){
+    this.filteredPartRefinements = this.partRefinements.filter(refinements => 
+      refinements.toLowerCase().includes(filterValue.toLowerCase()))
+  }
 }

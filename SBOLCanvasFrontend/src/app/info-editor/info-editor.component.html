@@ -23,8 +23,11 @@
   <mat-form-field floatLabel = "always" *ngIf="glyphInfo.partType.startsWith('DNA') || glyphInfo.partType.startsWith('Circular')">
     <mat-label>Role refinement</mat-label>
     <mat-select panelWidth="null" id="partRefinement" value="{{glyphInfo.partRefine}}" (selectionChange)="dropDownChange($event)" matTooltipShowDelay="1000" matTooltip="Optional. More specific version of the part role.">
+      <mat-form-field class="filter-field-width">
+        <input matInput (keyup)="applyFilter($event.target.value)" placeholder="Filter"/>
+      </mat-form-field>
       <mat-option value="">None</mat-option>
-      <mat-option *ngFor="let refinement of partRefinements" [value]="refinement">
+      <mat-option *ngFor="let refinement of filteredPartRefinements" [value]="refinement">
         {{refinement}}
       </mat-option>
     </mat-select>
