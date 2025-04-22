@@ -85,14 +85,17 @@ public class SBOLData {
 		roles.put("PSE (Protein Stability Element)", URI.create("http://identifiers.org/so/SO:0001955"));
 		roles.put("TSE (Transcription End Site)", URI.create("http://identifiers.org/so/SO:0000616"));
 		roles.put("TTS (Translation Termination Site)", URI.create("http://identifiers.org/so/SO:0000327"));
+		roles.put("IDS (Inert DNA Spacer)", URI.create("http://identifiers.org/so/SO:0002223"));
 		
 		refinements = new BiMap<String, URI>();
 		parents = new HashMap<URI, URI>();
 		for(URI uri : roles.values()) {
 			Set<URI> descendants = so.getDescendantURIsOf(uri);
-			for(URI dURI : descendants) {
-				refinements.put(so.getName(dURI), dURI);
-				parents.put(dURI, uri);
+			if(descendants != null){
+				for(URI dURI : descendants) {
+					refinements.put(so.getName(dURI), dURI);
+					parents.put(dURI, uri);
+				}
 			}
 		}
 		
@@ -183,8 +186,10 @@ public class SBOLData {
 		if (roles.getValue(parentName) != null) {
 			Set<URI> descendants = so.getDescendantURIsOf(roles.getValue(parentName));
 
-			for(URI uri : descendants) {
-				refinementNames.add(so.getName(uri));
+			if (descendants != null){
+				for(URI uri : descendants) {
+					refinementNames.add(so.getName(uri));
+				}
 			}
 		}
 		
@@ -207,8 +212,11 @@ public class SBOLData {
 		}
 		Set<String> refinementNames = new TreeSet<String>();
 		Set<URI> descendants = sbo.getDescendantURIsOf(parentURI);
-		for(URI uri : descendants) {
-			refinementNames.add(sbo.getName(uri));
+		if (descendants != null){
+			for(URI uri : descendants) {
+				refinementNames.add(sbo.getName(uri));
+			}
+			
 		}
 		return refinementNames.toArray(new String[0]);
 	}
