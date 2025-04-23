@@ -86,6 +86,7 @@ public class SBOLData {
 		roles.put("TSE (Transcription End Site)", URI.create("http://identifiers.org/so/SO:0000616"));
 		roles.put("TTS (Translation Termination Site)", URI.create("http://identifiers.org/so/SO:0000327"));
 		roles.put("IDS (Inert DNA Spacer)", URI.create("http://identifiers.org/so/SO:0002223"));
+		roles.put("Intr (Intron)", URI.create("http://identifiers.org/so/SO:0000188"));
 		
 		refinements = new BiMap<String, URI>();
 		parents = new HashMap<URI, URI>();
