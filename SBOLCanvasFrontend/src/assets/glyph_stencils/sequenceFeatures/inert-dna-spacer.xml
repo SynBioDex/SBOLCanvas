@@ -1,0 +1,32 @@
+<shapes>
+    <shape aspect="variable" centered="True" h="36" name="IDS (Inert DNA Spacer)" strokewidth="inherit" w="36">
+        <connections />
+        <foreground>
+            <strokewidth width="1.88" />
+            <linejoin join="miter" />
+            <linecap cap="flat" />
+            <path>
+                <move x="27.6" y="18.0" />
+                <curve x1="27.6" y1="15.349" x2="26.663" y2="13.086" x3="24.788" y3="11.212" />
+                <curve x1="22.914" y1="9.337" x2="20.651" y2="8.4" x3="18.0" y3="8.4" />
+                <curve x1="15.349" y1="8.4" x2="13.086" y2="9.337" x3="11.212" y3="11.212" />
+                <curve x1="9.337" y1="13.086" x2="8.4" y2="15.349" x3="8.4" y3="18.0" />
+                <curve x1="8.4" y1="20.651" x2="9.337" y2="22.914" x3="11.212" y3="24.788" />
+                <curve x1="13.086" y1="26.663" x2="15.349" y2="27.6" x3="18.0" y3="27.6" />
+                <curve x1="20.651" y1="27.6" x2="22.914" y2="26.663" x3="24.788" y3="24.788" />
+                <curve x1="26.663" y1="22.914" x2="27.6" y2="20.651" x3="27.6" y3="18.0" />
+            </path>
+            <stroke />
+            <path>
+                <move x="24.764" y="11.236" />
+                <line x="11.236" y="24.764" />
+            </path>
+            <stroke />
+            <path>
+                <move x="11.117" y="11.117" />
+                <line x="24.883" y="24.883" />
+            </path> 
+            <stroke />
+        </foreground>
+    </shape>
+    </shapes>
