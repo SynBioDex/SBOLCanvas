@@ -144,6 +144,7 @@ public class SBOLData {
 		
 		registries = new HashSet<String>();
 		try {
+			registries.add("https://charmme.synbiohub.org");
 			for(WebOfRegistriesData registry : SynBioHubFrontend.getRegistries()) {
 				registries.add(registry.getInstanceUrl());
 			}

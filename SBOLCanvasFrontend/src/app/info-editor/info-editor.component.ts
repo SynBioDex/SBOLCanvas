@@ -302,6 +302,7 @@ export class InfoEditorComponent implements OnInit {
   }
 
   synBioHubDesign(): boolean {
+    this.registries.push("https://charmme.synbiohub.org")
     for (let registry of this.registries) {
       if (this.glyphInfo && this.glyphInfo.uriPrefix && this.glyphInfo.uriPrefix.startsWith(registry))
         return true;
