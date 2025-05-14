@@ -2,6 +2,7 @@ engineered-region
 promoter
 ribosome-entry-site
 cds
+polypeptide-region
 terminator-specification
 ncrna
 origin-of-replication
@@ -32,6 +33,8 @@ transcription-end
 translation-end
 inert-dna-spacer
 intron
+omitted-detail
+
 
 !test
 !dna-stability-element
