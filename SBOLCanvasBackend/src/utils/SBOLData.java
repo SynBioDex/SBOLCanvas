@@ -87,7 +87,9 @@ public class SBOLData {
 		roles.put("TTS (Translation Termination Site)", URI.create("http://identifiers.org/so/SO:0000327"));
 		roles.put("IDS (Inert DNA Spacer)", URI.create("http://identifiers.org/so/SO:0002223"));
 		roles.put("Intr (Intron)", URI.create("http://identifiers.org/so/SO:0000188"));
-		
+		roles.put("Omit (Omitted-Detail)", SequenceOntology.SEQUENCE_FEATURE);
+		roles.put("PolyR (Polypeptide-Region)", URI.create("http://identifiers.org/so/SO:0000839"));
+
 		refinements = new BiMap<String, URI>();
 		parents = new HashMap<URI, URI>();
 		for(URI uri : roles.values()) {

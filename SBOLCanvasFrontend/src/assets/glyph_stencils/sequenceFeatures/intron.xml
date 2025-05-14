@@ -1,32 +1,30 @@
 ﻿<shapes>
-	<shape aspect="variable" centered="false" h="48" name="Intr (Intron)" strokewidth="inherit" w="48">
-		<connections />
-		<foreground>
-			<strokewidth width="2.88" />
-			<linejoin join="round" />
-			<linecap cap="square" />
-			<path>
-				<move x="17.012" y="34.318" />
-				<line x="14.612" y="29.757" />
-				<line x="9.650" y="29.757" />
-				<line x="9.650" y="48" />
-				<line x="14.612" y="48" />
-				<line x="17.012" y="43.439" />
-				<line x="14.612" y="38.879" />
-				<line x="17.012" y="35.5" />
-			</path>
-			<stroke />
-			<path>
-				<move x="33.012" y="34.318" />
-				<line x="30.612" y="29.757" />
-				<line x="37.330" y="29.757" />
-				<line x="37.330" y="48" />
-				<line x="30.612" y="48" />
-				<line x="33.012" y="43.439" />
-				<line x="30.612" y="38.879" />
-				<line x="33.012" y="35.5" />
-			</path>
-			<stroke />
-		</foreground>
-	</shape>
+  <shape aspect="variable" centered="True" h="36" name="Intr (Intron)" strokewidth="inherit" w="36">
+    <connections />
+    <foreground>
+      <strokewidth width="2.4" />
+      <linejoin join="round" />
+      <linecap cap="square" />
+      <path>
+        <move x="11.312" y="23.3" />
+        <line x="8.912" y="27.130" />
+        <line x="3.950" y="27.130" />
+        <line x="3.950" y="8.870" />
+        <line x="8.912" y="8.870" />
+        <line x="11.312" y="13.431" />
+        <line x="8.912" y="18.008" />
+        <line x="11.312" y="22.569" />
+        
+        <move x="27.312" y="23.3" />
+        <line x="24.912" y="27.130" />
+        <line x="31.630" y="27.130" />
+        <line x="31.630" y="8.870" />
+        <line x="24.912" y="8.870" />
+        <line x="27.312" y="13.431" />
+        <line x="24.912" y="18.008" />
+        <line x="27.312" y="22.569" />
+      </path>
+      <fillstroke />
+    </foreground>
+  </shape>
 </shapes>

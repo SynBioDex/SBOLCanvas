@@ -1,0 +1,30 @@
+<shapes>
+<shape aspect="variable" h="48" centered="True" name="PolyR (Polypeptide-Region)" strokewidth="inherit" w="48">
+    <connections/>
+    <foreground>
+        <strokewidth width="2.88"/>
+        <linejoin join="round"/>
+        <linecap cap="round"/>
+        <fillcolor color="#FFFFFF" />
+        <path>
+            <move x="6" y="34.899841950742127"/>
+            <line x="29.611" y="34.899841950742127"/>
+            <line x="40.488" y="23.499841950742127"/>
+            <line x="29.611" y="12.098841950742127"/>
+            <line x="6" y="12.098841950742127"/>
+            <close/>
+        </path>
+        <fillstroke />
+        <path>
+            <move x="15.884" y="34.910841950742127"/>
+            <line x="29.495" y="34.910841950742127"/>
+            <line x="40.371" y="23.509841950742127"/>
+            <line x="29.495" y="12.109841950742127"/>
+            <line x="15.884" y="12.109841950742127"/>
+            <line x="27.091" y="23.727841950742127"/>
+            <close/>
+        </path>
+        <stroke/>
+    </foreground>
+</shape>
+</shapes>
