@@ -1,0 +1,52 @@
+<shapes>
+    <shape aspect="variable" centered="True" h="48" name="Omit (Omitted-Detail)" strokewidth="inherit" w="48">
+      <connections />
+      <foreground>
+        <strokewidth width="0.5" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+  
+        <fillcolor color="#FFFFFF" />
+        <strokecolor color="none" />
+        <path>
+          <move x="12" y="20" />
+          <line x="36" y="20" />
+          <line x="36" y="28" />
+          <line x="12" y="28" />
+          <line x="12" y="20" />
+        </path>
+        <fillstroke />
+  
+        <fillcolor color="#000000" />
+        <strokecolor color="#000000" />
+  
+        <path>
+          <move x="14" y="22" />
+          <line x="18" y="22" />
+          <line x="18" y="26" />
+          <line x="14" y="26" />
+          <line x="14" y="22" />
+        </path>
+        <fillstroke />
+  
+        <path>
+          <move x="22" y="22" />
+          <line x="26" y="22" />
+          <line x="26" y="26" />
+          <line x="22" y="26" />
+          <line x="22" y="22" />
+        </path>
+        <fillstroke />
+  
+        <path>
+          <move x="30" y="22" />
+          <line x="34" y="22" />
+          <line x="34" y="26" />
+          <line x="30" y="26" />
+          <line x="30" y="22" />
+        </path>
+        <fillstroke />
+      </foreground>
+    </shape>
+  </shapes>
+  
