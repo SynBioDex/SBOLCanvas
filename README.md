@@ -23,7 +23,7 @@ and the frontend to be deployed as a static web app served from CDNs.
 Clone the project
 
 ```bash
-git clone -b synbio-suite https://github.com/SynBioDex/SBOLCanvas
+git clone https://github.com/SynBioDex/SBOLCanvas
 ```
 
 Go to the backend directory
