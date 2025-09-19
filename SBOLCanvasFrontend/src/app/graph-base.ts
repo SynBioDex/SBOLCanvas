@@ -453,6 +453,14 @@ export class GraphBase {
             return this.isStyle(GraphBase.STYLE_SEQUENCE_FEATURE)
         }
 
+        // Helper that identifies DNA-like objects. Some older code refers to
+        // isDnaObjectGlyph(), so provide a small compatibility shim that
+        // treats sequence feature glyphs and chromosomal locus glyphs as DNA
+        // objects.
+        mx.mxCell.prototype.isDnaObjectGlyph = function () {
+            return this.isSequenceFeatureGlyph() || this.isChromosomalLocus()
+        }
+
         mx.mxCell.prototype.isScar = function () {
             return this.isStyle(GraphBase.STYLE_SCAR)
         }
@@ -1362,10 +1370,17 @@ export class GraphBase {
             return 'Edge type disallowed to connect to a circuit container. Please connect to the glyph itself.';
         }
 
-        // Hopefully prevent inhibition from connecting to anything other than from a molecular species to dna object/sequence feautre
-        if (interactionType == 'Inhibition' && source && target) {
-            if (!source.isMolecularSpeciesGlyph() || !(target.isSequenceFeatureGlyph() || target.isDnaObjectGlyph())) {
-                return 'Inhibition is only allowed from a molecular species to a dna object or sequence feature.'
+        // Prevent inhibition having its source only be a molecular species
+        if (interactionType == 'Inhibition' && source) {
+            if (!source.isMolecularSpeciesGlyph()) {
+                return 'Inhibition is only allowed from a molecular species.'
+            }
+        }
+
+        // Prevent inhibition from having its endpoint not be a dna object
+        if (interactionType == 'Inhibition' && target) {
+            if (!target.isSequenceFeatureGlyph()){
+                return 'Inhibition is only allowed to a DNA object'
             }
         }
 
