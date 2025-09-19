@@ -54,6 +54,7 @@ Install dependencies
 
 ```bash
 npm install
+npm run gitversion
 ```
 
 Start the Angular development server
