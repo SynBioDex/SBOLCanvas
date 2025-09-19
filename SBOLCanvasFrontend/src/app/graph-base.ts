@@ -1371,16 +1371,16 @@ export class GraphBase {
         }
 
         // Prevent inhibition having its source only be a molecular species
-        if (interactionType == 'Inhibition' && source) {
+        if ((interactionType == 'Inhibition' || interactionType == 'Stimulation') && source) {
             if (!source.isMolecularSpeciesGlyph()) {
-                return 'Inhibition is only allowed from a molecular species.'
+                return 'Inhibition and Stimulation are only allowed from a molecular species.'
             }
         }
 
         // Prevent inhibition from having its endpoint not be a dna object
-        if (interactionType == 'Inhibition' && target) {
+        if ((interactionType == 'Inhibition' || interactionType == 'Stimulation') && target) {
             if (!target.isSequenceFeatureGlyph()){
-                return 'Inhibition is only allowed to a DNA object'
+                return 'Inhibition and Stimulation are only allowed to a DNA object'
             }
         }
 
