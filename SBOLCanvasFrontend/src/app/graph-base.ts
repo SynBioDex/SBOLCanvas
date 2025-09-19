@@ -1362,6 +1362,13 @@ export class GraphBase {
             return 'Edge type disallowed to connect to a circuit container. Please connect to the glyph itself.';
         }
 
+        // Hopefully prevent inhibition from connecting to anything other than from a molecular species to dna object/sequence feautre
+        if (interactionType == 'Inhibition' && source && target) {
+            if (!source.isMolecularSpeciesGlyph() || !(target.isSequenceFeatureGlyph() || target.isDnaObjectGlyph())) {
+                return 'Inhibition is only allowed from a molecular species to a dna object or sequence feature.'
+            }
+        }
+
         return null
     }
 
