@@ -1384,6 +1384,19 @@ export class GraphBase {
             }
         }
 
+        //Process can connect from DNA object to molecular species, connect two molecular species, connect molecular species to/from association, disassociation, and process
+        if (interactionType == 'Process' && source){
+            if (!(source.isSequenceFeatureGlyph() || source.isMolecularSpeciesGlyph() || source.isInteractionNode())){
+                return 'Process can only connect from a DNA object, molecular species, or interaction node.'
+            }
+        }
+
+        if (interactionType == 'Process' && target){
+            if (!(target.isMolecularSpeciesGlyph() || target.isInteractionNode())){
+                return 'Process can only connect to a molecular species or interaction node.'
+            }
+        }
+
         return null
     }
 
