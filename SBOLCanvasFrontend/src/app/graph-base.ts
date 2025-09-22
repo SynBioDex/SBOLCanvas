@@ -453,6 +453,14 @@ export class GraphBase {
             return this.isStyle(GraphBase.STYLE_SEQUENCE_FEATURE)
         }
 
+        // Helper that identifies DNA-like objects. Some older code refers to
+        // isDnaObjectGlyph(), so provide a small compatibility shim that
+        // treats sequence feature glyphs and chromosomal locus glyphs as DNA
+        // objects.
+        mx.mxCell.prototype.isDnaObjectGlyph = function () {
+            return this.isSequenceFeatureGlyph() || this.isChromosomalLocus()
+        }
+
         mx.mxCell.prototype.isScar = function () {
             return this.isStyle(GraphBase.STYLE_SCAR)
         }
@@ -1360,6 +1368,33 @@ export class GraphBase {
         // Prevent connecting of an edge to circuit container by clicking it and then an interaction 
         if(source?.isCircuitContainer()){
             return 'Edge type disallowed to connect to a circuit container. Please connect to the glyph itself.';
+        }
+
+        // Prevent inhibition having its source only be a molecular species
+        if ((interactionType == 'Inhibition' || interactionType == 'Stimulation' || interactionType == 'Control') && source) {
+            if (!source.isMolecularSpeciesGlyph()) {
+                return 'Inhibition, Stimulation and Control are only allowed from a molecular species.'
+            }
+        }
+
+        // Prevent inhibition from having its endpoint not be a dna object
+        if ((interactionType == 'Inhibition' || interactionType == 'Stimulation' || interactionType == 'Control') && target) {
+            if (!target.isSequenceFeatureGlyph()){
+                return 'Inhibition, Stimulation and Control are only allowed to a DNA object'
+            }
+        }
+
+        //Process can connect from DNA object to molecular species, connect two molecular species, connect molecular species to/from association, disassociation, and process
+        if (interactionType == 'Process' && source){
+            if (!(source.isSequenceFeatureGlyph() || source.isMolecularSpeciesGlyph() || source.isInteractionNode())){
+                return 'Process can only connect from a DNA object, molecular species, or interaction node.'
+            }
+        }
+
+        if (interactionType == 'Process' && target){
+            if (!(target.isMolecularSpeciesGlyph() || target.isInteractionNode())){
+                return 'Process can only connect to a molecular species or interaction node.'
+            }
         }
 
         return null
