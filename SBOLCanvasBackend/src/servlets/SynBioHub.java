@@ -95,12 +95,8 @@ public class SynBioHub extends HttpServlet {
 					try {
 						sbhf.login(email, password);
 					} catch (SynBioHubException e) {
-						if (e.getMessage().equals("An error has occured. Please log back into SynbBioHub")) {
-							//used to be "org.synbiohub.frontend.PermissionException"
+						if (e.getMessage().equals("org.synbiohub.frontend.PermissionException")) {
 							response.setStatus(HttpStatus.SC_UNAUTHORIZED);
-							email = null;
-							password = null;
-							user = null;
 							return;
 						}
 						throw e;
@@ -295,8 +291,7 @@ public class SynBioHub extends HttpServlet {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
 			IOUtils.copy(inputStream, outputStream);
-			if(e.getMessage().equals("An error has occured.")) {
-				//used to be "org.synbiohub.frontend.PermissionException"
+			if(e.getMessage().equals("org.synbiohub.frontend.PermissionException")) {
 				response.setStatus(HttpStatus.SC_UNAUTHORIZED);
 			}
 			else{

@@ -49,7 +49,6 @@ export class LoginService {
     delete this.users[server];
   }
 
-  // Forcefully clear local session without calling the backend (e.g., when registry is down)
   forceLogout(server: string) {
     if (server && this.users[server]) {
       delete this.users[server];

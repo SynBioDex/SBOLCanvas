@@ -31,7 +31,6 @@ intercept(
                 if(err instanceof HttpErrorResponse && err.status === 500) {
                     !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, {data: err.error});
                 }
-                // Auto-logout and notify user when registry endpoints fail with 401
                 if (err instanceof HttpErrorResponse && err.status === 401) {
                     const url = req.url || '';
                     const isTargetEndpoint = (
@@ -41,13 +40,18 @@ intercept(
                     );
 
                     if (isTargetEndpoint) {
-                        const serverParam = req.params?.get('server') || '';
-                        // Clear local token/session for this server
-                        this.loginService.forceLogout(serverParam);
+                        const body = err.error;
+                        const permissionMarker = 'org.synbiohub.frontend.PermissionException';
+                        const isPermissionException = typeof body === 'string' && body.indexOf(permissionMarker) >= 0;
 
-                        const serverLabel = serverParam || 'the registry';
-                        const message = `Disconnected from ${serverLabel}. Please sign in again.`;
-                        !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, { data: message });
+                        if (isPermissionException) {
+                            const serverParam = req.params?.get('server') || '';
+                            this.loginService.forceLogout(serverParam);
+
+                            const serverLabel = serverParam || 'the registry';
+                            const message = `Disconnected from ${serverLabel}. Please sign in again.`;
+                            !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, { data: message });
+                        }
                     }
                 }
                 return throwError(err);
