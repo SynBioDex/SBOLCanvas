@@ -5,6 +5,7 @@ import { tap, catchError } from "rxjs/operators";
 import { MatDialog } from '@angular/material/dialog';
 import { ErrorComponent } from './error/error.component';
 import { ActivatedRoute } from '@angular/router'
+import { LoginService } from './login.service';
 
 
 @Injectable()
@@ -12,7 +13,7 @@ export class AppHttpInterceptor implements HttpInterceptor {
 
     ignoreHTTPErrors: boolean
 
-    constructor(public dialog: MatDialog, private route: ActivatedRoute) {
+    constructor(public dialog: MatDialog, private route: ActivatedRoute, private loginService: LoginService) {
         this.route.queryParams.subscribe(params => {
             this.ignoreHTTPErrors = !!params.ignoreHTTPErrors
         })
@@ -29,6 +30,29 @@ intercept(
             catchError((err: any) => {
                 if(err instanceof HttpErrorResponse && err.status === 500) {
                     !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, {data: err.error});
+                }
+                if (err instanceof HttpErrorResponse && err.status === 401) {
+                    const url = req.url || '';
+                    const isTargetEndpoint = (
+                        url.includes('/SynBioHub/logout') ||
+                        url.includes('/SynBioHub/listRegistryParts') ||
+                        url.includes('/SynBioHub/listMyCollections')
+                    );
+
+                    if (isTargetEndpoint) {
+                        const body = err.error;
+                        const permissionMarker = 'org.synbiohub.frontend.PermissionException';
+                        const isPermissionException = typeof body === 'string' && body.indexOf(permissionMarker) >= 0;
+
+                        if (isPermissionException) {
+                            const serverParam = req.params?.get('server') || '';
+                            this.loginService.forceLogout(serverParam);
+
+                            const serverLabel = serverParam || 'the registry';
+                            const message = `Disconnected from ${serverLabel}. Please sign in again.`;
+                            !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, { data: message });
+                        }
+                    }
                 }
                 return throwError(err);
             }));

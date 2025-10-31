@@ -3,7 +3,7 @@ import { environment } from 'src/environments/environment';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { LoginComponent } from './login/login.component';
 import { MatDialog } from '@angular/material/dialog';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 export interface LoginDialogData {
   server: string;
@@ -45,9 +45,14 @@ export class LoginService {
     headers = headers.set("Authorization", this.users[server]);
     let params = new HttpParams();
     params = params.append("server", server);
-    await this.http.get(this.logoutURL, { headers: headers, params: params }).toPromise();
-
+    await firstValueFrom(this.http.get(this.logoutURL, { headers: headers, params: params }));
     delete this.users[server];
+  }
+
+  forceLogout(server: string) {
+    if (server && this.users[server]) {
+      delete this.users[server];
+    }
   }
 
 }
