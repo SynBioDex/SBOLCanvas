@@ -33,11 +33,7 @@ intercept(
                 }
                 if (err instanceof HttpErrorResponse && err.status === 401) {
                     const url = req.url || '';
-                    const isTargetEndpoint = (
-                        url.includes('/SynBioHub/logout') ||
-                        url.includes('/SynBioHub/listRegistryParts') ||
-                        url.includes('/SynBioHub/listMyCollections')
-                    );
+                    const isTargetEndpoint = true;
 
                     if (isTargetEndpoint) {
                         const body = err.error;
