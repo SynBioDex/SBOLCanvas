@@ -31,24 +31,24 @@ intercept(
                 if(err instanceof HttpErrorResponse && err.status === 500) {
                     !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, {data: err.error});
                 }
-                if (err instanceof HttpErrorResponse && err.status === 401) {
+                if (err instanceof HttpErrorResponse) {
                     const url = req.url || '';
-                    const isTargetEndpoint = true;
 
-                    if (isTargetEndpoint) {
                         const body = err.error;
                         const permissionMarker = 'org.synbiohub.frontend.PermissionException';
                         const isPermissionException = typeof body === 'string' && body.indexOf(permissionMarker) >= 0;
 
                         if (isPermissionException) {
                             const serverParam = req.params?.get('server') || '';
+                            console.log('whatup1');
                             this.loginService.forceLogout(serverParam);
+                            console.log('whatup2');
 
                             const serverLabel = serverParam || 'the registry';
                             const message = `Disconnected from ${serverLabel}. Please sign in again.`;
                             !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, { data: message });
+                            console.log('whatup3');
                         }
-                    }
                 }
                 return throwError(err);
             }));
