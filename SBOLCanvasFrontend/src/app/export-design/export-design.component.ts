@@ -15,7 +15,7 @@ export class ExportDesignComponent implements OnInit {
 
   working: boolean = false;
 
-  exportFormats = ["SBOL2", "SBOL1", "GenBank", "GFF", "Fasta"];
+  exportFormats = ["SBOL2", "SBOL1", "GenBank", "GFF", "Fasta", "SBML"];
   enumerateFormats = ["SBOL2", "CSV"];
   formats = [];
 
