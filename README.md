@@ -65,6 +65,7 @@ npm run dev
 Or, if you plan to develop the frontend, use 
 
 ~~~bash
+npm run prebuild # only needed the first run
 ng serve -c development
 ~~~
 
