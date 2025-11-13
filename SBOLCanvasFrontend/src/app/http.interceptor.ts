@@ -40,14 +40,11 @@ intercept(
 
                         if (isPermissionException) {
                             const serverParam = req.params?.get('server') || '';
-                            console.log('whatup1');
                             this.loginService.forceLogout(serverParam);
-                            console.log('whatup2');
 
                             const serverLabel = serverParam || 'the registry';
                             const message = `Disconnected from ${serverLabel}. Please sign in again.`;
                             !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, { data: message });
-                            console.log('whatup3');
                         }
                 }
                 return throwError(err);
