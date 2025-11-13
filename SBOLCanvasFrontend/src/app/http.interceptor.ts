@@ -4,6 +4,8 @@ import { Observable, of, throwError } from "rxjs";
 import { tap, catchError } from "rxjs/operators";
 import { MatDialog } from '@angular/material/dialog';
 import { ErrorComponent } from './error/error.component';
+import { UploadGraphComponent } from './upload-graph/upload-graph.component';
+import { CollectionCreationComponent } from './collection-creation/collection-creation.component';
 import { ActivatedRoute } from '@angular/router'
 import { LoginService } from './login.service';
 
@@ -44,7 +46,20 @@ intercept(
 
                             const serverLabel = serverParam || 'the registry';
                             const message = `Disconnected from ${serverLabel}. Please sign in again.`;
-                            !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, { data: message });
+                                try {
+                                    this.dialog.openDialogs.forEach(d => {
+                                        try {
+                                            const ci = d.componentInstance;
+                                            if (ci instanceof CollectionCreationComponent) {
+                                                d.close();
+                                            }
+                                        } catch(e) {
+                                        }
+                                    });
+                                } catch(e) {
+                                }
+
+                                !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, { data: message });
                         }
                 }
                 return throwError(err);
