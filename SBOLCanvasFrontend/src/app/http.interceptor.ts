@@ -4,6 +4,8 @@ import { Observable, of, throwError } from "rxjs";
 import { tap, catchError } from "rxjs/operators";
 import { MatDialog } from '@angular/material/dialog';
 import { ErrorComponent } from './error/error.component';
+import { UploadGraphComponent } from './upload-graph/upload-graph.component';
+import { CollectionCreationComponent } from './collection-creation/collection-creation.component';
 import { ActivatedRoute } from '@angular/router'
 import { LoginService } from './login.service';
 
@@ -31,15 +33,9 @@ intercept(
                 if(err instanceof HttpErrorResponse && err.status === 500) {
                     !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, {data: err.error});
                 }
-                if (err instanceof HttpErrorResponse && err.status === 401) {
+                if (err instanceof HttpErrorResponse) {
                     const url = req.url || '';
-                    const isTargetEndpoint = (
-                        url.includes('/SynBioHub/logout') ||
-                        url.includes('/SynBioHub/listRegistryParts') ||
-                        url.includes('/SynBioHub/listMyCollections')
-                    );
 
-                    if (isTargetEndpoint) {
                         const body = err.error;
                         const permissionMarker = 'org.synbiohub.frontend.PermissionException';
                         const isPermissionException = typeof body === 'string' && body.indexOf(permissionMarker) >= 0;
@@ -50,9 +46,21 @@ intercept(
 
                             const serverLabel = serverParam || 'the registry';
                             const message = `Disconnected from ${serverLabel}. Please sign in again.`;
-                            !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, { data: message });
+                                try {
+                                    this.dialog.openDialogs.forEach(d => {
+                                        try {
+                                            const ci = d.componentInstance;
+                                            if (ci instanceof CollectionCreationComponent) {
+                                                d.close();
+                                            }
+                                        } catch(e) {
+                                        }
+                                    });
+                                } catch(e) {
+                                }
+
+                                !this.ignoreHTTPErrors && this.dialog.open(ErrorComponent, { data: message });
                         }
-                    }
                 }
                 return throwError(err);
             }));
