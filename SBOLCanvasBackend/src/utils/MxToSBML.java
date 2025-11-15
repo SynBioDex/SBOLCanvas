@@ -18,6 +18,11 @@ import javax.xml.namespace.QName;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
+// JSBML API Docs: https://sbml.org/jsbml/files/doc/api/1.6.1/overview-summary.html
+import org.sbml.jsbml.SBMLDocument;
+import org.sbml.jsbml.SBO;
+import org.sbml.jsbml.Model;
+import org.sbml.jsbml.Species;
 import org.synbiohub.frontend.SynBioHubException;
 import org.synbiohub.frontend.SynBioHubFrontend;
 import org.w3c.dom.Document;
