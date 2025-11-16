@@ -21,6 +21,7 @@ export class GlyphInfo extends Info {
     annotations: CanvasAnnotation[];
     derivedFroms: string[];
     generatedBys: string[];
+    boundaryCondition: boolean;
 
     constructor({
         id,
@@ -72,6 +73,7 @@ export class GlyphInfo extends Info {
         copy.annotations = this.annotations ? this.annotations.slice() : null;
         copy.derivedFroms = this.derivedFroms ? this.derivedFroms.slice() : null;
         copy.generatedBys = this.generatedBys ? this.generatedBys.slice() : null;
+        copy.boundaryCondition = this.boundaryCondition;
         return copy;
     }
 
@@ -91,6 +93,7 @@ export class GlyphInfo extends Info {
         this.annotations = other.annotations ? other.annotations.slice() : null;
         this.derivedFroms = other.derivedFroms ? other.derivedFroms.slice() : null;
         this.generatedBys = other.generatedBys ? other.generatedBys.slice() : null;
+        this.boundaryCondition = other.boundaryCondition;
     }
 
     getFullURI(): string {
@@ -149,6 +152,8 @@ export class GlyphInfo extends Info {
             generatedBysNode.setAttribute("as", "generatedBys");
             node.appendChild(generatedBysNode);
         }
+        if (this.boundaryCondition)
+            node.setAttribute("boundaryCondition", this.boundaryCondition);
 
         return node;
     }

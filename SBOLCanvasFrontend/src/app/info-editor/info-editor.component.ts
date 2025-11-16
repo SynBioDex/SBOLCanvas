@@ -144,8 +144,9 @@ export class InfoEditorComponent implements OnInit {
   }
 
 
-  inputChange(event: any) {
-    const id = event.target.id;
+  inputChange(event: any, componentId?: string) {
+    // Material Checkboxes do not have an event.target, use componentId 
+    const id = componentId ? componentId : (event.target ? event.target.id : event.source.id);
    
     switch (id) {
       case 'displayID': {
@@ -185,6 +186,10 @@ export class InfoEditorComponent implements OnInit {
       }
       case 'sequence': {
         this.glyphInfo.sequence = event.target.value;
+        break;
+      }
+      case 'boundaryCondition': {
+        this.glyphInfo.boundaryCondition = event.checked;
         break;
       }
       default: {

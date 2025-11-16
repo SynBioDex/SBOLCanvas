@@ -15,6 +15,7 @@ public class GlyphInfo extends Info {
 	private CanvasAnnotation[] annotations;
 	private String[] derivedFroms;
 	private String[] generatedBys;
+	private boolean boundaryCondition;
 
 	public String getPartType() {
 		return partType;
@@ -118,6 +119,14 @@ public class GlyphInfo extends Info {
 
 	public void setGeneratedBys(String[] generatedBys) {
 		this.generatedBys = generatedBys;
+	}
+    
+	public boolean getBoundaryCondition() {
+		return boundaryCondition;
+	}
+
+	public void setBoundaryCondition(boolean boundaryCondition) {
+		this.boundaryCondition = boundaryCondition;
 	}
 	
 	public String getFullURI() {

@@ -81,6 +81,12 @@
     <textarea rows="1" matInput id="sequence" value="{{glyphInfo.sequence}}" (change)="inputChange($event)" matTooltipShowDelay="1000" matTooltip="Represents the constituents of a biological or chemical molecule."></textarea>
   </mat-form-field>
 
+  <div class="checkbox-container">
+    <mat-checkbox id="boundaryCondition" [checked]="glyphInfo.boundaryCondition"
+      (change)="inputChange($event, 'boundaryCondition')" matTooltipShowDelay="1000"
+      matTooltip="Optional. Select if the species is a constant amount during simulation.">Boundary Condition</mat-checkbox>
+  </div>
+
   <button mat-stroked-button (click)="openDownloadDialog()">Import Component</button>
   <button *ngIf="isCombinatorialPossible()" mat-stroked-button (click)="openCombinatorialDialog()">Edit Combinatorial Design</button>
 </div>
