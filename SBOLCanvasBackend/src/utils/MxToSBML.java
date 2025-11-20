@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
@@ -23,6 +24,8 @@ import org.sbml.jsbml.SBMLDocument;
 import org.sbml.jsbml.SBO;
 import org.sbml.jsbml.Model;
 import org.sbml.jsbml.Species;
+import org.sbml.jsbml.Compartment;
+
 import org.synbiohub.frontend.SynBioHubException;
 import org.synbiohub.frontend.SynBioHubFrontend;
 import org.w3c.dom.Document;
@@ -61,20 +64,18 @@ public class MxToSBML extends Converter {
 
 	public void toSBML(InputStream graphStream, OutputStream sbmlStream)
 			throws IOException, URISyntaxException, TransformerFactoryConfigurationError,
-			TransformerException, SynBioHubException {
+			TransformerException, SynBioHubException, XMLStreamException {
 
-		// to do: implement main method
-		// note: missing "SBMLWriter" equivalent. Investigate JSBML package.
-		// SBOLWriter comes from `import org.sbolstandard.core2.SBOLWriter;`
+		SBMLDocument document = setupDocument(graphStream);
 
-		// SBMLDocument document = setupDocument(graphStream);
-
-		// temp test output
-		sbmlStream.write("Test of MxToSBML export".getBytes("UTF-8"));
+		// Write to SBML document stream
+		// https://sbml.org/jsbml/files/doc/api/1.6.1/org/sbml/jsbml/SBMLWriter.html
+		org.sbml.jsbml.TidySBMLWriter.write(document, sbmlStream, "SBOLCanvas", "1.0", ' ', (short) 2);
 	}
 
 	@SuppressWarnings("unchecked")
-	private void setupDocument(InputStream graphStream) throws IOException {
+	private SBMLDocument setupDocument(InputStream graphStream) throws IOException,
+			TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
 		// read in the mxGraph
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
@@ -84,7 +85,108 @@ public class MxToSBML extends Converter {
 		combinatorialDict = loadDictionary(dataContainer, COMBINATORIAL_DICT_INDEX);
 		interactionDict = loadDictionary(dataContainer, INTERACTION_DICT_INDEX);
 
-		// to do: create SBML document that has species and reactions
+		// Create the SBML document
+		// https://sbml.org/jsbml/files/doc/api/1.6.1/org/sbml/jsbml/SBMLDocument.html
+		SBMLDocument document = new SBMLDocument(3, 2);
+
+		// Create the model
+		// https://sbml.org/jsbml/files/doc/api/1.6.1/org/sbml/jsbml/Model.html
+		Model sbmlModel = document.createModel("sbolcanvas_model");
+
+		// Create the default "Cell" compartment
+		// https://sbml.org/jsbml/files/doc/api/1.6.1/org/sbml/jsbml/Compartment.html
+		Compartment compartment = sbmlModel.createCompartment("Cell");
+		compartment.setName("Cell");
+		compartment.setSize(1.0);
+		compartment.setConstant(true);
+
+		// Search the graph to find species
+		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
+				.toArray(mxCell[]::new);
+
+		for (mxCell viewCell : viewCells) {
+			// Filter for all "Molecular Species" glyphs
+			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
+			mxCell[] speciesGlyphs = Arrays.stream(mxGraphModel.filterCells(viewChildren, molecularSpeciesFilter))
+					.toArray(mxCell[]::new);
+
+			for (mxCell glyph : speciesGlyphs) {
+				createSpecies(sbmlModel, glyph);
+			}
+		}
+
+		return document;
+	}
+
+	/**
+	 * Creates an SBML Species object from an SBOLCanvas glyph.
+	 * 
+	 * @param model The SBML Model to add the species to.
+	 * @param glyph The mxCell representing the species in the graph.
+	 */
+	private void createSpecies(Model model, mxCell glyph) {
+		GlyphInfo glyphInfo = (GlyphInfo) infoDict.get(glyph.getValue());
+
+		// Create the Species
+		// https://sbml.org/jsbml/files/doc/api/1.6.1/org/sbml/jsbml/Species.html
+		// `SBML ID` field is the label in iBioSim. Use Name, or fallback to Display ID
+		String speciesId = glyphInfo.getDisplayID();
+		if (glyphInfo.getName() != null && !glyphInfo.getName().isEmpty()) {
+			speciesId = glyphInfo.getName();
+		}
+
+		// (To Do) ID be valid SId format:
+		//   - starts with a text character (add prefix)
+		//   - no spaces (replace with _)
+		//   - no special characters (replace with _)
+		//   - unique (append count increment)
+
+		Species species = model.createSpecies(speciesId);
+
+		// Create Compartment (required)
+		species.setCompartment("Cell");
+
+		// Set Name (optional)
+		if (glyphInfo.getName() != null && !glyphInfo.getName().isEmpty()) {
+			species.setName(glyphInfo.getName());
+		}
+
+		// Set SBO term for species type
+		String partType = glyphInfo.getPartType();
+		URI typeURI = SBOLData.types.getValue(partType);
+
+		if (typeURI != null) {
+			if (typeURI.equals(org.sbolstandard.core2.ComponentDefinition.PROTEIN)) {
+				// Protein -> Polypeptide chain (SBO:0000252)
+				species.setSBOTerm(252);
+			} else if (typeURI.equals(org.sbolstandard.core2.ComponentDefinition.DNA_MOLECULE) ||
+					typeURI.equals(org.sbolstandard.core2.ComponentDefinition.DNA_REGION)) {
+				// DNA -> Deoxyribonucleic acid (SBO:0000251)
+				species.setSBOTerm(251);
+			} else if (typeURI.equals(org.sbolstandard.core2.ComponentDefinition.RNA_MOLECULE) ||
+					typeURI.equals(org.sbolstandard.core2.ComponentDefinition.RNA_REGION)) {
+				// RNA -> Ribonucleic acid (SBO:0000250)
+				species.setSBOTerm(250);
+			} else if (typeURI.equals(org.sbolstandard.core2.ComponentDefinition.SMALL_MOLECULE)) {
+				// Small molecule -> Simple chemical (SBO:0000247)
+				species.setSBOTerm(247);
+			} else if (typeURI.equals(org.sbolstandard.core2.ComponentDefinition.COMPLEX)) {
+				// Complex -> Non-covalent complex (SBO:0000253)
+				species.setSBOTerm(253);
+			}
+		}
+
+		// Set Boundary Condition
+		species.setBoundaryCondition(glyphInfo.getBoundaryCondition());
+
+		// Temporary values to resolve imports:
+		// Set Initial Amount
+		species.setInitialAmount(0.0);
+		// Set HasOnlySubstanceUnits
+		// true = amount (molecules)
+		species.setHasOnlySubstanceUnits(true);
+		// Set Constant
+		species.setConstant(false);
 	}
 
 	// == helper methods

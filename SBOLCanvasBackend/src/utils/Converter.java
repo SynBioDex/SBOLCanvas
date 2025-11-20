@@ -70,6 +70,16 @@ public class Converter {
 	};
 
 	/**
+	 * Filters mxCells that contain "molecularSpeciesGlyph" in the style string
+	 */
+	static Filter molecularSpeciesFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_MOLECULAR_SPECIES);
+		}
+	};
+
+	/**
 	 * 
 	 */
 	static Filter moduleFilter = new Filter() {

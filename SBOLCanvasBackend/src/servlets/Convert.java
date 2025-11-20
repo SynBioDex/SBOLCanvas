@@ -77,7 +77,7 @@ public class Convert extends HttpServlet {
 
 			response.setStatus(HttpStatus.SC_OK);
 		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException
-				| TransformerException | SAXException | TransformerFactoryConfigurationError | URISyntaxException | SynBioHubException e) {
+				| TransformerException | SAXException | TransformerFactoryConfigurationError | URISyntaxException | SynBioHubException | javax.xml.stream.XMLStreamException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
 			IOUtils.copy(inputStream, outputStream);
