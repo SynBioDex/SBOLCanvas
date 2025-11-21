@@ -48,6 +48,8 @@ public class Data extends HttpServlet {
 					return;
 				}
 				body = gson.toJson(SBOLData.getInteractionRoleRefinement(parent));
+			}else if (request.getPathInfo().equals("/simulationConfig")) {
+				body = gson.toJson(SBOLData.getSimulationConfig());
 			}
 
 			// write it to the response body

@@ -105,6 +105,10 @@ export class MetadataService {
     return this.http.get(this.interactionRoleRefinementURL, {params: params});
   }
 
+  loadSimulationConfig(): Observable<any> {
+    return this.http.get(environment.backendURL + '/data/simulationConfig');
+  }
+
   setSelectedStyleInfo(newInfo: StyleInfo) {
     this.styleInfoSource.next(newInfo);
   }
