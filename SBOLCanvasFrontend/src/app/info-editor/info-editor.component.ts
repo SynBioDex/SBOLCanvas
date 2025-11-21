@@ -188,10 +188,6 @@ export class InfoEditorComponent implements OnInit {
         this.glyphInfo.sequence = event.target.value;
         break;
       }
-      case 'boundaryCondition': {
-        this.glyphInfo.boundaryCondition = event.checked;
-        break;
-      }
       default: {
         console.log('Unexpected id encountered in info menu input = ' + id);
         break;
@@ -253,6 +249,7 @@ export class InfoEditorComponent implements OnInit {
       } else {
         this.partRefinements = [];
       }
+      if (!this.glyphInfo.simulationData) this.glyphInfo.simulationData = {};
     }
 
     // this needs to be called because we may have gotten here from an async function
@@ -291,11 +288,70 @@ export class InfoEditorComponent implements OnInit {
           this.filteredInteractionTypes.push(type);
         }
       }
+      if (!this.interactionInfo.simulationData) this.interactionInfo.simulationData = {};
     }
 
     // this needs to be called because we may have gotten here from an async function
     // an async function doesn't update the view for some reason
     this.changeDetector.detectChanges();
+  }
+
+  /**
+   * Each reactant's interaction arrow in Complex Formation has its own parameter values.
+   * Example: "nc_<sourceURI>" for the nc parameter on the interaction arrow.
+   * Returns the reactant's parameter key, or the parameter name if it is not a reactant.
+   */
+  private getReactantParamKey(paramName: string): string {
+    if (paramName === 'nc') {
+      const selectedCell = this.graphService.graph.getSelectionCell();
+      if (selectedCell && selectedCell.isEdge && selectedCell.isEdge()) {
+        const target = selectedCell.getTerminal(false);
+        if (target && target.isInteractionNode && target.isInteractionNode()) {
+          const source = selectedCell.getTerminal(true);
+          if (source && source.value) {
+            return paramName + '_' + source.value;
+          }
+        }
+      }
+    }
+    return paramName;
+  }
+
+  /**
+   * Gets an interaction simulation parameter value.
+   */
+  getInteractionParamValue(paramName: string, roleOrType: string): number {
+    const defaultValue = this.getDefaultValue(roleOrType, paramName);
+    if (!this.interactionInfo?.simulationData) {
+      return defaultValue;
+    }
+    const paramKey = this.getReactantParamKey(paramName);
+    const value = this.interactionInfo.simulationData[paramKey];
+    return value !== undefined ? value : defaultValue;
+  }
+
+  simulationDataChange(event: any, paramName: string) {
+    let value: any;
+
+    // Parse value based on parameter name
+    if (paramName === 'boundaryCondition') {
+      value = event.checked;
+    } else {
+      value = parseFloat(event.target.value);
+    }
+
+    if (this.glyphInfo != null) {
+      if (!this.glyphInfo.simulationData) this.glyphInfo.simulationData = {};
+      this.glyphInfo.simulationData[paramName] = value;
+      this.graphService.setSelectedCellInfo(this.glyphInfo);
+    } else if (this.interactionInfo != null) {
+      if (!this.interactionInfo.simulationData) this.interactionInfo.simulationData = {};
+
+      // Use keyed parameter name for per-reactant values on association node edges
+      const paramKey = this.getReactantParamKey(paramName);
+      this.interactionInfo.simulationData[paramKey] = value;
+      this.graphService.setSelectedCellInfo(this.interactionInfo);
+    }
   }
 
   localDesign(): boolean {

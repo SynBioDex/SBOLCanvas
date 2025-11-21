@@ -21,3 +21,21 @@
 .filter-field-width{
   width: 100%;
 }
+
+.simulation-section {
+  margin-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 10px;
+}
+
+.simulation-section > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.simulation-header {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 10px;
+  color: rgba(0, 0, 0, 0.54);
+}

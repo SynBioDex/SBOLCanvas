@@ -177,9 +177,18 @@ public class MxToSBML extends Converter {
 		}
 
 		// Set Boundary Condition
-		species.setBoundaryCondition(glyphInfo.getBoundaryCondition());
+		// Read from simulationData map, default to false if not set
+		boolean boundaryCondition = false;
+		if (glyphInfo.getSimulationData() != null && glyphInfo.getSimulationData().containsKey("boundaryCondition")) {
+			Object bcValue = glyphInfo.getSimulationData().get("boundaryCondition");
+			if (bcValue instanceof Boolean) {
+				boundaryCondition = (Boolean) bcValue;
+			} else if (bcValue instanceof String) {
+				boundaryCondition = Boolean.parseBoolean((String) bcValue);
+			}
+		}
+		species.setBoundaryCondition(boundaryCondition);
 
-		// Temporary values to resolve imports:
 		// Set Initial Amount
 		species.setInitialAmount(0.0);
 		// Set HasOnlySubstanceUnits
