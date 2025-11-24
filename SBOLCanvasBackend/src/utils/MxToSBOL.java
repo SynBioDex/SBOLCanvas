@@ -995,48 +995,6 @@ public class MxToSBOL extends Converter {
 		return sourceFC;
 	}
 
-	private mxGraph parseGraph(InputStream graphStream) throws IOException {
-		mxGraph graph = new mxGraph();
-		((mxGraphModel) graph.getModel()).setMaintainEdgeParent(false);
-		Document document = mxXmlUtils.parseXml(mxUtils.readInputStream(graphStream));
-		mxCodec codec = new mxCodec(document);
-		codec.decode(document.getDocumentElement(), graph.getModel());
-		return graph;
-	}
-
-	/**
-	 * Dictionaries from the front end sometimes get decoded as array lists. This
-	 * method ensures that we load them as hash tables.
-	 * 
-	 * @param <T>
-	 * @param dataContainer
-	 * @param dictionaryIndex
-	 */
-	@SuppressWarnings("unchecked")
-	private <T extends Info> Hashtable<String, T> loadDictionary(ArrayList<Object> dataContainer, int dictionaryIndex) {
-        if (dataContainer.get(dictionaryIndex) instanceof ArrayList) {
-			// 90% sure it only happens when it's empty meaning that we could just return a
-			// empty hash table.
-			Hashtable<String, T> dict = new Hashtable<String, T>();
-			for (T item : (ArrayList<T>) dataContainer.get(dictionaryIndex)) {
-				// nasty instanceof as I couldn't convince the compiler that the abstract method
-				// is guaranteed to be implemented
-				if (item instanceof GlyphInfo) {
-					dict.put(((GlyphInfo) item).getFullURI(), item);
-				} else if (item instanceof ModuleInfo) {
-					dict.put(((ModuleInfo) item).getFullURI(), item);
-				} else if (item instanceof CombinatorialInfo) {
-					dict.put(((CombinatorialInfo) item).getFullURI(), item);
-				} else if (item instanceof InteractionInfo) {
-					dict.put(((InteractionInfo) item).getFullURI(), item);
-				}
-			}
-			return dict;
-		} else {
-			return (Hashtable<String, T>) dataContainer.get(dictionaryIndex);
-		}
-	}
-
     /*
         Not using the libSBOLj method because it skips the entire document
         when one top-level throws an exception, which causes it to skip copying

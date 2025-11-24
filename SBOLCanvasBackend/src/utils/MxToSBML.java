@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
+import java.util.LinkedHashMap;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamException;
@@ -27,15 +28,10 @@ import org.sbml.jsbml.Species;
 import org.sbml.jsbml.Compartment;
 
 import org.synbiohub.frontend.SynBioHubException;
-import org.synbiohub.frontend.SynBioHubFrontend;
-import org.w3c.dom.Document;
 
-import com.mxgraph.io.mxCodec;
 import com.mxgraph.model.mxCell;
+import com.mxgraph.model.mxGeometry;
 import com.mxgraph.model.mxGraphModel;
-import com.mxgraph.util.mxConstants;
-import com.mxgraph.util.mxUtils;
-import com.mxgraph.util.mxXmlUtils;
 import com.mxgraph.view.mxGraph;
 
 import data.CanvasAnnotation;
