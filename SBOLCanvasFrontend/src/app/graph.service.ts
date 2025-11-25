@@ -93,6 +93,15 @@ export class GraphService extends GraphHelpers {
         return selected[0].isSequenceFeatureGlyph()
     }
 
+    isSelectedAMolecularSpecies(): boolean {
+        let selected = this.graph.getSelectionCells()
+        if (selected.length != 1) {
+            return false
+        }
+        return selected[0].isMolecularSpeciesGlyph()
+    }
+
+
     isRootAComponentView(): boolean {
         return this.viewStack[0].isComponentView()
     }

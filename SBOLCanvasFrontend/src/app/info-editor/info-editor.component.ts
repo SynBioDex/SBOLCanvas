@@ -14,6 +14,44 @@ import { CombinatorialDesignEditorComponent } from '../combinatorial-design-edit
 
 import { FormControl, Validators } from '@angular/forms';
 
+/**
+ * Type for parameter configuration values (keyed by parameter name, values are numbers)
+ */
+interface ParameterConfig {
+  [paramName: string]: number;
+}
+
+/**
+ * Type for simulation configuration (keyed by role/interaction type name)
+ */
+interface SimulationConfig {
+  [roleOrType: string]: ParameterConfig;
+}
+
+/**
+ * Definition for a simulation parameter input field
+ */
+interface ParamDef {
+  name: string;
+  label: string;
+}
+
+/**
+ * The following simulation parameter names and labels are from iBioSim
+ */
+const PROMOTER_PARAMS: ParamDef[] = [
+  { name: 'ng', label: 'Initial promoter count (ng)' },
+  { name: 'np', label: 'Stoichiometry of production (np)' },
+  { name: 'nr', label: 'Initial RNAP count (nr)' },
+  { name: 'ko', label: 'Open complex production rate (ko)' },
+  { name: 'kb', label: 'Basal production rate (kb)' },
+  { name: 'ka', label: 'Activated production rate (ka)' },
+  { name: 'Ko_f', label: 'RNAP binding rate forward (Ko_f)' },
+  { name: 'Ko_r', label: 'RNAP binding rate reverse (Ko_r)' },
+  { name: 'Kao_f', label: 'Activated RNAP binding rate forward (Kao_f)' },
+  { name: 'Kao_r', label: 'Activated RNAP binding rate reverse (Kao_r)' }
+];
+
 @Component({
   selector: 'app-info-editor',
   templateUrl: './info-editor.component.html',
@@ -34,6 +72,10 @@ export class InfoEditorComponent implements OnInit {
   interactionRoles: {};
   interactionSourceRefinements: String[];
   interactionTargetRefinements: String[];
+  simulationConfig: SimulationConfig = {};
+
+  // Parameter definitions
+  promoterParams = PROMOTER_PARAMS;
 
   // TODO get these from the backend
   encodings: string[];
@@ -55,9 +97,27 @@ export class InfoEditorComponent implements OnInit {
     this.getRoles();
     this.getInteractions();
     this.getInteractionRoles();
+    this.getSimulationConfig();
+  }
 
-    
-  
+  getSimulationConfig() {
+    this.metadataService.loadSimulationConfig().subscribe(config => {
+      this.simulationConfig = config;
+    });
+  }
+
+  getDefaultValue(roleOrType: string, paramName: string): number {
+    if (!this.simulationConfig) {
+      throw new Error('Simulation config not loaded');
+    }
+    if (!this.simulationConfig[roleOrType]) {
+      throw new Error(`No simulation config for: ${roleOrType}`);
+    }
+    const value = this.simulationConfig[roleOrType][paramName];
+    if (value === undefined) {
+      throw new Error(`No default value for param: ${paramName} in ${roleOrType}`);
+    }
+    return value;
   }
 
   getTypes() {
@@ -400,4 +460,9 @@ export class InfoEditorComponent implements OnInit {
     this.filteredPartRefinements = this.partRefinements.filter(refinements => 
       refinements.toLowerCase().includes(filterValue.toLowerCase()))
   }
+
+  isMolecularSpecies(): boolean {
+    return this.graphService.isSelectedAMolecularSpecies();
+  }
+
 }

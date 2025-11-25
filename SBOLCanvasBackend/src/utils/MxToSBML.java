@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.LinkedHashMap;
 
+import org.sbolstandard.core2.SequenceOntology;
+import org.sbolstandard.core2.SystemsBiologyOntology;
+
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.TransformerException;
@@ -45,7 +48,76 @@ import data.CombinatorialInfo;
 
 public class MxToSBML extends Converter {
 
+	/**
+	 * Helper class to group Transcriptional Unit (TU) data.
+	 * Backbone is the map key, not stored in the class.
+	 */
+	private static class TUData {
+		mxCell promoterGlyph; // For finding regulation edges (Inhibition/Stimulation)
+		Species promoterSpecies; // JSBML Promoter Species object (get ID via .getId())
+		List<mxCell> productionEdges;
+
+		TUData(mxCell promoterGlyph, Species promoterSpecies) {
+			this.promoterGlyph = promoterGlyph;
+			this.promoterSpecies = promoterSpecies;
+			this.productionEdges = new ArrayList<>();
+		}
+	}
+
+	/**
+	 * Helper class to bundle Species with its layout geometry.
+	 * Key is glyph.getValue() (GlyphInfo URI).
+	 */
+	private static class SpeciesData {
+		Species species; // JSBML Species object
+		mxGeometry geometry; // For layout position
+
+		SpeciesData(Species species, mxGeometry geometry) {
+			this.species = species;
+			this.geometry = geometry;
+		}
+	}
+
+	/**
+	 * Helper class to calculate canvas bounding box.
+	 * Find max/min glyph coordinates, normalize layout to those dimensions.
+	 */
+	private static class LayoutBounds {
+		double minX = Double.MAX_VALUE;
+		double minY = Double.MAX_VALUE;
+		double maxX = Double.MIN_VALUE;
+		double maxY = Double.MIN_VALUE;
+
+		void update(mxGeometry geom) {
+			if (geom == null)
+				return;
+			minX = Math.min(minX, geom.getX());
+			minY = Math.min(minY, geom.getY());
+			maxX = Math.max(maxX, geom.getX() + geom.getWidth());
+			maxY = Math.max(maxY, geom.getY() + geom.getHeight());
+		}
+
+		double getCanvasWidth(double buffer) {
+			return maxX - minX + 2 * buffer;
+		}
+
+		double getCanvasHeight(double buffer) {
+			return maxY - minY + 2 * buffer;
+		}
+
+		double normalizeX(double x, double buffer) {
+			return x - minX + buffer;
+		}
+
+		double normalizeY(double y, double buffer) {
+			return y - minY + buffer;
+		}
+	}
+
 	private HashMap<String, String> userTokens;
+	private HashSet<String> usedIds = new HashSet<>();
+	private LayoutBounds layoutBounds = new LayoutBounds();
+	private HashMap<String, SpeciesData> glyphToSpeciesData = new HashMap<>();
 
 	public MxToSBML() {
 		this(null);
@@ -72,7 +144,7 @@ public class MxToSBML extends Converter {
 	@SuppressWarnings("unchecked")
 	private SBMLDocument setupDocument(InputStream graphStream) throws IOException,
 			TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
-		// read in the mxGraph
+		// Load mxGraph and dictionaries
 		mxGraph graph = parseGraph(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		mxCell cell0 = (mxCell) model.getCell("0");
@@ -100,27 +172,111 @@ public class MxToSBML extends Converter {
 		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
 				.toArray(mxCell[]::new);
 
+		// PHASE 1: Create all species
+		HashMap<mxCell, TUData> tuMap = createPromoterSpecies(sbmlModel, model, viewCells);
+		createMolecularSpecies(sbmlModel, model, viewCells);
+
+
+	/**
+	 * Scan all backbones, find promoter, create SBML promoter species.
+	 * Returns a map of backbone -> TUData. Each backbone = one TU. 
+	 * Find first promoter glyph on each backbone.
+	 */
+	private HashMap<mxCell, TUData> createPromoterSpecies(Model sbmlModel, mxGraphModel graphModel,
+			mxCell[] viewCells) {
+		HashMap<mxCell, TUData> tuMap = new HashMap<>();
+
 		for (mxCell viewCell : viewCells) {
-			// Filter for all "Molecular Species" glyphs
-			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
+			Object[] viewChildren = mxGraphModel.getChildCells(graphModel, viewCell, true, false);
+			mxCell[] backbones = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
+					.toArray(mxCell[]::new);
+
+			for (mxCell backbone : backbones) {
+				Object[] containerChildren = mxGraphModel.getChildCells(graphModel, backbone, true, false);
+				mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
+						.toArray(mxCell[]::new);
+
+				// Find first promoter glyph
+				mxCell promoterGlyph = null;
+				for (mxCell glyph : glyphs) {
+					GlyphInfo info = (GlyphInfo) infoDict.get(glyph.getValue());
+					if (info != null && info.getPartRole() != null && info.getPartRole().contains("Promoter")) {
+						promoterGlyph = glyph;
+						break;
+					}
+				}
+
+				// Future validation: Check before export, inform that backbone is missing a promoter
+				if (promoterGlyph == null) {
+					throw new IllegalArgumentException("Backbone has no promoter glyph: " + backbone.getId());
+				}
+
+				// Create promoter species
+				GlyphInfo promoterInfo = (GlyphInfo) infoDict.get(promoterGlyph.getValue());
+				String promoterName = promoterInfo.getName();
+				if (promoterName == null || promoterName.isEmpty()) {
+					promoterName = promoterInfo.getDisplayID();
+				}
+				String promoterId = sanitizeId(promoterName);
+
+				Species promoterSpecies = sbmlModel.createSpecies(promoterId);
+				promoterSpecies.setCompartment("Cell");
+				promoterSpecies.setSBOTerm(590); // SBO:0000590 Logical element (promoter)
+
+				// Set initial amount from ng parameter
+				double ng = getParam(promoterInfo.getSimulationData(), "ng", SequenceOntology.PROMOTER);
+				promoterSpecies.setInitialAmount(ng);
+				promoterSpecies.setHasOnlySubstanceUnits(true);
+				promoterSpecies.setConstant(false);
+				promoterSpecies.setBoundaryCondition(false);
+
+				if (promoterInfo.getName() != null && !promoterInfo.getName().isEmpty()) {
+					promoterSpecies.setName(promoterInfo.getName());
+				}
+
+				// Store SpeciesData for promoter species (Species + backbone geometry)
+				mxGeometry backboneGeom = backbone.getGeometry();
+				glyphToSpeciesData.put((String) promoterGlyph.getValue(),
+						new SpeciesData(promoterSpecies, backboneGeom));
+				layoutBounds.update(backboneGeom);
+
+				// Store TU data
+				tuMap.put(backbone, new TUData(promoterGlyph, promoterSpecies));
+			}
+		}
+
+		return tuMap;
+	}
+
+	/**
+	 * Create molecular species (proteins, small molecules, complexes, etc).
+	 */
+	private void createMolecularSpecies(Model sbmlModel, mxGraphModel graphModel, mxCell[] viewCells) {
+		for (mxCell viewCell : viewCells) {
+			Object[] viewChildren = mxGraphModel.getChildCells(graphModel, viewCell, true, false);
 			mxCell[] speciesGlyphs = Arrays.stream(mxGraphModel.filterCells(viewChildren, molecularSpeciesFilter))
 					.toArray(mxCell[]::new);
 
 			for (mxCell glyph : speciesGlyphs) {
-				createSpecies(sbmlModel, glyph);
+				Species species = createSpecies(sbmlModel, glyph);
+				glyphToSpeciesData.put((String) glyph.getValue(),
+						new SpeciesData(species, glyph.getGeometry()));
 			}
 		}
+	}
 
-		return document;
 	}
 
 	/**
-	 * Creates an SBML Species object from an SBOLCanvas glyph.
-	 * 
+
+	/**
+	 * Creates an SBML Species object from an SBOLCanvas molecular species glyph.
+	 *
 	 * @param model The SBML Model to add the species to.
 	 * @param glyph The mxCell representing the species in the graph.
+	 * @return The created Species object
 	 */
-	private void createSpecies(Model model, mxCell glyph) {
+	private Species createSpecies(Model model, mxCell glyph) {
 		GlyphInfo glyphInfo = (GlyphInfo) infoDict.get(glyph.getValue());
 
 		// Create the Species
@@ -130,12 +286,7 @@ public class MxToSBML extends Converter {
 		if (glyphInfo.getName() != null && !glyphInfo.getName().isEmpty()) {
 			speciesId = glyphInfo.getName();
 		}
-
-		// (To Do) ID be valid SId format:
-		//   - starts with a text character (add prefix)
-		//   - no spaces (replace with _)
-		//   - no special characters (replace with _)
-		//   - unique (append count increment)
+		speciesId = sanitizeId(speciesId);
 
 		Species species = model.createSpecies(speciesId);
 
@@ -186,55 +337,111 @@ public class MxToSBML extends Converter {
 		species.setBoundaryCondition(boundaryCondition);
 
 		// Set Initial Amount
-		species.setInitialAmount(0.0);
+		double initialAmount = 0.0;
+		if (glyphInfo.getSimulationData() != null && glyphInfo.getSimulationData().containsKey("initialAmount")) {
+			Object iaValue = glyphInfo.getSimulationData().get("initialAmount");
+			if (iaValue instanceof Number) {
+				initialAmount = ((Number) iaValue).doubleValue();
+			} else if (iaValue instanceof String) {
+				try {
+					initialAmount = Double.parseDouble((String) iaValue);
+				} catch (NumberFormatException e) {
+					throw new IllegalArgumentException(
+							"Invalid initialAmount value for species " + glyphInfo.getDisplayID() + ": " + iaValue, e);
+				}
+			}
+		}
+		species.setInitialAmount(initialAmount);
 		// Set HasOnlySubstanceUnits
 		// true = amount (molecules)
 		species.setHasOnlySubstanceUnits(true);
 		// Set Constant
 		species.setConstant(false);
+
+		// Track glyph bounds for layout
+		layoutBounds.update(glyph.getGeometry());
+
+		return species;
 	}
 
-	// == helper methods
-	// copied from `SBOLCanvasBackend/src/utils/MxToSBOL.java`
-	private mxGraph parseGraph(InputStream graphStream) throws IOException {
-		mxGraph graph = new mxGraph();
-		((mxGraphModel) graph.getModel()).setMaintainEdgeParent(false);
-		Document document = mxXmlUtils.parseXml(mxUtils.readInputStream(graphStream));
-		mxCodec codec = new mxCodec(document);
-		codec.decode(document.getDocumentElement(), graph.getModel());
-		return graph;
+
+	/**
+	 * Gets a simulation parameter value.
+	 * Get user-provided simulationData or fallback to SBOLData defaults.
+	 */
+	private double getParam(Hashtable<String, Object> simData, String paramName, URI type) {
+		// Check user-provided value first
+		if (simData != null && simData.containsKey(paramName)) {
+			Object val = simData.get(paramName);
+			if (val instanceof Number) {
+				return ((Number) val).doubleValue();
+			} else if (val instanceof String) {
+				return Double.parseDouble((String) val);
+			}
+			throw new IllegalArgumentException("Invalid simulation param type for: " + paramName);
+		}
+		// Fall back to centralized defaults
+		return getDefaultValue(type, paramName);
+	}
+
+
+	private double getDefaultValue(URI type, String paramName) {
+		String key = null;
+		if (SBOLData.roles.containsValue(type)) {
+			key = SBOLData.roles.getKey(type);
+		} else if (SBOLData.interactions.containsValue(type)) {
+			key = SBOLData.interactions.getKey(type);
+		}
+
+		if (key == null) {
+			throw new IllegalArgumentException("Unknown type URI: " + type);
+		}
+
+		LinkedHashMap<String, Object> params = SBOLData.getSimulationConfig().get(key);
+		if (params == null) {
+			throw new IllegalArgumentException("No simulation config for: " + key);
+		}
+
+		Object val = params.get(paramName);
+		if (val == null) {
+			throw new IllegalArgumentException("No default value for param: " + paramName + " in " + key);
+		}
+
+		if (val instanceof Number) {
+			return ((Number) val).doubleValue();
+		}
+		throw new IllegalArgumentException("Invalid default value type for: " + paramName);
 	}
 
 	/**
-	 * Dictionaries from the front end sometimes get decoded as array lists. This
-	 * method ensures that we load them as hash tables.
-	 * 
-	 * @param <T>
-	 * @param dataContainer
-	 * @param dictionaryIndex
+	 * Sanitizes an ID to be a valid SBML SId. SBML SId must:
+	 * - be unique
+	 * - start with a letter or underscore
+	 * - contain only letters, digits, and underscores
+	 *
+	 * @param id The raw ID string
+	 * @return A valid, unique SBML SId
 	 */
-	@SuppressWarnings("unchecked")
-	private <T extends Info> Hashtable<String, T> loadDictionary(ArrayList<Object> dataContainer, int dictionaryIndex) {
-		if (dataContainer.get(dictionaryIndex) instanceof ArrayList) {
-			// 90% sure it only happens when it's empty meaning that we could just return a
-			// empty hash table.
-			Hashtable<String, T> dict = new Hashtable<String, T>();
-			for (T item : (ArrayList<T>) dataContainer.get(dictionaryIndex)) {
-				// nasty instanceof as I couldn't convince the compiler that the abstract method
-				// is guaranteed to be implemented
-				if (item instanceof GlyphInfo) {
-					dict.put(((GlyphInfo) item).getFullURI(), item);
-				} else if (item instanceof ModuleInfo) {
-					dict.put(((ModuleInfo) item).getFullURI(), item);
-				} else if (item instanceof CombinatorialInfo) {
-					dict.put(((CombinatorialInfo) item).getFullURI(), item);
-				} else if (item instanceof InteractionInfo) {
-					dict.put(((InteractionInfo) item).getFullURI(), item);
-				}
-			}
-			return dict;
-		} else {
-			return (Hashtable<String, T>) dataContainer.get(dictionaryIndex);
+	private String sanitizeId(String id) {
+		if (id == null || id.isEmpty()) {
+			id = "unnamed";
 		}
+		// Replace invalid characters with underscore
+		String sanitized = id.replaceAll("[^a-zA-Z0-9_]", "_");
+		// Ensure it starts with a letter or underscore (not a digit)
+		if (Character.isDigit(sanitized.charAt(0))) {
+			sanitized = "_" + sanitized;
+		}
+		// Make unique: if ID already used, find next available suffix
+		if (usedIds.contains(sanitized)) {
+			int suffix = 2;
+			while (usedIds.contains(sanitized + "_" + suffix)) {
+				suffix++;
+			}
+			sanitized = sanitized + "_" + suffix;
+		}
+		usedIds.add(sanitized);
+		return sanitized;
 	}
+
 }

@@ -85,9 +85,25 @@
     <mat-label class="simulation-header">Simulation Info</mat-label>
     <div *ngIf="isMolecularSpecies()">
       <mat-label>Species</mat-label>
+      <mat-form-field>
+        <mat-label>Initial Amount</mat-label>
+        <input matInput type="number"
+          [value]="glyphInfo.simulationData['initialAmount'] !== undefined ? glyphInfo.simulationData['initialAmount'] : 0"
+          (change)="simulationDataChange($event, 'initialAmount')">
+      </mat-form-field>
       <mat-checkbox id="boundaryCondition" [checked]="glyphInfo.simulationData?.['boundaryCondition']"
         (change)="simulationDataChange($event, 'boundaryCondition')" matTooltipShowDelay="1000"
         matTooltip="Optional. Select if the species is a constant amount during simulation.">Boundary Condition</mat-checkbox>
+    </div>
+
+    <div *ngIf="glyphInfo.partRole && glyphInfo.partRole.includes('Promoter')">
+      <mat-label>Promoter</mat-label>
+      <mat-form-field *ngFor="let param of promoterParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number"
+          [value]="glyphInfo.simulationData[param.name] !== undefined ? glyphInfo.simulationData[param.name] : getDefaultValue('Pro (Promoter)', param.name)"
+          (change)="simulationDataChange($event, param.name)">
+      </mat-form-field>
     </div>
   </div>
 

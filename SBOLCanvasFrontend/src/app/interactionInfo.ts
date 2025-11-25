@@ -14,7 +14,7 @@ export class InteractionInfo extends Info {
   targetRefinement = [];
   fromURI = [];
   toURI = [];
-  simulationData = [];
+  simulationData = {};
 
   constructor() {
     super();
