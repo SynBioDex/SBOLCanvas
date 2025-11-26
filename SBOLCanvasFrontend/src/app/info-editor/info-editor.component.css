@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: hidden;
+  min-width: 275px;
 }
 
 

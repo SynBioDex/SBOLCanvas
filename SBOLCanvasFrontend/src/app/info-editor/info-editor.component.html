@@ -182,5 +182,58 @@
   <mat-form-field>
     <input matInput id="displayID" placeholder="Display ID" value="{{ interactionInfo.displayID }}" (change)="inputChange($event)">
   </mat-form-field>
+
+  <div class="simulation-section" *ngIf="interactionInfo.interactionType == 'Degradation' || interactionInfo.interactionType == 'Biochemical Reaction' || interactionInfo.interactionType == 'Non-Covalent Binding' || interactionInfo.interactionType == 'Inhibition' || interactionInfo.interactionType == 'Stimulation'">
+    <mat-label class="simulation-header">Simulation Info</mat-label>
+    <div *ngIf="interactionInfo.interactionType == 'Degradation'">
+      <mat-label>Degradation</mat-label>
+      <mat-form-field>
+        <mat-label>Degradation Rate (kd)</mat-label>
+        <input matInput type="number"
+          [value]="getInteractionParamValue('kd', 'Degradation')"
+          (change)="simulationDataChange($event, 'kd')">
+      </mat-form-field>
+    </div>
+
+    <div *ngIf="(interactionInfo.interactionType == 'Biochemical Reaction' || interactionInfo.interactionType == 'Non-Covalent Binding') && isInteractionNode()">
+      <mat-label>Complex Formation (Node)</mat-label>
+      <mat-form-field *ngFor="let param of complexNodeParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number"
+          [value]="getInteractionParamValue(param.name, interactionInfo.interactionType)"
+          (change)="simulationDataChange($event, param.name)">
+      </mat-form-field>
+    </div>
+
+    <div *ngIf="(interactionInfo.interactionType == 'Biochemical Reaction' || interactionInfo.interactionType == 'Non-Covalent Binding') && !isInteractionNode()">
+      <mat-label>Complex Formation (Reactant)</mat-label>
+      <mat-form-field *ngFor="let param of complexEdgeParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number"
+          [value]="getInteractionParamValue(param.name, interactionInfo.interactionType)"
+          (change)="simulationDataChange($event, param.name)">
+      </mat-form-field>
+    </div>
+
+    <div *ngIf="interactionInfo.interactionType == 'Inhibition'">
+      <mat-label>Repression</mat-label>
+      <mat-form-field *ngFor="let param of inhibitionParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number"
+          [value]="getInteractionParamValue(param.name, 'Inhibition')"
+          (change)="simulationDataChange($event, param.name)">
+      </mat-form-field>
+    </div>
+
+    <div *ngIf="interactionInfo.interactionType == 'Stimulation'">
+      <mat-label>Activation</mat-label>
+      <mat-form-field *ngFor="let param of stimulationParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number"
+          [value]="getInteractionParamValue(param.name, 'Stimulation')"
+          (change)="simulationDataChange($event, param.name)">
+      </mat-form-field>
+    </div>
+  </div>
 </div>
 </div>

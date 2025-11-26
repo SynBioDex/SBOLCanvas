@@ -130,6 +130,7 @@ public class SBOLData {
 		interactionTargetRoles.put(SystemsBiologyOntology.STIMULATION, SystemsBiologyOntology.STIMULATED);
 		interactionTargetRoles.put(SystemsBiologyOntology.BIOCHEMICAL_REACTION, SystemsBiologyOntology.PRODUCT);
 		interactionTargetRoles.put(SystemsBiologyOntology.NON_COVALENT_BINDING, SystemsBiologyOntology.PRODUCT);
+		interactionTargetRoles.put(SystemsBiologyOntology.DEGRADATION, SystemsBiologyOntology.PRODUCT);
 		interactionTargetRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.PRODUCT);
 		interactionTargetRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIED);
 		interactionTargetRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.PRODUCT);

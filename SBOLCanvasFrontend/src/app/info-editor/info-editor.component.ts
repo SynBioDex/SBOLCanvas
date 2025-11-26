@@ -52,6 +52,29 @@ const PROMOTER_PARAMS: ParamDef[] = [
   { name: 'Kao_r', label: 'Activated RNAP binding rate reverse (Kao_r)' }
 ];
 
+const INHIBITION_PARAMS: ParamDef[] = [
+  { name: 'Kr_f', label: 'Repression binding forward (Kr_f)' },
+  { name: 'Kr_r', label: 'Repression binding reverse (Kr_r)' },
+  { name: 'nc', label: 'Stoichiometry of binding (nc)' }
+];
+
+const STIMULATION_PARAMS: ParamDef[] = [
+  { name: 'Ka_f', label: 'Activation binding forward (Ka_f)' },
+  { name: 'Ka_r', label: 'Activation binding reverse (Ka_r)' },
+  { name: 'nc', label: 'Stoichiometry of binding (nc)' }
+];
+
+// params on the arrows to the node (per-reactant)
+const COMPLEX_EDGE_PARAMS: ParamDef[] = [
+  { name: 'nc', label: 'Stoichiometry of binding (nc)' }
+];
+
+// params on the association node (per-reaction)
+const COMPLEX_NODE_PARAMS: ParamDef[] = [
+  { name: 'Kc_f', label: 'Complex formation forward (Kc_f)' },
+  { name: 'Kc_r', label: 'Complex formation reverse (Kc_r)' }
+];
+
 @Component({
   selector: 'app-info-editor',
   templateUrl: './info-editor.component.html',
@@ -76,6 +99,10 @@ export class InfoEditorComponent implements OnInit {
 
   // Parameter definitions
   promoterParams = PROMOTER_PARAMS;
+  inhibitionParams = INHIBITION_PARAMS;
+  stimulationParams = STIMULATION_PARAMS;
+  complexNodeParams = COMPLEX_NODE_PARAMS;
+  complexEdgeParams = COMPLEX_EDGE_PARAMS;
 
   // TODO get these from the backend
   encodings: string[];
@@ -465,4 +492,7 @@ export class InfoEditorComponent implements OnInit {
     return this.graphService.isSelectedAMolecularSpecies();
   }
 
+  isInteractionNode(): boolean {
+    return this.graphService.isSelectedAnInteractionNode();
+  }
 }
