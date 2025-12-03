@@ -350,9 +350,12 @@ export class DownloadGraphComponent implements OnInit {
     }
     
    
-    if (!found)
-      this.history.length = 0;
+    if (!found) {
+      this.history = [];
       this.collection = collection;
+      localStorage.setItem('3collection', this.collection);
+      localStorage.setItem('3collection_history', JSON.stringify(this.history));
+    }
 
     this.updateParts();
   }
