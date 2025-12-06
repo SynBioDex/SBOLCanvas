@@ -194,10 +194,20 @@ export class GraphService extends GraphHelpers {
 
     getSelectedCellID(): string {
         let selected = this.graph.getSelectionCells()
-        if (selected.length != 1) {
-            return null
+
+        if (selected.length === 1) {
+            return selected[0].getId()
         }
-        return selected[0].getId()
+        
+        if (selected.length === 2) {
+            try {
+                if (selected[1].stayAtBeginning)
+                    return selected[1].getId()
+            } catch (e) {
+            }
+        }
+
+        return null
     }
 
     /**
