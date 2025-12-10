@@ -25,6 +25,7 @@ import data.GlyphInfo;
 import data.Info;
 import data.InteractionInfo;
 import data.ModuleInfo;
+import data.EventInfo;
 
 public class Converter {
 
@@ -36,6 +37,7 @@ public class Converter {
 	public static final int INFO_DICT_INDEX = 0;
 	public static final int COMBINATORIAL_DICT_INDEX = 1;
 	public static final int INTERACTION_DICT_INDEX = 2;
+	public static final int EVENT_DICT_INDEX = 3;
 	
 	// style constants
 	protected static final String STYLE_CIRCUIT_CONTAINER = "circuitContainer";
@@ -59,6 +61,7 @@ public class Converter {
 	protected Hashtable<String, Info> infoDict;
 	protected Hashtable<String, CombinatorialInfo> combinatorialDict;
 	protected Hashtable<String, InteractionInfo> interactionDict;
+	protected Hashtable<String, EventInfo> eventDict;
 	protected LayoutHelper layoutHelper;
 
 	/**
@@ -211,6 +214,8 @@ public class Converter {
 					dict.put(((CombinatorialInfo) item).getFullURI(), item);
 				} else if (item instanceof InteractionInfo) {
 					dict.put(((InteractionInfo) item).getFullURI(), item);
+				} else if (item instanceof EventInfo) {
+					dict.put(((EventInfo) item).getFullURI(), item);
 				}
 			}
 			return dict;

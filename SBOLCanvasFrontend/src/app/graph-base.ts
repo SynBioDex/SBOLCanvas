@@ -11,6 +11,7 @@ import { ModuleInfo } from './moduleInfo';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
+import { EventInfo } from './eventInfo';
 import { CustomShapes } from './CustomShapes';
 
 // mx is used here as the typings file for mxgraph isn't up to date.
@@ -31,6 +32,7 @@ export class GraphBase {
     static readonly INFO_DICT_INDEX = 0;
     static readonly COMBINATORIAL_DICT_INDEX = 1;
     static readonly INTERACTION_DICT_INDEX = 2;
+    static readonly EVENT_DICT_INDEX = 3;
 
     static readonly sequenceFeatureGlyphWidth = 50;
     static readonly sequenceFeatureGlyphHeight = 100;
@@ -47,6 +49,8 @@ export class GraphBase {
 
     static readonly defaultModuleWidth = 120;
     static readonly defaultModuleHeight = 50;
+    static readonly defaultEventWidth = 96;
+    static readonly defaultEventHeight = 40;
 
     static readonly defaultInteractionSize = 80;
 
@@ -60,6 +64,7 @@ export class GraphBase {
     static readonly STYLE_BACKBONE = 'backbone';
     static readonly STYLE_TEXTBOX = 'textBox';
     static readonly STYLE_MODULE = 'moduleGlyph';
+    static readonly STYLE_EVENT = 'eventGlyph';
     static readonly STYLE_SCAR = 'Scar (Assembly Scar)';
     static readonly STYLE_NGA = 'NGA (No Glyph Assigned)';
     static readonly STYLE_MOLECULAR_SPECIES = 'molecularSpeciesGlyph';
@@ -219,6 +224,19 @@ export class GraphBase {
         }
         mx.mxCodecRegistry.register(moduleInfoCodec)
         window['ModuleInfo'] = ModuleInfo
+
+        // Event info encode/decode
+        Object.defineProperty(EventInfo, "name", { configurable: true, value: "EventInfo" })
+        const eventInfoCodec = new mx.mxObjectCodec(new EventInfo())
+        eventInfoCodec.decode = function (dec, node, into) {
+            const eventData = new EventInfo()
+            return genericDecode(dec, node, eventData)
+        }
+        eventInfoCodec.encode = function (enc, object) {
+            return object.encode(enc)
+        }
+        mx.mxCodecRegistry.register(eventInfoCodec)
+        window['EventInfo'] = EventInfo
 
         // Interaction info encode/decode
         Object.defineProperty(InteractionInfo, "name", { configurable: true, value: "InteractionInfo" })
@@ -475,6 +493,10 @@ export class GraphBase {
 
         mx.mxCell.prototype.isModule = function () {
             return this.isStyle(GraphBase.STYLE_MODULE)
+        }
+
+        mx.mxCell.prototype.isEvent = function () {
+            return this.isStyle(GraphBase.STYLE_EVENT)
         }
 
         mx.mxCell.prototype.isViewCell = function () {
@@ -795,6 +817,15 @@ export class GraphBase {
         moduleStyle[mx.mxConstants.STYLE_EDITABLE] = false
         moduleStyle[mx.mxConstants.STYLE_ROUNDED] = true
         this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_MODULE, moduleStyle)
+
+        const eventStyle = {}
+        eventStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE
+        eventStyle[mx.mxConstants.STYLE_FILLCOLOR] = '#7AFB7B'
+        eventStyle[mx.mxConstants.STYLE_STROKECOLOR] = '#000000'
+        eventStyle[mx.mxConstants.STYLE_FONTCOLOR] = '#000000'
+        eventStyle[mx.mxConstants.STYLE_EDITABLE] = false
+        eventStyle[mx.mxConstants.STYLE_ROUNDED] = true
+        this.graph.getStylesheet().putCellStyle(GraphBase.STYLE_EVENT, eventStyle)
 
         const circuitContainerStyle = {}
         circuitContainerStyle[mx.mxConstants.STYLE_SHAPE] = mx.mxConstants.SHAPE_RECTANGLE

@@ -22,6 +22,7 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
     BACKBONE: "Backbone",
     TEXT_BOX: "Text box",
     MODULE: "Module",
+    EVENT: "Event",
     SEQUENCE_FEATURE: "Sequence Feature",
     MOLECULAR_SPECIES: "Molecular Species",
     INTERACTION: "Interaction",
@@ -91,6 +92,9 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
           break;
         case this.elementTypes.MODULE:
           this.graphService.makeModuleDragsource(elt);
+          break;
+        case this.elementTypes.EVENT:
+          this.graphService.makeEventDragsource(elt);
           break;
         case this.elementTypes.SEQUENCE_FEATURE:
           this.graphService.makeSequenceFeatureDragsource(elt, elt.getAttribute('glyphStyle'));
@@ -163,6 +167,10 @@ export class GlyphMenuComponent implements OnInit, AfterViewInit {
 
   addModule(){
     this.graphService.addModule();
+  }
+
+  addEvent(){
+    this.graphService.addEvent();
   }
 
   componentDefinitionModeUpdated(newSetting: boolean) {

@@ -236,4 +236,27 @@
     </div>
   </div>
 </div>
+
+<div *ngIf="eventInfo" class="info-menu-container">
+  <mat-form-field>
+    <mat-label>Name</mat-label>
+    <input matInput [(ngModel)]="eventInfo.name" (change)="graphService.setSelectedCellInfo(eventInfo)"
+           matTooltip="Event identifier used in SBML (e.g., 'IPTG_High', 'aTc_Low')">
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Delay (time)</mat-label>
+    <input matInput type="number" [(ngModel)]="eventInfo.delay" (change)="graphService.setSelectedCellInfo(eventInfo)">
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Target Species</mat-label>
+    <input matInput [(ngModel)]="eventInfo.targetSpecies" (change)="graphService.setSelectedCellInfo(eventInfo)">
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Assignment Value</mat-label>
+    <input matInput type="number" [(ngModel)]="eventInfo.assignmentValue" (change)="graphService.setSelectedCellInfo(eventInfo)">
+  </mat-form-field>
+</div>
 </div>

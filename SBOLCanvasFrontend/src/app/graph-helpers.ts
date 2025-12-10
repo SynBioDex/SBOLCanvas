@@ -21,6 +21,7 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { InteractionInfo } from './interactionInfo';
+import { EventInfo } from './eventInfo';
 // import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
@@ -39,10 +40,12 @@ export class GraphHelpers extends GraphBase {
         const infoDict = []
         const combinatorialDict = []
         const interactionDict = []
+        const eventDict = []
         var dataContainer = []
         dataContainer[GraphBase.INFO_DICT_INDEX] = infoDict
         dataContainer[GraphBase.COMBINATORIAL_DICT_INDEX] = combinatorialDict
         dataContainer[GraphBase.INTERACTION_DICT_INDEX] = interactionDict
+        dataContainer[GraphBase.EVENT_DICT_INDEX] = eventDict
         this.graph.getModel().setValue(cell0, dataContainer)
 
         // initalize the root view cell of the graph
@@ -1237,6 +1240,12 @@ export class GraphHelpers extends GraphBase {
                 this.metadataService.setSelectedInteractionInfo(interactionInfo.makeCopy())
             }
         }
+        else if (cell && cell.isEvent()) {
+            let eventInfo = this.getFromEventDict(cell.value)
+            if (eventInfo) {
+                this.metadataService.setSelectedEventInfo(eventInfo.makeCopy())
+            }
+        }
 
         // combinatorial info
         if (cell && cell.isSequenceFeatureGlyph()) {
@@ -1253,6 +1262,7 @@ export class GraphHelpers extends GraphBase {
         this.metadataService.setSelectedGlyphInfo(null)
         this.metadataService.setSelectedModuleInfo(null)
         this.metadataService.setSelectedInteractionInfo(null)
+        this.metadataService.setSelectedEventInfo(null)
 
         // Empty 'StyleInfo' object indicates that nothing is selected, so no options should be available
         this.metadataService.setSelectedStyleInfo(new StyleInfo([]))
@@ -1447,6 +1457,7 @@ export class GraphHelpers extends GraphBase {
         // accumulate all the references
         let foundInfos = {}
         let foundInteractions = {}
+        let foundEvents = {}
         for (let cellKey in this.graph.getModel().cells) {
             const cell = this.graph.getModel().cells[cellKey]
             if (cell.isCircuitContainer() || cell.isSequenceFeatureGlyph() || cell.isModule() || cell.isMolecularSpeciesGlyph()) {
@@ -1457,6 +1468,9 @@ export class GraphHelpers extends GraphBase {
             }
             if (cell.isInteractionNode() || cell.isInteraction()) {
                 foundInteractions[cell.value] = ""
+            }
+            if (cell.isEvent()) {
+                foundEvents[cell.value] = ""
             }
         }
         // detect missing references
@@ -1472,12 +1486,23 @@ export class GraphHelpers extends GraphBase {
                 interactionsToRemove.push(dictKey)
             }
         }
+        let eventsToRemove = []
+        if (cell0.value[GraphBase.EVENT_DICT_INDEX]) {
+            for (let dictKey in cell0.value[GraphBase.EVENT_DICT_INDEX]) {
+                if (!(dictKey in foundEvents)) {
+                    eventsToRemove.push(dictKey)
+                }
+            }
+        }
         // remove references
         for (let infoURI of infosToRemove) {
             this.removeFromInfoDict(infoURI)
         }
         for (let interactionURI of interactionsToRemove) {
             this.removeFromInteractionDict(interactionURI)
+        }
+        for (let eventURI of eventsToRemove) {
+            this.removeFromEventDict(eventURI)
         }
 
     }
@@ -2022,6 +2047,38 @@ export class GraphHelpers extends GraphBase {
         return cell0.value[GraphBase.INFO_DICT_INDEX][glyphURI]
     }
 
+    protected updateEventDict(eventInfo: EventInfo) {
+        const cell0 = this.graph.getModel().getCell(0)
+        if (!cell0.value[GraphBase.EVENT_DICT_INDEX]) {
+            cell0.value[GraphBase.EVENT_DICT_INDEX] = []
+        }
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, eventInfo, cell0.value[GraphBase.EVENT_DICT_INDEX][eventInfo.getFullURI()], GraphBase.EVENT_DICT_INDEX))
+    }
+
+    protected removeFromEventDict(eventURI: string) {
+        const cell0 = this.graph.getModel().getCell(0)
+        if (!cell0.value[GraphBase.EVENT_DICT_INDEX]) {
+            return
+        }
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, null, cell0.value[GraphBase.EVENT_DICT_INDEX][eventURI], GraphBase.EVENT_DICT_INDEX))
+    }
+
+    protected addToEventDict(eventInfo: EventInfo) {
+        const cell0 = this.graph.getModel().getCell(0)
+        if (!cell0.value[GraphBase.EVENT_DICT_INDEX]) {
+            cell0.value[GraphBase.EVENT_DICT_INDEX] = []
+        }
+        this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, eventInfo, null, GraphBase.EVENT_DICT_INDEX))
+    }
+
+    protected getFromEventDict(eventURI: string): EventInfo {
+        const cell0 = this.graph.getModel().getCell(0)
+        if (!cell0.value[GraphBase.EVENT_DICT_INDEX]) {
+            return null
+        }
+        return cell0.value[GraphBase.EVENT_DICT_INDEX][eventURI]
+    }
+
     /**
      * Updates an Combinatorial object
      * NOTE: Should only be used if the fullURI is the same
@@ -2103,6 +2160,15 @@ export class GraphHelpers extends GraphBase {
                 }
             } else if (cell.isModule()) {
                 let info = <ModuleInfo>graphService.getFromInfoDict(cell.value)
+                if (!info) {
+                    return cell.value
+                } else if (info.name != null && info.name != '') {
+                    return info.name
+                } else {
+                    return info.displayID
+                }
+            } else if (cell.isEvent()) {
+                let info = <EventInfo>graphService.getFromEventDict(cell.value)
                 if (!info) {
                     return cell.value
                 } else if (info.name != null && info.name != '') {

@@ -8,6 +8,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSelectChange } from '@angular/material/select';
 import { DownloadGraphComponent } from '../download-graph/download-graph.component';
 import { ModuleInfo } from '../moduleInfo';
+import { EventInfo } from '../eventInfo';
 import { environment } from 'src/environments/environment';
 import { CombinatorialDesignEditorComponent } from '../combinatorial-design-editor/combinatorial-design-editor.component';
 // import { ThrowStmt } from '@angular/compiler';
@@ -110,6 +111,7 @@ export class InfoEditorComponent implements OnInit {
   glyphInfo: GlyphInfo;
   moduleInfo: ModuleInfo;
   interactionInfo: InteractionInfo;
+  eventInfo: EventInfo;
   glyphCtrl: FormControl;
 
 
@@ -119,6 +121,7 @@ export class InfoEditorComponent implements OnInit {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
     this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo));
     this.metadataService.selectedModuleInfo.subscribe(moduleInfo => this.moduleInfoUpdated(moduleInfo));
+    this.metadataService.selectedEventInfo.subscribe(eventInfo => this.eventInfoUpdated(eventInfo));
     this.filesService.getRegistries().subscribe(result => this.registries = result);
     this.getTypes();
     this.getRoles();
@@ -380,6 +383,14 @@ export class InfoEditorComponent implements OnInit {
 
     // this needs to be called because we may have gotten here from an async function
     // an async function doesn't update the view for some reason
+    this.changeDetector.detectChanges();
+  }
+
+  /**
+   * Updates event info in the form.
+   */
+  eventInfoUpdated(eventInfo: EventInfo) {
+    this.eventInfo = eventInfo;
     this.changeDetector.detectChanges();
   }
 

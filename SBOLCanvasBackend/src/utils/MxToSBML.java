@@ -38,6 +38,10 @@ import org.sbml.jsbml.SpeciesReference;
 import org.sbml.jsbml.ModifierSpeciesReference;
 import org.sbml.jsbml.ASTNode;
 import org.sbml.jsbml.text.parser.FormulaParser;
+import org.sbml.jsbml.Event;
+import org.sbml.jsbml.Trigger;
+import org.sbml.jsbml.Delay;
+import org.sbml.jsbml.EventAssignment;
 import org.sbml.jsbml.ext.layout.BoundingBox;
 import org.sbml.jsbml.ext.layout.CompartmentGlyph;
 import org.sbml.jsbml.ext.layout.Curve;
@@ -64,6 +68,7 @@ import data.InteractionInfo;
 import data.ModuleInfo;
 import data.VariableComponentInfo;
 import data.CombinatorialInfo;
+import data.EventInfo;
 
 public class MxToSBML extends Converter {
 
@@ -146,6 +151,7 @@ public class MxToSBML extends Converter {
 		infoDict = new Hashtable<String, Info>();
 		combinatorialDict = new Hashtable<String, CombinatorialInfo>();
 		interactionDict = new Hashtable<String, InteractionInfo>();
+		eventDict = new Hashtable<String, EventInfo>();
 		this.userTokens = userTokens;
 	}
 
@@ -171,6 +177,7 @@ public class MxToSBML extends Converter {
 		infoDict = loadDictionary(dataContainer, INFO_DICT_INDEX);
 		combinatorialDict = loadDictionary(dataContainer, COMBINATORIAL_DICT_INDEX);
 		interactionDict = loadDictionary(dataContainer, INTERACTION_DICT_INDEX);
+		eventDict = loadDictionary(dataContainer, EVENT_DICT_INDEX);
 
 		// Create the SBML document
 		// https://sbml.org/jsbml/files/doc/api/1.6.1/org/sbml/jsbml/SBMLDocument.html
@@ -202,6 +209,9 @@ public class MxToSBML extends Converter {
 
 		// PHASE 3: Create visual layout
 		createVisualLayout(sbmlModel);
+
+		// PHASE 4: Create events
+		createEvents(sbmlModel);
 
 		return document;
 	}
@@ -798,6 +808,44 @@ public class MxToSBML extends Converter {
 					}
 				}
 			}
+		}
+	}
+
+	/**
+	 * Create SBML simulation events from the event dictionary.
+	 */
+	private void createEvents(Model sbmlModel) {
+		if (eventDict == null || eventDict.isEmpty()) {
+			return;
+		}
+
+		for (EventInfo eventInfo : eventDict.values()) {
+			String eventId = eventInfo.getName();
+			if (eventId == null || eventId.isEmpty()) {
+				eventId = eventInfo.getDisplayID();
+			}
+			Event event = sbmlModel.createEvent(eventId);
+			event.setUseValuesFromTriggerTime(false);
+
+			// Trigger: Always fires (constant true)
+			Trigger trigger = event.createTrigger();
+			trigger.setInitialValue(false);
+			trigger.setPersistent(false);
+			ASTNode triggerMath = new ASTNode(ASTNode.Type.CONSTANT_TRUE);
+			trigger.setMath(triggerMath);
+
+			// Delay: Time when event fires
+			Delay delay = event.createDelay();
+			ASTNode delayMath = new ASTNode(ASTNode.Type.REAL);
+			delayMath.setValue(eventInfo.getDelay());
+			delay.setMath(delayMath);
+
+			// Event Assignment: Set target species to value
+			EventAssignment assignment = event.createEventAssignment();
+			assignment.setVariable(eventInfo.getTargetSpecies());
+			ASTNode valueMath = new ASTNode(ASTNode.Type.REAL);
+			valueMath.setValue(eventInfo.getAssignmentValue());
+			assignment.setMath(valueMath);
 		}
 	}
 

@@ -8,6 +8,7 @@ import {InteractionInfo} from "./interactionInfo";
 import {StyleInfo} from './style-info';
 import { ModuleInfo } from './moduleInfo';
 import { CombinatorialInfo } from './combinatorialInfo';
+import { EventInfo } from './eventInfo';
 
 @Injectable({
   providedIn: 'root'
@@ -51,6 +52,10 @@ export class MetadataService {
   // Module info
   private moduleInfoSource = new BehaviorSubject(null);
   selectedModuleInfo = this.moduleInfoSource.asObservable();
+
+  // Event info
+  private eventInfoSource = new BehaviorSubject(null);
+  selectedEventInfo = this.eventInfoSource.asObservable();
 
   // Combinatorial info
   private combinatorialInfoSource = new BehaviorSubject(null);
@@ -123,6 +128,10 @@ export class MetadataService {
 
   setSelectedModuleInfo(newInfo: ModuleInfo) {
     this.moduleInfoSource.next(newInfo);
+  }
+
+  setSelectedEventInfo(newInfo: EventInfo) {
+    this.eventInfoSource.next(newInfo);
   }
 
   setSelectedCombinatorialInfo(newInfo: CombinatorialInfo){
