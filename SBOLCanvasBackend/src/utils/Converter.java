@@ -38,7 +38,7 @@ public class Converter {
 	public static final int COMBINATORIAL_DICT_INDEX = 1;
 	public static final int INTERACTION_DICT_INDEX = 2;
 	public static final int EVENT_DICT_INDEX = 3;
-	
+
 	// style constants
 	protected static final String STYLE_CIRCUIT_CONTAINER = "circuitContainer";
 	protected static final String STYLE_BACKBONE = "backbone";
@@ -114,7 +114,6 @@ public class Converter {
 		}
 	};
 
-
 	/**
 	 * Filters mxCells that contain "backbone" in the style string
 	 */
@@ -132,7 +131,7 @@ public class Converter {
 	static Filter sequenceFeatureFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			if(arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE)){
+			if (arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_SEQUENCE_FEATURE)) {
 				if (((mxCell) arg0).getStyle().contains("Cir (Circular Backbone Left)")) {
 					return false;
 				}
@@ -148,21 +147,21 @@ public class Converter {
 			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle().contains(STYLE_INTERACTION_NODE);
 		}
 	};
-	
+
 	protected static URI getParticipantType(boolean source, Set<URI> interactionTypes) {
 		URI interactionType = null;
-		for(URI interactionURI : SBOLData.interactions.values()) {
-			if(interactionTypes.contains(interactionURI)) {
+		for (URI interactionURI : SBOLData.interactions.values()) {
+			if (interactionTypes.contains(interactionURI)) {
 				interactionType = interactionURI;
 				break;
 			}
 		}
-		if(interactionType == null) {
+		if (interactionType == null) {
 			return null;
 		}
-		if(source) {
+		if (source) {
 			return SBOLData.interactionSourceRoles.get(interactionType);
-		}else {
+		} else {
 			return SBOLData.interactionTargetRoles.get(interactionType);
 		}
 	}
@@ -170,9 +169,9 @@ public class Converter {
 	static QName createQName(String name) {
 		return new QName(URI_PREFIX, name, ANN_PREFIX);
 	}
-	
+
 	// Helpers shared between MxToSBOL and MxToSBML
-	
+
 	/**
 	 * Parses an mxGraph from an input stream.
 	 * 

@@ -69,8 +69,8 @@ export class InfoEditorComponent implements OnInit {
 
   getRefinements(role: string) {
     this.metadataService.loadRefinements(role).subscribe(refinements => {
-      this.partRefinements = refinements
-      this.filteredPartRefinements = refinements
+      this.partRefinements = refinements;
+      this.filteredPartRefinements = refinements;
     });
   }
 
@@ -91,7 +91,7 @@ export class InfoEditorComponent implements OnInit {
   }
 
   dropDownChange(event: MatSelectChange) {
-    this.filteredPartRefinements = this.partRefinements // Reset filter input when clicking on dropdown again
+    this.filteredPartRefinements = this.partRefinements; // Reset filter input when clicking on dropdown again
     const id = event.source.id;
     switch (id) {
       case 'partType': {
@@ -143,12 +143,12 @@ export class InfoEditorComponent implements OnInit {
 
   inputChange(event: any) {
     const id = event.target.id;
-   
+
     switch (id) {
       case 'displayID': {
         const replaced = event.target.value.replace(/[\W_]+/g, '_');
         if (this.glyphInfo != null) {
-          if(replaced !== ''){
+          if (replaced !== '') {
             //this.promptDisplayID();  
             this.glyphInfo.displayID = replaced;
           }
@@ -226,22 +226,22 @@ export class InfoEditorComponent implements OnInit {
    */
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
-    
-    this.glyphCtrl = new FormControl( `${this.glyphInfo?.displayID}`, Validators.required);
+
+    this.glyphCtrl = new FormControl(`${this.glyphInfo?.displayID}`, Validators.required);
     if (glyphInfo != null) {
       if (glyphInfo.partRole != null) {
-        if(this.glyphInfo.partRole.includes("Cir (Circular Backbone")) {
+        if (this.glyphInfo.partRole.includes("Cir (Circular Backbone")) {
           // fixes the part role name so it will show up in the info-editor
           this.glyphInfo.partRole = "Cir (Circular Backbone)";
 
           // for some reason part refinements are not gotten for circular backbones correctly
-          if(this.glyphInfo.partRefine !== undefined && !this.partRefinements.includes(this.glyphInfo.partRefine)) {
+          if (this.glyphInfo.partRefine !== undefined && !this.partRefinements.includes(this.glyphInfo.partRefine)) {
             // if partRefine is not undefined the part refinement list needs to be manually set
             this.partRefinements = [this.glyphInfo.partRefine];
           }
         }
 
-        if(this.glyphInfo.partRefine == undefined) this.getRefinements(this.glyphInfo.partRole);
+        if (this.glyphInfo.partRefine == undefined) this.getRefinements(this.glyphInfo.partRole);
       } else {
         this.partRefinements = [];
       }
@@ -313,14 +313,14 @@ export class InfoEditorComponent implements OnInit {
   }
 
   getSourceInteractionRole() {
-    const interactionRole = this.interactionRoles[this.interactionInfo.interactionType]
-    const NA = "NA"
+    const interactionRole = this.interactionRoles[this.interactionInfo.interactionType];
+    const NA = "NA";
     return interactionRole ? interactionRole[0] || NA : NA;
   }
 
   getTargetInteractionRole() {
-    const interactionRole = this.interactionRoles[this.interactionInfo.interactionType]
-    const NA = "NA"
+    const interactionRole = this.interactionRoles[this.interactionInfo.interactionType];
+    const NA = "NA";
     return interactionRole ? interactionRole[1] || NA : NA;
   }
 
@@ -332,8 +332,8 @@ export class InfoEditorComponent implements OnInit {
     return this.interactionTargetRefinements && this.interactionTargetRefinements.length > 0;
   }
 
-  applyFilter(filterValue: string){
-    this.filteredPartRefinements = this.partRefinements.filter(refinements => 
-      refinements.toLowerCase().includes(filterValue.toLowerCase()))
+  applyFilter(filterValue: string) {
+    this.filteredPartRefinements = this.partRefinements.filter(refinements =>
+      refinements.toLowerCase().includes(filterValue.toLowerCase()));
   }
 }
