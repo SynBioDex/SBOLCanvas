@@ -1,0 +1,101 @@
+<div *ngIf="simulationConfig">
+  <!-- Glyph Simulation Parameters -->
+  <div *ngIf="glyphInfo" class="model-menu-container">
+    <div class="model-section" *ngIf="isMolecularSpecies()">
+      <h4>Species</h4>
+      <mat-form-field floatLabel="always">
+        <mat-label>Initial Amount</mat-label>
+        <input matInput type="number"
+          value="{{glyphInfo.simulationData['initialAmount'] !== undefined ? glyphInfo.simulationData['initialAmount'] : 0}}"
+          (change)="inputChange($event, 'initialAmount')">
+      </mat-form-field>
+      <mat-checkbox id="boundaryCondition" [checked]="glyphInfo.simulationData['boundaryCondition']"
+        (change)="inputChange($event, 'boundaryCondition')" matTooltipShowDelay="1000"
+        matTooltip="Optional. Select if the species is a constant amount during simulation.">Boundary Condition</mat-checkbox>
+    </div>
+
+    <div class="model-section" *ngIf="glyphInfo.partRole && glyphInfo.partRole.includes('Promoter')">
+      <h4>Promoter</h4>
+      <mat-form-field floatLabel="always" *ngFor="let param of promoterParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number"
+          value="{{glyphInfo.simulationData[param.name] !== undefined ? glyphInfo.simulationData[param.name] : getDefaultValue('Pro (Promoter)', param.name)}}"
+          (change)="inputChange($event, param.name)">
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Interaction Simulation Parameters -->
+  <div *ngIf="interactionInfo" class="model-menu-container">
+    <div class="model-section" *ngIf="interactionInfo.interactionType == 'Degradation'">
+      <h4>Degradation</h4>
+      <mat-form-field floatLabel="always">
+        <mat-label>Degradation Rate (kd)</mat-label>
+        <input matInput type="number" value="{{getInteractionParamValue('kd', 'Degradation')}}"
+          (change)="inputChange($event, 'kd')">
+      </mat-form-field>
+    </div>
+
+    <div class="model-section" *ngIf="isComplexFormation() && isInteractionNode()">
+      <h4>Complex Formation (Node)</h4>
+      <mat-form-field floatLabel="always" *ngFor="let param of complexNodeParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number" value="{{getInteractionParamValue(param.name, interactionInfo.interactionType)}}"
+          (change)="inputChange($event, param.name)">
+      </mat-form-field>
+    </div>
+
+    <div class="model-section" *ngIf="isComplexFormation() && !isInteractionNode()">
+      <h4>Complex Formation (Reactant)</h4>
+      <mat-form-field floatLabel="always" *ngFor="let param of complexEdgeParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number" value="{{getInteractionParamValue(param.name, interactionInfo.interactionType)}}"
+          (change)="inputChange($event, param.name)">
+      </mat-form-field>
+    </div>
+
+    <div class="model-section" *ngIf="interactionInfo.interactionType == 'Inhibition'">
+      <h4>Repression</h4>
+      <mat-form-field floatLabel="always" *ngFor="let param of inhibitionParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number" value="{{getInteractionParamValue(param.name, 'Inhibition')}}"
+          (change)="inputChange($event, param.name)">
+      </mat-form-field>
+    </div>
+
+    <div class="model-section" *ngIf="interactionInfo.interactionType == 'Stimulation'">
+      <h4>Activation</h4>
+      <mat-form-field floatLabel="always" *ngFor="let param of stimulationParams">
+        <mat-label>{{param.label}}</mat-label>
+        <input matInput type="number" value="{{getInteractionParamValue(param.name, 'Stimulation')}}"
+          (change)="inputChange($event, param.name)">
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- Event Parameters -->
+  <div *ngIf="eventInfo" class="model-menu-container">
+    <h4>Event</h4>
+    <mat-form-field floatLabel="always">
+      <mat-label>Name</mat-label>
+      <input matInput id="name" value="{{eventInfo.name}}" (change)="inputChange($event)"
+        matTooltip="Event identifier used in SBML (e.g., 'IPTG_High', 'aTc_Low')">
+    </mat-form-field>
+
+    <mat-form-field floatLabel="always">
+      <mat-label>Delay (time)</mat-label>
+      <input matInput id="delay" type="number" value="{{eventInfo.delay}}" (change)="inputChange($event)">
+    </mat-form-field>
+
+    <mat-form-field floatLabel="always">
+      <mat-label>Target Species</mat-label>
+      <input matInput id="targetSpecies" value="{{eventInfo.targetSpecies}}" (change)="inputChange($event)">
+    </mat-form-field>
+
+    <mat-form-field floatLabel="always">
+      <mat-label>Assignment Value</mat-label>
+      <input matInput id="assignmentValue" type="number" value="{{eventInfo.assignmentValue}}"
+        (change)="inputChange($event)">
+    </mat-form-field>
+  </div>
+</div>

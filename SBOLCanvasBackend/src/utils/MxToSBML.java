@@ -820,6 +820,14 @@ public class MxToSBML extends Converter {
 		}
 
 		for (EventInfo eventInfo : eventDict.values()) {
+			// Check target species (required field for events)
+			String targetSpecies = eventInfo.getTargetSpecies();
+			if (targetSpecies == null || targetSpecies.isEmpty()) {
+				throw new IllegalArgumentException(
+						"Event '" + eventInfo.getDisplayID() + "' missing target species");
+			}
+
+			// Set id to name or display id
 			String eventId = eventInfo.getName();
 			if (eventId == null || eventId.isEmpty()) {
 				eventId = eventInfo.getDisplayID();
@@ -842,7 +850,7 @@ public class MxToSBML extends Converter {
 
 			// Event Assignment: Set target species to value
 			EventAssignment assignment = event.createEventAssignment();
-			assignment.setVariable(eventInfo.getTargetSpecies());
+			assignment.setVariable(targetSpecies);
 			ASTNode valueMath = new ASTNode(ASTNode.Type.REAL);
 			valueMath.setValue(eventInfo.getAssignmentValue());
 			assignment.setMath(valueMath);
