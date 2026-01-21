@@ -78,7 +78,8 @@ export class ModelEditorComponent implements OnInit {
   eventInfo: EventInfo;
   simulationConfig: SimulationConfig = {};
 
-  // Parameter definitions
+  validationErrors: { [fieldId: string]: string } = {};
+
   promoterParams = PROMOTER_PARAMS;
   inhibitionParams = INHIBITION_PARAMS;
   stimulationParams = STIMULATION_PARAMS;
@@ -120,6 +121,7 @@ export class ModelEditorComponent implements OnInit {
 
   glyphInfoUpdated(glyphInfo: GlyphInfo) {
     this.glyphInfo = glyphInfo;
+    this.validationErrors = {};
     if (glyphInfo != null) {
       if (!this.glyphInfo.simulationData) this.glyphInfo.simulationData = {};
     }
@@ -128,6 +130,7 @@ export class ModelEditorComponent implements OnInit {
 
   interactionInfoUpdated(interactionInfo: InteractionInfo) {
     this.interactionInfo = interactionInfo;
+    this.validationErrors = {};
     if (interactionInfo != null) {
       if (!this.interactionInfo.simulationData) this.interactionInfo.simulationData = {};
     }
@@ -136,6 +139,7 @@ export class ModelEditorComponent implements OnInit {
 
   eventInfoUpdated(eventInfo: EventInfo) {
     this.eventInfo = eventInfo;
+    this.validationErrors = {};
     this.changeDetector.detectChanges();
   }
 
@@ -184,7 +188,15 @@ export class ModelEditorComponent implements OnInit {
       value = event.target.value;
     } else {
       value = parseFloat(event.target.value);
+      const error = this.validateNumericParam(id, value);
+      if (error) {
+        this.validationErrors[id] = error;
+        this.changeDetector.detectChanges();
+        return;
+      }
     }
+
+    delete this.validationErrors[id];
 
     if (this.eventInfo) {
       // Direct properties (Events)
@@ -207,6 +219,13 @@ export class ModelEditorComponent implements OnInit {
       this.interactionInfo.simulationData[paramKey] = value;
       this.graphService.setSelectedCellInfo(this.interactionInfo);
     }
+  }
+
+  private validateNumericParam(paramName: string, value: number): string | null {
+    if (isNaN(value)) {
+      return 'Must be a valid number';
+    }
+    return null;
   }
 
   isMolecularSpecies(): boolean {
