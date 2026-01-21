@@ -3,9 +3,9 @@ package data;
 public class EventInfo extends Info {
 
 	private String name;
-	private double delay;
 	private String targetSpecies;
-	private double assignmentValue;
+	private double delay; // Defaults to 0
+	private double assignmentValue; // Defaults to 0
 
 	@Override
 	public String getFullURI() {

@@ -3,9 +3,9 @@ import { environment } from 'src/environments/environment';
 
 export class EventInfo extends Info {
     name: string;
-    delay: number;
     targetSpecies: string;
-    assignmentValue: number;
+    delay: number = 0; // Defaults to 0
+    assignmentValue: number = 0; // Defaults to 0
 
     constructor() {
         super();
@@ -44,11 +44,11 @@ export class EventInfo extends Info {
             node.setAttribute("displayID", this.displayID);
         if (this.name)
             node.setAttribute("name", this.name);
-        if (this.delay !== undefined)
+        if (this.delay)
             node.setAttribute("delay", this.delay.toString());
         if (this.targetSpecies)
             node.setAttribute("targetSpecies", this.targetSpecies);
-        if (this.assignmentValue !== undefined)
+        if (this.assignmentValue)
             node.setAttribute("assignmentValue", this.assignmentValue.toString());
 
         return node;
