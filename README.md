@@ -62,12 +62,15 @@ Start the Angular development server
 ```bash
 npm run dev
 ```
-Or, if you plan to develop the frontend, use 
+Or, if you plan to develop the frontend, use
 
-~~~bash
-npm run prebuild # only needed the first run
+```bash
+# First time only:
+npm run prebuild && ng serve -c development
+
+# Subsequent runs:
 ng serve -c development
-~~~
+```
 
 This allows for the use of the Angular DevTools and provides a better debugging experience via the regular DevTools.
 
