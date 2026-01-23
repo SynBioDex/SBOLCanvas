@@ -9,12 +9,10 @@ import java.nio.charset.StandardCharsets;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.awt.geom.Point2D;
@@ -22,14 +20,12 @@ import java.awt.geom.Point2D;
 import org.sbolstandard.core2.SequenceOntology;
 import org.sbolstandard.core2.SystemsBiologyOntology;
 
-import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
 // JSBML API Docs: https://sbml.org/jsbml/files/doc/api/1.6.1/overview-summary.html
 import org.sbml.jsbml.SBMLDocument;
-import org.sbml.jsbml.SBO;
 import org.sbml.jsbml.Model;
 import org.sbml.jsbml.Species;
 import org.sbml.jsbml.Compartment;
