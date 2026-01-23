@@ -744,6 +744,11 @@ public class MxToSBML extends Converter {
 						"Event '" + eventInfo.getDisplayID() + "' missing target species");
 			}
 
+			if (sbmlModel.getSpecies(targetSpecies) == null) {
+				throw new IllegalArgumentException(
+						"Event '" + eventInfo.getDisplayID() + "' references unknown species '" + targetSpecies + "'");
+			}
+
 			String eventId = eventInfo.getName();
 			if (eventId == null || eventId.isEmpty()) {
 				eventId = eventInfo.getDisplayID();
