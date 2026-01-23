@@ -16,6 +16,8 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.awt.geom.Point2D;
 
 import org.sbolstandard.core2.SequenceOntology;
 import org.sbolstandard.core2.SystemsBiologyOntology;
@@ -601,169 +603,132 @@ public class MxToSBML extends Converter {
 		}
 	}
 
-	/**
-	 * Map SBOLCanvas positions to SBML Layout Extension.
-	 *
-	 * Creates:
-	 * - Layout object with canvas dimensions
-	 * - SpeciesGlyph for each molecular species (normalized coordinates)
-	 * - SpeciesGlyph for each promoter species (backbone midpoint)
-	 * - ReactionGlyph for each reaction (product center, point location)
-	 */
-	private void createVisualLayout(Model sbmlModel) {
+	private void createEdge(Layout layout, String sourceId, String targetId, String type,
+			Map<String, Point2D> speciesCenter) {
+		Point2D source = speciesCenter.get(sourceId);
+		Point2D target = speciesCenter.get(targetId);
+
+		if (source == null || target == null)
+			return;
+
+		String rgId = "Glyph__" + sourceId + "__" + type + "__" + targetId;
+		ReactionGlyph rg = layout.createReactionGlyph(rgId);
+		BoundingBox bbox = rg.createBoundingBox();
+		bbox.createPosition(target.getX(), target.getY(), 0);
+		bbox.createDimensions(0, 0, 0);
+
+		String srgId = "ReferenceGlyph__" + sourceId + "__" + type + "__" + targetId;
+		SpeciesReferenceGlyph srg = rg.createSpeciesReferenceGlyph(srgId, "Glyph__" + targetId);
+		srg.setSpeciesReferenceRole(SpeciesReferenceRole.PRODUCT);
+
+		BoundingBox refBox = srg.createBoundingBox();
+		double midX = (source.getX() + target.getX()) / 2.0;
+		double midY = (source.getY() + target.getY()) / 2.0;
+		refBox.createPosition(midX, midY, 0);
+		refBox.createDimensions(0, 0, 0);
+
+		Curve curve = srg.createCurve();
+		LineSegment ls = curve.createLineSegment();
+		ls.createStart(source.getX(), source.getY(), 0);
+		ls.createEnd(target.getX(), target.getY(), 0);
+	}
+
+	private Layout setupLayout(Model sbmlModel) {
 		sbmlModel.enablePackage("layout");
 		LayoutModelPlugin layoutPlugin = (LayoutModelPlugin) sbmlModel.getPlugin("layout");
-		if (layoutPlugin == null) {
-			throw new RuntimeException("Failed to get layout plugin - JSBML layout extension not available");
-		}
-
 		Layout layout = layoutPlugin.createLayout("iBioSim");
 
 		double buffer = 75.0;
-		double canvasWidth = layoutBounds.getCanvasWidth(buffer);
-		double canvasHeight = layoutBounds.getCanvasHeight(buffer);
-		layout.createDimensions(canvasWidth, canvasHeight, 0);
+		layout.createDimensions(layoutBounds.getCanvasWidth(buffer),
+				layoutBounds.getCanvasHeight(buffer), 0);
 
-		// Compartment glyph required for species positioning
 		CompartmentGlyph cellGlyph = layout.createCompartmentGlyph("Glyph__Cell", "Cell");
 		BoundingBox cellBox = cellGlyph.createBoundingBox();
 		cellBox.createPosition(0, 0, 0);
-		cellBox.createDimensions(canvasWidth, canvasHeight, 0);
+		cellBox.createDimensions(layoutBounds.getCanvasWidth(buffer),
+				layoutBounds.getCanvasHeight(buffer), 0);
+
+		return layout;
+	}
+
+	private Map<String, Point2D> createSpeciesGlyphs(Layout layout) {
+		Map<String, Point2D> speciesCenter = new HashMap<>();
+		double buffer = 75.0;
 
 		for (SpeciesData data : glyphToSpeciesData.values()) {
-			Species species = data.species;
-			mxGeometry geom = data.geometry;
-			String speciesId = species.getId();
-			double x, y, width, height;
+			String speciesId = data.species.getId();
 
-			if (species.getSBOTerm() == 590) {
-				// SBO:0000590 (Promoter): Use backbone midpoint with iBioSim default size
-				x = geom.getX() + geom.getWidth() / 2.0;
-				y = geom.getY() + geom.getHeight() / 2.0;
-				width = 100.0; // Default promoter width (iBioSim standard)
+			double x, y, width, height;
+			// SBO:0000590 Promoter. Use backbone midpoint
+			if (data.species.getSBOTerm() == 590) {
+				x = data.geometry.getX() + data.geometry.getWidth() / 2.0;
+				y = data.geometry.getY() + data.geometry.getHeight() / 2.0;
+				width = 100.0;
 				height = 30.0;
 			} else {
-				x = geom.getX();
-				y = geom.getY();
-				width = geom.getWidth();
-				height = geom.getHeight();
+				x = data.geometry.getX();
+				y = data.geometry.getY();
+				width = data.geometry.getWidth();
+				height = data.geometry.getHeight();
 			}
+
+			double normX = layoutBounds.normalizeX(x, buffer);
+			double normY = layoutBounds.normalizeY(y, buffer);
 
 			SpeciesGlyph sg = layout.createSpeciesGlyph("Glyph__" + speciesId, speciesId);
 			BoundingBox bbox = sg.createBoundingBox();
-			bbox.createPosition(layoutBounds.normalizeX(x, buffer), layoutBounds.normalizeY(y, buffer), 0);
+			bbox.createPosition(normX, normY, 0);
 			bbox.createDimensions(width, height, 0);
+
+			speciesCenter.put(speciesId, new Point2D.Double(
+					normX + width / 2.0,
+					normY + height / 2.0));
 		}
+
+		return speciesCenter;
+	}
+
+	private void createProductionEdges(Layout layout, Reaction reaction,
+			Map<String, Point2D> speciesCenter) {
+		String promoterId = reaction.getId().substring("Production_".length());
+
+		for (SpeciesReference product : reaction.getListOfProducts()) {
+			createEdge(layout, promoterId, product.getSpecies(), "Production", speciesCenter);
+		}
+
+		for (ModifierSpeciesReference mod : reaction.getListOfModifiers()) {
+			String modId = mod.getSpecies();
+			if (modId.equals(promoterId))
+				continue;
+
+			String type = (mod.getSBOTerm() == 20) ? "repression" : "activation";
+			createEdge(layout, modId, promoterId, type, speciesCenter);
+		}
+	}
+
+	private void createComplexEdges(Layout layout, Reaction reaction,
+			Map<String, Point2D> speciesCenter) {
+		String productId = reaction.getProduct(0).getSpecies();
+
+		for (SpeciesReference reactant : reaction.getListOfReactants()) {
+			createEdge(layout, reactant.getSpecies(), productId, "complex", speciesCenter);
+		}
+	}
+
+	/**
+	 * Add SBOLCanvas Glyph positions to the SBML Layout.
+	 */
+	private void createVisualLayout(Model sbmlModel) {
+		Layout layout = setupLayout(sbmlModel);
+		Map<String, Point2D> speciesCenter = createSpeciesGlyphs(layout);
 
 		for (Reaction reaction : sbmlModel.getListOfReactions()) {
 			String reactionId = reaction.getId();
 
-			// Position reaction glyph at first product
-			if (reaction.getProductCount() > 0) {
-				SpeciesReference productRef = reaction.getProduct(0);
-				String productSpeciesId = productRef.getSpecies();
-				SpeciesGlyph productGlyph = layout.getSpeciesGlyph("Glyph__" + productSpeciesId);
-
-				if (productGlyph != null && productGlyph.isSetBoundingBox()) {
-					BoundingBox productBox = productGlyph.getBoundingBox();
-
-					double productCenterX = productBox.getPosition().getX()
-							+ productBox.getDimensions().getWidth() / 2.0;
-					double productCenterY = productBox.getPosition().getY()
-							+ productBox.getDimensions().getHeight() / 2.0;
-
-					ReactionGlyph rg = layout.createReactionGlyph("Glyph__" + reactionId, reactionId);
-					BoundingBox bbox = rg.createBoundingBox();
-					bbox.createPosition(productCenterX, productCenterY, 0);
-					bbox.createDimensions(0, 0, 0);
-
-					for (int i = 0; i < reaction.getProductCount(); i++) {
-						SpeciesReference prodRef = reaction.getProduct(i);
-						String prodSpeciesId = prodRef.getSpecies();
-						SpeciesGlyph prodGlyph = layout.getSpeciesGlyph("Glyph__" + prodSpeciesId);
-
-						if (prodGlyph != null && prodGlyph.isSetBoundingBox()) {
-							BoundingBox prodBox = prodGlyph.getBoundingBox();
-							double prodCenterX = prodBox.getPosition().getX()
-									+ prodBox.getDimensions().getWidth() / 2.0;
-							double prodCenterY = prodBox.getPosition().getY()
-									+ prodBox.getDimensions().getHeight() / 2.0;
-
-							SpeciesReferenceGlyph refGlyph = rg.createSpeciesReferenceGlyph(
-									"RefGlyph__" + reactionId + "_product_" + i, "Glyph__" + prodSpeciesId);
-							refGlyph.setSpeciesReferenceRole(SpeciesReferenceRole.PRODUCT);
-
-							BoundingBox refBox = refGlyph.createBoundingBox();
-							double midX = (productCenterX + prodCenterX) / 2.0;
-							double midY = (productCenterY + prodCenterY) / 2.0;
-							refBox.createPosition(midX, midY, 0);
-							refBox.createDimensions(0, 0, 0);
-
-							Curve curve = refGlyph.createCurve();
-							LineSegment lineSegment = curve.createLineSegment();
-							lineSegment.createStart(productCenterX, productCenterY, 0);
-							lineSegment.createEnd(prodCenterX, prodCenterY, 0);
-						}
-					}
-
-					for (int i = 0; i < reaction.getReactantCount(); i++) {
-						SpeciesReference reactRef = reaction.getReactant(i);
-						String reactSpeciesId = reactRef.getSpecies();
-						SpeciesGlyph reactGlyph = layout.getSpeciesGlyph("Glyph__" + reactSpeciesId);
-
-						if (reactGlyph != null && reactGlyph.isSetBoundingBox()) {
-							BoundingBox reactBox = reactGlyph.getBoundingBox();
-							double reactCenterX = reactBox.getPosition().getX()
-									+ reactBox.getDimensions().getWidth() / 2.0;
-							double reactCenterY = reactBox.getPosition().getY()
-									+ reactBox.getDimensions().getHeight() / 2.0;
-
-							SpeciesReferenceGlyph refGlyph = rg.createSpeciesReferenceGlyph(
-									"RefGlyph__" + reactionId + "_reactant_" + i, "Glyph__" + reactSpeciesId);
-							refGlyph.setSpeciesReferenceRole(SpeciesReferenceRole.SUBSTRATE);
-
-							BoundingBox refBox = refGlyph.createBoundingBox();
-							double midX = (reactCenterX + productCenterX) / 2.0;
-							double midY = (reactCenterY + productCenterY) / 2.0;
-							refBox.createPosition(midX, midY, 0);
-							refBox.createDimensions(0, 0, 0);
-
-							Curve curve = refGlyph.createCurve();
-							LineSegment lineSegment = curve.createLineSegment();
-							lineSegment.createStart(reactCenterX, reactCenterY, 0);
-							lineSegment.createEnd(productCenterX, productCenterY, 0);
-						}
-					}
-
-					for (int i = 0; i < reaction.getModifierCount(); i++) {
-						ModifierSpeciesReference modRef = reaction.getModifier(i);
-						String modSpeciesId = modRef.getSpecies();
-						SpeciesGlyph modGlyph = layout.getSpeciesGlyph("Glyph__" + modSpeciesId);
-
-						if (modGlyph != null && modGlyph.isSetBoundingBox()) {
-							BoundingBox modBox = modGlyph.getBoundingBox();
-							double modCenterX = modBox.getPosition().getX()
-									+ modBox.getDimensions().getWidth() / 2.0;
-							double modCenterY = modBox.getPosition().getY()
-									+ modBox.getDimensions().getHeight() / 2.0;
-
-							SpeciesReferenceGlyph refGlyph = rg.createSpeciesReferenceGlyph(
-									"RefGlyph__" + reactionId + "_modifier_" + i, "Glyph__" + modSpeciesId);
-							refGlyph.setSpeciesReferenceRole(SpeciesReferenceRole.MODIFIER);
-
-							BoundingBox refBox = refGlyph.createBoundingBox();
-							double midX = (modCenterX + productCenterX) / 2.0;
-							double midY = (modCenterY + productCenterY) / 2.0;
-							refBox.createPosition(midX, midY, 0);
-							refBox.createDimensions(0, 0, 0);
-
-							Curve curve = refGlyph.createCurve();
-							LineSegment lineSegment = curve.createLineSegment();
-							lineSegment.createStart(modCenterX, modCenterY, 0);
-							lineSegment.createEnd(productCenterX, productCenterY, 0);
-						}
-					}
-				}
+			if (reactionId.startsWith("Production_")) {
+				createProductionEdges(layout, reaction, speciesCenter);
+			} else if (reactionId.startsWith("Complex_")) {
+				createComplexEdges(layout, reaction, speciesCenter);
 			}
 		}
 	}
