@@ -84,6 +84,15 @@ public class Convert extends HttpServlet {
 
 			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 			e.printStackTrace();
+		} catch (RuntimeException e) {
+			// Catch unchecked exceptions from SBML export
+			String message = e.getMessage() != null ? e.getMessage() : "Export failed";
+			ServletOutputStream outputStream = response.getOutputStream();
+			InputStream inputStream = new ByteArrayInputStream(message.getBytes());
+			IOUtils.copy(inputStream, outputStream);
+
+			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+			e.printStackTrace();
 		}
 	}
 

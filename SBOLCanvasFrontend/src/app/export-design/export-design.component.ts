@@ -37,14 +37,25 @@ export class ExportDesignComponent implements OnInit {
   onFinishClick(){
     this.working = true;
     if(this.mode == "Export"){
-      this.filesService.exportDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe(_ => {
-        this.working = false;
-        this.dialogRef.close();
+      this.filesService.exportDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe({
+        next: _ => {
+          this.working = false;
+          this.dialogRef.close();
+        },
+        error: _ => {
+          // Error dialog shown by HTTP interceptor; reset state so user can retry or cancel
+          this.working = false;
+        }
       });
     }else{
-      this.filesService.enumerateDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe(_ => {
-        this.working = false;
-        this.dialogRef.close();
+      this.filesService.enumerateDesign(this.loginService.users, this.filename, this.format, this.graphService.getGraphXML()).subscribe({
+        next: _ => {
+          this.working = false;
+          this.dialogRef.close();
+        },
+        error: _ => {
+          this.working = false;
+        }
       });
     }
   }
