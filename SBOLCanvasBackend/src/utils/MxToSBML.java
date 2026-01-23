@@ -1060,10 +1060,10 @@ public class MxToSBML extends Converter {
 		// Make unique: if ID already used, find next available suffix
 		if (usedIds.contains(sanitized)) {
 			int suffix = 2;
-			while (usedIds.contains(sanitized + "_" + suffix)) {
+			while (usedIds.contains(sanitized + "__" + suffix)) {
 				suffix++;
 			}
-			sanitized = sanitized + "_" + suffix;
+			sanitized = sanitized + "__" + suffix;
 		}
 		usedIds.add(sanitized);
 		return sanitized;
