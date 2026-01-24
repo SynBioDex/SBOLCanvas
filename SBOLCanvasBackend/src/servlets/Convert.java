@@ -22,6 +22,7 @@ import org.sbolstandard.core2.SBOLValidationException;
 import org.synbiohub.frontend.SynBioHubException;
 import org.xml.sax.SAXException;
 
+import utils.MxToSBML;
 import utils.MxToSBOL;
 import utils.SBOLToMx;
 
@@ -52,18 +53,21 @@ public class Convert extends HttpServlet {
 					return;
 				}
 				
-				MxToSBOL converter = new MxToSBOL(userTokens);
+				MxToSBOL sbolConverter = new MxToSBOL(userTokens);
+				MxToSBML sbmlConverter = new MxToSBML(userTokens);
 				switch(format) {
 				case "SBOL2":
-					converter.toSBOL(request.getInputStream(), response.getOutputStream()); break;
+					sbolConverter.toSBOL(request.getInputStream(), response.getOutputStream()); break;
 				case "SBOL1":
-					converter.toSBOL1(request.getInputStream(), response.getOutputStream()); break;
+					sbolConverter.toSBOL1(request.getInputStream(), response.getOutputStream()); break;
 				case "GenBank":
-					converter.toGenBank(request.getInputStream(), response.getOutputStream()); break;
+					sbolConverter.toGenBank(request.getInputStream(), response.getOutputStream()); break;
 				case "GFF":
-					converter.toGFF(request.getInputStream(), response.getOutputStream()); break;
+					sbolConverter.toGFF(request.getInputStream(), response.getOutputStream()); break;
 				case "Fasta":
-					converter.toFasta(request.getInputStream(), response.getOutputStream()); break;
+					sbolConverter.toFasta(request.getInputStream(), response.getOutputStream()); break;
+				case "SBML":
+					sbmlConverter.toSBML(request.getInputStream(), response.getOutputStream()); break;
 				}
 				
 			} else {
@@ -73,9 +77,18 @@ public class Convert extends HttpServlet {
 
 			response.setStatus(HttpStatus.SC_OK);
 		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException
-				| TransformerException | SAXException | TransformerFactoryConfigurationError | URISyntaxException | SynBioHubException e) {
+				| TransformerException | SAXException | TransformerFactoryConfigurationError | URISyntaxException | SynBioHubException | javax.xml.stream.XMLStreamException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
+			IOUtils.copy(inputStream, outputStream);
+
+			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+			e.printStackTrace();
+		} catch (RuntimeException e) {
+			// Catch unchecked exceptions from SBML export
+			String message = e.getMessage() != null ? e.getMessage() : "Export failed";
+			ServletOutputStream outputStream = response.getOutputStream();
+			InputStream inputStream = new ByteArrayInputStream(message.getBytes());
 			IOUtils.copy(inputStream, outputStream);
 
 			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);

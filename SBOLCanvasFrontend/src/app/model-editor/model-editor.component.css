@@ -1,0 +1,22 @@
+.model-menu-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+}
+
+.model-menu-container>* {
+  width: 100%;
+}
+
+.model-menu-container h4 {
+  margin: 0;
+}
+
+.model-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.model-section > * {
+  width: 100%;
+}

@@ -138,6 +138,13 @@
             <svg #canvasElement [attr.elementType]="elementTypes.MODULE" width="52px" height="52px" [innerHTML]="utilsDict['module']"></svg>
           </button>
         </mat-grid-tile>
+        <mat-grid-tile *ngIf="stringMatches('event simulation time', searchPhrase)">
+          <button mat-button (click)="addEvent()"
+                  [matTooltip]="'Event'"
+                  style="width:52px;height:52px;">
+            <svg #canvasElement [attr.elementType]="elementTypes.EVENT" width="52px" height="52px" [innerHTML]="utilsDict['event']"></svg>
+          </button>
+        </mat-grid-tile>
       </mat-grid-list>
     </mat-expansion-panel>
 

@@ -21,6 +21,7 @@ import { StyleInfo } from './style-info';
 import { ModuleInfo } from './moduleInfo';
 import { Info } from './info';
 import { CombinatorialInfo } from './combinatorialInfo';
+import { EventInfo } from './eventInfo';
 import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
 import { Observable } from 'rxjs';
@@ -91,6 +92,22 @@ export class GraphService extends GraphHelpers {
             return false
         }
         return selected[0].isSequenceFeatureGlyph()
+    }
+
+    isSelectedAMolecularSpecies(): boolean {
+        let selected = this.graph.getSelectionCells()
+        if (selected.length != 1) {
+            return false
+        }
+        return selected[0].isMolecularSpeciesGlyph()
+    }
+
+    isSelectedAnInteractionNode(): boolean {
+        let selected = this.graph.getSelectionCells()
+        if (selected.length != 1) {
+            return false
+        }
+        return selected[0].isInteractionNode()
     }
 
     isRootAComponentView(): boolean {
@@ -1441,7 +1458,36 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().endUpdate()
         }
     }
-    x
+
+    makeEventDragsource(element) {
+        const insert = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+            this.addEventAt(x - GraphBase.defaultEventWidth / 2, y - GraphBase.defaultEventHeight / 2)
+        })
+        this.makeGeneralDragsource(element, insert)
+    }
+
+    addEvent() {
+        const pt = this.getDefaultNewCellCoords()
+        this.addEventAt(pt.x, pt.y)
+    }
+
+    addEventAt(x, y) {
+        this.graph.getModel().beginUpdate()
+        try {
+            let eventInfo = new EventInfo()
+            eventInfo.displayID = 'Event_' + Math.random().toString(36).substring(7)
+            this.addToEventDict(eventInfo)
+
+            const eventCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, eventInfo.getFullURI(), x, y, GraphBase.defaultEventWidth, GraphBase.defaultEventHeight, GraphBase.STYLE_EVENT)
+            eventCell.setConnectable(false)
+
+            this.graph.clearSelection()
+            this.graph.setSelectionCell(eventCell)
+        } finally {
+            this.graph.getModel().endUpdate()
+        }
+    }
+
     /**
      * Find the selected cell, and if there is a glyph selected, update its metadata.
      */
@@ -1468,6 +1514,12 @@ export class GraphService extends GraphHelpers {
 
             if (info instanceof InteractionInfo && (selectedCell.isInteraction() || selectedCell.isInteractionNode())) {
                 this.updateSelectedInteractionInfo(info)
+                return
+            }
+
+            if (info instanceof EventInfo && (!selectedCell || selectedCell.isEvent())) {
+                this.updateEventDict(info)
+                return
             }
 
         } finally {
@@ -2067,10 +2119,12 @@ export class GraphService extends GraphHelpers {
         const infoDict = [];
         const combinatorialDict = [];
         const interactionDict = []
+        const eventDict = []
         var dataContainer = [];
         dataContainer[GraphBase.INFO_DICT_INDEX] = infoDict;
         dataContainer[GraphBase.COMBINATORIAL_DICT_INDEX] = combinatorialDict;
         dataContainer[GraphBase.INTERACTION_DICT_INDEX] = interactionDict;
+        dataContainer[GraphBase.EVENT_DICT_INDEX] = eventDict;
         this.graph.getModel().setValue(cell0, dataContainer);
 
         const cell1 = this.graph.getModel().getCell(1)

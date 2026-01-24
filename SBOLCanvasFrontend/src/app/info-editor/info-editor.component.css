@@ -5,19 +5,19 @@
 }
 
 
-.info-menu-container > * {
+.info-menu-container>* {
   width: 100%;
 }
 
-.URI-spacing{
+.URI-spacing {
   margin-top: 20px;
 }
 
-.label-spacing{
+.label-spacing {
   margin-top: 20px;
   margin-bottom: 20px;
 }
 
-.filter-field-width{
+.filter-field-width {
   width: 100%;
 }

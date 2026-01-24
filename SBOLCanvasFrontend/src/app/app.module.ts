@@ -9,7 +9,8 @@ import { GlyphMenuComponent } from './glyph-menu/glyph-menu.component';
 import { CanvasComponent } from './canvas/canvas.component';
 import { DesignMenuComponent } from './design-menu/design-menu.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
-import { ProblemsComponent } from './problems/problems.component'
+import { ModelEditorComponent } from './model-editor/model-editor.component';
+import { ProblemsComponent } from './problems/problems.component';
 import { HierarchyPreviewComponent } from './hierarchy-preview/hierarchy-preview.component';
 import { ZoomControlsComponent } from './zoom-controls/zoom-controls.component';
 import { HomeComponent } from './home/home.component';
@@ -56,6 +57,7 @@ import { EmbeddedService } from './embedded.service';
         CanvasComponent,
         DesignMenuComponent,
         InfoEditorComponent,
+        ModelEditorComponent,
         ProblemsComponent,
         HierarchyPreviewComponent,
         ZoomControlsComponent,

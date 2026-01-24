@@ -1,0 +1,16 @@
+<shapes>
+<shape aspect="variable" centered="True" h="38" name="event" strokewidth="inherit" w="38">
+    <connections />
+    <foreground>
+        <strokewidth width="1.5" />
+        <alpha alpha="1" />
+        <linejoin join="round" />
+        <linecap cap="round" />
+        <miterlimit limit="4" />
+        <roundrect arcsize="15" h="11.09" w="25.41" x="6.5" y="13.45" />
+        <fillcolor color="#7AFB7B" />
+        <fill />
+        <stroke />
+    </foreground>
+</shape>
+</shapes>

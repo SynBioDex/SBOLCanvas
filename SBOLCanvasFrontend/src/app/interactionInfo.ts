@@ -14,6 +14,7 @@ export class InteractionInfo extends Info {
   targetRefinement = [];
   fromURI = [];
   toURI = [];
+  simulationData = {};
 
   constructor() {
     super();
@@ -37,6 +38,9 @@ export class InteractionInfo extends Info {
     for(let key in this.toURI){
       copy.toURI[key] = this.toURI[key];
     }
+    for(let key in this.simulationData){
+      copy.simulationData[key] = this.simulationData[key];
+    }
     return copy;
   }
 
@@ -55,6 +59,9 @@ export class InteractionInfo extends Info {
     }
     for(let key in other.toURI){
       this.toURI[key] = other.toURI[key];
+    }
+    for(let key in other.simulationData){
+      this.simulationData[key] = other.simulationData[key];
     }
   }
 
@@ -113,6 +120,17 @@ export class InteractionInfo extends Info {
         toURINode.appendChild(URINode);
       }
       node.appendChild(toURINode);
+    }
+    if (this.simulationData) {
+      let simulationDataNode = enc.document.createElement("Array");
+      simulationDataNode.setAttribute("as", "simulationData");
+      for (let key in this.simulationData) {
+        let dataNode = enc.document.createElement("add");
+        dataNode.setAttribute("value", this.simulationData[key]);
+        dataNode.setAttribute("as", key);
+        simulationDataNode.appendChild(dataNode);
+      }
+      node.appendChild(simulationDataNode);
     }
     return node;
   }

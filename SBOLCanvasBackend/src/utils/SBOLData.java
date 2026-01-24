@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.LinkedHashMap;
 import java.util.TreeSet;
 
 import org.sbolstandard.core2.ComponentDefinition;
@@ -29,8 +30,8 @@ public class SBOLData {
 	public static HashMap<URI, URI> interactionSourceRoles;
 	public static HashMap<URI, URI> interactionTargetRoles;
 	public static HashSet<String> registries;
-	
-	
+	public static HashMap<String, LinkedHashMap<String, Object>> simulationConfig;
+
 	static {
 		so = new SequenceOntology();
 		sbo = new SystemsBiologyOntology();
@@ -129,6 +130,7 @@ public class SBOLData {
 		interactionTargetRoles.put(SystemsBiologyOntology.STIMULATION, SystemsBiologyOntology.STIMULATED);
 		interactionTargetRoles.put(SystemsBiologyOntology.BIOCHEMICAL_REACTION, SystemsBiologyOntology.PRODUCT);
 		interactionTargetRoles.put(SystemsBiologyOntology.NON_COVALENT_BINDING, SystemsBiologyOntology.PRODUCT);
+		interactionTargetRoles.put(SystemsBiologyOntology.DEGRADATION, SystemsBiologyOntology.PRODUCT);
 		interactionTargetRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.PRODUCT);
 		interactionTargetRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIED);
 		interactionTargetRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.PRODUCT);
@@ -153,7 +155,56 @@ public class SBOLData {
 		} catch (SynBioHubException e) {
 			e.printStackTrace();
 		}
-		
+
+		// Using values from iBioSim as default values for simulation parameters
+		// LinkedHashMap keeps parameters in order in the UI.
+		simulationConfig = new HashMap<String, LinkedHashMap<String, Object>>();
+
+		// Degradation (SBO:0000179)
+		LinkedHashMap<String, Object> degradationParams = new LinkedHashMap<>();
+		degradationParams.put("kd", 0.0075); // Default degradation rate
+		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.DEGRADATION), degradationParams);
+
+		// Complex Formation (SBO:0000177)
+		// Kc_f/Kc_r on node, nc per-reactant on arrows to node
+		// Kc (complex formation) = Kc_f / Kc_r
+		LinkedHashMap<String, Object> complexParams = new LinkedHashMap<>();
+		complexParams.put("Kc_f", 0.05); // Forward complex formation rate
+		complexParams.put("Kc_r", 1.0); // Reverse complex formation rate
+		complexParams.put("nc", 2.0); // Stoichiometry of binding
+		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.BIOCHEMICAL_REACTION), complexParams);
+		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.NON_COVALENT_BINDING), complexParams);
+
+		// Genetic Production (SBO:0000589) - Parameters are on the Promoter
+		LinkedHashMap<String, Object> promoterParams = new LinkedHashMap<>();
+		promoterParams.put("ng", 2.0); // Initial promoter count
+		promoterParams.put("np", 10.0); // Stoichiometry of production
+		promoterParams.put("ko", 0.05); // Open complex production rate
+		promoterParams.put("kb", 0.0001); // Basal production rate
+		promoterParams.put("ka", 0.25); // Activated production rate
+		promoterParams.put("Ko_f", 0.033); // Forward RNAP binding rate (Ko = Ko_f/Ko_r)
+		promoterParams.put("Ko_r", 1.0); // Reverse RNAP binding rate
+		promoterParams.put("Kao_f", 1.0); // Forward activated RNAP binding rate (Kao = Kao_f/Kao_r)
+		promoterParams.put("Kao_r", 1.0); // Reverse activated RNAP binding rate
+		promoterParams.put("nr", 30.0); // Initial RNAP count
+		simulationConfig.put(roles.getKey(SequenceOntology.PROMOTER), promoterParams);
+
+		// Inhibition (SBO:0000169)
+		// Kr (repression binding) = Kr_f / Kr_r
+		LinkedHashMap<String, Object> inhibitionParams = new LinkedHashMap<>();
+		inhibitionParams.put("Kr_f", 0.5); // Forward repression binding rate
+		inhibitionParams.put("Kr_r", 1.0); // Reverse repression binding rate
+		inhibitionParams.put("nc", 2.0); // Stoichiometry of binding
+		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.INHIBITION), inhibitionParams);
+
+		// Stimulation (SBO:0000170)
+		// Ka (activation binding) = Ka_f / Ka_r
+		LinkedHashMap<String, Object> stimulationParams = new LinkedHashMap<>();
+		stimulationParams.put("Ka_f", 0.0033); // Forward activation binding rate
+		stimulationParams.put("Ka_r", 1.0); // Reverse activation binding rate
+		stimulationParams.put("nc", 2.0); // Stoichiometry of binding
+		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.STIMULATION), stimulationParams);
+
 	}
 	
 	/**
@@ -267,4 +318,7 @@ public class SBOLData {
 		return false;
 	}
 
+	public static HashMap<String, LinkedHashMap<String, Object>> getSimulationConfig() {
+		return simulationConfig;
+	}
 }

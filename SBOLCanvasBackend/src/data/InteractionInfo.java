@@ -12,12 +12,14 @@ public class InteractionInfo extends Info {
 	private Hashtable<String, String> targetRefinement;
 	private Hashtable<String, String> fromURI;
 	private Hashtable<String, String> toURI;
+	private Hashtable<String, Object> simulationData;
 
 	public InteractionInfo() {
 		sourceRefinement = new Hashtable<String, String>();
 		targetRefinement = new Hashtable<String, String>();
 		fromURI = new Hashtable<String, String>();
 		toURI = new Hashtable<String, String>();
+		simulationData = new Hashtable<String, Object>();
 	}
 	
 	public String getDisplayID() {
@@ -82,6 +84,14 @@ public class InteractionInfo extends Info {
 
 	public void setToURI(Hashtable<String, String> toURI) {
 		this.toURI = toURI;
+	}
+
+	public Hashtable<String, Object> getSimulationData() {
+		return simulationData;
+	}
+
+	public void setSimulationData(Hashtable<String, Object> simulationData) {
+		this.simulationData = simulationData;
 	}
 	
 	public String getFullURI() {

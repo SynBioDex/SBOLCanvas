@@ -1,5 +1,7 @@
 package data;
 
+import java.util.Hashtable;
+
 public class GlyphInfo extends Info {
 
 	private String partType;
@@ -15,6 +17,7 @@ public class GlyphInfo extends Info {
 	private CanvasAnnotation[] annotations;
 	private String[] derivedFroms;
 	private String[] generatedBys;
+	private Hashtable<String, Object> simulationData;
 
 	public String getPartType() {
 		return partType;
@@ -118,6 +121,14 @@ public class GlyphInfo extends Info {
 
 	public void setGeneratedBys(String[] generatedBys) {
 		this.generatedBys = generatedBys;
+	}
+	
+	public Hashtable<String, Object> getSimulationData() {
+		return simulationData;
+	}
+
+	public void setSimulationData(Hashtable<String, Object> simulationData) {
+		this.simulationData = simulationData;
 	}
 	
 	public String getFullURI() {
