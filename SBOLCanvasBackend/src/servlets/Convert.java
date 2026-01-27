@@ -32,6 +32,11 @@ public class Convert extends HttpServlet {
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
+			if (request.getPathInfo() == null) {
+				response.setStatus(HttpStatus.SC_BAD_REQUEST);
+				return;
+			}
+
 			if (request.getPathInfo().equals("/toMxGraph")) {
 				SBOLToMx converter = new SBOLToMx();
 				converter.toGraph(request.getInputStream(), response.getOutputStream());

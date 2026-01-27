@@ -23,6 +23,11 @@ public class Data extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
+			if (request.getPathInfo() == null) {
+				response.setStatus(HttpStatus.SC_BAD_REQUEST);
+				return;
+			}
+
 			// setup the json
 			Gson gson = new Gson();
 			String body = null;
