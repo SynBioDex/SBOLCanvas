@@ -102,7 +102,7 @@ export class ModelEditorComponent implements OnInit {
 
   getSimulationConfig() {
     this.metadataService.loadSimulationConfig().subscribe({
-      next: config => { this.simulationConfig = config; },
+      next: config => { this.simulationConfig = config; this.configLoadError = false; },
       error: () => {
         console.warn('Failed to load simulation config from backend');
         this.simulationConfig = null;
