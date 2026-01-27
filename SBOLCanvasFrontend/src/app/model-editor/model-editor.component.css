@@ -20,3 +20,8 @@
 .model-section > * {
   width: 100%;
 }
+
+.config-error {
+  color: #f44336;
+  padding: 8px;
+}
