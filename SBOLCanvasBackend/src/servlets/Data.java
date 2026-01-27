@@ -52,6 +52,11 @@ public class Data extends HttpServlet {
 				body = gson.toJson(SBOLData.getSimulationConfig());
 			}
 
+			if (body == null) {
+				response.setStatus(HttpStatus.SC_BAD_REQUEST);
+				return;
+			}
+
 			// write it to the response body
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(body.getBytes());
