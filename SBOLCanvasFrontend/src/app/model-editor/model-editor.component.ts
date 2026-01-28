@@ -76,7 +76,8 @@ export class ModelEditorComponent implements OnInit {
   glyphInfo: GlyphInfo;
   interactionInfo: InteractionInfo;
   eventInfo: EventInfo;
-  simulationConfig: SimulationConfig = {};
+  simulationConfig: SimulationConfig = null;
+  configLoadError = false;
 
   validationErrors: { [fieldId: string]: string } = {};
 
@@ -100,23 +101,22 @@ export class ModelEditorComponent implements OnInit {
   }
 
   getSimulationConfig() {
-    this.metadataService.loadSimulationConfig().subscribe(config => {
-      this.simulationConfig = config;
+    this.metadataService.loadSimulationConfig().subscribe({
+      next: config => { this.simulationConfig = config; this.configLoadError = false; },
+      error: () => {
+        console.warn('Failed to load simulation config from backend');
+        this.simulationConfig = null;
+        this.configLoadError = true;
+      }
     });
   }
 
   getDefaultValue(roleOrType: string, paramName: string): number {
-    if (!this.simulationConfig) {
-      throw new Error('Simulation config not loaded');
-    }
-    if (!this.simulationConfig[roleOrType]) {
-      throw new Error(`No simulation config for: ${roleOrType}`);
+    if (!this.simulationConfig || !this.simulationConfig[roleOrType]) {
+      return 0;
     }
     const value = this.simulationConfig[roleOrType][paramName];
-    if (value === undefined) {
-      throw new Error(`No default value for param: ${paramName} in ${roleOrType}`);
-    }
-    return value;
+    return value !== undefined ? value : 0;
   }
 
   glyphInfoUpdated(glyphInfo: GlyphInfo) {

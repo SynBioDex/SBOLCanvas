@@ -1,3 +1,7 @@
+<div *ngIf="configLoadError && !simulationConfig" class="config-error">
+  Failed to load simulation fields<br>
+  from backend.<br>
+</div>
 <div *ngIf="simulationConfig">
   <!-- Glyph Simulation Parameters -->
   <div *ngIf="glyphInfo" class="model-menu-container">

@@ -32,6 +32,11 @@ public class Convert extends HttpServlet {
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
+			if (request.getPathInfo() == null) {
+				response.setStatus(HttpStatus.SC_BAD_REQUEST);
+				return;
+			}
+
 			if (request.getPathInfo().equals("/toMxGraph")) {
 				SBOLToMx converter = new SBOLToMx();
 				converter.toGraph(request.getInputStream(), response.getOutputStream());
@@ -79,7 +84,8 @@ public class Convert extends HttpServlet {
 		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException
 				| TransformerException | SAXException | TransformerFactoryConfigurationError | URISyntaxException | SynBioHubException | javax.xml.stream.XMLStreamException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
-			InputStream inputStream = new ByteArrayInputStream(e.getMessage().getBytes());
+			String message = e.getMessage() != null ? e.getMessage() : "Export failed";
+			InputStream inputStream = new ByteArrayInputStream(message.getBytes());
 			IOUtils.copy(inputStream, outputStream);
 
 			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);

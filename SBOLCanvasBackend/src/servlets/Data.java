@@ -23,6 +23,11 @@ public class Data extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
+			if (request.getPathInfo() == null) {
+				response.setStatus(HttpStatus.SC_BAD_REQUEST);
+				return;
+			}
+
 			// setup the json
 			Gson gson = new Gson();
 			String body = null;
@@ -50,6 +55,11 @@ public class Data extends HttpServlet {
 				body = gson.toJson(SBOLData.getInteractionRoleRefinement(parent));
 			}else if (request.getPathInfo().equals("/simulationConfig")) {
 				body = gson.toJson(SBOLData.getSimulationConfig());
+			}
+
+			if (body == null) {
+				response.setStatus(HttpStatus.SC_BAD_REQUEST);
+				return;
 			}
 
 			// write it to the response body
