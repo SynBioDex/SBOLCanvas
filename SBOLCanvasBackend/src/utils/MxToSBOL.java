@@ -689,6 +689,9 @@ public class MxToSBOL extends Converter {
 			// because we don't have a good way of associating glyphs to components
 			// otherwise
 			mxCell variableCell = (mxCell) model.getCell(varCompInfo.getCellID());
+			if (variableCell == null || (variableCell.getStyle() != null && variableCell.getStyle().contains(STYLE_BACKBONE))) {
+				continue;
+			}
 			Component component = components.get(variableCell.getParent().getIndex(variableCell) - 1);
 			VariableComponent varComp = combDer.createVariableComponent(component.getDisplayId() + "_VariableComponent",
 					operator, component.getIdentity());

@@ -631,6 +631,19 @@ export class GraphBase {
             }
 
             layout.execute(this)
+
+            const backboneWidth = this.getBackbone().getGeometry().width
+            if (this.children) {
+                for (let child of this.children) {
+                    if (child.stayAtBeginning) {
+                        child.replaceGeometry(0, 'auto', 'auto', 'auto', graph)
+                    } else if (child.stayAtEnd) {
+                        const childWidth = child.getGeometry().width
+                        const newX = Math.max(0, backboneWidth - childWidth)
+                        child.replaceGeometry(newX, 'auto', 'auto', 'auto', graph)
+                    }
+                }
+            }
         }
 
         mx.mxCell.prototype.refreshViewCell = function (graph) {

@@ -85,12 +85,50 @@ export class GraphService extends GraphHelpers {
         })
     }
 
+    private getPrimarySelectedCell() {
+        const selected = this.graph.getSelectionCells()
+        if (!selected || selected.length === 0) {
+            return null
+        }
+
+        if (selected.length === 1) {
+            return selected[0]
+        }
+
+        if (selected.length === 2) {
+            const anchored = selected.find(cell => cell.stayAtBeginning || cell.stayAtEnd)
+            if (anchored) {
+                return anchored
+            }
+        }
+
+        const glyph = selected.find(cell => cell.isSequenceFeatureGlyph && cell.isSequenceFeatureGlyph())
+        if (glyph) {
+            return glyph
+        }
+
+        const backbone = selected.find(cell => cell.isBackbone && cell.isBackbone())
+        if (backbone) {
+            return backbone
+        }
+
+        return selected[0]
+    }
+
     isSelectedAGlyph(): boolean {
-        let selected = this.graph.getSelectionCells()
-        if (selected.length != 1) {
+        const selected = this.getPrimarySelectedCell()
+        if (!selected) {
             return false
         }
-        return selected[0].isSequenceFeatureGlyph()
+        return selected.isSequenceFeatureGlyph()
+    }
+
+    isSelectedBackbone(): boolean {
+        const selected = this.getPrimarySelectedCell()
+        if (!selected) {
+            return false
+        }
+        return selected.isBackbone()
     }
 
     isRootAComponentView(): boolean {
@@ -1493,11 +1531,11 @@ export class GraphService extends GraphHelpers {
      * @param prevURI 
      */
     setSelectedCombinatorialInfo(info: CombinatorialInfo, prevURI?: string) {
-        const selectedCell = this.graph.getSelectionCell()
+        const selectedCell = this.getPrimarySelectedCell()
 
         this.graph.getModel().beginUpdate()
         try {
-            if (info instanceof CombinatorialInfo && selectedCell.isSequenceFeatureGlyph()) {
+            if (info instanceof CombinatorialInfo && selectedCell && selectedCell.isSequenceFeatureGlyph()) {
                 if (!prevURI) {
                     prevURI = info.getFullURI()
                 }
