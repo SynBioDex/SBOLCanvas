@@ -211,7 +211,7 @@ export class InfoEditorComponent implements OnInit {
 
   isCombinatorialPossible(): boolean {
     // TODO remove the check that root is a component when enumeration makes sense in module designs
-    return this.graphService.isSelectedAGlyph() && this.graphService.isRootAComponentView();
+    return (this.graphService.isSelectedAGlyph() || this.graphService.isSelectedBackbone()) && this.graphService.isRootAComponentView();
   }
 
   openCombinatorialDialog() {

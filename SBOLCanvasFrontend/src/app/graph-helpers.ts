@@ -1197,10 +1197,12 @@ export class GraphHelpers extends GraphBase {
             if (moduleInfo) {
                 this.metadataService.setSelectedModuleInfo(moduleInfo.makeCopy())
             }
-        } else if ((!cell && this.graph.getCurrentRoot().isComponentView()) || (cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()))) {
+        } else if ((!cell && this.graph.getCurrentRoot().isComponentView()) || (cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer() || cell.isBackbone()))) {
             let glyphInfo
             if (!cell)
                 glyphInfo = this.getFromInfoDict(this.graph.getCurrentRoot().getId());
+            else if (cell.isBackbone())
+                glyphInfo = this.getFromInfoDict(cell.getParent().value);
             else 
                 glyphInfo = this.getFromInfoDict(cell.value);
          
@@ -1248,7 +1250,7 @@ export class GraphHelpers extends GraphBase {
         }
 
         // combinatorial info
-        if (cell && cell.isSequenceFeatureGlyph()) {
+        if (cell && (cell.isSequenceFeatureGlyph() || cell.isBackbone())) {
             let combinatorialInfo: CombinatorialInfo = this.getCombinatorialWithTemplate(cell.getParent().value)
             if (!combinatorialInfo) {
                 combinatorialInfo = new CombinatorialInfo()
