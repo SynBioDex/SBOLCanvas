@@ -14,6 +14,7 @@ import { SelectionModel } from '@angular/cdk/collections';
 import { AddRegistryComponent } from '../add-registry-component/add-registry.component';
 import { DeleteRegistryComponent } from '../delete-registry/delete-registry.component';
 import { ErrorComponent } from '../error/error.component';
+import { ConfirmComponent } from '../confirm/confirm.component';
 
 @Component({
   selector: 'app-download-graph',
@@ -530,22 +531,28 @@ export class DownloadGraphComponent implements OnInit {
     // Check if the added registry can be accessed
     // Throw error if not a SynBioHub Instance
     dialogRef.afterClosed().subscribe(() =>{
-      const lastAddedRegistry = JSON.parse(localStorage.getItem("registries")).pop() 
+      const lastAddedRegistry = JSON.parse(localStorage.getItem("registries")).pop()
       this.partRequest = this.filesService.listParts(this.loginService.users[lastAddedRegistry], lastAddedRegistry, this.collection, null, null, "collections")
       .subscribe({
-      error:(error) =>{
+      error: async (error) =>{
         this.working = false
 
-        // Simply cannot access the URL, so don't add it to the registry
-        if(error.status !== 401){
-          this.dialog.open(ErrorComponent, {data: `Cannot access ${lastAddedRegistry} and will not be added.`})  
+        // If unauthorized, still add and let user log in
+        if(error.status === 401){
+          this.updateRegistries()
+          return
+        }
+
+        // Could not reach or list parts — ask user whether to add anyway
+        const confirmRef = this.dialog.open(ConfirmComponent, { data: { message: `Cannot access ${lastAddedRegistry} to list parts. Add this registry anyway?`, options: ['Yes','No'] } });
+        const result = await confirmRef.afterClosed().toPromise();
+        if(result === 'Yes'){
+          this.updateRegistries()
+        } else {
+          this.dialog.open(ErrorComponent, {data: `Did not add ${lastAddedRegistry}.`})
           const registries = JSON.parse(localStorage.getItem("registries"))
           registries.pop()
           localStorage.setItem("registries", JSON.stringify(registries))
-        }
-        // Unauthorized but still add it to the registry, users just need to log in
-        else{
-          this.updateRegistries()
         }
       },
       complete: () =>{
