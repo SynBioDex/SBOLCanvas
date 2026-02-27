@@ -18,6 +18,34 @@ import org.synbiohub.frontend.WebOfRegistriesData;
 
 public class SBOLData {
 
+	// Simulation parameter name constants. Used by SBOLData and MxToSBML
+	// Frontend model-editor component uses these same string values.
+	// If a frontend key doesn't match, getParam() silently falls through to defaults.
+	public static final String PARAM_KD = "kd";
+	public static final String PARAM_KC_F = "Kc_f";
+	public static final String PARAM_KC_R = "Kc_r";
+	public static final String PARAM_NC = "nc";
+	public static final String PARAM_NG = "ng";
+	public static final String PARAM_NP = "np";
+	public static final String PARAM_KO = "ko";
+	public static final String PARAM_KB = "kb";
+	public static final String PARAM_KA = "ka";
+	public static final String PARAM_KO_F = "Ko_f";
+	public static final String PARAM_KO_R = "Ko_r";
+	public static final String PARAM_KAO_F = "Kao_f";
+	public static final String PARAM_KAO_R = "Kao_r";
+	public static final String PARAM_NR = "nr";
+	public static final String PARAM_KR_F = "Kr_f";
+	public static final String PARAM_KR_R = "Kr_r";
+	public static final String PARAM_KA_F = "Ka_f";
+	public static final String PARAM_KA_R = "Ka_r";
+
+	// Event parameter name constants
+	public static final String PARAM_EVENT_NAME = "name";
+	public static final String PARAM_EVENT_TARGET_SPECIES = "targetSpecies";
+	public static final String PARAM_EVENT_DELAY = "delay";
+	public static final String PARAM_EVENT_ASSIGNMENT_VALUE = "assignmentValue";
+
 	private static SequenceOntology so;
 	private static SystemsBiologyOntology sbo;
 	
@@ -162,47 +190,47 @@ public class SBOLData {
 
 		// Degradation (SBO:0000179)
 		LinkedHashMap<String, Object> degradationParams = new LinkedHashMap<>();
-		degradationParams.put("kd", 0.0075); // Default degradation rate
+		degradationParams.put(PARAM_KD, 0.0075); // Default degradation rate
 		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.DEGRADATION), degradationParams);
 
 		// Complex Formation (SBO:0000177)
 		// Kc_f/Kc_r on node, nc per-reactant on arrows to node
 		// Kc (complex formation) = Kc_f / Kc_r
 		LinkedHashMap<String, Object> complexParams = new LinkedHashMap<>();
-		complexParams.put("Kc_f", 0.05); // Forward complex formation rate
-		complexParams.put("Kc_r", 1.0); // Reverse complex formation rate
-		complexParams.put("nc", 2.0); // Stoichiometry of binding
+		complexParams.put(PARAM_KC_F, 0.05); // Forward complex formation rate
+		complexParams.put(PARAM_KC_R, 1.0); // Reverse complex formation rate
+		complexParams.put(PARAM_NC, 2.0); // Stoichiometry of binding
 		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.BIOCHEMICAL_REACTION), complexParams);
 		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.NON_COVALENT_BINDING), complexParams);
 
 		// Genetic Production (SBO:0000589) - Parameters are on the Promoter
 		LinkedHashMap<String, Object> promoterParams = new LinkedHashMap<>();
-		promoterParams.put("ng", 2.0); // Initial promoter count
-		promoterParams.put("np", 10.0); // Stoichiometry of production
-		promoterParams.put("ko", 0.05); // Open complex production rate
-		promoterParams.put("kb", 0.0001); // Basal production rate
-		promoterParams.put("ka", 0.25); // Activated production rate
-		promoterParams.put("Ko_f", 0.033); // Forward RNAP binding rate (Ko = Ko_f/Ko_r)
-		promoterParams.put("Ko_r", 1.0); // Reverse RNAP binding rate
-		promoterParams.put("Kao_f", 1.0); // Forward activated RNAP binding rate (Kao = Kao_f/Kao_r)
-		promoterParams.put("Kao_r", 1.0); // Reverse activated RNAP binding rate
-		promoterParams.put("nr", 30.0); // Initial RNAP count
+		promoterParams.put(PARAM_NG, 2.0); // Initial promoter count
+		promoterParams.put(PARAM_NP, 10.0); // Stoichiometry of production
+		promoterParams.put(PARAM_KO, 0.05); // Open complex production rate
+		promoterParams.put(PARAM_KB, 0.0001); // Basal production rate
+		promoterParams.put(PARAM_KA, 0.25); // Activated production rate
+		promoterParams.put(PARAM_KO_F, 0.033); // Forward RNAP binding rate (Ko = Ko_f/Ko_r)
+		promoterParams.put(PARAM_KO_R, 1.0); // Reverse RNAP binding rate
+		promoterParams.put(PARAM_KAO_F, 1.0); // Forward activated RNAP binding rate (Kao = Kao_f/Kao_r)
+		promoterParams.put(PARAM_KAO_R, 1.0); // Reverse activated RNAP binding rate
+		promoterParams.put(PARAM_NR, 30.0); // Initial RNAP count
 		simulationConfig.put(roles.getKey(SequenceOntology.PROMOTER), promoterParams);
 
 		// Inhibition (SBO:0000169)
 		// Kr (repression binding) = Kr_f / Kr_r
 		LinkedHashMap<String, Object> inhibitionParams = new LinkedHashMap<>();
-		inhibitionParams.put("Kr_f", 0.5); // Forward repression binding rate
-		inhibitionParams.put("Kr_r", 1.0); // Reverse repression binding rate
-		inhibitionParams.put("nc", 2.0); // Stoichiometry of binding
+		inhibitionParams.put(PARAM_KR_F, 0.5); // Forward repression binding rate
+		inhibitionParams.put(PARAM_KR_R, 1.0); // Reverse repression binding rate
+		inhibitionParams.put(PARAM_NC, 2.0); // Stoichiometry of binding
 		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.INHIBITION), inhibitionParams);
 
 		// Stimulation (SBO:0000170)
 		// Ka (activation binding) = Ka_f / Ka_r
 		LinkedHashMap<String, Object> stimulationParams = new LinkedHashMap<>();
-		stimulationParams.put("Ka_f", 0.0033); // Forward activation binding rate
-		stimulationParams.put("Ka_r", 1.0); // Reverse activation binding rate
-		stimulationParams.put("nc", 2.0); // Stoichiometry of binding
+		stimulationParams.put(PARAM_KA_F, 0.0033); // Forward activation binding rate
+		stimulationParams.put(PARAM_KA_R, 1.0); // Reverse activation binding rate
+		stimulationParams.put(PARAM_NC, 2.0); // Stoichiometry of binding
 		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.STIMULATION), stimulationParams);
 
 	}

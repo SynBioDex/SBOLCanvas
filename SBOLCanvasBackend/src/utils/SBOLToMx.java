@@ -31,6 +31,7 @@ import org.sbolstandard.core2.Component;
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.ComponentInstance;
 import org.sbolstandard.core2.FunctionalComponent;
+import org.sbolstandard.core2.GenericTopLevel;
 import org.sbolstandard.core2.Identified;
 import org.sbolstandard.core2.Interaction;
 import org.sbolstandard.core2.Location;
@@ -59,6 +60,7 @@ import com.mxgraph.view.mxGraph;
 
 import data.CanvasAnnotation;
 import data.CombinatorialInfo;
+import data.EventInfo;
 import data.Info;
 import data.GlyphInfo;
 import data.IdentifiedInfo;
@@ -72,9 +74,7 @@ public class SBOLToMx extends Converter {
 	HashMap<FunctionalComponent, ComponentInstance> mappings;
 
 	public SBOLToMx() {
-		infoDict = new Hashtable<String, Info>();
-		combinatorialDict = new Hashtable<String, CombinatorialInfo>();
-		interactionDict = new Hashtable<String, InteractionInfo>();
+		super();
 		compToCell = new HashMap<ComponentInstance, mxCell>();
 		mappings = new HashMap<FunctionalComponent, ComponentInstance>();
 	}
@@ -108,6 +108,8 @@ public class SBOLToMx extends Converter {
 		dataContainer.add(INFO_DICT_INDEX, infoDict);
 		dataContainer.add(COMBINATORIAL_DICT_INDEX, combinatorialDict);
 		dataContainer.add(INTERACTION_DICT_INDEX, interactionDict);
+		eventDict = new Hashtable<String, EventInfo>();
+		dataContainer.add(EVENT_DICT_INDEX, eventDict);
 		cell0.setValue(dataContainer);
 
 		layoutHelper = new LayoutHelper(document, graph);
@@ -148,6 +150,51 @@ public class SBOLToMx extends Converter {
 			for (CombinatorialDerivation derivation : derivations) {
 				combinatorialDict.put(derivation.getIdentity().toString(),
 						genCombinatorialInfo(graph, model, derivation));
+			}
+		}
+
+		// read events from GenericTopLevel objects and create event cells
+		// Event parent: uses the first module view cell found under cell1.
+		// Limitation: multi-module designs will attach all events to the first module.
+		// This matches the frontend behavior (events go to graph.getDefaultParent()).
+		mxCell cell1 = (mxCell) model.getCell("1");
+		mxCell eventParent = null;
+		for (int i = 0; i < cell1.getChildCount(); i++) {
+			mxCell child = (mxCell) cell1.getChildAt(i);
+			if (STYLE_MODULE_VIEW.equals(child.getStyle())) {
+				eventParent = child;
+				break;
+			}
+		}
+		for (GenericTopLevel gtl : document.getGenericTopLevels()) {
+			if (gtl.getRDFType().equals(createQName("Event"))) {
+				try {
+					EventInfo event = new EventInfo();
+					event.setDisplayID(gtl.getDisplayId());
+					event.setUriPrefix(getURIPrefix(gtl));
+
+					// Read simulation data from nested annotation
+					event.setSimulationData(readSimulationAnnotations(gtl));
+
+					// Read geometry from flat annotations
+					double x = 0, y = 0, width = 96, height = 40;
+					for (Annotation ann : gtl.getAnnotations()) {
+						switch (ann.getQName().getLocalPart()) {
+							case "x": x = Double.parseDouble(ann.getStringValue()); break;
+							case "y": y = Double.parseDouble(ann.getStringValue()); break;
+							case "width": width = Double.parseDouble(ann.getStringValue()); break;
+							case "height": height = Double.parseDouble(ann.getStringValue()); break;
+						}
+					}
+
+					eventDict.put(event.getFullURI(), event);
+					if (eventParent != null) {
+						graph.insertVertex(eventParent, event.getFullURI(), event.getFullURI(),
+								x, y, width, height, STYLE_EVENT);
+					}
+				} catch (Exception e) {
+					System.err.println("Skipping invalid event '" + gtl.getDisplayId() + "': " + e.toString());
+				}
 			}
 		}
 
@@ -601,7 +648,15 @@ public class SBOLToMx extends Converter {
 			glyphInfo.setGeneratedBys(generatedBys);
 		}
 
-		glyphInfo.setAnnotations(convertSBOLAnnotations(glyphCD.getAnnotations()));
+		// filter out simulationData annotation before converting to canvas annotations
+		List<Annotation> nonSimAnnotations = new ArrayList<Annotation>();
+		for (Annotation ann : glyphCD.getAnnotations()) {
+			if (!ann.getQName().getLocalPart().equals("simulationData")) {
+				nonSimAnnotations.add(ann);
+			}
+		}
+		glyphInfo.setAnnotations(convertSBOLAnnotations(nonSimAnnotations));
+		glyphInfo.setSimulationData(readSimulationAnnotations(glyphCD));
 		return glyphInfo;
 	}
 
@@ -610,6 +665,7 @@ public class SBOLToMx extends Converter {
 		info.setDisplayID(interaction.getDisplayId());
 		info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
 		info.setUriPrefix(getURIPrefix(interaction));
+		info.setSimulationData(readSimulationAnnotations(interaction));
 		return info;
 	}
 
@@ -773,13 +829,5 @@ public class SBOLToMx extends Converter {
 		}
 		return identity.substring(0, lastIndex - 1);
 	}
-
-//	private Object decodeMxGraphObject(String xml) throws SAXException, IOException, ParserConfigurationException {
-//		Document stringDoc = mxXmlUtils.parseXml(xml);
-//		mxCodec codec = new mxCodec(stringDoc);
-//		Node node = stringDoc.getDocumentElement();
-//		Object obj = codec.decode(node);
-//		return obj;
-//	}
 
 }

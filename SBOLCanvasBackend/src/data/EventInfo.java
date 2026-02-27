@@ -1,47 +1,26 @@
 package data;
 
+import java.util.Hashtable;
+
 public class EventInfo extends Info {
 
-	private String name;
-	private String targetSpecies;
-	private double delay; // Defaults to 0
-	private double assignmentValue; // Defaults to 0
+	private Hashtable<String, Object> simulationData;
 
 	@Override
 	public String getFullURI() {
+		if (uriPrefix == null || displayID == null) {
+			throw new IllegalStateException(
+					"EventInfo has null uriPrefix or displayID (uriPrefix=" + uriPrefix + ", displayID=" + displayID + ")");
+		}
 		return uriPrefix + "/" + displayID;
 	}
 
-	public String getName() {
-		return name;
+	public Hashtable<String, Object> getSimulationData() {
+		return simulationData;
 	}
 
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public double getDelay() {
-		return delay;
-	}
-
-	public void setDelay(double delay) {
-		this.delay = delay;
-	}
-
-	public String getTargetSpecies() {
-		return targetSpecies;
-	}
-
-	public void setTargetSpecies(String targetSpecies) {
-		this.targetSpecies = targetSpecies;
-	}
-
-	public double getAssignmentValue() {
-		return assignmentValue;
-	}
-
-	public void setAssignmentValue(double assignmentValue) {
-		this.assignmentValue = assignmentValue;
+	public void setSimulationData(Hashtable<String, Object> simulationData) {
+		this.simulationData = simulationData;
 	}
 
 }
