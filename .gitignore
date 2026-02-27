@@ -1,4 +1,11 @@
+# System
+.DS_Store
 desktop.ini
+
+# IDE
+.vscode/tasks.json
+.vscode/java-formatter.xml
+
+# Java
 *.war
 *.class
-.vscode/tasks.json 
