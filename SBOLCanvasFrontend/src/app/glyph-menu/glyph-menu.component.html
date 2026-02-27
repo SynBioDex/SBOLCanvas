@@ -95,7 +95,8 @@
         <!-------------------------------------    Utils panel   --------------------------------------->
         <mat-expansion-panel class="glyphMenuSection" [expanded]="true" *ngIf="
                     (!componentDefinitionMode && stringMatches('backbone dna strand circuit', searchPhrase))
-                    || stringMatches('textbox text box', searchPhrase)">
+                    || stringMatches('textbox text box', searchPhrase)
+                    || stringMatches('event simulation time', searchPhrase)">
       <mat-expansion-panel-header>
         <mat-panel-title>
           Util

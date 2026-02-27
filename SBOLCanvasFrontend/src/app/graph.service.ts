@@ -1526,7 +1526,7 @@ export class GraphService extends GraphHelpers {
             eventInfo.displayID = 'Event_' + Math.random().toString(36).substring(7)
             this.addToEventDict(eventInfo)
 
-            const eventCell = this.graph.insertVertex(this.graph.getDefaultParent(), null, eventInfo.getFullURI(), x, y, GraphBase.defaultEventWidth, GraphBase.defaultEventHeight, GraphBase.STYLE_EVENT)
+            const eventCell = this.graph.insertVertex(this.graph.getDefaultParent(), eventInfo.getFullURI(), eventInfo.getFullURI(), x, y, GraphBase.defaultEventWidth, GraphBase.defaultEventHeight, GraphBase.STYLE_EVENT)
             eventCell.setConnectable(false)
 
             this.graph.clearSelection()

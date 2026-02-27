@@ -140,6 +140,9 @@ export class ModelEditorComponent implements OnInit {
   eventInfoUpdated(eventInfo: EventInfo) {
     this.eventInfo = eventInfo;
     this.validationErrors = {};
+    if (eventInfo != null) {
+      if (!this.eventInfo.simulationData) this.eventInfo.simulationData = {};
+    }
     this.changeDetector.detectChanges();
   }
 
@@ -199,13 +202,8 @@ export class ModelEditorComponent implements OnInit {
     delete this.validationErrors[id];
 
     if (this.eventInfo) {
-      // Direct properties (Events)
-      switch (id) {
-        case 'name': this.eventInfo.name = value; break;
-        case 'delay': this.eventInfo.delay = value; break;
-        case 'targetSpecies': this.eventInfo.targetSpecies = value; break;
-        case 'assignmentValue': this.eventInfo.assignmentValue = value; break;
-      }
+      if (!this.eventInfo.simulationData) this.eventInfo.simulationData = {};
+      this.eventInfo.simulationData[id] = value;
       this.graphService.setSelectedCellInfo(this.eventInfo);
     } else if (this.glyphInfo) {
       // Simulation data properties (glyphs)

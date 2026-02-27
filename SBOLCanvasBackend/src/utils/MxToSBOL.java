@@ -10,10 +10,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
-
 import javax.xml.namespace.QName;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
@@ -57,13 +55,14 @@ import com.mxgraph.util.mxXmlUtils;
 import com.mxgraph.view.mxGraph;
 
 import data.CanvasAnnotation;
+import data.CombinatorialInfo;
+import data.EventInfo;
 import data.Info;
 import data.GlyphInfo;
 import data.IdentifiedInfo;
 import data.InteractionInfo;
 import data.ModuleInfo;
 import data.VariableComponentInfo;
-import data.CombinatorialInfo;
 
 public class MxToSBOL extends Converter {
 
@@ -74,9 +73,7 @@ public class MxToSBOL extends Converter {
 	}
 
 	public MxToSBOL(HashMap<String, String> userTokens) {
-		infoDict = new Hashtable<String, Info>();
-		combinatorialDict = new Hashtable<String, CombinatorialInfo>();
-		interactionDict = new Hashtable<String, InteractionInfo>();
+		super();
 		this.userTokens = userTokens;
 	}
 
@@ -130,17 +127,11 @@ public class MxToSBOL extends Converter {
 		SBOLWriter.write(document, outputStream, SBOLDocument.RDFV1);
 	}
 
-	@SuppressWarnings("unchecked")
 	public SBOLDocument setupDocument(InputStream graphStream) throws IOException, URISyntaxException,
 			SBOLValidationException, TransformerFactoryConfigurationError, TransformerException, SynBioHubException {
 		// read in the mxGraph
-		mxGraph graph = parseGraph(graphStream);
+		mxGraph graph = loadGraphAndDictionaries(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
-		mxCell cell0 = (mxCell) model.getCell("0");
-		ArrayList<Object> dataContainer = (ArrayList<Object>) cell0.getValue();
-		infoDict = loadDictionary(dataContainer, INFO_DICT_INDEX);
-		combinatorialDict = loadDictionary(dataContainer, COMBINATORIAL_DICT_INDEX);
-		interactionDict = loadDictionary(dataContainer, INTERACTION_DICT_INDEX);
 
 		// cells may show up in the child array not based on their x location
 		enforceChildOrdering(model, graph);
@@ -196,10 +187,10 @@ public class MxToSBOL extends Converter {
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 					.toArray(mxCell[]::new);
 	
-			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
+			mxCell[] molecularSpecies = Arrays.stream(mxGraphModel.filterCells(viewChildren, molecularSpeciesFilter))
 			.toArray(mxCell[]::new);
 
-			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || proteins.length > 0) {
+			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || molecularSpecies.length > 0) {
 				// module definitions
 				createModuleDefinition(document, graph, model, viewCell);
 			} else {
@@ -228,9 +219,9 @@ public class MxToSBOL extends Converter {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, true);
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 					.toArray(mxCell[]::new);
-			mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter))
+			mxCell[] molecularSpecies = Arrays.stream(mxGraphModel.filterCells(viewChildren, molecularSpeciesFilter))
 					.toArray(mxCell[]::new);
-			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || proteins.length > 0) {
+			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || molecularSpecies.length > 0) {
 				// module definitions
 				linkModuleDefinition(document, graph, model, viewCell);
 			}
@@ -245,6 +236,9 @@ public class MxToSBOL extends Converter {
 		for (CombinatorialInfo info : combinatorialDict.values()) {
 			linkCombinatorial(document, graph, model, info);
 		}
+
+		// write events as GenericTopLevel objects
+		writeEvents(document, graph);
 
 		return document;
 	}
@@ -265,7 +259,7 @@ public class MxToSBOL extends Converter {
 				.toArray(mxCell[]::new);
 		mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 				.toArray(mxCell[]::new);
-		mxCell[] proteins = Arrays.stream(mxGraphModel.filterCells(viewChildren, proteinFilter)).toArray(mxCell[]::new);
+		mxCell[] molecularSpecies = Arrays.stream(mxGraphModel.filterCells(viewChildren, molecularSpeciesFilter)).toArray(mxCell[]::new);
 		mxCell[] textBoxes = Arrays.stream(mxGraphModel.filterCells(viewChildren, textBoxFilter))
 				.toArray(mxCell[]::new);
 
@@ -303,40 +297,40 @@ public class MxToSBOL extends Converter {
 			attachTextBoxAnnotation(model, viewCell, modDef.getIdentity());
 		}
 		
-		// proteins
-		for (mxCell protein : proteins) {
-			// proteins also have glyphInfos
-			GlyphInfo proteinInfo = (GlyphInfo) infoDict.get(protein.getValue());
-			if (proteinInfo.getUriPrefix() == null)
-			proteinInfo.setUriPrefix(URI_PREFIX);
-			FunctionalComponent proteinFuncComp = null;
+		// molecular species (proteins, small molecules, complexes, etc.)
+		for (mxCell molSpeciesCell : molecularSpecies) {
+			GlyphInfo molSpeciesInfo = (GlyphInfo) infoDict.get(molSpeciesCell.getValue());
+			if (molSpeciesInfo.getUriPrefix() == null)
+			molSpeciesInfo.setUriPrefix(URI_PREFIX);
+			FunctionalComponent molSpeciesFuncComp = null;
 			if (!layoutOnly) {
-				ComponentDefinition proteinCD = document.getComponentDefinition(new URI((String) protein.getValue()));
-				if (proteinCD == null) {
-					proteinCD = document.createComponentDefinition(proteinInfo.getUriPrefix(),
-					proteinInfo.getDisplayID(), proteinInfo.getVersion(),
-					SBOLData.types.getValue(proteinInfo.getPartType()));
-					proteinCD.setDescription(proteinInfo.getDescription());
-					proteinCD.setName(proteinInfo.getName());
-					proteinCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
+				ComponentDefinition molSpeciesCD = document.getComponentDefinition(new URI((String) molSpeciesCell.getValue()));
+				if (molSpeciesCD == null) {
+					molSpeciesCD = document.createComponentDefinition(molSpeciesInfo.getUriPrefix(),
+					molSpeciesInfo.getDisplayID(), molSpeciesInfo.getVersion(),
+					SBOLData.types.getValue(molSpeciesInfo.getPartType()));
+					molSpeciesCD.setDescription(molSpeciesInfo.getDescription());
+					molSpeciesCD.setName(molSpeciesInfo.getName());
+					molSpeciesCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
+					writeSimulationAnnotations(molSpeciesCD, molSpeciesInfo.getSimulationData(), molSpeciesCD.getDisplayId());
 				}
-				proteinFuncComp = modDef.createFunctionalComponent(proteinCD.getDisplayId() + "_" + protein.getId(),
-				AccessType.PUBLIC, proteinCD.getIdentity(), DirectionType.INOUT);
+				molSpeciesFuncComp = modDef.createFunctionalComponent(molSpeciesCD.getDisplayId() + "_" + molSpeciesCell.getId(),
+				AccessType.PUBLIC, molSpeciesCD.getIdentity(), DirectionType.INOUT);
 			} else {
 				// find the correct functionalComponent from the set of functional components
 				Set<FunctionalComponent> funcComps = modDef.getFunctionalComponents();
 				for (FunctionalComponent funcComp : funcComps) {
-					if (funcComp.getDefinitionIdentity().toString().equals((String) protein.getValue())) {
-						proteinFuncComp = funcComp;
+					if (funcComp.getDefinitionIdentity().toString().equals((String) molSpeciesCell.getValue())) {
+						molSpeciesFuncComp = funcComp;
 						break;
 					}
 				}
 			}
 			// the layout information in the component definition
-			if(proteinFuncComp == null){
+			if(molSpeciesFuncComp == null){
 				throw new NullPointerException("Cannot upload an edited import, it is not owned by you! Create a copy or make a new design.");
 			}
-			layoutHelper.addGraphicalNode(modDef.getIdentity(), proteinFuncComp.getDisplayId(), protein);
+			layoutHelper.addGraphicalNode(modDef.getIdentity(), molSpeciesFuncComp.getDisplayId(), molSpeciesCell);
 		}
 
 		// component definitions (should already have been created, just need to link
@@ -453,6 +447,9 @@ public class MxToSBOL extends Converter {
 //				compDef.addWasGeneratedBy(URI.create(generatedBy));
 //			}
 //		}
+
+		// persist simulation data as annotation
+		writeSimulationAnnotations(compDef, glyphInfo.getSimulationData(), compDef.getDisplayId());
 	}
 
 	private void createCombinatorial(SBOLDocument document, mxGraph graph, mxGraphModel model,
@@ -563,6 +560,9 @@ public class MxToSBOL extends Converter {
 			if (layoutOnly) {
 				return;
 			}
+
+			// persist interaction simulation data
+			writeSimulationAnnotations(interaction, intInfo.getSimulationData(), interaction.getDisplayId());
 
 			// populate sources and targets
 			if (interactionCell.getStyle().contains(STYLE_INTERACTION_NODE)) {
@@ -996,6 +996,31 @@ public class MxToSBOL extends Converter {
 
 		}
 		return sourceFC;
+	}
+
+	private void writeEvents(SBOLDocument document, mxGraph graph) throws SBOLValidationException {
+		if (eventDict == null || eventDict.isEmpty()) return;
+		for (EventInfo event : eventDict.values()) {
+			GenericTopLevel eventTL = document.createGenericTopLevel(
+					event.getUriPrefix(), event.getDisplayID(), "1", createQName("Event"));
+
+			// Write simulation data as nested annotation (same pattern as glyphs/interactions)
+			writeSimulationAnnotations(eventTL, event.getSimulationData(),
+					eventTL.getDisplayId());
+
+			// Save event cell position/geometry as flat annotations
+			mxCell eventCell = (mxCell) ((mxGraphModel) graph.getModel()).getCell(event.getFullURI());
+			if (eventCell != null && eventCell.getGeometry() != null) {
+				eventTL.createAnnotation(createQName("x"),
+						String.valueOf(eventCell.getGeometry().getX()));
+				eventTL.createAnnotation(createQName("y"),
+						String.valueOf(eventCell.getGeometry().getY()));
+				eventTL.createAnnotation(createQName("width"),
+						String.valueOf(eventCell.getGeometry().getWidth()));
+				eventTL.createAnnotation(createQName("height"),
+						String.valueOf(eventCell.getGeometry().getHeight()));
+			}
+		}
 	}
 
     /*

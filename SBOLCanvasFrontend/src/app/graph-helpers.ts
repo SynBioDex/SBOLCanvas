@@ -2173,8 +2173,8 @@ export class GraphHelpers extends GraphBase {
                 let info = <EventInfo>graphService.getFromEventDict(cell.value)
                 if (!info) {
                     return cell.value
-                } else if (info.name != null && info.name != '') {
-                    return info.name
+                } else if (info.simulationData && info.simulationData['name'] != null && info.simulationData['name'] != '') {
+                    return info.simulationData['name']
                 } else {
                     return info.displayID
                 }
