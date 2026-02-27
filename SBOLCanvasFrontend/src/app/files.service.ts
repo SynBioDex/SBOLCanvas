@@ -85,10 +85,13 @@ export class FilesService {
         default:
           formatExtension = ".xml"; break;
       }
-      this.http.post(this.exportDesignURL, contents, { headers: headers, responseType: 'text', params: params }).subscribe(result => {
-        var file = new File([result], filename + formatExtension);
-        FileSaver.saveAs(file);
-        observer.next();
+      this.http.post(this.exportDesignURL, contents, { headers: headers, responseType: 'text', params: params }).subscribe({
+        next: result => {
+          var file = new File([result], filename + formatExtension);
+          FileSaver.saveAs(file);
+          observer.next();
+        },
+        error: err => observer.error(err)
       });
     });
   }

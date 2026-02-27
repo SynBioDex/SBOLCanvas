@@ -89,24 +89,28 @@
     <h4>Event</h4>
     <mat-form-field floatLabel="always">
       <mat-label>Name</mat-label>
-      <input matInput id="name" value="{{eventInfo.name}}" (change)="inputChange($event)"
+      <input matInput id="name" value="{{eventInfo.simulationData['name'] || ''}}" (change)="inputChange($event)"
         matTooltip="Event identifier used in SBML (e.g., 'IPTG_High', 'aTc_Low')">
     </mat-form-field>
 
     <mat-form-field floatLabel="always">
       <mat-label>Delay (time)</mat-label>
-      <input matInput id="delay" type="number" value="{{eventInfo.delay}}" (change)="inputChange($event)">
+      <input matInput id="delay" type="number"
+        value="{{eventInfo.simulationData['delay'] !== undefined ? eventInfo.simulationData['delay'] : 0}}"
+        (change)="inputChange($event)">
       <mat-error *ngIf="validationErrors['delay']">{{validationErrors['delay']}}</mat-error>
     </mat-form-field>
 
     <mat-form-field floatLabel="always">
       <mat-label>Target Species</mat-label>
-      <input matInput id="targetSpecies" value="{{eventInfo.targetSpecies}}" (change)="inputChange($event)">
+      <input matInput id="targetSpecies" value="{{eventInfo.simulationData['targetSpecies'] || ''}}"
+        (change)="inputChange($event)">
     </mat-form-field>
 
     <mat-form-field floatLabel="always">
       <mat-label>Assignment Value</mat-label>
-      <input matInput id="assignmentValue" type="number" value="{{eventInfo.assignmentValue}}"
+      <input matInput id="assignmentValue" type="number"
+        value="{{eventInfo.simulationData['assignmentValue'] !== undefined ? eventInfo.simulationData['assignmentValue'] : 0}}"
         (change)="inputChange($event)">
       <mat-error *ngIf="validationErrors['assignmentValue']">{{validationErrors['assignmentValue']}}</mat-error>
     </mat-form-field>

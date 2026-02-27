@@ -2,10 +2,7 @@ import { Info } from './info';
 import { environment } from 'src/environments/environment';
 
 export class EventInfo extends Info {
-    name: string;
-    targetSpecies: string;
-    delay: number = 0; // Defaults to 0
-    assignmentValue: number = 0; // Defaults to 0
+    simulationData = {};
 
     constructor() {
         super();
@@ -20,20 +17,14 @@ export class EventInfo extends Info {
         const copy: EventInfo = new EventInfo();
         copy.uriPrefix = this.uriPrefix;
         copy.displayID = this.displayID;
-        copy.name = this.name;
-        copy.delay = this.delay;
-        copy.targetSpecies = this.targetSpecies;
-        copy.assignmentValue = this.assignmentValue;
+        copy.simulationData = this.simulationData ? { ...this.simulationData } : {};
         return copy;
     }
 
     copyDataFrom(other: EventInfo) {
         this.uriPrefix = other.uriPrefix;
         this.displayID = other.displayID;
-        this.name = other.name;
-        this.delay = other.delay;
-        this.targetSpecies = other.targetSpecies;
-        this.assignmentValue = other.assignmentValue;
+        this.simulationData = other.simulationData ? { ...other.simulationData } : {};
     }
 
     encode(enc: any) {
@@ -42,15 +33,17 @@ export class EventInfo extends Info {
             node.setAttribute("uriPrefix", this.uriPrefix);
         if (this.displayID)
             node.setAttribute("displayID", this.displayID);
-        if (this.name)
-            node.setAttribute("name", this.name);
-        if (this.delay)
-            node.setAttribute("delay", this.delay.toString());
-        if (this.targetSpecies)
-            node.setAttribute("targetSpecies", this.targetSpecies);
-        if (this.assignmentValue)
-            node.setAttribute("assignmentValue", this.assignmentValue.toString());
-
+        if (this.simulationData) {
+            let simulationDataNode = enc.document.createElement("Array");
+            simulationDataNode.setAttribute("as", "simulationData");
+            for (let key in this.simulationData) {
+                let dataNode = enc.document.createElement("add");
+                dataNode.setAttribute("value", this.simulationData[key]);
+                dataNode.setAttribute("as", key);
+                simulationDataNode.appendChild(dataNode);
+            }
+            node.appendChild(simulationDataNode);
+        }
         return node;
     }
 }
