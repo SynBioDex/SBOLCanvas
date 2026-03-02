@@ -8,13 +8,26 @@
           pattern="https?://.+"
           #registryURLInput="ngModel" 
           required 
-          [(ngModel)] = "registryURL" 
+          [(ngModel)] = "registryURL"
+          (change)="onRegistryURLChange(registryURL)"
           placeholder="Registry URL"
           />
         <mat-error>
           Must be URL
         </mat-error>
         </mat-form-field>
+
+        <div class="registry-prefix-row">
+          <mat-form-field class="registry-prefix-field">
+            <input matInput 
+            #registryPrefixInput="ngModel"
+            [(ngModel)] = "registryPrefix"
+            placeholder="Registry Prefix"
+            [disabled]="!isEditingPrefix"
+            />
+          </mat-form-field>
+          <button mat-button (click)="onEditPrefixClick()" [disabled]="isEditingPrefix" class="edit-prefix-btn">Edit</button>
+        </div>
       </div>
       <div mat-dialog-actions>
         <button mat-button (click)="onCancelClick()">Cancel</button>
