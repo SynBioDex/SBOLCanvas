@@ -64,9 +64,13 @@ public class SynBioHub extends HttpServlet {
 
 			// setup SBH server
 			String server = request.getParameter("server");
+			String uriPrefix = request.getParameter("uriPrefix");
+			if(uriPrefix == null) {
+				uriPrefix = server;
+			}
 			SynBioHubFrontend sbhf = null; 
             if(server != null) {
-                sbhf = new SynBioHubFrontend(server);
+                sbhf = new SynBioHubFrontend(server, uriPrefix);
                 if(user != null)
                     sbhf.setUser(user);
             }            
@@ -321,7 +325,11 @@ public class SynBioHub extends HttpServlet {
 					userTokens.put(tokens[0], tokens[1]);
 				}
 				
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				String uriPrefix = request.getParameter("uriPrefix");
+				if(uriPrefix == null) {
+					uriPrefix = server;
+				}
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server, uriPrefix);
 				sbhf.setUser(userTokens.get(server));
 				MxToSBOL converter = new MxToSBOL(userTokens);
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -333,7 +341,11 @@ public class SynBioHub extends HttpServlet {
 					response.setStatus(HttpStatus.SC_BAD_REQUEST);
 					return;
 				}
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				String uriPrefix = request.getParameter("uriPrefix");
+				if(uriPrefix == null) {
+					uriPrefix = server;
+				}
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server, uriPrefix);
 				sbhf.setUser(user);
 				SBOLDocument document = SBOLReader.read(request.getInputStream());
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -353,7 +365,11 @@ public class SynBioHub extends HttpServlet {
 					response.setStatus(HttpStatus.SC_BAD_REQUEST);
 					return;
 				}
-				SynBioHubFrontend sbhf = new SynBioHubFrontend(server);
+				String uriPrefix = request.getParameter("uriPrefix");
+				if(uriPrefix == null) {
+					uriPrefix = server;
+				}
+				SynBioHubFrontend sbhf = new SynBioHubFrontend(server, uriPrefix);
 				sbhf.setUser(user);
 				sbhf.createCollection(id, version, name, description, citations, overwrite.equals("true"));
 				response.setStatus(HttpStatus.SC_CREATED);
