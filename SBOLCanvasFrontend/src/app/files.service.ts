@@ -140,28 +140,31 @@ export class FilesService {
   }
 
   async saveRemote(server: string, collection: string, users: {}, contents: string) {
-    await this.uploadSBOL(contents, server, collection, users).toPromise();
+    await this.uploadSBOL(contents, server, collection, users, server).toPromise();
   }
 
   getRegistries(): Observable<any> {
     return this.http.get(this.getRegistriesURL);
   }
 
-  listMyCollections(user: string, server: string): Observable<any> {
+  listMyCollections(user: string, server: string, uriPrefix?: string): Observable<any> {
     let headers = new HttpHeaders();
     headers = headers.set("Authorization", user);
     let params = new HttpParams();
     params = params.append("server", server);
+    if(uriPrefix)
+      params = params.append("uriPrefix", uriPrefix);
     return this.http.get(this.listMyCollectionsURL, { headers: headers, params: params });
   }
 
-  listParts(user: string, server: string, collection: string, type: string, role: string, mode: string): Observable<IdentifiedInfo[]> {
+  listParts(user: string, server: string, collection: string, type: string, role: string, mode: string, uriPrefix?: string): Observable<IdentifiedInfo[]> {
     let headers = new HttpHeaders();
     if (user != null && user.length > 0)
       headers = headers.set("Authorization", user);
     let params = new HttpParams();
     params = params.append("server", server);
-
+    if(uriPrefix)
+      params = params.append("uriPrefix", uriPrefix);
     if (collection != null && collection.length > 0)
       params = params.append("collection", collection);
       
@@ -174,17 +177,19 @@ export class FilesService {
     return this.http.get<IdentifiedInfo[]>(this.listPartsURL, { headers: headers, params: params });
   };
 
-  listCombinatorials(user: string, server: string, template: string): Observable<any>{
+  listCombinatorials(user: string, server: string, template: string, uriPrefix?: string): Observable<any>{
     let headers = new HttpHeaders();
     if(user != null && user.length > 0)
       headers = headers.set("Authorization", user);
     let params = new HttpParams();
     params = params.append("server", server);
+    if(uriPrefix)
+      params = params.append("uriPrefix", uriPrefix);
     params = params.append("template", template);
     return this.http.get<string>(this.listCombinatorialsURL, { headers: headers, params: params });
   }
 
-  getPart(user: string, server: string, uri: string, combinatorial?: string): Observable<string> {
+  getPart(user: string, server: string, uri: string, combinatorial?: string, uriPrefix?: string): Observable<string> {
     let headers = new HttpHeaders();
     if (user != null && user.length > 0)
       headers = headers.set("Authorization", user);
@@ -192,17 +197,21 @@ export class FilesService {
     if(combinatorial)
       params = params.append("combinatorial", combinatorial);
     params = params.append("server", server);
+    if(uriPrefix)
+      params = params.append("uriPrefix", uriPrefix);
     params = params.append("uri", uri);
     return this.http.get(this.getPartsURL, { responseType: 'text', headers: headers, params: params });
   }
 
-  importPart(user: string, server: string, uri: string): Observable<string> {
+  importPart(user: string, server: string, uri: string, uriPrefix?: string): Observable<string> {
     let headers = new HttpHeaders();
     if (user != null && user.length > 0)
       headers = headers.set("Authorization", user);
     let params = new HttpParams();
     params = new HttpParams();
     params = params.append("server", server);
+    if(uriPrefix)
+      params = params.append("uriPrefix", uriPrefix);
     params = params.append("uri", uri);
     return this.http.get(this.importPartsURL, { responseType: 'text', headers: headers, params: params });
   }
@@ -211,16 +220,18 @@ export class FilesService {
     return this.http.post(this.toMxGraphURL, sbolXML, { responseType: 'text' });
   }
 
-  uploadSBOL(mxGraphXML: string, server: string, collection: string, users: {}) {
+  uploadSBOL(mxGraphXML: string, server: string, collection: string, users: {}, uriPrefix?: string) {
     let headers = new HttpHeaders();
     headers = headers.set("Authorization", this.usersToStringArr(users));
     let params = new HttpParams();
     params = params.append("server", server);
+    if(uriPrefix)
+      params = params.append("uriPrefix", uriPrefix);
     params = params.append("uri", collection);
     return this.http.post(this.addToCollectionURL, mxGraphXML, { responseType: 'text', headers: headers, params: params });
   }
 
-  importSBOL(file: File, server: string, collection: string, user: string){
+  importSBOL(file: File, server: string, collection: string, user: string, uriPrefix?: string){
     return new Observable<void>(observer => {
       if (typeof (FileReader) !== 'undefined') {
         const reader = new FileReader();
@@ -230,6 +241,8 @@ export class FilesService {
           headers = headers.set("Authorization", user);
           let params = new HttpParams();
           params = params.append("server", server);
+          if(uriPrefix)
+            params = params.append("uriPrefix", uriPrefix);
           params = params.append("uri", collection);
           this.http.post(this.importToCollectionURL, String(reader.result), { responseType: 'text', headers: headers, params: params }).subscribe(_ => {
             observer.next();
@@ -243,12 +256,14 @@ export class FilesService {
     });
   }
 
-  createCollection(server: string, user: string, id: string, version: string, name: string, description: string, citations: string, overwrite: boolean): Observable<void>{
+  createCollection(server: string, user: string, id: string, version: string, name: string, description: string, citations: string, overwrite: boolean, uriPrefix?: string): Observable<void>{
     return new Observable<void>(observer => {
       let headers = new HttpHeaders();
       headers = headers.set("Authorization", user);
       let params = new HttpParams();
       params = params.append("server", server);
+      if(uriPrefix)
+        params = params.append("uriPrefix", uriPrefix);
       params = params.append("id", id);
       params = params.append("version", version);
       params = params.append("name", name);
