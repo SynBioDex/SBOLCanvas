@@ -55,4 +55,20 @@ export class LoginService {
     }
   }
 
+  getRegistryPrefix(server: string): string {
+    if (!server) {
+      return server;
+    }
+    try {
+      const serializedPrefixes = localStorage.getItem('registryPrefixes');
+      if (!serializedPrefixes) {
+        return server;
+      }
+      const registryPrefixes = JSON.parse(serializedPrefixes);
+      return registryPrefixes[server] ? registryPrefixes[server] : server;
+    } catch {
+      return server;
+    }
+  }
+
 }
