@@ -87,7 +87,7 @@ export class UploadGraphComponent implements OnInit {
 
   onUploadClick() {
     this.working = true;
-    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.registry, this.collection, this.loginService.users, this.registry).subscribe(result => {
+    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.registry, this.collection, this.loginService.users, this.getRegistryPrefix()).subscribe(result => {
       this.working = false;
       this.dialogRef.close();
     });
@@ -95,7 +95,7 @@ export class UploadGraphComponent implements OnInit {
 
   onImportClick(){
     this.working = true;
-    this.filesService.importSBOL(this.file, this.registry, this.collection, this.loginService.users[this.registry], this.registry).subscribe(result =>{
+    this.filesService.importSBOL(this.file, this.registry, this.collection, this.loginService.users[this.registry], this.getRegistryPrefix()).subscribe(result =>{
       this.working = false;
       this.dialogRef.close();
     });
@@ -147,7 +147,7 @@ export class UploadGraphComponent implements OnInit {
   updateCollections() {
     if (this.loginService.users[this.registry] != null) {
       this.working = true;
-      this.filesService.listMyCollections(this.loginService.users[this.registry], this.registry, this.registry).subscribe(collections => {
+      this.filesService.listMyCollections(this.loginService.users[this.registry], this.registry, this.getRegistryPrefix()).subscribe(collections => {
         this.collections.data = collections;
         this.working = false;
       });
@@ -162,6 +162,10 @@ export class UploadGraphComponent implements OnInit {
       const additionalRegistries = JSON.parse(localStorage.getItem("registries"))
       this.registries = [...this.defaultRegistries, ...additionalRegistries]
     }
+  }
+
+  private getRegistryPrefix(registry?: string): string {
+    return this.loginService.getRegistryPrefix(registry ? registry : this.registry);
   }
 
 }

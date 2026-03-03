@@ -41,7 +41,7 @@ export class CollectionCreationComponent implements OnInit {
 
   onCreateClick() {
     this.working = true;
-    this.filesService.createCollection(this.registry, this.loginService.users[this.registry], this.id, this.version, this.name, this.description, this.citations, this.overwrite, this.registry).subscribe(_ => {
+    this.filesService.createCollection(this.registry, this.loginService.users[this.registry], this.id, this.version, this.name, this.description, this.citations, this.overwrite, this.loginService.getRegistryPrefix(this.registry)).subscribe(_ => {
       this.dialogRef.close(true);
       this.working = false;
     });
