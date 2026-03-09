@@ -3,35 +3,51 @@
       <h1 mat-dialog-title>Add Registry</h1>
       <div class="mat-form-field-container">
         <mat-form-field>
+          <mat-label>Registry URL</mat-label>
           <input matInput 
           type="url"
           pattern="https?://.+"
           #registryURLInput="ngModel" 
           required 
           [(ngModel)] = "registryURL"
-          (change)="onRegistryURLChange(registryURL)"
-          placeholder="Registry URL"
+          (ngModelChange)="onRegistryURLChange()"
+          matTooltip="Server URL for API calls"
           />
         <mat-error>
-          Must be URL
+          Must be a valid URL
         </mat-error>
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Registry Name (optional)</mat-label>
+          <input matInput 
+          #registryNameInput="ngModel"
+          [(ngModel)] = "registryName"
+          placeholder="e.g., My Lab Registry"
+          matTooltip="Friendly name to help you remember which registry this is"
+          />
         </mat-form-field>
 
         <div class="registry-prefix-row">
           <mat-form-field class="registry-prefix-field">
+            <mat-label>URI Prefix</mat-label>
             <input matInput 
             #registryPrefixInput="ngModel"
+            required
             [(ngModel)] = "registryPrefix"
-            placeholder="Registry Prefix"
+            matTooltip="URI prefix for object validation (usually same as URL)"
             [disabled]="!isEditingPrefix"
             />
+          <mat-error>
+            URI prefix is required
+          </mat-error>
           </mat-form-field>
           <button mat-button (click)="onEditPrefixClick()" [disabled]="isEditingPrefix" class="edit-prefix-btn">Edit</button>
         </div>
       </div>
       <div mat-dialog-actions>
         <button mat-button (click)="onCancelClick()">Cancel</button>
-        <button mat-button (click)="onCreateClick()" [disabled]="registryURLInput.invalid">Add</button>
+        <button mat-button (click)="onCreateClick()" [disabled]="registryURLInput.invalid || !registryPrefix">Add</button>
       </div>
     </mat-card-content>
   </mat-card>

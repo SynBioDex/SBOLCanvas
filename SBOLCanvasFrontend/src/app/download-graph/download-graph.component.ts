@@ -531,7 +531,9 @@ export class DownloadGraphComponent implements OnInit {
     // Check if the added registry can be accessed
     // Throw error if not a SynBioHub Instance
     dialogRef.afterClosed().subscribe(() =>{
-      const lastAddedRegistry = JSON.parse(localStorage.getItem("registries")).pop()
+      const registries = JSON.parse(localStorage.getItem("registries"));
+      const lastAddedRegistry = registries[registries.length - 1];
+      
       this.partRequest = this.filesService.listParts(this.loginService.users[lastAddedRegistry], lastAddedRegistry, this.collection, null, null, "collections", this.getRegistryPrefix(lastAddedRegistry))
       .subscribe({
       error: async (error) =>{

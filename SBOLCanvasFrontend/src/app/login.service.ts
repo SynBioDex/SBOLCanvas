@@ -10,8 +10,7 @@ export interface LoginDialogData {
 }
 
 @Injectable({
-  providedIn: 'root'
-})
+  providedIn: 'root'})
 export class LoginService {
   
   private loginURL = environment.backendURL + '/SynBioHub/login';
@@ -52,6 +51,22 @@ export class LoginService {
   forceLogout(server: string) {
     if (server && this.users[server]) {
       delete this.users[server];
+    }
+  }
+
+  getRegistryName(registryURL: string): string {
+    if (!registryURL) {
+      return registryURL;
+    }
+    try {
+      const serializedNames = localStorage.getItem('registryNames');
+      if (!serializedNames) {
+        return registryURL;
+      }
+      const registryNames = JSON.parse(serializedNames);
+      return registryNames[registryURL] ? registryNames[registryURL] : registryURL;
+    } catch {
+      return registryURL;
     }
   }
 

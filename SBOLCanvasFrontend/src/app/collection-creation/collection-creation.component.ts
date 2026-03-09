@@ -12,7 +12,7 @@ export class CollectionCreationComponent implements OnInit {
 
   working: boolean = false;
 
-  registry: string = "Error";
+  registry: string = "Error"; // Display name
 
   id: string;
   version: string;

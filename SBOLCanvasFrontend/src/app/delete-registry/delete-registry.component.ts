@@ -5,7 +5,7 @@ import {MatInputModule} from '@angular/material/input';
 import {MatSelectModule} from '@angular/material/select';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import { MatButton } from '@angular/material/button';
-
+import { LoginService } from '../login.service';
 
 
 @Component({
@@ -16,20 +16,25 @@ import { MatButton } from '@angular/material/button';
   styleUrl: './delete-registry.component.css'
 })
 export class DeleteRegistryComponent {
-  registries: string[] = JSON.parse(localStorage.getItem("registries"))
+  registries: string[] = []
   deletedRegistries: string[] = []
-  constructor(public dialogRef: MatDialogRef<DeleteRegistryComponent>, @Inject(MAT_DIALOG_DATA) public data: any) {}
+  
+  constructor(public dialogRef: MatDialogRef<DeleteRegistryComponent>, @Inject(MAT_DIALOG_DATA) public data: any, public loginService: LoginService) {}
 
   ngOnInit(){
-    this.registries = JSON.parse(localStorage.getItem("registries"))
+    const stored = localStorage.getItem("registries");
+    if (stored) {
+      this.registries = JSON.parse(stored);
+    }
   }
+  
   onCancelClick() {
     this.dialogRef.close(false);
   }
 
   onDeleteClick() {
     const registries = JSON.parse(localStorage.getItem("registries"))
-    const newRegistries = registries.filter(registry => !this.deletedRegistries.includes(registry))
+    const newRegistries = registries.filter((registry: string) => !this.deletedRegistries.includes(registry))
     
     localStorage.setItem('registries', JSON.stringify(newRegistries))
     this.dialogRef.close(true)
