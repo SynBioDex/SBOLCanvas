@@ -9,6 +9,12 @@ import { CollectionCreationComponent } from '../collection-creation/collection-c
 import { AddRegistryComponent } from '../add-registry-component/add-registry.component';
 import { DeleteRegistryComponent } from '../delete-registry/delete-registry.component';
 
+interface RegistryEntry {
+  url: string;
+  api: string;
+  prefix: string;
+}
+
 @Component({
   selector: 'app-upload-graph',
   templateUrl: './upload-graph.component.html',
@@ -16,9 +22,9 @@ import { DeleteRegistryComponent } from '../delete-registry/delete-registry.comp
 })
 export class UploadGraphComponent implements OnInit {
 
-  registries: string[];
+  registries: Array<string | RegistryEntry>;
   registry: string;
-  defaultRegistries: string[];
+  defaultRegistries: Array<string | RegistryEntry>;
   collections = new MatTableDataSource([]);
   collection: string;
   componentMode: boolean;
@@ -66,7 +72,7 @@ export class UploadGraphComponent implements OnInit {
   }
 
   loginDisabled() {
-    return this.loginService.users[this.registry] != null || this.registry == null;
+    return this.loginService.users[this.getRegistryAPI()] != null || this.registry == null;
   }
 
   finishCheck() {
@@ -78,7 +84,7 @@ export class UploadGraphComponent implements OnInit {
   }
 
   createCollectionCheck(){
-    return this.loginService.users[this.registry] != null;
+    return this.loginService.users[this.getRegistryAPI()] != null;
   }
 
   onCancelClick() {
@@ -87,7 +93,7 @@ export class UploadGraphComponent implements OnInit {
 
   onUploadClick() {
     this.working = true;
-    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.registry, this.collection, this.loginService.users, this.getRegistryPrefix()).subscribe(result => {
+    this.filesService.uploadSBOL(this.graphService.getGraphXML(), this.getRegistryAPI(), this.collection, this.loginService.users, this.getRegistryPrefix()).subscribe(result => {
       this.working = false;
       this.dialogRef.close();
     });
@@ -95,14 +101,14 @@ export class UploadGraphComponent implements OnInit {
 
   onImportClick(){
     this.working = true;
-    this.filesService.importSBOL(this.file, this.registry, this.collection, this.loginService.users[this.registry], this.getRegistryPrefix()).subscribe(result =>{
+    this.filesService.importSBOL(this.file, this.getRegistryAPI(), this.collection, this.loginService.users[this.getRegistryAPI()], this.getRegistryPrefix()).subscribe(result =>{
       this.working = false;
       this.dialogRef.close();
     });
   }
 
   onLoginClick() {
-    this.loginService.openLoginDialog(this.registry).subscribe(result => {
+    this.loginService.openLoginDialog(this.getRegistryAPI()).subscribe(result => {
       if (result) {
         this.updateCollections();
       }
@@ -111,7 +117,7 @@ export class UploadGraphComponent implements OnInit {
 
   async onLogoutClick() {
     this.working = true;
-    await this.loginService.logout(this.registry);
+    await this.loginService.logout(this.getRegistryAPI());
     this.working = false;
     this.updateCollections();
   }
@@ -145,9 +151,9 @@ export class UploadGraphComponent implements OnInit {
   }
 
   updateCollections() {
-    if (this.loginService.users[this.registry] != null) {
+    if (this.loginService.users[this.getRegistryAPI()] != null) {
       this.working = true;
-      this.filesService.listMyCollections(this.loginService.users[this.registry], this.registry, this.getRegistryPrefix()).subscribe(collections => {
+      this.filesService.listMyCollections(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.getRegistryPrefix()).subscribe(collections => {
         this.collections.data = collections;
         this.working = false;
       });
@@ -166,6 +172,14 @@ export class UploadGraphComponent implements OnInit {
 
   private getRegistryPrefix(registry?: string): string {
     return this.loginService.getRegistryPrefix(registry ? registry : this.registry);
+  }
+
+  private getRegistryAPI(registry?: string): string {
+    return this.loginService.getRegistryAPI(registry ? registry : this.registry);
+  }
+
+  getRegistryURL(registry: string | RegistryEntry): string {
+    return this.loginService.getRegistryDisplayURL(registry);
   }
 
 }

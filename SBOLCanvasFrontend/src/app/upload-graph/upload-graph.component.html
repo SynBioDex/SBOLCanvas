@@ -15,8 +15,8 @@
         <mat-label>Registry</mat-label>
         <mat-select id="registry" [disabled]="registries == null || registries.length < 1"
           (selectionChange)="setRegistry($event.value)">
-          <mat-option *ngFor="let registry of registries" [value]="registry" [matTooltip]="registry">
-            {{loginService.getRegistryName(registry)}}
+          <mat-option *ngFor="let registry of registries" [value]="getRegistryURL(registry)" [matTooltip]="getRegistryURL(registry)">
+            {{getRegistryURL(registry)}}
           </mat-option>
         </mat-select>
       </mat-form-field>

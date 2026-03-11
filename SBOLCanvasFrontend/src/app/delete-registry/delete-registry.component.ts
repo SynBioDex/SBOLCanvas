@@ -7,6 +7,12 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import { MatButton } from '@angular/material/button';
 import { LoginService } from '../login.service';
 
+interface RegistryEntry {
+  url: string;
+  api: string;
+  prefix: string;
+}
+
 
 @Component({
   selector: 'app-delete-registry',
@@ -16,7 +22,7 @@ import { LoginService } from '../login.service';
   styleUrl: './delete-registry.component.css'
 })
 export class DeleteRegistryComponent {
-  registries: string[] = []
+  registries: Array<string | RegistryEntry> = []
   deletedRegistries: string[] = []
   
   constructor(public dialogRef: MatDialogRef<DeleteRegistryComponent>, @Inject(MAT_DIALOG_DATA) public data: any, public loginService: LoginService) {}
@@ -34,10 +40,17 @@ export class DeleteRegistryComponent {
 
   onDeleteClick() {
     const registries = JSON.parse(localStorage.getItem("registries"))
-    const newRegistries = registries.filter((registry: string) => !this.deletedRegistries.includes(registry))
+    const newRegistries = registries.filter((registry: string | RegistryEntry) => {
+      const url = this.loginService.getRegistryDisplayURL(registry);
+      return !this.deletedRegistries.includes(url);
+    })
     
     localStorage.setItem('registries', JSON.stringify(newRegistries))
     this.dialogRef.close(true)
+  }
+
+  getRegistryURL(registry: string | RegistryEntry): string {
+    return this.loginService.getRegistryDisplayURL(registry);
   }
 
 }
