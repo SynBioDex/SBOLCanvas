@@ -12,7 +12,7 @@ export class CollectionCreationComponent implements OnInit {
 
   working: boolean = false;
 
-  registry: string = "Error";
+  registry: string = "Error"; // Display name
 
   id: string;
   version: string;
@@ -41,7 +41,8 @@ export class CollectionCreationComponent implements OnInit {
 
   onCreateClick() {
     this.working = true;
-    this.filesService.createCollection(this.registry, this.loginService.users[this.registry], this.id, this.version, this.name, this.description, this.citations, this.overwrite, this.loginService.getRegistryPrefix(this.registry)).subscribe(_ => {
+    const registryAPI = this.loginService.getRegistryAPI(this.registry);
+    this.filesService.createCollection(registryAPI, this.loginService.users[registryAPI], this.id, this.version, this.name, this.description, this.citations, this.overwrite, this.loginService.getRegistryPrefix(this.registry)).subscribe(_ => {
       this.dialogRef.close(true);
       this.working = false;
     });

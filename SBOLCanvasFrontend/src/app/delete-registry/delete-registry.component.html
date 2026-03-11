@@ -7,7 +7,7 @@
             <mat-label>Registries</mat-label>
             <mat-select panelWidth="null" multiple [(value)]="deletedRegistries">
               @for (registry of registries; track $index) {
-                <mat-option [value]="registry">{{registry}}</mat-option>
+                <mat-option [value]="getRegistryURL(registry)">{{getRegistryURL(registry)}}</mat-option>
               }
             </mat-select>
           </mat-form-field>

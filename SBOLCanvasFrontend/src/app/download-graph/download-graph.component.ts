@@ -16,6 +16,12 @@ import { DeleteRegistryComponent } from '../delete-registry/delete-registry.comp
 import { ErrorComponent } from '../error/error.component';
 import { ConfirmComponent } from '../confirm/confirm.component';
 
+interface RegistryEntry {
+  url: string;
+  api: string;
+  prefix: string;
+}
+
 @Component({
   selector: 'app-download-graph',
   templateUrl: './download-graph.component.html',
@@ -44,9 +50,9 @@ export class DownloadGraphComponent implements OnInit {
   // This is so we can use static variables in the html checks
   classRef = DownloadGraphComponent;
 
-  registries: string[];
+  registries: Array<string | RegistryEntry>;
   registry: string;
-  defaultRegistries: string[];
+  defaultRegistries: Array<string | RegistryEntry>;
   partTypes: string[];
   history: any[];
   partRoles: string[];
@@ -138,7 +144,7 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   loginDisabled(): boolean {
-    return this.loginService.users[this.registry] != null || this.registry == null;
+    return this.loginService.users[this.getRegistryAPI()] != null || this.registry == null;
   }
 
   finishCheck(): boolean {
@@ -175,7 +181,7 @@ export class DownloadGraphComponent implements OnInit {
   }
 
   onLoginClick() {
-    this.loginService.openLoginDialog(this.registry).subscribe(result => {
+    this.loginService.openLoginDialog(this.getRegistryAPI()).subscribe(result => {
       if (result) {
         this.updateParts();
       }
@@ -184,7 +190,7 @@ export class DownloadGraphComponent implements OnInit {
 
   async onLogoutClick() {
     this.working = true;
-    await this.loginService.logout(this.registry);
+    await this.loginService.logout(this.getRegistryAPI());
     this.working = false;
     this.updateParts();
   }
@@ -271,14 +277,14 @@ export class DownloadGraphComponent implements OnInit {
   async downloadComponent() {
     this.working = true;
     if (this.mode == DownloadGraphComponent.IMPORT_MODE) {
-      this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri, this.getRegistryPrefix()).subscribe(xml => {
+      this.filesService.importPart(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.selection.selected[0].uri, this.getRegistryPrefix()).subscribe(xml => {
         this.graphService.setSelectedToXML(xml);
         this.working = false;
         this.dialogRef.close();
       });
     } else {
       // check for combinatorials
-      let combResult = await this.filesService.listCombinatorials(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri, this.getRegistryPrefix()).toPromise();
+      let combResult = await this.filesService.listCombinatorials(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.selection.selected[0].uri, this.getRegistryPrefix()).toPromise();
       let combinatorial;
       if(combResult.length > 0){
         combinatorial = await this.dialog.open(FuncCompSelectorComponent, {
@@ -292,9 +298,9 @@ export class DownloadGraphComponent implements OnInit {
       // get xml
       let xml;
       if(combinatorial){
-        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri, combinatorial.uri, this.getRegistryPrefix()).toPromise();
+        xml = await this.filesService.getPart(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.selection.selected[0].uri, combinatorial.uri, this.getRegistryPrefix()).toPromise();
       }else{
-        xml = await this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri, undefined, this.getRegistryPrefix()).toPromise();
+        xml = await this.filesService.getPart(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.selection.selected[0].uri, undefined, this.getRegistryPrefix()).toPromise();
       }
 
       // set xml;
@@ -309,13 +315,13 @@ export class DownloadGraphComponent implements OnInit {
   downloadModule() {
     this.working = true;
     if (this.mode == DownloadGraphComponent.IMPORT_MODE) {
-      this.filesService.importPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri, this.getRegistryPrefix()).subscribe(xml => {
+      this.filesService.importPart(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.selection.selected[0].uri, this.getRegistryPrefix()).subscribe(xml => {
         this.graphService.setSelectedToXML(xml);
         this.working = false;
         this.dialogRef.close();
       })
     } else {
-      this.filesService.getPart(this.loginService.users[this.registry], this.registry, this.selection.selected[0].uri, undefined, this.getRegistryPrefix()).subscribe(xml => {
+      this.filesService.getPart(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.selection.selected[0].uri, undefined, this.getRegistryPrefix()).subscribe(xml => {
         this.graphService.setGraphToXML(xml);
         this.working = false;
         this.dialogRef.close();
@@ -424,8 +430,8 @@ export class DownloadGraphComponent implements OnInit {
         // collection and components
         let roleOrRefine = this.partRefine != null && this.partRefine.length > 0 ? this.partRefine : this.partRole;
         this.partRequest = forkJoin([
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections", this.getRegistryPrefix()),
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, this.partType, roleOrRefine, "components", this.getRegistryPrefix())]
+          this.filesService.listParts(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.collection, null, null, "collections", this.getRegistryPrefix()),
+          this.filesService.listParts(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.collection, this.partType, roleOrRefine, "components", this.getRegistryPrefix())]
         ).subscribe(parts => {
           let partCache = [];
        
@@ -444,8 +450,8 @@ export class DownloadGraphComponent implements OnInit {
       } else if(this.type == DownloadGraphComponent.MODULE_TYPE){
         // collections and modules
         this.partRequest = forkJoin([
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections", this.getRegistryPrefix()),
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules", this.getRegistryPrefix())])
+          this.filesService.listParts(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.collection, null, null, "collections", this.getRegistryPrefix()),
+          this.filesService.listParts(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.collection, null, null, "modules", this.getRegistryPrefix())])
           .subscribe({
           next: (parts) =>{
           let partCache = [];
@@ -468,9 +474,9 @@ export class DownloadGraphComponent implements OnInit {
       }else{
         // collection, modules, and components
         this.partRequest = forkJoin([
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "collections", this.getRegistryPrefix()),
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "modules", this.getRegistryPrefix()),
-          this.filesService.listParts(this.loginService.users[this.registry], this.registry, this.collection, null, null, "components", this.getRegistryPrefix())])
+          this.filesService.listParts(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.collection, null, null, "collections", this.getRegistryPrefix()),
+          this.filesService.listParts(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.collection, null, null, "modules", this.getRegistryPrefix()),
+          this.filesService.listParts(this.loginService.users[this.getRegistryAPI()], this.getRegistryAPI(), this.collection, null, null, "components", this.getRegistryPrefix())])
           .subscribe({
           next:(parts) => {
           let partCache = [];
@@ -531,8 +537,11 @@ export class DownloadGraphComponent implements OnInit {
     // Check if the added registry can be accessed
     // Throw error if not a SynBioHub Instance
     dialogRef.afterClosed().subscribe(() =>{
-      const lastAddedRegistry = JSON.parse(localStorage.getItem("registries")).pop()
-      this.partRequest = this.filesService.listParts(this.loginService.users[lastAddedRegistry], lastAddedRegistry, this.collection, null, null, "collections", this.getRegistryPrefix(lastAddedRegistry))
+      const registries = JSON.parse(localStorage.getItem("registries"));
+      const lastAddedRegistry = this.getRegistryURL(registries[registries.length - 1]);
+      const lastAddedAPI = this.loginService.getRegistryAPI(lastAddedRegistry);
+      
+      this.partRequest = this.filesService.listParts(this.loginService.users[lastAddedAPI], lastAddedAPI, this.collection, null, null, "collections", this.getRegistryPrefix(lastAddedRegistry))
       .subscribe({
       error: async (error) =>{
         this.working = false
@@ -573,5 +582,13 @@ export class DownloadGraphComponent implements OnInit {
 
   private getRegistryPrefix(registry?: string): string {
     return this.loginService.getRegistryPrefix(registry ? registry : this.registry);
+  }
+
+  private getRegistryAPI(registry?: string): string {
+    return this.loginService.getRegistryAPI(registry ? registry : this.registry);
+  }
+
+  getRegistryURL(registry: string | RegistryEntry): string {
+    return this.loginService.getRegistryDisplayURL(registry);
   }
 }

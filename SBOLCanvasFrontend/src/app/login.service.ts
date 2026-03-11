@@ -9,9 +9,14 @@ export interface LoginDialogData {
   server: string;
 }
 
+interface RegistryEntry {
+  url: string;
+  api: string;
+  prefix: string;
+}
+
 @Injectable({
-  providedIn: 'root'
-})
+  providedIn: 'root'})
 export class LoginService {
   
   private loginURL = environment.backendURL + '/SynBioHub/login';
@@ -55,19 +60,100 @@ export class LoginService {
     }
   }
 
-  getRegistryPrefix(server: string): string {
-    if (!server) {
-      return server;
+  getRegistryDisplayURL(registry: string | RegistryEntry): string {
+    if (!registry) {
+      return '';
     }
+
+    if (typeof registry === 'string') {
+      return registry;
+    }
+
+    return registry.url;
+  }
+
+  getRegistryAPI(registryURL: string): string {
+    if (!registryURL) {
+      return registryURL;
+    }
+
+    const registryEntry = this.findRegistryEntry(registryURL);
+    if (!registryEntry) {
+      return registryURL;
+    }
+
+    return registryEntry.api ? registryEntry.api : registryEntry.url;
+  }
+
+  getRegistryPrefix(registryURL: string): string {
+    if (!registryURL) {
+      return registryURL;
+    }
+
+    const registryEntry = this.findRegistryEntry(registryURL);
+    if (registryEntry && registryEntry.prefix) {
+      return registryEntry.prefix;
+    }
+
     try {
       const serializedPrefixes = localStorage.getItem('registryPrefixes');
       if (!serializedPrefixes) {
-        return server;
+        return registryURL;
       }
       const registryPrefixes = JSON.parse(serializedPrefixes);
-      return registryPrefixes[server] ? registryPrefixes[server] : server;
+      return registryPrefixes[registryURL] ? registryPrefixes[registryURL] : registryURL;
     } catch {
-      return server;
+      return registryURL;
+    }
+  }
+
+  private findRegistryEntry(registryURL: string): RegistryEntry | null {
+    try {
+      const serializedRegistries = localStorage.getItem('registries');
+      if (!serializedRegistries) {
+        return null;
+      }
+
+      const registries = JSON.parse(serializedRegistries);
+      if (!Array.isArray(registries)) {
+        return null;
+      }
+
+      for (const registry of registries) {
+        if (typeof registry === 'string') {
+          if (registry === registryURL) {
+            return {
+              url: registry,
+              api: registry,
+              prefix: this.getLegacyPrefix(registry)
+            };
+          }
+        } else if (registry && registry.url === registryURL) {
+          return {
+            url: registry.url,
+            api: registry.api ? registry.api : registry.url,
+            prefix: registry.prefix ? registry.prefix : registry.url
+          };
+        }
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  }
+
+  private getLegacyPrefix(registryURL: string): string {
+    try {
+      const serializedPrefixes = localStorage.getItem('registryPrefixes');
+      if (!serializedPrefixes) {
+        return registryURL;
+      }
+
+      const registryPrefixes = JSON.parse(serializedPrefixes);
+      return registryPrefixes[registryURL] ? registryPrefixes[registryURL] : registryURL;
+    } catch {
+      return registryURL;
     }
   }
 
