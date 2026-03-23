@@ -103,8 +103,14 @@ export class FilesService {
       let params = new HttpParams();
       params = params.append("format", format);
 
-      this.http.post(this.exportDesignURL, contents, { headers: headers, responseType: 'text', params: params }).subscribe(result => {
-        observer.next(result);
+      this.http.post(this.exportDesignURL, contents, { headers: headers, responseType: 'text', params: params }).subscribe({
+        next: result => {
+          observer.next(result);
+          observer.complete();
+        },
+        error: err => {
+          observer.error(err);
+        }
       });
     });
   }

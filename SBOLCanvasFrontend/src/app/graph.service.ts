@@ -25,7 +25,7 @@ import { EventInfo } from './eventInfo';
 import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
 import { Observable } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime, share } from 'rxjs/operators';
 import { DomSanitizer } from '@angular/platform-browser';
 
 @Injectable({
@@ -52,17 +52,41 @@ export class GraphService extends GraphHelpers {
 
         // send changes in mxgraph model to parent
         // doing this via an Observable so we can debounce
-        new Observable<any>(observer => {
+        const modelChange$ = new Observable<any>(observer => {
             this.graph.getModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, () => {
                 observer.next(this.getGraphXML())
             }))
-        })
+        }).pipe(share())
+
+        // SBOL auto-export pipeline (100ms debounce)
+        modelChange$
         .pipe(debounceTime(100))
         .subscribe(graphXml => {
             if (embeddedService.isAppEmbedded()) {
-                console.debug('[GraphService] Model changed. Sending to parent.')
+                console.debug('[GraphService] Model changed. Sending SBOL to parent.')
                 fileService.exportDesignToString({}, 'SBOL2', graphXml).subscribe(sbol => {
                     embeddedService.postMessage({ sbol })
+                })
+            }
+        })
+
+        // SBML auto-export pipeline (2000ms debounce)
+        modelChange$
+        .pipe(debounceTime(2000))
+        .subscribe(graphXml => {
+            if (embeddedService.isAppEmbedded()) {
+                console.debug('[GraphService] Model changed. Sending SBML to parent.')
+                fileService.exportDesignToString({}, 'SBML', graphXml).subscribe({
+                    next: sbml => {
+                        embeddedService.postMessage({ sbml })
+                    },
+                    error: err => {
+                        console.error('[GraphService] SBML export failed:', err)
+                        const message = err.error || err.message || 'SBML export failed'
+                        embeddedService.postMessage({
+                            error: { type: 'sbml-export', message: message }
+                        })
+                    }
                 })
             }
         })
