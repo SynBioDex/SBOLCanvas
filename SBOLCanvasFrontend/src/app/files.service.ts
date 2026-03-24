@@ -55,9 +55,12 @@ export class FilesService {
         const reader = new FileReader();
 
         reader.onload = (e: any) => {
-          this.convertToMxGraph(String(reader.result)).subscribe(result => {
-            graphService.setGraphToXML(result);
-            observer.next();
+          this.convertToMxGraph(String(reader.result)).subscribe({
+            next: result => {
+              graphService.setGraphToXML(result);
+              observer.next();
+            },
+            error: err => observer.error(err)
           });
         };
 
@@ -137,10 +140,13 @@ export class FilesService {
         case "CSV":
           formatExtension = ".csv"; break;
       }
-      this.http.post(this.enumerateDesignURL, contents, {headers: headers, responseType: 'text', params: params }).subscribe(result => {
-        var file = new File([result], filename + formatExtension);
-        FileSaver.saveAs(file);
-        observer.next();
+      this.http.post(this.enumerateDesignURL, contents, {headers: headers, responseType: 'text', params: params }).subscribe({
+        next: result => {
+          var file = new File([result], filename + formatExtension);
+          FileSaver.saveAs(file);
+          observer.next();
+        },
+        error: err => observer.error(err)
       });
     });
   }
@@ -250,8 +256,11 @@ export class FilesService {
           if(uriPrefix)
             params = params.append("uriPrefix", uriPrefix);
           params = params.append("uri", collection);
-          this.http.post(this.importToCollectionURL, String(reader.result), { responseType: 'text', headers: headers, params: params }).subscribe(_ => {
-            observer.next();
+          this.http.post(this.importToCollectionURL, String(reader.result), { responseType: 'text', headers: headers, params: params }).subscribe({
+            next: _ => {
+              observer.next();
+            },
+            error: err => observer.error(err)
           });
         };
 
@@ -276,8 +285,11 @@ export class FilesService {
       params = params.append("description", description);
       params = params.append("citations", citations ? citations : '');
       params = params.append("overwrite", overwrite ? "true" : "false");
-      return this.http.post(this.createCollectionURL, "", {responseType: 'text', headers: headers, params: params }).subscribe(result => {
-        observer.next();
+      this.http.post(this.createCollectionURL, "", {responseType: 'text', headers: headers, params: params }).subscribe({
+        next: result => {
+          observer.next();
+        },
+        error: err => observer.error(err)
       });
     });
   }

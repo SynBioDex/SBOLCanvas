@@ -64,8 +64,17 @@ export class GraphService extends GraphHelpers {
         .subscribe(graphXml => {
             if (embeddedService.isAppEmbedded()) {
                 console.debug('[GraphService] Model changed. Sending SBOL to parent.')
-                fileService.exportDesignToString({}, 'SBOL2', graphXml).subscribe(sbol => {
-                    embeddedService.postMessage({ sbol })
+                fileService.exportDesignToString({}, 'SBOL2', graphXml).subscribe({
+                    next: sbol => {
+                        embeddedService.postMessage({ sbol })
+                    },
+                    error: err => {
+                        console.error('[GraphService] SBOL export failed:', err)
+                        const message = typeof err.error === 'string' ? err.error : err.message || 'SBOL export failed'
+                        embeddedService.postMessage({
+                            error: { type: 'sbol-export', message: message }
+                        })
+                    }
                 })
             }
         })
@@ -82,7 +91,7 @@ export class GraphService extends GraphHelpers {
                     },
                     error: err => {
                         console.error('[GraphService] SBML export failed:', err)
-                        const message = err.error || err.message || 'SBML export failed'
+                        const message = typeof err.error === 'string' ? err.error : err.message || 'SBML export failed'
                         embeddedService.postMessage({
                             error: { type: 'sbml-export', message: message }
                         })
