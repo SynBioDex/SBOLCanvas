@@ -66,7 +66,6 @@ export class ExportDesignComponent implements OnInit {
 
   finishCheck():boolean {
     return this.filename != null && this.filename.length > 0;
-    return false;
   }
 
 }

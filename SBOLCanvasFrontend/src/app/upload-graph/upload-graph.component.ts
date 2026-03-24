@@ -101,9 +101,14 @@ export class UploadGraphComponent implements OnInit {
 
   onImportClick(){
     this.working = true;
-    this.filesService.importSBOL(this.file, this.getRegistryAPI(), this.collection, this.loginService.users[this.getRegistryAPI()], this.getRegistryPrefix()).subscribe(result =>{
-      this.working = false;
-      this.dialogRef.close();
+    this.filesService.importSBOL(this.file, this.getRegistryAPI(), this.collection, this.loginService.users[this.getRegistryAPI()], this.getRegistryPrefix()).subscribe({
+      next: _ => {
+        this.working = false;
+        this.dialogRef.close();
+      },
+      error: _ => {
+        this.working = false;
+      }
     });
   }
 
