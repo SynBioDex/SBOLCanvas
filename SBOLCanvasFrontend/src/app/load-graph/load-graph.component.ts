@@ -30,9 +30,14 @@ export class LoadGraphComponent implements OnInit {
 
   onOkClick(){
     this.working = true;
-    this.filesService.loadLocal(this.data.file, this.graphService).subscribe(_ => {
-      this.working = false;
-      this.dialogRef.close();
+    this.filesService.loadLocal(this.data.file, this.graphService).subscribe({
+      next: _ => {
+        this.working = false;
+        this.dialogRef.close();
+      },
+      error: _ => {
+        this.working = false;
+      }
     });
   }
 

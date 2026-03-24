@@ -42,9 +42,14 @@ export class CollectionCreationComponent implements OnInit {
   onCreateClick() {
     this.working = true;
     const registryAPI = this.loginService.getRegistryAPI(this.registry);
-    this.filesService.createCollection(registryAPI, this.loginService.users[registryAPI], this.id, this.version, this.name, this.description, this.citations, this.overwrite, this.loginService.getRegistryPrefix(this.registry)).subscribe(_ => {
-      this.dialogRef.close(true);
-      this.working = false;
+    this.filesService.createCollection(registryAPI, this.loginService.users[registryAPI], this.id, this.version, this.name, this.description, this.citations, this.overwrite, this.loginService.getRegistryPrefix(this.registry)).subscribe({
+      next: _ => {
+        this.dialogRef.close(true);
+        this.working = false;
+      },
+      error: _ => {
+        this.working = false;
+      }
     });
   }
 
