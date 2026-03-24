@@ -925,6 +925,16 @@ export class GraphService extends GraphHelpers {
      */
     makeSequenceFeatureDragsource(element, stylename) {
         const insertGlyph = mx.mxUtils.bind(this, function (graph, evt, target, x, y) {
+            if (stylename === "Cir (Circular Backbone)") {
+                this.addCircularPlasmidAt(x, y)
+                return
+            }
+
+            if (stylename === "Chromosomal-locus") {
+                this.addChromosomalLocusAt(x, y)
+                return
+            }
+
             this.addSequenceFeatureAt(stylename, x - GraphBase.sequenceFeatureGlyphWidth / 2, y - GraphBase.sequenceFeatureGlyphHeight / 2)
         })
         this.makeGeneralDragsource(element, insertGlyph)
@@ -1038,6 +1048,23 @@ export class GraphService extends GraphHelpers {
             this.graph.getModel().endUpdate()
         }
     }
+
+    async addCircularPlasmidAt(x, y) {
+        let circuitContainer = this.getClosestCircuitContainerToPoint(x, y)
+
+        if (!circuitContainer) {
+            this.addBackboneAt(x - GraphBase.sequenceFeatureGlyphWidth / 2, y - GraphBase.sequenceFeatureGlyphHeight / 2)
+            circuitContainer = this.graph.getSelectionCell()
+        }
+
+        if (!circuitContainer || !circuitContainer.isCircuitContainer()) {
+            return
+        }
+
+        this.graph.setSelectionCell(circuitContainer)
+        await this.addCircularPlasmid()
+    }
+
     async addChromosomalLocus() {
         this.graph.getModel().beginUpdate()
         try {
@@ -1094,6 +1121,22 @@ export class GraphService extends GraphHelpers {
         } finally {
             this.graph.getModel().endUpdate()
         }
+    }
+
+    async addChromosomalLocusAt(x, y) {
+        let circuitContainer = this.getClosestCircuitContainerToPoint(x, y)
+
+        if (!circuitContainer) {
+            this.addBackboneAt(x - GraphBase.sequenceFeatureGlyphWidth / 2, y - GraphBase.sequenceFeatureGlyphHeight / 2)
+            circuitContainer = this.graph.getSelectionCell()
+        }
+
+        if (!circuitContainer || !circuitContainer.isCircuitContainer()) {
+            return
+        }
+
+        this.graph.setSelectionCell(circuitContainer)
+        await this.addChromosomalLocus()
     }
 
     /**
