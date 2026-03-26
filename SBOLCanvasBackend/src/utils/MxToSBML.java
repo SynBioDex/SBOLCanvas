@@ -158,8 +158,6 @@ public class MxToSBML extends Converter {
 
 		SBMLDocument document = setupDocument(graphStream);
 
-		// Write to SBML document stream
-		// https://sbml.org/jsbml/files/doc/api/1.6.1/org/sbml/jsbml/SBMLWriter.html
 		org.sbml.jsbml.TidySBMLWriter.write(document, sbmlStream, "SBOLCanvas", "1.0", ' ', (short) 2);
 	}
 
@@ -228,10 +226,8 @@ public class MxToSBML extends Converter {
 					}
 				}
 
-				// TODO: For all IllegalArgumentExceptions, add user validation before export
-				if (promoterGlyph == null) {
-					throw new IllegalArgumentException("Backbone has no promoter glyph. Add a Promoter to the backbone for SBML export.");
-				}
+				if (promoterGlyph == null)
+					continue;
 
 				GlyphInfo promoterInfo = (GlyphInfo) infoDict.get(promoterGlyph.getValue());
 				String promoterName = promoterInfo.getName();
@@ -280,6 +276,8 @@ public class MxToSBML extends Converter {
 
 			for (mxCell glyph : speciesGlyphs) {
 				Species species = createSpecies(sbmlModel, glyph);
+				if (species == null)
+					continue;
 				glyphToSpeciesData.put((String) glyph.getValue(),
 						new SpeciesData(species, glyph.getGeometry()));
 			}
@@ -304,9 +302,8 @@ public class MxToSBML extends Converter {
 
 				if (cell.isEdge()) {
 					InteractionInfo info = (InteractionInfo) interactionDict.get(cell.getValue());
-					if (info == null) {
+					if (info == null)
 						continue;
-					}
 
 					String type = info.getInteractionType();
 					URI typeURI = SBOLData.interactions.getValue(type);
@@ -345,13 +342,11 @@ public class MxToSBML extends Converter {
 			double np = getParam(promoterInfo.getSimulationData(), SBOLData.PARAM_NP, SequenceOntology.PROMOTER, "promoter '" + promoterId + "'");
 			for (mxCell productionEdge : tuData.productionEdges) {
 				mxCell targetCell = (mxCell) productionEdge.getTarget();
-				if (targetCell == null) {
-					throw new IllegalArgumentException("Production edge has no target cell (disconnected edge)");
-				}
+				if (targetCell == null)
+					continue;
 				SpeciesData productData = glyphToSpeciesData.get((String) targetCell.getValue());
-				if (productData == null) {
-					throw new IllegalArgumentException("Product species not found for production edge");
-				}
+				if (productData == null)
+					continue;
 				SpeciesReference product = reaction.createProduct(productData.species);
 				product.setConstant(true);
 				product.setStoichiometry(np);
@@ -372,19 +367,17 @@ public class MxToSBML extends Converter {
 
 					if (typeURI != null && modifierCell != null) {
 						if (typeURI.equals(SBOLData.interactions.getValue("Inhibition"))) {
-							repressorEdge = inEdge;
 							SpeciesData modifierData = glyphToSpeciesData.get((String) modifierCell.getValue());
-							if (modifierData == null) {
-								throw new IllegalArgumentException("Repressor species not found for inhibition edge");
-							}
+							if (modifierData == null)
+								continue;
+							repressorEdge = inEdge;
 							ModifierSpeciesReference mod = reaction.createModifier(modifierData.species);
 							mod.setSBOTerm(20); // SBO:0000020 Inhibitor
 						} else if (typeURI.equals(SBOLData.interactions.getValue("Stimulation"))) {
-							activatorEdge = inEdge;
 							SpeciesData modifierData = glyphToSpeciesData.get((String) modifierCell.getValue());
-							if (modifierData == null) {
-								throw new IllegalArgumentException("Activator species not found for stimulation edge");
-							}
+							if (modifierData == null)
+								continue;
+							activatorEdge = inEdge;
 							ModifierSpeciesReference mod = reaction.createModifier(modifierData.species);
 							mod.setSBOTerm(459); // SBO:0000459 Stimulator
 						}
@@ -392,22 +385,15 @@ public class MxToSBML extends Converter {
 				}
 			}
 
-			if (repressorEdge != null && activatorEdge != null) {
-				throw new IllegalArgumentException(
-						"Mixed regulation (both activators and repressors) not supported for promoter: " + promoterId);
-			}
+			if (repressorEdge != null && activatorEdge != null)
+				continue;
 
-			// TODO: Unregulated promoters not supported
 			if (repressorEdge != null) {
 				buildRepressionFormula(reaction, promoterId, promoterInfo, repressorEdge);
 			} else if (activatorEdge != null) {
 				buildActivationFormula(reaction, promoterId, promoterInfo, activatorEdge);
 			} else {
-				String promoterName = promoterInfo.getName();
-				if (promoterName == null || promoterName.isEmpty()) {
-					promoterName = promoterInfo.getDisplayID();
-				}
-				throw new IllegalArgumentException("Promoter '" + promoterName + "' has no regulator.");
+				// TODO: Add constitutive (unregulated) promoter formula
 			}
 		}
 	}
@@ -428,9 +414,8 @@ public class MxToSBML extends Converter {
 
 				if (cell.isEdge()) {
 					InteractionInfo info = (InteractionInfo) interactionDict.get(cell.getValue());
-					if (info == null) {
+					if (info == null)
 						continue;
-					}
 
 					String type = info.getInteractionType();
 					URI typeURI = SBOLData.interactions.getValue(type);
@@ -496,9 +481,7 @@ public class MxToSBML extends Converter {
 
 		mxCell repCell = (mxCell) repressorEdge.getSource();
 		SpeciesData repData = glyphToSpeciesData.get((String) repCell.getValue());
-		if (repData == null) {
-			throw new IllegalArgumentException("Repressor species not found for edge");
-		}
+		if (repData == null) return;
 		String repId = repData.species.getId();
 
 		InteractionInfo repInfo = (InteractionInfo) interactionDict.get(repressorEdge.getValue());
@@ -523,7 +506,7 @@ public class MxToSBML extends Converter {
 		try {
 			law.setMath(new FormulaParser(new ByteArrayInputStream(formula.getBytes(StandardCharsets.UTF_8))).parse());
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to parse repression kinetic law: " + e.getMessage(), e);
+			System.err.println("Warning: repression formula parse failed for " + promoterId + ": " + e.getMessage());
 		}
 	}
 
@@ -561,9 +544,7 @@ public class MxToSBML extends Converter {
 
 		mxCell actCell = (mxCell) activatorEdge.getSource();
 		SpeciesData actData = glyphToSpeciesData.get((String) actCell.getValue());
-		if (actData == null) {
-			throw new IllegalArgumentException("Activator species not found for edge");
-		}
+		if (actData == null) return;
 		String actId = actData.species.getId();
 
 		InteractionInfo actInfo = (InteractionInfo) interactionDict.get(activatorEdge.getValue());
@@ -592,7 +573,7 @@ public class MxToSBML extends Converter {
 		try {
 			law.setMath(new FormulaParser(new ByteArrayInputStream(formula.getBytes(StandardCharsets.UTF_8))).parse());
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to parse activation kinetic law: " + e.getMessage(), e);
+			System.err.println("Warning: activation formula parse failed for " + promoterId + ": " + e.getMessage());
 		}
 	}
 
@@ -716,7 +697,7 @@ public class MxToSBML extends Converter {
 	 */
 	private void createVisualLayout(Model sbmlModel) {
 		if (glyphToSpeciesData.isEmpty()) {
-			return; // No species — layout bounds are uninitialized
+			return; // No species -- layout bounds are uninitialized
 		}
 
 		Layout layout = setupLayout(sbmlModel);
@@ -747,16 +728,14 @@ public class MxToSBML extends Converter {
 
 			String targetSpecies = getStringParam(simData, SBOLData.PARAM_EVENT_TARGET_SPECIES);
 			if (targetSpecies == null || targetSpecies.isEmpty()) {
-				throw new IllegalArgumentException(context + " missing target species");
+				continue;
 			}
 
 			// Resolve display name to SBML species ID. The user enters a display
 			// name (e.g., "LacI protein") but SBML uses sanitized IDs ("LacI_protein").
 			String speciesId = resolveSpeciesId(sbmlModel, targetSpecies, displayNameToSpeciesId);
-			if (speciesId == null) {
-				throw new IllegalArgumentException(
-						context + " references unknown species '" + targetSpecies + "'");
-			}
+			if (speciesId == null)
+				continue;
 
 			String eventName = getStringParam(simData, SBOLData.PARAM_EVENT_NAME);
 			if (eventName == null || eventName.isEmpty()) {
@@ -805,10 +784,8 @@ public class MxToSBML extends Converter {
 	 */
 	private Species createSpecies(Model model, mxCell glyph) {
 		GlyphInfo glyphInfo = (GlyphInfo) infoDict.get(glyph.getValue());
-		if (glyphInfo == null) {
-			throw new IllegalArgumentException(
-					"No GlyphInfo found for species glyph '" + glyph.getValue() + "' (orphaned glyph?)");
-		}
+		if (glyphInfo == null)
+			return null;
 
 		// SBML ID becomes the label. Pick Name over DisplayID
 		String displayName = glyphInfo.getDisplayID();
@@ -877,13 +854,11 @@ public class MxToSBML extends Converter {
 	 */
 	private void createDegradationReaction(Model model, mxCell edge, InteractionInfo info, mxGraphModel graphModel) {
 		mxCell source = (mxCell) edge.getSource();
-		if (source == null) {
-			throw new IllegalArgumentException("Degradation edge has no source cell (disconnected edge)");
-		}
+		if (source == null)
+			return;
 		SpeciesData sourceData = glyphToSpeciesData.get((String) source.getValue());
-		if (sourceData == null) {
-			throw new IllegalArgumentException("Source species not found for degradation edge");
-		}
+		if (sourceData == null)
+			return;
 
 		String speciesId = sourceData.species.getId();
 		String reactionId = "Degradation_" + speciesId;
@@ -903,7 +878,8 @@ public class MxToSBML extends Converter {
 			law.setMath(new FormulaParser(
 					new ByteArrayInputStream(("kd * " + speciesId).getBytes(StandardCharsets.UTF_8))).parse());
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to parse degradation kinetic law: " + e.getMessage(), e);
+			System.err.println("Warning: degradation formula parse failed for " + speciesId + ": " + e.getMessage());
+			return;
 		}
 	}
 
@@ -916,19 +892,16 @@ public class MxToSBML extends Converter {
 	private void createComplexFormationReaction(Model model, mxCell node, InteractionInfo info,
 			mxGraphModel graphModel) {
 		Object[] outgoing = mxGraphModel.getOutgoingEdges(graphModel, node);
-		if (outgoing.length == 0) {
-			throw new IllegalArgumentException("Complex formation node has no product edge");
-		}
+		if (outgoing.length == 0)
+			return;
 
 		mxCell outEdge = (mxCell) outgoing[0];
 		mxCell target = (mxCell) outEdge.getTarget();
-		if (target == null) {
-			throw new IllegalArgumentException("Complex formation product edge has no target cell (disconnected edge)");
-		}
+		if (target == null)
+			return;
 		SpeciesData productData = glyphToSpeciesData.get((String) target.getValue());
-		if (productData == null) {
-			throw new IllegalArgumentException("Product species not found for complex formation");
-		}
+		if (productData == null)
+			return;
 
 		String productId = productData.species.getId();
 		String reactionId = "Complex_" + productId;
@@ -945,13 +918,11 @@ public class MxToSBML extends Converter {
 		for (Object obj : incoming) {
 			mxCell inEdge = (mxCell) obj;
 			mxCell source = (mxCell) inEdge.getSource();
-			if (source == null) {
-				throw new IllegalArgumentException("Complex formation reactant edge has no source cell (disconnected edge)");
-			}
+			if (source == null)
+				continue;
 			SpeciesData sourceData = glyphToSpeciesData.get((String) source.getValue());
-			if (sourceData == null) {
-				throw new IllegalArgumentException("Reactant species not found for complex formation edge");
-			}
+			if (sourceData == null)
+				continue;
 
 			String speciesId = sourceData.species.getId();
 			SpeciesReference r = reaction.createReactant(sourceData.species);
@@ -986,27 +957,28 @@ public class MxToSBML extends Converter {
 			law.setMath(new FormulaParser(new ByteArrayInputStream(rateLaw.toString().getBytes(StandardCharsets.UTF_8)))
 					.parse());
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to parse complex formation kinetic law: " + e.getMessage(), e);
+			System.err.println("Warning: complex formation formula parse failed for " + productId + ": " + e.getMessage());
+			return;
 		}
 	}
 
 	/**
 	 * Extracts a double from a value that may be a Number, a numeric String,
-	 * or null. Returns defaultVal for null; throws for non-numeric values.
+	 * or null. Returns defaultVal for null, unparseable strings, or unexpected types.
 	 */
-	private static double extractDouble(Object val, double defaultVal, String context) {
-		if (val == null) return defaultVal;
-		if (val instanceof Number) return ((Number) val).doubleValue();
+	private double extractDouble(Object val, double defaultVal, String context) {
+		if (val == null)
+			return defaultVal;
+		if (val instanceof Number)
+			return ((Number) val).doubleValue();
 		if (val instanceof String) {
 			try {
 				return Double.parseDouble((String) val);
 			} catch (NumberFormatException e) {
-				throw new IllegalArgumentException(
-						"Non-numeric value for " + context + ": '" + val + "'", e);
+				return defaultVal;
 			}
 		}
-		throw new IllegalArgumentException(
-				"Invalid type for " + context + ". Expected number, got: " + val.getClass().getSimpleName());
+		return defaultVal;
 	}
 
 	/**
@@ -1031,7 +1003,8 @@ public class MxToSBML extends Converter {
 	 * Returns null if the key is missing or the value is null.
 	 */
 	private String getStringParam(Hashtable<String, Object> simData, String paramName) {
-		if (simData == null || !simData.containsKey(paramName)) return null;
+		if (simData == null || !simData.containsKey(paramName))
+			return null;
 		Object val = simData.get(paramName);
 		return val != null ? val.toString() : null;
 	}
@@ -1064,29 +1037,21 @@ public class MxToSBML extends Converter {
 			key = SBOLData.interactions.getKey(type);
 		}
 
-		if (key == null) {
-			throw new IllegalArgumentException(
-					"Cannot find default for parameter '" + paramName + "' on " + context + ": unknown type");
-		}
+		if (key == null)
+			return 0.0;
 
 		LinkedHashMap<String, Object> params = SBOLData.getSimulationConfig().get(key);
-		if (params == null) {
-			throw new IllegalArgumentException(
-					"Cannot find default for parameter '" + paramName + "' on " + context +
-							": no simulation config for type '" + key + "'");
-		}
+		if (params == null)
+			return 0.0;
 
 		Object val = params.get(paramName);
-		if (val == null) {
-			throw new IllegalArgumentException(
-					"Missing required parameter '" + paramName + "' on " + context + ". Set this value in the Model tab.");
-		}
+		if (val == null)
+			return 0.0;
 
 		if (val instanceof Number) {
 			return ((Number) val).doubleValue();
 		}
-		throw new IllegalArgumentException(
-				"Invalid default value type for parameter '" + paramName + "' on " + context);
+		return 0.0;
 	}
 
 	/**
@@ -1123,7 +1088,7 @@ public class MxToSBML extends Converter {
 	 *
 	 * @param id The raw ID string
 	 * @return A valid, unique SBML SId
-	 * @see Converter#sanitizeAnnotationKey for XML NCName sanitization (different spec, different rules)
+	 * @see Converter#sanitizeAnnotationKey for XML NCName sanitization (different rules)
 	 */
 	private String sanitizeId(String id) {
 		if (id == null || id.isEmpty()) {
