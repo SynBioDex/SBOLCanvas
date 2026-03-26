@@ -1,4 +1,4 @@
-import { Component } from '@angular/core'
+import { Component, OnDestroy } from '@angular/core'
 import { GraphService } from '../graph.service'
 
 
@@ -8,10 +8,11 @@ import { GraphService } from '../graph.service'
     styleUrls: ['./problems.component.css']
 })
 
-export class ProblemsComponent {
+export class ProblemsComponent implements OnDestroy {
 
     warnings: string[]
     errors: string[]
+    private intervalId: number
 
     constructor(private graphService: GraphService) { }
 
@@ -19,7 +20,11 @@ export class ProblemsComponent {
         this.warnings = []
         this.errors = []
 
-        setInterval(this.validate.bind(this), 750)
+        this.intervalId = window.setInterval(this.validate.bind(this), 750)
+    }
+
+    ngOnDestroy() {
+        clearInterval(this.intervalId)
     }
 
     validate() {
