@@ -458,7 +458,7 @@ public class MxToSBML extends Converter {
 	 * Builds the repression-only Hill equation formula.
 	 *
 	 * Parameters:
-	 * ko, ko_f, ko_r, nr, kr_f_<repId>, kr_r_<repId>, nc_<repId>
+	 * ko, ko_f, ko_r, nr, kr_<repId>_f, kr_<repId>_r, nc_<repId>_r
 	 * 
 	 * Formula:
 	 * (P * ko * (ko_f/ko_r) * nr) / (1 + (ko_f/ko_r) * nr + ((kr_f/kr_r) * R)^nc)
@@ -491,9 +491,9 @@ public class MxToSBML extends Converter {
 		double Kr_r = getParam(repSimData, SBOLData.PARAM_KR_R, SystemsBiologyOntology.INHIBITION, repContext);
 		double nc = getParam(repSimData, SBOLData.PARAM_NC, SystemsBiologyOntology.INHIBITION, repContext);
 
-		String p_Krf = "kr_f_" + repId;
-		String p_Krr = "kr_r_" + repId;
-		String p_nc = "nc_" + repId;
+		String p_Krf = "kr_" + repId + "_f";
+		String p_Krr = "kr_" + repId + "_r";
+		String p_nc = "nc_" + repId + "_r";
 		law.createLocalParameter(p_Krf).setValue(Kr_f);
 		law.createLocalParameter(p_Krr).setValue(Kr_r);
 		law.createLocalParameter(p_nc).setValue(nc);
@@ -518,7 +518,7 @@ public class MxToSBML extends Converter {
 	 * / (1 + (ko_f/ko_r) * nr + (kao_f/kao_r) * nr * ((ka_f/ka_r) * A)^nc)
 	 *
 	 * Parameters:
-	 * kb, ka, ko_f, ko_r, kao_f, kao_r, nr, ka_f_<actId>, ka_r_<actId>, nc_<actId>
+	 * kb, ka, ko_f, ko_r, kao_f, kao_r, nr, ka_<actId>_f, ka_<actId>_r, nc_<actId>_a
 	 */
 	private void buildActivationFormula(Reaction reaction, String promoterId, GlyphInfo promoterInfo,
 			mxCell activatorEdge) {
@@ -554,9 +554,9 @@ public class MxToSBML extends Converter {
 		double Ka_r = getParam(actSimData, SBOLData.PARAM_KA_R, SystemsBiologyOntology.STIMULATION, actContext);
 		double nc = getParam(actSimData, SBOLData.PARAM_NC, SystemsBiologyOntology.STIMULATION, actContext);
 
-		String p_Kaf = "ka_f_" + actId;
-		String p_Kar = "ka_r_" + actId;
-		String p_nc = "nc_" + actId;
+		String p_Kaf = "ka_" + actId + "_f";
+		String p_Kar = "ka_" + actId + "_r";
+		String p_nc = "nc_" + actId + "_a";
 		law.createLocalParameter(p_Kaf).setValue(Ka_f);
 		law.createLocalParameter(p_Kar).setValue(Ka_r);
 		law.createLocalParameter(p_nc).setValue(nc);
