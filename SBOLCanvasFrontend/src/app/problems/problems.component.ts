@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core'
+import { Component, OnDestroy, OnInit } from '@angular/core'
 import { GraphService } from '../graph.service'
 
 
@@ -8,7 +8,7 @@ import { GraphService } from '../graph.service'
     styleUrls: ['./problems.component.css']
 })
 
-export class ProblemsComponent implements OnDestroy {
+export class ProblemsComponent implements OnInit, OnDestroy {
 
     warnings: string[]
     errors: string[]
@@ -114,7 +114,7 @@ export class ProblemsComponent implements OnDestroy {
             })) {
                 const containerInfo = this.graphService.lookupInfo(container.value)
                 const name = (containerInfo && containerInfo.displayID) || 'unnamed'
-                warnings.push(`Backbone '${name}' has no promoter. Add a Promoter for SBML export.`)
+                warnings.push(`Backbone '${name}': no promoter (skipped in SBML)`)
             }
         }
     }
@@ -138,7 +138,11 @@ export class ProblemsComponent implements OnDestroy {
 
             // Degradation edges naturally have no target (species degrades into nothing)
             if (!edge.source || (!edge.target && !isDegradation)) {
-                warnings.push('Disconnected interaction edge found.')
+                const connectedEnd = edge.source || edge.target
+                const endInfo = connectedEnd ? this.graphService.lookupInfo(connectedEnd.value) : null
+                const endName = (endInfo && (endInfo.name || endInfo.displayID)) || 'unknown'
+                const missing = !edge.source ? 'no source' : 'no target'
+                warnings.push(`${type} edge on '${endName}': ${missing}`)
                 continue
             }
             if (type === 'Inhibition' || type === 'Stimulation') {
@@ -154,7 +158,7 @@ export class ProblemsComponent implements OnDestroy {
             if (reg.inhibition && reg.stimulation) {
                 const info = this.graphService.lookupInfo(targetId)
                 const name = (info && info.name) || (info && info.displayID) || 'unknown'
-                warnings.push(`Mixed regulation on promoter '${name}' - not supported for SBML export.`)
+                warnings.push(`Promoter '${name}': mixed regulation (skipped in SBML)`)
             }
         }
 
@@ -167,13 +171,23 @@ export class ProblemsComponent implements OnDestroy {
             if (type !== 'Biochemical Reaction' && type !== 'Non-Covalent Binding') continue
 
             const edges = this.graphService.graph.getModel().getEdges(node) || []
+            const incoming = edges.filter(e => e.target === node)
             const outgoing = edges.filter(e => e.source === node)
-            if (outgoing.length === 0 || !outgoing[0].target)
-                warnings.push('Complex formation node is missing a product connection.')
 
-            for (const inEdge of edges.filter(e => e.target === node)) {
+            const reactantNames = incoming
+                .filter(e => e.source)
+                .map(e => {
+                    const ri = this.graphService.lookupInfo(e.source.value)
+                    return (ri && (ri.name || ri.displayID)) || '?'
+                })
+                .join(', ') || 'none'
+
+            if (outgoing.length === 0 || !outgoing[0].target)
+                warnings.push(`Complex formation (${reactantNames}): no product connection`)
+
+            for (const inEdge of incoming) {
                 if (!inEdge.source)
-                    warnings.push('Complex formation has a disconnected reactant edge.')
+                    warnings.push(`Complex formation (${reactantNames}): disconnected reactant edge`)
             }
         }
 
@@ -184,7 +198,7 @@ export class ProblemsComponent implements OnDestroy {
             if (!eventInfo) continue
             const targetSpecies = (eventInfo.simulationData || {})['targetSpecies']
             if (!targetSpecies)
-                warnings.push(`Event '${eventInfo.displayID || 'unnamed'}' has no target species.`)
+                warnings.push(`Event '${eventInfo.displayID || 'unnamed'}': no target species`)
         }
     }
 }

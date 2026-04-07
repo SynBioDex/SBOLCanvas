@@ -385,15 +385,18 @@ public class MxToSBML extends Converter {
 				}
 			}
 
-			if (repressorEdge != null && activatorEdge != null)
+			if (repressorEdge != null && activatorEdge != null) {
+				sbmlModel.removeReaction(reaction);
 				continue;
+			}
 
 			if (repressorEdge != null) {
-				buildRepressionFormula(reaction, promoterId, promoterInfo, repressorEdge);
+				buildRepressionFormula(sbmlModel, reaction, promoterId, promoterInfo, repressorEdge);
 			} else if (activatorEdge != null) {
-				buildActivationFormula(reaction, promoterId, promoterInfo, activatorEdge);
+				buildActivationFormula(sbmlModel, reaction, promoterId, promoterInfo, activatorEdge);
 			} else {
 				// TODO: Add constitutive (unregulated) promoter formula
+				sbmlModel.removeReaction(reaction);
 			}
 		}
 	}
@@ -463,8 +466,12 @@ public class MxToSBML extends Converter {
 	 * Formula:
 	 * (P * ko * (ko_f/ko_r) * nr) / (1 + (ko_f/ko_r) * nr + ((kr_f/kr_r) * R)^nc)
 	 */
-	private void buildRepressionFormula(Reaction reaction, String promoterId, GlyphInfo promoterInfo,
+	private void buildRepressionFormula(Model sbmlModel, Reaction reaction, String promoterId, GlyphInfo promoterInfo,
 			mxCell repressorEdge) {
+		mxCell repCell = (mxCell) repressorEdge.getSource();
+		SpeciesData repData = glyphToSpeciesData.get((String) repCell.getValue());
+		if (repData == null) return;
+
 		KineticLaw law = reaction.createKineticLaw();
 
 		Hashtable<String, Object> promoterSimData = promoterInfo.getSimulationData();
@@ -478,10 +485,6 @@ public class MxToSBML extends Converter {
 		law.createLocalParameter("ko_f").setValue(Ko_f);
 		law.createLocalParameter("ko_r").setValue(Ko_r);
 		law.createLocalParameter("nr").setValue(nr);
-
-		mxCell repCell = (mxCell) repressorEdge.getSource();
-		SpeciesData repData = glyphToSpeciesData.get((String) repCell.getValue());
-		if (repData == null) return;
 		String repId = repData.species.getId();
 
 		InteractionInfo repInfo = (InteractionInfo) interactionDict.get(repressorEdge.getValue());
@@ -507,6 +510,7 @@ public class MxToSBML extends Converter {
 			law.setMath(new FormulaParser(new ByteArrayInputStream(formula.getBytes(StandardCharsets.UTF_8))).parse());
 		} catch (Exception e) {
 			System.err.println("Warning: repression formula parse failed for " + promoterId + ": " + e.getMessage());
+			sbmlModel.removeReaction(reaction);
 		}
 	}
 
@@ -520,8 +524,12 @@ public class MxToSBML extends Converter {
 	 * Parameters:
 	 * kb, ka, ko_f, ko_r, kao_f, kao_r, nr, ka_<actId>_f, ka_<actId>_r, nc_<actId>_a
 	 */
-	private void buildActivationFormula(Reaction reaction, String promoterId, GlyphInfo promoterInfo,
+	private void buildActivationFormula(Model sbmlModel, Reaction reaction, String promoterId, GlyphInfo promoterInfo,
 			mxCell activatorEdge) {
+		mxCell actCell = (mxCell) activatorEdge.getSource();
+		SpeciesData actData = glyphToSpeciesData.get((String) actCell.getValue());
+		if (actData == null) return;
+
 		KineticLaw law = reaction.createKineticLaw();
 
 		Hashtable<String, Object> promoterSimData = promoterInfo.getSimulationData();
@@ -541,10 +549,6 @@ public class MxToSBML extends Converter {
 		law.createLocalParameter("kao_f").setValue(Kao_f);
 		law.createLocalParameter("kao_r").setValue(Kao_r);
 		law.createLocalParameter("nr").setValue(nr);
-
-		mxCell actCell = (mxCell) activatorEdge.getSource();
-		SpeciesData actData = glyphToSpeciesData.get((String) actCell.getValue());
-		if (actData == null) return;
 		String actId = actData.species.getId();
 
 		InteractionInfo actInfo = (InteractionInfo) interactionDict.get(activatorEdge.getValue());
@@ -574,6 +578,7 @@ public class MxToSBML extends Converter {
 			law.setMath(new FormulaParser(new ByteArrayInputStream(formula.getBytes(StandardCharsets.UTF_8))).parse());
 		} catch (Exception e) {
 			System.err.println("Warning: activation formula parse failed for " + promoterId + ": " + e.getMessage());
+			sbmlModel.removeReaction(reaction);
 		}
 	}
 
@@ -879,6 +884,7 @@ public class MxToSBML extends Converter {
 					new ByteArrayInputStream(("kd * " + speciesId).getBytes(StandardCharsets.UTF_8))).parse());
 		} catch (Exception e) {
 			System.err.println("Warning: degradation formula parse failed for " + speciesId + ": " + e.getMessage());
+			model.removeReaction(reaction);
 			return;
 		}
 	}
@@ -958,6 +964,7 @@ public class MxToSBML extends Converter {
 					.parse());
 		} catch (Exception e) {
 			System.err.println("Warning: complex formation formula parse failed for " + productId + ": " + e.getMessage());
+			model.removeReaction(reaction);
 			return;
 		}
 	}
@@ -975,9 +982,11 @@ public class MxToSBML extends Converter {
 			try {
 				return Double.parseDouble((String) val);
 			} catch (NumberFormatException e) {
+				System.err.println("Warning: non-numeric value for " + context + ": '" + val + "', using default " + defaultVal);
 				return defaultVal;
 			}
 		}
+		System.err.println("Warning: unexpected type for " + context + ": " + val.getClass().getSimpleName() + ", using default " + defaultVal);
 		return defaultVal;
 	}
 
@@ -1037,20 +1046,27 @@ public class MxToSBML extends Converter {
 			key = SBOLData.interactions.getKey(type);
 		}
 
-		if (key == null)
+		if (key == null) {
+			System.err.println("Warning: no default for '" + paramName + "' on " + context + ": unknown type, using 0.0");
 			return 0.0;
+		}
 
 		LinkedHashMap<String, Object> params = SBOLData.getSimulationConfig().get(key);
-		if (params == null)
+		if (params == null) {
+			System.err.println("Warning: no default for '" + paramName + "' on " + context + ": no config for type '" + key + "', using 0.0");
 			return 0.0;
+		}
 
 		Object val = params.get(paramName);
-		if (val == null)
+		if (val == null) {
+			System.err.println("Warning: no default for '" + paramName + "' on " + context + ": missing from config, using 0.0");
 			return 0.0;
+		}
 
 		if (val instanceof Number) {
 			return ((Number) val).doubleValue();
 		}
+		System.err.println("Warning: invalid default type for '" + paramName + "' on " + context + ": " + val.getClass().getSimpleName() + ", using 0.0");
 		return 0.0;
 	}
 
