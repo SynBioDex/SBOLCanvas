@@ -14,7 +14,7 @@ export class LandingPageComponent implements OnInit {
   version = "Development";
 
   constructor(private titleService: Title) {
-    this.titleService.setTitle("SBOL Canvas About");
+    this.titleService.setTitle("SBOLCanvas About");
     this.hash = versions.revision;
     this.version = versions.version;
   }

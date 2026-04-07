@@ -9,7 +9,7 @@ import { Title } from '@angular/platform-browser';
 export class TutorialComponent implements OnInit {
 
   constructor(private titleService: Title) {
-    this.titleService.setTitle('SBOL Canvas Tutorial');
+    this.titleService.setTitle('SBOLCanvas Tutorial');
    }
 
   ngOnInit() {

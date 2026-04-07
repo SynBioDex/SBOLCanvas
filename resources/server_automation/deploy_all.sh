@@ -9,4 +9,4 @@ ensure_superuser
 ./deploy_backend.sh || die "Backend deployment failed"
 ./deploy_frontend.sh || die "Frontend deployment failed"
 
-echo "SBOL Canvas successfully deployed!"
+echo "SBOLCanvas successfully deployed!"
