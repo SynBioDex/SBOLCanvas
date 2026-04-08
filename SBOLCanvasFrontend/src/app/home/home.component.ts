@@ -29,7 +29,7 @@ export class HomeComponent implements OnInit, ComponentCanDeactivate {
   leftBarOpened = true;
 
   constructor(private graphService: GraphService, private titleService: Title, private embeddedService: EmbeddedService) {
-    this.titleService.setTitle('SBOL Canvas');
+    this.titleService.setTitle('SBOLCanvas');
   }
 
   ngOnInit() {

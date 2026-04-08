@@ -2073,7 +2073,7 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, eventInfo, null, GraphBase.EVENT_DICT_INDEX))
     }
 
-    protected getFromEventDict(eventURI: string): EventInfo {
+    public getFromEventDict(eventURI: string): EventInfo {
         const cell0 = this.graph.getModel().getCell(0)
         if (!cell0.value[GraphBase.EVENT_DICT_INDEX]) {
             return null
@@ -2142,7 +2142,7 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().execute(new GraphEdits.infoEdit(cell0, info, null, GraphBase.INTERACTION_DICT_INDEX))
     }
 
-    protected getFromInteractionDict(interactionURI: string): InteractionInfo {
+    public getFromInteractionDict(interactionURI: string): InteractionInfo {
         const cell0 = this.graph.getModel().getCell(0)
         return cell0.value[GraphBase.INTERACTION_DICT_INDEX][interactionURI]
     }

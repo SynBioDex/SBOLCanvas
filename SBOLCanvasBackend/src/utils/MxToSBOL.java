@@ -168,7 +168,11 @@ public class MxToSBOL extends Converter {
 				.toArray(mxCell[]::new);
 	
 				for(mxCell glyph: glyphs){
-					createComponentDefinition(document, graph, model, glyph);
+					try {
+						createComponentDefinition(document, graph, model, glyph);
+					} catch (Exception e) {
+						System.err.println("Warning: SBOL export skipped glyph: " + e.getMessage());
+					}
 				}
 
 				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null){
@@ -176,7 +180,11 @@ public class MxToSBOL extends Converter {
 				}
 
 				// Create Component Definition for the container itself
-				createComponentDefinition(document, graph, model, circuitContainer);
+				try {
+					createComponentDefinition(document, graph, model, circuitContainer);
+				} catch (Exception e) {
+					System.err.println("Warning: SBOL export skipped container: " + e.getMessage());
+				}
 			}
 		}
 		
@@ -190,12 +198,15 @@ public class MxToSBOL extends Converter {
 			mxCell[] molecularSpecies = Arrays.stream(mxGraphModel.filterCells(viewChildren, molecularSpeciesFilter))
 			.toArray(mxCell[]::new);
 
-			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || molecularSpecies.length > 0) {
-				// module definitions
-				createModuleDefinition(document, graph, model, viewCell);
-			} else {
-				// component definitions
-				attachTextBoxAnnotation(model, viewCell, URI.create(viewCell.getId()));
+			try {
+				if (STYLE_MODULE_VIEW.equals(viewCell.getStyle()) || circuitContainers.length > 1 || molecularSpecies.length > 0) {
+					createModuleDefinition(document, graph, model, viewCell);
+				} else {
+					// component definitions
+					attachTextBoxAnnotation(model, viewCell, URI.create(viewCell.getId()));
+				}
+			} catch (Exception e) {
+				System.err.println("Warning: SBOL export skipped view cell: " + e.getMessage());
 			}
 		}
 		
@@ -209,7 +220,11 @@ public class MxToSBOL extends Converter {
 			for (mxCell cell : cells) {
 				if (handledContainers.contains((String) cell.getValue()))
 					continue;
-				linkComponentDefinition(document, graph, model, cell);
+				try {
+					linkComponentDefinition(document, graph, model, cell);
+				} catch (Exception e) {
+					System.err.println("Warning: SBOL export skipped link: " + e.getMessage());
+				}
 				handledContainers.add((String) cell.getValue());
 			}
 		}
@@ -221,24 +236,39 @@ public class MxToSBOL extends Converter {
 					.toArray(mxCell[]::new);
 			mxCell[] molecularSpecies = Arrays.stream(mxGraphModel.filterCells(viewChildren, molecularSpeciesFilter))
 					.toArray(mxCell[]::new);
-			if (viewCell.getStyle().equals(STYLE_MODULE_VIEW) || circuitContainers.length > 1 || molecularSpecies.length > 0) {
-				// module definitions
-				linkModuleDefinition(document, graph, model, viewCell);
+			if (STYLE_MODULE_VIEW.equals(viewCell.getStyle()) || circuitContainers.length > 1 || molecularSpecies.length > 0) {
+				try {
+					linkModuleDefinition(document, graph, model, viewCell);
+				} catch (Exception e) {
+					System.err.println("Warning: SBOL export skipped link: " + e.getMessage());
+				}
 			}
 		}
 
 		// create the combinatorials
 		for (CombinatorialInfo info : combinatorialDict.values()) {
-			createCombinatorial(document, graph, model, info);
+			try {
+				createCombinatorial(document, graph, model, info);
+			} catch (Exception e) {
+				System.err.println("Warning: SBOL export skipped combinatorial: " + e.getMessage());
+			}
 		}
 
 		// link the combinatorials
 		for (CombinatorialInfo info : combinatorialDict.values()) {
-			linkCombinatorial(document, graph, model, info);
+			try {
+				linkCombinatorial(document, graph, model, info);
+			} catch (Exception e) {
+				System.err.println("Warning: SBOL export skipped combinatorial link: " + e.getMessage());
+			}
 		}
 
 		// write events as GenericTopLevel objects
-		writeEvents(document, graph);
+		try {
+			writeEvents(document, graph);
+		} catch (Exception e) {
+			System.err.println("Warning: SBOL export skipped events: " + e.getMessage());
+		}
 
 		return document;
 	}
@@ -370,7 +400,7 @@ public class MxToSBOL extends Converter {
 		// store extra mxGraph information
 		URI identity = URI.create(glyphInfo.getFullURI());
 		layoutHelper.createGraphicalLayout(identity, glyphInfo.getDisplayID() + "_Layout");
-		if(circuitContainer.getStyle().equals(STYLE_CIRCUIT_CONTAINER)){
+		if(STYLE_CIRCUIT_CONTAINER.equals(circuitContainer.getStyle())){
 			
 			Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 			mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
