@@ -1,4 +1,4 @@
-package servlets;
+package org.sbolcanvas.servlets;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,9 +38,9 @@ import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
 
-import utils.MxToSBOL;
-import utils.SBOLData;
-import utils.SBOLToMx;
+import org.sbolcanvas.utils.MxToSBOL;
+import org.sbolcanvas.utils.SBOLData;
+import org.sbolcanvas.utils.SBOLToMx;
 
 @SuppressWarnings("serial")
 @WebServlet(urlPatterns = { "/SynBioHub/*" })

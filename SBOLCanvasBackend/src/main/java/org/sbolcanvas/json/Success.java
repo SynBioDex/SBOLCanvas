@@ -1,4 +1,4 @@
-package json;
+package org.sbolcanvas.json;
 
 @SuppressWarnings("unused")
 public class Success {

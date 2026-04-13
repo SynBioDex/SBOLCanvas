@@ -1,4 +1,4 @@
-package utils;
+package org.sbolcanvas.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,15 +58,15 @@ import com.mxgraph.model.mxGeometry;
 import com.mxgraph.model.mxGraphModel;
 import com.mxgraph.view.mxGraph;
 
-import data.CanvasAnnotation;
-import data.Info;
-import data.GlyphInfo;
-import data.IdentifiedInfo;
-import data.InteractionInfo;
-import data.ModuleInfo;
-import data.VariableComponentInfo;
-import data.CombinatorialInfo;
-import data.EventInfo;
+import org.sbolcanvas.data.CanvasAnnotation;
+import org.sbolcanvas.data.Info;
+import org.sbolcanvas.data.GlyphInfo;
+import org.sbolcanvas.data.IdentifiedInfo;
+import org.sbolcanvas.data.InteractionInfo;
+import org.sbolcanvas.data.ModuleInfo;
+import org.sbolcanvas.data.VariableComponentInfo;
+import org.sbolcanvas.data.CombinatorialInfo;
+import org.sbolcanvas.data.EventInfo;
 
 public class MxToSBML extends Converter {
 

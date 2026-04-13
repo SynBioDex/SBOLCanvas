@@ -1,4 +1,4 @@
-package servlets;
+package org.sbolcanvas.servlets;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import utils.Constants;
+import org.sbolcanvas.utils.Constants;
 
 /**
  * Copied from https://github.com/jgraph/mxgraph/blob/master/java/examples/com/mxgraph/examples/web/EchoServlet.java

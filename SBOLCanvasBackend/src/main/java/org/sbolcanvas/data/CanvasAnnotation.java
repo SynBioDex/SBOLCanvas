@@ -1,4 +1,4 @@
-package data;
+package org.sbolcanvas.data;
 
 import java.net.URI;
 

@@ -1,4 +1,4 @@
-package data;
+package org.sbolcanvas.data;
 
 public class ModuleInfo extends Info {
 

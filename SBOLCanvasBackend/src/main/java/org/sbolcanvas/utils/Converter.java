@@ -1,4 +1,4 @@
-package utils;
+package org.sbolcanvas.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,12 +31,12 @@ import com.mxgraph.util.mxUtils;
 import com.mxgraph.util.mxXmlUtils;
 import com.mxgraph.view.mxGraph;
 
-import data.CombinatorialInfo;
-import data.GlyphInfo;
-import data.Info;
-import data.InteractionInfo;
-import data.ModuleInfo;
-import data.EventInfo;
+import org.sbolcanvas.data.CombinatorialInfo;
+import org.sbolcanvas.data.GlyphInfo;
+import org.sbolcanvas.data.Info;
+import org.sbolcanvas.data.InteractionInfo;
+import org.sbolcanvas.data.ModuleInfo;
+import org.sbolcanvas.data.EventInfo;
 
 public class Converter {
 
@@ -67,7 +67,7 @@ public class Converter {
 
 	static {
 		// Necessary for encoding/decoding GlyphInfo and InteractionInfo
-		mxCodecRegistry.addPackage("data");
+		mxCodecRegistry.addPackage("org.sbolcanvas.data");
 
 		// Custom codec for GlyphInfo and InteractionInfo simulation data
 		// Default mxObjectCodec decodes as an ArrayList, losing the keys

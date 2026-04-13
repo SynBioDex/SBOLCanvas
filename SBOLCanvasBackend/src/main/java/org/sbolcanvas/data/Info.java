@@ -1,4 +1,4 @@
-package data;
+package org.sbolcanvas.data;
 
 public abstract class Info {
 

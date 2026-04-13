@@ -1,4 +1,4 @@
-package utils;
+package org.sbolcanvas.utils;
 
 import java.net.URI;
 import java.util.Arrays;

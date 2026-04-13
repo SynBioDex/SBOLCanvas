@@ -1,4 +1,4 @@
-package servlets;
+package org.sbolcanvas.servlets;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -22,9 +22,9 @@ import org.sbolstandard.core2.SBOLValidationException;
 import org.synbiohub.frontend.SynBioHubException;
 import org.xml.sax.SAXException;
 
-import utils.MxToSBML;
-import utils.MxToSBOL;
-import utils.SBOLToMx;
+import org.sbolcanvas.utils.MxToSBML;
+import org.sbolcanvas.utils.MxToSBOL;
+import org.sbolcanvas.utils.SBOLToMx;
 
 @SuppressWarnings("serial")
 @WebServlet(urlPatterns = { "/convert/*" })

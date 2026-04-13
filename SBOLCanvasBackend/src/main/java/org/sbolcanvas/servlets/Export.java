@@ -1,4 +1,4 @@
-package servlets;
+package org.sbolcanvas.servlets;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -27,7 +27,7 @@ import com.mxpdf.text.Document;
 import com.mxpdf.text.DocumentException;
 import com.mxpdf.text.pdf.PdfWriter;
 
-import utils.Constants;
+import org.sbolcanvas.utils.Constants;
 
 import com.mxgraph.canvas.mxGraphicsCanvas2D;
 import com.mxgraph.canvas.mxICanvas2D;

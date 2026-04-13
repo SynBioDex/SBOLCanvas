@@ -1,4 +1,4 @@
-package utils;
+package org.sbolcanvas.utils;
 
 import java.util.HashMap;
 import java.util.Set;

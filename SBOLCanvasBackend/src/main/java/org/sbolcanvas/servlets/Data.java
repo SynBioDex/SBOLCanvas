@@ -1,4 +1,4 @@
-package servlets;
+package org.sbolcanvas.servlets;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import org.apache.http.HttpStatus;
 
 import com.google.gson.Gson;
 
-import utils.SBOLData;
+import org.sbolcanvas.utils.SBOLData;
 
 @SuppressWarnings("serial")
 @WebServlet(urlPatterns = { "/data/*" })

@@ -1,4 +1,4 @@
-package servlets;
+package org.sbolcanvas.servlets;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -27,7 +27,7 @@ import org.sbolstandard.core2.SBOLValidationException;
 import org.sbolstandard.core2.SBOLWriter;
 import org.synbiohub.frontend.SynBioHubException;
 
-import utils.MxToSBOL;
+import org.sbolcanvas.utils.MxToSBOL;
 
 @SuppressWarnings("serial")
 @WebServlet(urlPatterns = { "/enumerate" })
