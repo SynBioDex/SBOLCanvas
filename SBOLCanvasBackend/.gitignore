@@ -1,1 +1,6 @@
-/build/
+# Java
+*.war
+*.class
+
+# Maven
+/target/
