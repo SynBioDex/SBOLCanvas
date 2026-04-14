@@ -1,48 +1,37 @@
-FROM node:20-alpine as frontend-build
+# Stage 1: Build frontend
+FROM node:20-alpine AS frontend-build
 
 RUN apk add git
 
-# copy files -- need to copy whole repo for gitversion
 COPY . /opt/canvas
 
-# build frontend
 WORKDIR /opt/canvas/SBOLCanvasFrontend
-
 RUN npm install
 RUN npm run gitversion
 RUN npm run build -- --configuration production --base-href=/canvas/
-# RUN npm run debug-build
 
+# Stage 2: Build backend with Maven
+FROM maven:3.9-eclipse-temurin-8 AS backend-build
+WORKDIR /build
+COPY SBOLCanvasBackend/pom.xml .
+COPY SBOLCanvasBackend/repo/ repo/
+RUN mvn dependency:go-offline -B
+COPY SBOLCanvasBackend/src/ src/
+RUN mvn package -DskipTests -B
 
-FROM tomcat:9.0-jdk8-openjdk as server
-
-# copy backend files
-WORKDIR /opt/backend
-COPY SBOLCanvasBackend .
-
-# make directories
-RUN mkdir -p WebContent/WEB-INF/classes
-
-# compile java files
-RUN javac -source 1.8 -target 1.8 -sourcepath src -d WebContent/WEB-INF/classes -cp ".:WebContent/WEB-INF/lib/*:/usr/local/tomcat/lib/*" src/**/*.java
-
-# build WAR file -- directly into tomcat webapps directory
-# modified to set cwd of command to WebContent instead of including it in glob pattern
-RUN jar -cf /usr/local/tomcat/webapps/api.war -C WebContent .
-
+# Stage 3: Assemble Tomcat server
+FROM tomcat:9.0-jdk8-openjdk
 WORKDIR /usr/local/tomcat
 
-# copy built frontend files
+# Backend WAR
+COPY --from=backend-build /build/target/api.war webapps/api.war
+
+# Frontend static files
 COPY --from=frontend-build /opt/canvas/SBOLCanvasFrontend/dist/browser webapps/canvas
 
-# copy configs for tomcat
+# Tomcat configuration
 ARG TOMCAT_AUTOMATION_DIR=resources/server_automation/tomcat
-# COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/tomcat-users.xml ${TOMCAT_AUTOMATION_DIR}/base_config_files/web.xml conf/
-# COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/server.xml conf/
-# COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/manager-context.xml webapps/manager/META-INF/context.xml 
-# COPY --from=0 ${TOMCAT_AUTOMATION_DIR}/base_config_files/host-manager-context.xml webapps/host-manager/META-INF/context.xml 
-COPY ${TOMCAT_AUTOMATION_DIR}/ROOT_config/index.jsp webapps/ROOT/index.jsp 
-
-COPY ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_context.html webapps/canvas/META-INF/context.html 
-COPY ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_rewrite.config webapps/canvas/WEB-INF/rewrite.config 
-COPY ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_web.xml webapps/canvas/WEB-INF/web.xml 
+COPY ${TOMCAT_AUTOMATION_DIR}/ROOT_config/index.jsp webapps/ROOT/index.jsp
+COPY ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_context.html webapps/canvas/META-INF/context.html
+COPY ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_rewrite.config webapps/canvas/WEB-INF/rewrite.config
+COPY ${TOMCAT_AUTOMATION_DIR}/frontend_config_files/frontend_web.xml webapps/canvas/WEB-INF/web.xml
