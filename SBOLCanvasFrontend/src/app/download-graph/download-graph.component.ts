@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, Inject } from '@angular/core';
-import { LoginService } from '../login.service';
+import { LoginService, RegistryEntry } from '../login.service';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort } from '@angular/material/sort';
@@ -15,12 +15,6 @@ import { AddRegistryComponent } from '../add-registry-component/add-registry.com
 import { DeleteRegistryComponent } from '../delete-registry/delete-registry.component';
 import { ErrorComponent } from '../error/error.component';
 import { ConfirmComponent } from '../confirm/confirm.component';
-
-interface RegistryEntry {
-  url: string;
-  api: string;
-  prefix: string;
-}
 
 @Component({
   selector: 'app-download-graph',
@@ -112,6 +106,7 @@ export class DownloadGraphComponent implements OnInit {
           this.metadataService.loadRoles(),
           this.metadataService.loadRefinements(this.partRole)
         ).subscribe(results => {
+          this.loginService.setServerRegistries(results[0]);
           this.registries = results[0];
           this.defaultRegistries = [...this.registries]
           this.updateRegistries()
@@ -122,6 +117,7 @@ export class DownloadGraphComponent implements OnInit {
         });
       } else {
         this.filesService.getRegistries().subscribe(registries => {
+          this.loginService.setServerRegistries(registries);
           this.registries = registries;
           this.defaultRegistries = [...this.registries]
           this.updateRegistries()
@@ -131,6 +127,7 @@ export class DownloadGraphComponent implements OnInit {
     } else {
       this.mode = DownloadGraphComponent.DOWNLOAD_MODE;
       this.filesService.getRegistries().subscribe(registries => {
+        this.loginService.setServerRegistries(registries);
         this.registries = registries;
         this.defaultRegistries = [...registries]
         this.updateRegistries()

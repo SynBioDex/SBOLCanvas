@@ -8,7 +8,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -46,6 +45,32 @@ import utils.SBOLToMx;
 @WebServlet(urlPatterns = { "/SynBioHub/*" })
 public class SynBioHub extends HttpServlet {
 
+	private static class RegistryEntry {
+		String url;
+		String api;
+		String prefix;
+
+		RegistryEntry(String url, String api, String prefix) {
+			this.url = url;
+			this.api = api;
+			this.prefix = prefix;
+		}
+	}
+
+	private static String derivePrefixFromApi(String api) {
+		if (api == null || api.isEmpty()) {
+			return api;
+		}
+
+		if (api.startsWith("https://api.")) {
+			return "https://" + api.substring("https://api.".length());
+		}
+		if (api.startsWith("http://api.")) {
+			return "http://" + api.substring("http://api.".length());
+		}
+		return api;
+	}
+
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
 
@@ -80,11 +105,20 @@ public class SynBioHub extends HttpServlet {
             switch(request.getPathInfo()) {
 				
                 case "/registries": {
-					LinkedList<String> registryURLs = new LinkedList<String>();
+					List<RegistryEntry> registries = new ArrayList<RegistryEntry>();
                     for (WebOfRegistriesData registry : SynBioHubFrontend.getRegistries()) {
-						registryURLs.add(registry.getInstanceUrl());
+						if (registry == null || registry.getInstanceUrl() == null || registry.getInstanceUrl().isEmpty()) {
+							continue;
+						}
+						String api = registry.getInstanceUrl();
+						String prefix = (registry.getUriPrefix() != null && !registry.getUriPrefix().isEmpty())
+								? registry.getUriPrefix()
+								: derivePrefixFromApi(api);
+						// URL has no canonical default; align it to prefix for automatic registries.
+						String url = prefix;
+						registries.add(new RegistryEntry(url, api, prefix));
 					}
-					writeJSONBody(response, registryURLs);
+					writeJSONBody(response, registries);
 					cacheResponse(response);
 				}
 					break;

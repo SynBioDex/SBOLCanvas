@@ -7,13 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButton } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ConfirmComponent } from '../confirm/confirm.component';
-
-interface RegistryEntry {
-  url: string;
-  api: string;
-  prefix: string;
-}
-
+import { RegistryEntry } from '../login.service';
 
 @Component({
   selector: 'app-add-registry-component',
