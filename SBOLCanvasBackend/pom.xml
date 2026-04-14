@@ -38,7 +38,7 @@
     <dependency>
       <groupId>org.sbolstandard</groupId>
       <artifactId>libSBOLj</artifactId>
-      <version>2.4.1-SNAPSHOT</version>
+      <version>2.4.1-local</version>
     </dependency>
     <dependency>
       <groupId>com.mxgraph</groupId>
