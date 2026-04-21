@@ -65,14 +65,10 @@ npm run dev
 Or, if you plan to develop the frontend, use
 
 ```bash
-# First time only:
-npm run prebuild && ng serve -c development
-
-# Subsequent runs:
 ng serve -c development
 ```
 
-This allows for the use of the Angular DevTools and provides a better debugging experience via the regular DevTools.
+This allows for the use of the Angular DevTools and provides a better debugging experience via the regular DevTools. Glyph stencil bundles are generated automatically during `npm install`.
 
 Alternatively, you can build both the frontend and backend together on one Docker container, from the root directory, run
 

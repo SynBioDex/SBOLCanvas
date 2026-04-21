@@ -3,7 +3,6 @@ import { GraphService } from '../graph.service'
 
 import { DomSanitizer } from '@angular/platform-browser';
 import { GlyphService } from '../glyph.service';
-import { element } from 'protractor';
 
 @Component({
     selector: 'app-hierarchy-preview',

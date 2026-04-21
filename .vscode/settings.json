@@ -1,8 +1,5 @@
 {
     "java.project.sourcePaths": [
-        "SBOLCanvasBackend/src"
-    ],
-    "java.project.referencedLibraries": [
-        "SBOLCanvasBackend/lib/*.jar",
+        "SBOLCanvasBackend/src/main/java"
     ]
 }
