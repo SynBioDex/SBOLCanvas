@@ -3,17 +3,11 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dial
 import {MatTableDataSource} from '@angular/material/table'
 import { MatSort } from '@angular/material/sort';
 import { FilesService } from '../files.service';
-import { LoginService } from '../login.service';
+import { LoginService, RegistryEntry } from '../login.service';
 import { GraphService } from '../graph.service';
 import { CollectionCreationComponent } from '../collection-creation/collection-creation.component';
 import { AddRegistryComponent } from '../add-registry-component/add-registry.component';
 import { DeleteRegistryComponent } from '../delete-registry/delete-registry.component';
-
-interface RegistryEntry {
-  url: string;
-  api: string;
-  prefix: string;
-}
 
 @Component({
   selector: 'app-upload-graph',
@@ -52,6 +46,7 @@ export class UploadGraphComponent implements OnInit {
   ngOnInit() {
     this.working = true;
     this.filesService.getRegistries().subscribe(result => {
+      this.loginService.setServerRegistries(result);
       this.registries = result;
       this.defaultRegistries = [...this.registries];
       this.updateRegistries()

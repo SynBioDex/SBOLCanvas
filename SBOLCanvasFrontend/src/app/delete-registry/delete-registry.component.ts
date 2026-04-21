@@ -5,13 +5,7 @@ import {MatInputModule} from '@angular/material/input';
 import {MatSelectModule} from '@angular/material/select';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import { MatButton } from '@angular/material/button';
-import { LoginService } from '../login.service';
-
-interface RegistryEntry {
-  url: string;
-  api: string;
-  prefix: string;
-}
+import { LoginService, RegistryEntry } from '../login.service';
 
 
 @Component({

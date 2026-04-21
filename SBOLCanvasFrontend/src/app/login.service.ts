@@ -9,7 +9,7 @@ export interface LoginDialogData {
   server: string;
 }
 
-interface RegistryEntry {
+export interface RegistryEntry {
   url: string;
   api: string;
   prefix: string;
@@ -22,7 +22,8 @@ export class LoginService {
   private loginURL = environment.backendURL + '/SynBioHub/login';
   private logoutURL = environment.backendURL + '/SynBioHub/logout';
 
-  public users: {} = {};
+  public users: { [server: string]: string } = {};
+  private serverRegistries: RegistryEntry[] = [];
 
   constructor(private http: HttpClient, public dialog: MatDialog) {
     
@@ -69,7 +70,7 @@ export class LoginService {
       return registry;
     }
 
-    return registry.url;
+    return this.getRegistryUrl(registry);
   }
 
   getRegistryAPI(registryURL: string): string {
@@ -82,7 +83,7 @@ export class LoginService {
       return registryURL;
     }
 
-    return registryEntry.api ? registryEntry.api : registryEntry.url;
+    return registryEntry.api ? registryEntry.api : this.getRegistryUrl(registryEntry);
   }
 
   getRegistryPrefix(registryURL: string): string {
@@ -107,7 +108,52 @@ export class LoginService {
     }
   }
 
+  setServerRegistries(registries: any[]) {
+    this.serverRegistries = this.normalizeRegistries(registries);
+  }
+
+  private getRegistryUrl(registry: Partial<RegistryEntry> | any): string {
+    return registry.url || '';
+  }
+
+  private normalizeRegistries(registries: any[]): RegistryEntry[] {
+    if (!Array.isArray(registries)) {
+      return [];
+    }
+
+    return registries
+      .map(registry => this.normalizeRegistry(registry))
+      .filter(registry => !!this.getRegistryUrl(registry));
+  }
+
+  private normalizeRegistry(registry: any): RegistryEntry {
+    if (typeof registry === 'string') {
+      return {
+        url: registry,
+        api: registry,
+        prefix: registry
+      };
+    }
+
+    const url = registry.url || '';
+    return {
+      url: url,
+      api: registry.api || url,
+      prefix: registry.prefix || url
+    };
+  }
+
   private findRegistryEntry(registryURL: string): RegistryEntry | null {
+    const inMemoryRegistry = this.serverRegistries.find(registry => registryURL === registry.url);
+
+    if (inMemoryRegistry) {
+      return {
+        url: inMemoryRegistry.url,
+        api: inMemoryRegistry.api ? inMemoryRegistry.api : inMemoryRegistry.url,
+        prefix: inMemoryRegistry.prefix ? inMemoryRegistry.prefix : inMemoryRegistry.url
+      };
+    }
+
     try {
       const serializedRegistries = localStorage.getItem('registries');
       if (!serializedRegistries) {
