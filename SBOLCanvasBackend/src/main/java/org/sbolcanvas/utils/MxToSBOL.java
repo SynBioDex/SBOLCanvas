@@ -386,7 +386,7 @@ public class MxToSBOL extends Converter {
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), circuitFuncComp.getDisplayId(), circuitContainer);
 			GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(glyphInfo.getFullURI()));
 			layoutHelper.addLayoutRef(modDef.getIdentity(), layout.getIdentity(),
-					glyphInfo.getDisplayID() + "_Reference");
+					circuitFuncComp.getDisplayId() + "_Reference");
 		}
 	}
 
@@ -632,7 +632,7 @@ public class MxToSBOL extends Converter {
 				layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
 				GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
 				layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
-						component.getDefinition().getDisplayId() + "_Reference");
+						component.getDisplayId() + "_Reference");
 			}
 		} else {
 			// the component definition was created by us and has no components
@@ -650,7 +650,7 @@ public class MxToSBOL extends Converter {
 					layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
 					GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
 				layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
-						component.getDefinition().getDisplayId() + "_Reference");
+						component.getDisplayId() + "_Reference");
 
 				// sequence constraints
 				if (previous != null) {
