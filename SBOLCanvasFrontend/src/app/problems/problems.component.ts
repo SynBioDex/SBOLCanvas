@@ -102,19 +102,39 @@ export class ProblemsComponent implements OnInit, OnDestroy {
 
     validateBackbones(warnings: string[]) {
         const currentView = this.graphService.getCurrentRoot()
-        const containers = (currentView.children || []).filter(c => c.isCircuitContainer())
+        const directChildren = currentView.children || []
+        const containers = directChildren.filter(c => c.isCircuitContainer())
+
+        const nestedChildren = directChildren.map(c => c.children || []).flat()
+        const productionEdges = [...directChildren, ...nestedChildren].filter(c => {
+            if (!c.isInteraction || !c.isInteraction()) return false
+            const info = this.graphService.getFromInteractionDict(c.value)
+            return info && info.interactionType === 'Genetic Production'
+        })
 
         for (const container of containers) {
             const children = container.children || []
             const glyphs = children.filter(c => c.isSequenceFeatureGlyph && c.isSequenceFeatureGlyph())
-
-            if (glyphs.length > 0 && !glyphs.some(g => {
+            const hasPromoter = glyphs.some(g => {
                 const info = this.graphService.lookupInfo(g.value)
                 return info && info.partRole && info.partRole.includes('Promoter')
-            })) {
-                const containerInfo = this.graphService.lookupInfo(container.value)
-                const name = (containerInfo && containerInfo.displayID) || 'unnamed'
+            })
+
+            const containerInfo = this.graphService.lookupInfo(container.value)
+            const name = (containerInfo && containerInfo.displayID) || 'unnamed'
+
+            if (glyphs.length > 0 && !hasPromoter) {
                 warnings.push(`Backbone '${name}': no promoter (skipped in SBML)`)
+                continue
+            }
+
+            if (hasPromoter) {
+                const glyphSet = new Set(glyphs)
+                const hasValidProduction = productionEdges.some(e =>
+                    e.source && glyphSet.has(e.source) && e.target)
+                if (!hasValidProduction) {
+                    warnings.push(`Backbone '${name}': no production target -- a placeholder mRNA species will be auto-generated in SBML export`)
+                }
             }
         }
     }
@@ -127,7 +147,6 @@ export class ProblemsComponent implements OnInit, OnDestroy {
 
         // Disconnected interaction edges
         const interactions = allCells.filter(c => c.isInteraction && c.isInteraction())
-        const regulationByTarget: { [key: string]: { inhibition: boolean, stimulation: boolean } } = {}
 
         for (const edge of interactions) {
             const info = this.graphService.getFromInteractionDict(edge.value)
@@ -143,22 +162,6 @@ export class ProblemsComponent implements OnInit, OnDestroy {
                 const endName = (endInfo && (endInfo.name || endInfo.displayID)) || 'unknown'
                 const missing = !edge.source ? 'no source' : 'no target'
                 warnings.push(`${type} edge on '${endName}': ${missing}`)
-                continue
-            }
-            if (type === 'Inhibition' || type === 'Stimulation') {
-                const targetId = edge.target.value || 'unknown'
-                if (!regulationByTarget[targetId])
-                    regulationByTarget[targetId] = { inhibition: false, stimulation: false }
-                if (type === 'Inhibition') regulationByTarget[targetId].inhibition = true
-                if (type === 'Stimulation') regulationByTarget[targetId].stimulation = true
-            }
-        }
-
-        for (const [targetId, reg] of Object.entries(regulationByTarget)) {
-            if (reg.inhibition && reg.stimulation) {
-                const info = this.graphService.lookupInfo(targetId)
-                const name = (info && info.name) || (info && info.displayID) || 'unknown'
-                warnings.push(`Promoter '${name}': mixed regulation (skipped in SBML)`)
             }
         }
 
