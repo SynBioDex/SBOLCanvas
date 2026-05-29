@@ -195,7 +195,7 @@ public class SBOLData {
 		promoterParams.put(PARAM_NP, 10.0); // Stoichiometry of production
 		promoterParams.put(PARAM_KO, 0.05); // Open complex production rate
 		promoterParams.put(PARAM_KB, 0.0001); // Basal production rate
-		promoterParams.put(PARAM_KA, 0.25); // Activated production rate
+		promoterParams.put(PARAM_KA, 0.25); // Activation production rate
 		promoterParams.put(PARAM_KO_F, 0.033); // Forward RNAP binding rate (Ko = Ko_f/Ko_r)
 		promoterParams.put(PARAM_KO_R, 1.0); // Reverse RNAP binding rate
 		promoterParams.put(PARAM_KAO_F, 1.0); // Forward activated RNAP binding rate (Kao = Kao_f/Kao_r)
