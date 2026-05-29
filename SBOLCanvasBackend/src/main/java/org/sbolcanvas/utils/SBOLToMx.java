@@ -778,7 +778,7 @@ public class SBOLToMx extends Converter {
 				continue;
 			compDefs.add(compDef);
 			for (Component comp : compDef.getComponents()) {
-				for (String registry : SBOLData.registries) {
+				for (String registry : SBOLRegistries.known()) {
 					if (comp.getDefinitionURI().toString().contains(registry)) {
 						document.addRegistry(registry);
 						compDefStack.push(document.getComponentDefinition(comp.getDefinitionURI()));
