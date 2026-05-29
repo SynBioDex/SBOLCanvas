@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo } from '../interactionInfo';
 import { MetadataService } from '../metadata.service';
@@ -13,6 +13,7 @@ import { CombinatorialDesignEditorComponent } from '../combinatorial-design-edit
 // import { ThrowStmt } from '@angular/compiler';
 
 import { FormControl, Validators } from '@angular/forms';
+import { registerInputSave } from '../input-save.util';
 
 @Component({
   selector: 'app-info-editor',
@@ -20,7 +21,7 @@ import { FormControl, Validators } from '@angular/forms';
   styleUrls: ['./info-editor.component.css']
 })
 
-export class InfoEditorComponent implements OnInit {
+export class InfoEditorComponent implements OnInit, OnDestroy {
 
   registries: string[];
 
@@ -44,7 +45,9 @@ export class InfoEditorComponent implements OnInit {
   glyphCtrl: FormControl;
 
 
-  constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog, private changeDetector: ChangeDetectorRef) { }
+  private teardownSave: (() => void) | null = null;
+
+  constructor(private graphService: GraphService, private metadataService: MetadataService, private filesService: FilesService, public dialog: MatDialog, private changeDetector: ChangeDetectorRef, private elementRef: ElementRef) { }
 
   ngOnInit() {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
@@ -55,6 +58,12 @@ export class InfoEditorComponent implements OnInit {
     this.getRoles();
     this.getInteractions();
     this.getInteractionRoles();
+
+    this.teardownSave = registerInputSave(this.elementRef);
+  }
+
+  ngOnDestroy() {
+    if (this.teardownSave) this.teardownSave();
   }
 
   getTypes() {

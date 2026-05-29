@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnInit, ViewChild, ViewEncapsulation} from '@angular/core';
+import {Component, ElementRef, OnDestroy, OnInit, ViewChild, ViewEncapsulation} from '@angular/core';
 import {MetadataService} from '../metadata.service';
 import {GraphService} from '../graph.service';
 import {MatDialog} from '@angular/material/dialog';
@@ -6,6 +6,7 @@ import {ColorPickerComponent} from '../color-picker/color-picker.component';
 import {StyleInfo} from '../style-info';
 import { MatSelectChange } from '@angular/material/select';
 import mxgraph from 'mxgraph'
+import { registerInputSave } from '../input-save.util';
 
 declare var require: any;
 const mx = mxgraph({
@@ -22,7 +23,7 @@ export interface ColorPickerStartupData {
   templateUrl: './design-menu.component.html',
   styleUrls: ['./design-menu.component.css']
 })
-export class DesignMenuComponent implements OnInit {
+export class DesignMenuComponent implements OnInit, OnDestroy {
 
   // Style options for the selected glyphs
   styleInfo: StyleInfo;
@@ -30,16 +31,25 @@ export class DesignMenuComponent implements OnInit {
   // Put a reference to the mxGraph namespace in the class so it's accessible to the component's html part
   mx: any = mx;
 
+  private teardownSave: (() => void) | null = null;
+
   constructor(
     private metadataService: MetadataService,
     private graphService: GraphService,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private elementRef: ElementRef
   ) { }
 
   ngOnInit() {
     // Subscribe to the color metadata; the 'color' variable is made available
     // to the metadata service.
     this.metadataService.style.subscribe((styleInfo) => this.styleInfo = styleInfo);
+
+    this.teardownSave = registerInputSave(this.elementRef);
+  }
+
+  ngOnDestroy() {
+    if (this.teardownSave) this.teardownSave();
   }
 
   setStrokeColorClicked(): void {
