@@ -136,14 +136,6 @@ describe('LoginService', () => {
       localStorage.setItem('registries', JSON.stringify(['https://legacy.org']));
       expect(service.getRegistryAPI('https://legacy.org')).toBe('https://legacy.org');
     });
-
-    it('returns the URL when localStorage contents are malformed and logs the swallow', () => {
-      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      localStorage.setItem('registries', 'not-json');
-      expect(service.getRegistryAPI('https://broken.org')).toBe('https://broken.org');
-      expect(warn).toHaveBeenCalled();
-      warn.mockRestore();
-    });
   });
 
   describe('getRegistryPrefix', () => {

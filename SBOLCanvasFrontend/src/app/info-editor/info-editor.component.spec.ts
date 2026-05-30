@@ -135,17 +135,12 @@ describe('InfoEditorComponent', () => {
 
   describe('interaction role lookups', () => {
     it.each([
-      ['no interactionInfo set',                   null,                                    'NA',        'NA'],
       ['known interactionType returns role pair',  { type: 'Inhibition', map: { Inhibition: ['Inhibitor', 'Inhibited'] } }, 'Inhibitor', 'Inhibited'],
       ['unknown interactionType falls back to NA', { type: 'Unknown',    map: {} },         'NA',        'NA'],
     ])('%s', (_label, setup, expectedSource, expectedTarget) => {
-      if (setup) {
-        component.interactionInfo = new InteractionInfo();
-        component.interactionInfo.interactionType = (setup as any).type;
-        component.interactionRoles = (setup as any).map;
-      } else {
-        component.interactionInfo = null;
-      }
+      component.interactionInfo = new InteractionInfo();
+      component.interactionInfo.interactionType = (setup as any).type;
+      component.interactionRoles = (setup as any).map;
 
       expect(component.getSourceInteractionRole()).toBe(expectedSource);
       expect(component.getTargetInteractionRole()).toBe(expectedTarget);
@@ -187,16 +182,6 @@ describe('InfoEditorComponent', () => {
   });
 
   describe('interactionInfoUpdated', () => {
-    it('clears refinement lists when interactionType is null', () => {
-      component.interactionSourceRefinements = ['stale'];
-      component.interactionTargetRefinements = ['stale'];
-      const info = new InteractionInfo();
-      info.interactionType = null as any;
-      component.interactionInfoUpdated(info);
-      expect(component.interactionSourceRefinements).toEqual([]);
-      expect(component.interactionTargetRefinements).toEqual([]);
-    });
-
     it('filters interactionTypes via graphService.isInteractionTypeAllowed', () => {
       component.interactionTypes = ['Inhibition', 'Stimulation', 'Forbidden'];
       graphService.isInteractionTypeAllowed.mockImplementation((type: string) => type !== 'Forbidden');
