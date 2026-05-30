@@ -133,7 +133,7 @@ export class ProblemsComponent implements OnInit, OnDestroy {
                 const hasValidProduction = productionEdges.some(e =>
                     e.source && glyphSet.has(e.source) && e.target)
                 if (!hasValidProduction) {
-                    warnings.push(`Backbone '${name}': no production target -- a placeholder mRNA species will be auto-generated in SBML export`)
+                    warnings.push(`Backbone '${name}': no production target (placeholder mRNA in SBML)`)
                 }
             }
         }

@@ -983,11 +983,13 @@ export class GraphService extends GraphHelpers {
 
             // let the graph choose an arbitrary cell from the selection,
             // we'll pretend it's the only one selected
-            const selection = this.graph.getSelectionCell()
+            let selection = this.graph.getSelectionCell()
 
-            // if selection is nonexistent, or is not part of a strand, there is no suitable place.
+            // if selection is nonexistent or not part of a strand, make one
             if (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer())) {
-                return
+                this.addBackbone()
+                selection = this.graph.getSelectionCell()
+                if (!selection || !selection.isCircuitContainer()) return
             }
 
             const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent()
@@ -1022,16 +1024,18 @@ export class GraphService extends GraphHelpers {
 
             // let the graph choose an arbitrary cell from the selection,
             // we'll pretend it's the only one selected
-            const selection = this.graph.getSelectionCell()
+            let selection = this.graph.getSelectionCell()
 
-            // if selection is nonexistent, or is not part of a strand, there is no suitable place.
+            // if selection is nonexistent or not part of a strand, quietly make one
             if (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer())) {
-                return
+                this.addBackbone()
+                selection = this.graph.getSelectionCell()
+                if (!selection || !selection.isCircuitContainer()) return
             }
 
             const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent()
 
-            
+
             // Don't add if circular or locus exists already
             if(circuitContainer.hasCircularBackbone() || circuitContainer.hasChromosomalLocus()) return
             
@@ -1102,15 +1106,17 @@ export class GraphService extends GraphHelpers {
 
             // let the graph choose an arbitrary cell from the selection,
             // we'll pretend it's the only one selected
-            const selection = this.graph.getSelectionCell()
+            let selection = this.graph.getSelectionCell()
 
-            // if selection is nonexistent, or is not part of a strand, there is no suitable place.
+            // if selection is nonexistent or not part of a strand, quietly make one
             if (!selection || !(selection.isSequenceFeatureGlyph() || selection.isCircuitContainer())) {
-                return
+                this.addBackbone()
+                selection = this.graph.getSelectionCell()
+                if (!selection || !selection.isCircuitContainer()) return
             }
 
             const circuitContainer = selection.isCircuitContainer() ? selection : selection.getParent()
-            
+
             // Don't add if circular or locus exists already
             if(circuitContainer.hasChromosomalLocus() || circuitContainer.hasCircularBackbone()) return
             
