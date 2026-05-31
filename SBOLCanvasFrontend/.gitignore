@@ -7,7 +7,6 @@
 *bundle.xml
 # Only exists if Bazel was run
 /bazel-out
-package-lock.json
 
 # dependencies
 /node_modules
