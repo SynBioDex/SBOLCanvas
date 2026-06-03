@@ -284,85 +284,9 @@ public class SBOLToMx extends Converter {
 				continue;
 			}
 
-			// add the container cell and backbone
-			mxCell container = layoutHelper.getGraphicalObject(modDef.getIdentity(), funcComp.getDisplayId());
-			if (container != null) {
-				if (container.getStyle() != null)
-					container.setStyle(STYLE_CIRCUIT_CONTAINER + ";" + container.getStyle());
-				else
-					container.setStyle(STYLE_CIRCUIT_CONTAINER);
-				container.setValue(compDef.getIdentity().toString());
-				model.add(rootViewCell, container, 0);
-			} else {
-				container = (mxCell) graph.insertVertex(rootViewCell, null, compDef.getIdentity().toString(), 0, 0, 0,
-						0, STYLE_CIRCUIT_CONTAINER);
-			}
+			mxCell container = renderCircuitContainer(graph, rootViewCell, compDef, modDef.getIdentity(),
+					funcComp.getDisplayId(), compDef.getDisplayId(), funcComp);
 			compToCell.put(funcComp, container);
-			mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), compDef.getDisplayId());
-			if (backbone != null) {
-				if (backbone.getStyle() != null)
-					backbone.setStyle(STYLE_BACKBONE + ";" + backbone.getStyle());
-				else
-					backbone.setStyle(STYLE_BACKBONE);
-				model.add(container, backbone, 0);
-			} else {
-				backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, STYLE_BACKBONE);
-			}
-			GlyphInfo info = genGlyphInfo(compDef);
-			infoDict.put(info.getFullURI(), info);
-
-			// glyphs
-			Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
-			List<Component> newList = new ArrayList<>(Arrays.asList(glyphArray));
-			Component duplicateToAdd = null;
-
-			// Check if a circular backbone is present, if so add a duplicate for the right end in SBOLCanvas
-			for(Component glyph: newList){
-				ComponentDefinition cd = (glyph.getDefinition());
-				if (cd != null && cd.getRoles().iterator().next().equals(SBOLData.roles.getValue("Cir (Circular Backbone)"))) {
-					duplicateToAdd = glyph;
-				}
-			}
-			if(duplicateToAdd != null){
-				newList.add(0,duplicateToAdd);
-				glyphArray = newList.toArray(new Component[0]);
-			}
-			double maxX = 0;
-			for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
-				Component glyphComponent = glyphArray[glyphIndex];
-
-				mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(),
-						glyphComponent.getDisplayId());
-				if (glyphCell != null) {
-					glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
-					if (glyphCell.getStyle() != null)
-						glyphCell.setStyle(STYLE_SEQUENCE_FEATURE + ";" + glyphCell.getStyle());
-					else
-						glyphCell.setStyle(STYLE_SEQUENCE_FEATURE);
-					model.add(container, glyphCell, glyphIndex);
-				} else {
-					glyphCell = (mxCell) graph.insertVertex(container, null,
-							glyphComponent.getDefinition().getIdentity().toString(), maxX++, 0, 0, 0,
-							STYLE_SEQUENCE_FEATURE);
-				}
-
-				// style filp
-				SequenceAnnotation seqAnn = compDef.getSequenceAnnotation(glyphComponent);
-				if (seqAnn != null) {
-					Location loc = seqAnn.getLocations().iterator().next();
-					if (loc.getOrientation() == OrientationType.REVERSECOMPLEMENT) {
-						graph.setCellStyles(mxConstants.STYLE_DIRECTION, "west", new Object[] { glyphCell });
-					}
-				}
-
-				// store the cell so we can use it in interactions
-				for (MapsTo mapsTo : funcComp.getMapsTos()) {
-					if (mapsTo.getLocalDefinition().equals(glyphComponent.getDefinition())) {
-						compToCell.put((FunctionalComponent) mapsTo.getLocal(), glyphCell);
-						break;
-					}
-				}
-			}
 		}
 
 		// create modules
@@ -395,10 +319,6 @@ public class SBOLToMx extends Converter {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		mxCell cell1 = (mxCell) model.getCell("1");
 
-		// create the glyphInfo and store it in the dictionary
-		GlyphInfo info = genGlyphInfo(compDef);
-		infoDict.put(info.getFullURI(), info);
-
 		// create the top view cell
 		mxCell viewCell = (mxCell) graph.insertVertex(cell1, compDef.getIdentity().toString(), null, 0, 0, 0, 0,
 				STYLE_COMPONENT_VIEW);
@@ -415,8 +335,21 @@ public class SBOLToMx extends Converter {
 			}
 		}
 
+		renderCircuitContainer(graph, viewCell, compDef, compDef.getIdentity(), "container", "backbone", null);
+	}
+
+	/**
+	 * The circuitContainer + backbone + sorted-glyph structure shared by {@link #createModuleView}
+	 * and {@link #createComponentView}. {@code wiringFuncComp} is non-null only for the module view,
+	 * which uses it to wire {@code compToCell}; the component view passes {@code null}.
+	 */
+	private mxCell renderCircuitContainer(mxGraph graph, mxCell viewCell, ComponentDefinition compDef,
+			URI containerLayoutRef, String containerLayoutId, String backboneLayoutId,
+			FunctionalComponent wiringFuncComp) throws SBOLValidationException {
+		mxGraphModel model = (mxGraphModel) graph.getModel();
+
 		// add the container cell and backbone
-		mxCell container = layoutHelper.getGraphicalObject(compDef.getIdentity(), "container");
+		mxCell container = layoutHelper.getGraphicalObject(containerLayoutRef, containerLayoutId);
 		if (container != null) {
 			if (container.getStyle() != null)
 				container.setStyle(STYLE_CIRCUIT_CONTAINER + ";" + container.getStyle());
@@ -429,7 +362,7 @@ public class SBOLToMx extends Converter {
 					STYLE_CIRCUIT_CONTAINER);
 		}
 
-		mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), "backbone");
+		mxCell backbone = layoutHelper.getGraphicalObject(compDef.getIdentity(), backboneLayoutId);
 		if (backbone != null) {
 			if (backbone.getStyle() != null)
 				backbone.setStyle(STYLE_BACKBONE + ";" + backbone.getStyle());
@@ -440,34 +373,38 @@ public class SBOLToMx extends Converter {
 			backbone = (mxCell) graph.insertVertex(container, null, null, 0, 0, 0, 0, STYLE_BACKBONE);
 		}
 
+		GlyphInfo info = genGlyphInfo(compDef);
+		infoDict.put(info.getFullURI(), info);
+
 		// glyphs
 		Component[] glyphArray = compDef.getSortedComponents().toArray(new Component[0]);
 		List<Component> newList = new ArrayList<>(Arrays.asList(glyphArray));
 		Component duplicateToAdd = null;
 
 		// Check if a circular backbone is present, if so add a duplicate for the right end in SBOLCanvas
-		for(Component glyph: newList){
+		for (Component glyph : newList) {
 			ComponentDefinition cd = glyph.getDefinition();
 			if (cd != null && cd.getRoles().iterator().next().equals(SBOLData.roles.getValue("Cir (Circular Backbone)"))) {
 				duplicateToAdd = glyph;
 			}
 		}
-		if(duplicateToAdd != null){
-			newList.add(0,duplicateToAdd);
+		if (duplicateToAdd != null) {
+			newList.add(0, duplicateToAdd);
 			glyphArray = newList.toArray(new Component[0]);
 		}
 
+		double maxX = 0;
 		for (int glyphIndex = 0; glyphIndex < glyphArray.length; glyphIndex++) {
 			Component glyphComponent = glyphArray[glyphIndex];
-			mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(), glyphComponent.getDisplayId());
-			double maxX = 0;
+
+			mxCell glyphCell = layoutHelper.getGraphicalObject(compDef.getIdentity(),
+					glyphComponent.getDisplayId());
 			if (glyphCell != null) {
-				maxX = glyphCell.getGeometry().getX();
+				glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
 				if (glyphCell.getStyle() != null)
 					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE + ";" + glyphCell.getStyle());
 				else
 					glyphCell.setStyle(STYLE_SEQUENCE_FEATURE);
-				glyphCell.setValue(glyphComponent.getDefinition().getIdentity().toString());
 				model.add(container, glyphCell, glyphIndex);
 			} else {
 				glyphCell = (mxCell) graph.insertVertex(container, null,
@@ -484,7 +421,18 @@ public class SBOLToMx extends Converter {
 				}
 			}
 
+			// store the cell so we can use it in interactions (module view only)
+			if (wiringFuncComp != null) {
+				for (MapsTo mapsTo : wiringFuncComp.getMapsTos()) {
+					if (mapsTo.getLocalDefinition().equals(glyphComponent.getDefinition())) {
+						compToCell.put((FunctionalComponent) mapsTo.getLocal(), glyphCell);
+						break;
+					}
+				}
+			}
 		}
+
+		return container;
 	}
 
 	private void setupModuleInteractions(SBOLDocument document, mxGraph graph, ModuleDefinition modDef) {
@@ -778,7 +726,7 @@ public class SBOLToMx extends Converter {
 				continue;
 			compDefs.add(compDef);
 			for (Component comp : compDef.getComponents()) {
-				for (String registry : SBOLData.registries) {
+				for (String registry : SBOLRegistries.known()) {
 					if (comp.getDefinitionURI().toString().contains(registry)) {
 						document.addRegistry(registry);
 						compDefStack.push(document.getComponentDefinition(comp.getDefinitionURI()));

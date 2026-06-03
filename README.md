@@ -79,11 +79,25 @@ and then
 ```bash
 docker run --rm --name canvas --publish 4040:8080 sbolcanvas
 ```
-A local instance will be availaible on http://localhost:4040/
+A local instance will be available on http://localhost:4040/
 
 If you plan to contribute to this repository, this is recommended before you open a Pull Request. GitHub Actions will use a similar process to check the Docker build and deployment.
 
+## Tests
 
+Backend (requires Java 8):
+
+```bash
+cd SBOLCanvasBackend
+mvn test
+```
+
+Frontend:
+
+```bash
+cd SBOLCanvasFrontend
+npm test
+```
 
 ## Deployment
 

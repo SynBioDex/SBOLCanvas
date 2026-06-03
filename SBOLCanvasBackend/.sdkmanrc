@@ -1,0 +1,3 @@
+# Enable auto-env through the sdkman_auto_env config
+# Use SDKMAN! environment for this directory
+java=8.0.492-zulu

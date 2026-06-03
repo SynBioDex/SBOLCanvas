@@ -3,7 +3,6 @@ package org.sbolcanvas.utils;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.TreeSet;
@@ -12,9 +11,6 @@ import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.Participation;
 import org.sbolstandard.core2.SequenceOntology;
 import org.sbolstandard.core2.SystemsBiologyOntology;
-import org.synbiohub.frontend.SynBioHubException;
-import org.synbiohub.frontend.SynBioHubFrontend;
-import org.synbiohub.frontend.WebOfRegistriesData;
 
 public class SBOLData {
 
@@ -57,7 +53,6 @@ public class SBOLData {
 	public static BiMap<String, URI> interactionRoles;
 	public static HashMap<URI, URI> interactionSourceRoles;
 	public static HashMap<URI, URI> interactionTargetRoles;
-	public static HashSet<String> registries;
 	public static HashMap<String, LinkedHashMap<String, Object>> simulationConfig;
 
 	static {
@@ -175,15 +170,6 @@ public class SBOLData {
 		interactionSourceRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.REACTANT);
 		interactionSourceRoles.put(SystemsBiologyOntology.PROCESS, SystemsBiologyOntology.REACTANT);
 		
-		registries = new HashSet<String>();
-		try {
-			for(WebOfRegistriesData registry : SynBioHubFrontend.getRegistries()) {
-				registries.add(registry.getInstanceUrl());
-			}
-		} catch (SynBioHubException e) {
-			e.printStackTrace();
-		}
-
 		// Using values from iBioSim as default values for simulation parameters
 		// LinkedHashMap keeps parameters in order in the UI.
 		simulationConfig = new HashMap<String, LinkedHashMap<String, Object>>();
@@ -209,7 +195,7 @@ public class SBOLData {
 		promoterParams.put(PARAM_NP, 10.0); // Stoichiometry of production
 		promoterParams.put(PARAM_KO, 0.05); // Open complex production rate
 		promoterParams.put(PARAM_KB, 0.0001); // Basal production rate
-		promoterParams.put(PARAM_KA, 0.25); // Activated production rate
+		promoterParams.put(PARAM_KA, 0.25); // Activation production rate
 		promoterParams.put(PARAM_KO_F, 0.033); // Forward RNAP binding rate (Ko = Ko_f/Ko_r)
 		promoterParams.put(PARAM_KO_R, 1.0); // Reverse RNAP binding rate
 		promoterParams.put(PARAM_KAO_F, 1.0); // Forward activated RNAP binding rate (Kao = Kao_f/Kao_r)

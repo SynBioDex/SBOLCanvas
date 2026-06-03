@@ -33,6 +33,7 @@ import org.synbiohub.frontend.SearchQuery;
 import org.synbiohub.frontend.SynBioHubException;
 import org.synbiohub.frontend.SynBioHubFrontend;
 import org.synbiohub.frontend.WebOfRegistriesData;
+import org.sbolcanvas.utils.SBOLRegistries;
 import org.xml.sax.SAXException;
 
 import com.google.gson.Gson;
@@ -106,7 +107,7 @@ public class SynBioHub extends HttpServlet {
 				
                 case "/registries": {
 					List<RegistryEntry> registries = new ArrayList<RegistryEntry>();
-                    for (WebOfRegistriesData registry : SynBioHubFrontend.getRegistries()) {
+                    for (WebOfRegistriesData registry : SBOLRegistries.all()) {
 						if (registry == null || registry.getInstanceUrl() == null || registry.getInstanceUrl().isEmpty()) {
 							continue;
 						}

@@ -1,0 +1,31 @@
+name: Build and Test Frontend
+
+defaults:
+  run:
+    working-directory: ./SBOLCanvasFrontend
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened]
+        branches:
+          - final
+        paths:
+          - 'SBOLCanvasFrontend/**'
+          - '.github/workflows/build-test-frontend.yml'
+
+jobs:
+  test:
+    name: Run Jest tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      name: Checkout source code
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: SBOLCanvasFrontend/package-lock.json
+    - name: Install dependencies
+      run: npm ci
+    - name: Run tests
+      run: npm test

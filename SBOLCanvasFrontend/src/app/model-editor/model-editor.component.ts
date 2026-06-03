@@ -1,9 +1,10 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo } from '../interactionInfo';
 import { EventInfo } from '../eventInfo';
 import { MetadataService } from '../metadata.service';
 import { GraphService } from '../graph.service';
+import { registerInputSave } from '../input-save.util';
 
 /**
  * Type for parameter configuration values (keyed by parameter name, values are numbers)
@@ -71,7 +72,7 @@ const COMPLEX_NODE_PARAMS: ParamDef[] = [
   templateUrl: './model-editor.component.html',
   styleUrls: ['./model-editor.component.css']
 })
-export class ModelEditorComponent implements OnInit {
+export class ModelEditorComponent implements OnInit, OnDestroy {
 
   glyphInfo: GlyphInfo;
   interactionInfo: InteractionInfo;
@@ -87,10 +88,13 @@ export class ModelEditorComponent implements OnInit {
   complexNodeParams = COMPLEX_NODE_PARAMS;
   complexEdgeParams = COMPLEX_EDGE_PARAMS;
 
+  private teardownSave: (() => void) | null = null;
+
   constructor(
     private graphService: GraphService,
     private metadataService: MetadataService,
-    private changeDetector: ChangeDetectorRef
+    private changeDetector: ChangeDetectorRef,
+    private elementRef: ElementRef
   ) { }
 
   ngOnInit() {
@@ -98,6 +102,12 @@ export class ModelEditorComponent implements OnInit {
     this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo));
     this.metadataService.selectedEventInfo.subscribe(eventInfo => this.eventInfoUpdated(eventInfo));
     this.getSimulationConfig();
+
+    this.teardownSave = registerInputSave(this.elementRef);
+  }
+
+  ngOnDestroy() {
+    if (this.teardownSave) this.teardownSave();
   }
 
   getSimulationConfig() {

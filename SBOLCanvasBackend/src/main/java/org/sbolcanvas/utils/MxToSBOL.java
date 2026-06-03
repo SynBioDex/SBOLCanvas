@@ -297,7 +297,7 @@ public class MxToSBOL extends Converter {
 				
 		// if the uri is one of the synbiohub ones, just add the layout
 		boolean layoutOnly = false;
-		for (String registry : SBOLData.registries) {
+		for (String registry : SBOLRegistries.known()) {
 			if (modInfo.getUriPrefix().contains(registry)) {
 				// if we're not logged in, it still needs to be added to the document
 				if (document.getRegistry(registry) == null) {
@@ -409,7 +409,7 @@ public class MxToSBOL extends Converter {
 		}
 
 		// if the uri is one of the synbiohub ones, skip the object
-		for (String registry : SBOLData.registries) {
+		for (String registry : SBOLRegistries.known()) {
 			if (glyphInfo.getUriPrefix().contains(registry)) {
 				// if we're not logged in, it still needs to be added to the document
 				if (document.getRegistry(registry) == null) {
@@ -539,7 +539,7 @@ public class MxToSBOL extends Converter {
 
 		// if the uri is one of the synbiohub ones, just add the layout
 		boolean layoutOnly = false;
-		for (String registry : SBOLData.registries) {
+		for (String registry : SBOLRegistries.known()) {
 			if (modDefInfo.getUriPrefix().contains(registry)
 					&& (userTokens.containsKey(registry) || modDefInfo.getUriPrefix().contains("/public/"))) {
 				layoutOnly = true;
@@ -820,7 +820,7 @@ public class MxToSBOL extends Converter {
 		// it wasn't found, so we need to add it without a user token
 		// in the future when we allow registries not in the registry list, it's
 		// probably best to have the frontend send send it without a user token
-		for (String registry : SBOLData.registries) {
+		for (String registry : SBOLRegistries.known()) {
 			if (partURI.toString().startsWith(registry)) {
 				document.addRegistry(registry);
 				return;
