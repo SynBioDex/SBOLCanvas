@@ -48,14 +48,16 @@ function registerDragsources(elements: SVGElement[], graph: GraphService): void 
 }
 
 /** Registers a grid's glyph svgs as drag sources on first reveal, when sizes are real (not 0x0).
- *  Tiles are only hidden, never removed, so one IntersectionObserver suffices; it short-circuits
- *  once all are registered. */
+ *  Tiles are only hidden, never removed, so observing the container and each svg once at init
+ *  suffices. Hidden svgs are zero-area (non-intersecting), so the observer fires when one is
+ *  revealed. Short-circuits once all are registered. */
 @Directive({
   selector: '[appGlyphDragsources]',
 })
 export class GlyphDragsourcesDirective implements AfterViewInit, OnDestroy {
   private intersectionObserver?: IntersectionObserver;
   private fullyRegistered = false;
+  private observedSvgs = new Set<SVGElement>();
 
   constructor(
     private el: ElementRef<HTMLElement>,
@@ -69,13 +71,25 @@ export class GlyphDragsourcesDirective implements AfterViewInit, OnDestroy {
       }
     });
     this.intersectionObserver.observe(this.el.nativeElement);
+    this.observeSvgs();
   }
 
   ngOnDestroy(): void {
     this.intersectionObserver?.disconnect();
   }
 
+  private observeSvgs(): void {
+    const svgs = Array.from(this.el.nativeElement.querySelectorAll('svg')) as SVGElement[];
+    for (const svg of svgs) {
+      if (!this.observedSvgs.has(svg)) {
+        this.observedSvgs.add(svg);
+        this.intersectionObserver?.observe(svg);
+      }
+    }
+  }
+
   private register(): void {
+    this.observeSvgs();
     const svgs = Array.from(this.el.nativeElement.querySelectorAll('svg')) as SVGElement[];
     registerDragsources(svgs, this.graphService);
     this.fullyRegistered = svgs.every((s) => s.getAttribute('isDragsource') === 'true');
