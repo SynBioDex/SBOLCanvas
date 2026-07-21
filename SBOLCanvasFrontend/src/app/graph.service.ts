@@ -522,6 +522,7 @@ export class GraphService extends GraphHelpers {
                 this.graph.setSelectionCell(cell)
                 this.graph.startEditingAtCell(cell, evt.getProperty('event'))
             } else {
+                this.graph.setSelectionCell(cell)
                 this.enterGlyph()
             }
             evt.consume()
