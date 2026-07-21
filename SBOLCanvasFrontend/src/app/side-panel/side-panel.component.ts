@@ -20,6 +20,8 @@ const MAX_CAP = 520;
 const MIN_WIDTH = 200;
 /** Collapsed rail width in px; must match $rail-width in the SCSS. */
 const RAIL_WIDTH = 48;
+/** Default expanded width (initial value and the Home key target). */
+const DEFAULT_WIDTH = 280;
 /** Width transition duration (ms); kept in sync with the SCSS, used as the scroll fallback timeout. */
 const TRANSITION_MS = 260;
 
@@ -52,10 +54,10 @@ export class SidePanelComponent implements OnInit, OnDestroy {
 
   collapsed = true;
 
-  width = 280;
+  width = DEFAULT_WIDTH;
 
   /** Remembered last expanded (dragged) width, restored on toggle-expand. */
-  lastExpandedWidth = 280;
+  lastExpandedWidth = DEFAULT_WIDTH;
 
   /** Instance alias of MIN_WIDTH for template bindings. */
   readonly minWidth = MIN_WIDTH;
@@ -69,6 +71,7 @@ export class SidePanelComponent implements OnInit, OnDestroy {
   }
 
   private resizing = false;
+  private dragged = false;
   private pointerId = -1;
   private startX = 0;
   private startWidth = 0;
@@ -82,6 +85,8 @@ export class SidePanelComponent implements OnInit, OnDestroy {
     if (this.rafId) {
       cancelAnimationFrame(this.rafId);
     }
+    this.resizing = false;
+    document.body.classList.remove('panel-resizing');
   }
 
   get sectionList(): CollapsibleSectionComponent[] {
@@ -184,17 +189,21 @@ export class SidePanelComponent implements OnInit, OnDestroy {
     const target = event.target as HTMLElement;
     target.setPointerCapture(event.pointerId);
     this.resizing = true;
+    this.dragged = false;
     this.pointerId = event.pointerId;
     this.startX = event.clientX;
     this.startWidth = this.width;
     document.body.classList.add('panel-resizing');
     event.preventDefault();
+    // preventDefault above also blocks the default focus-on-mousedown, so focus explicitly.
+    target.focus();
   }
 
   onGrabberPointerMove(event: PointerEvent): void {
     if (!this.resizing || event.pointerId !== this.pointerId) {
       return;
     }
+    this.dragged = true;
     const delta = event.clientX - this.startX;
     const raw = this.side === 'left' ? this.startWidth + delta : this.startWidth - delta;
     const clamped = this.clampWidth(raw);
@@ -208,7 +217,7 @@ export class SidePanelComponent implements OnInit, OnDestroy {
   }
 
   onGrabberPointerUp(event: PointerEvent): void {
-    if (!this.resizing) {
+    if (!this.resizing || event.pointerId !== this.pointerId) {
       return;
     }
     this.resizing = false;
@@ -218,6 +227,35 @@ export class SidePanelComponent implements OnInit, OnDestroy {
       /* capture may already be released */
     }
     document.body.classList.remove('panel-resizing');
+    this.lastExpandedWidth = this.width;
+    if (this.dragged) {
+      // A drag ends on release; a plain click keeps focus for the arrow keys.
+      (event.target as HTMLElement).blur();
+    }
+  }
+
+  // ---- Keyboard resize (Arrows 16px, Home default width, End collapse to rail) ----
+  onGrabberKeyDown(event: KeyboardEvent): void {
+    let next: number;
+    switch (event.key) {
+      case 'ArrowLeft':
+        next = this.side === 'left' ? this.width - 16 : this.width + 16;
+        break;
+      case 'ArrowRight':
+        next = this.side === 'left' ? this.width + 16 : this.width - 16;
+        break;
+      case 'Home':
+        next = DEFAULT_WIDTH;
+        break;
+      case 'End':
+        event.preventDefault();
+        this.collapsed = true;
+        return;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.width = this.clampWidth(next);
     this.lastExpandedWidth = this.width;
   }
 

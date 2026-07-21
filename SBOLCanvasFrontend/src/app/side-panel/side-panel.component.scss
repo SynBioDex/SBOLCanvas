@@ -239,6 +239,7 @@ $divider: 1px solid rgba(0, 0, 0, 0.08);
   align-items: center;
   justify-content: center;
   cursor: col-resize;
+  touch-action: none;
 
   // Resting grip handle sitting on the panel seam; highlights on hover/focus so the
   // resize boundary is discoverable.
@@ -252,12 +253,12 @@ $divider: 1px solid rgba(0, 0, 0, 0.08);
   }
 
   &:hover::after,
-  &:focus-visible::after {
+  &:focus::after {
     background: #3f51b5;
     height: 104px;
   }
 
-  &:focus-visible {
+  &:focus {
     outline: none;
   }
 }
