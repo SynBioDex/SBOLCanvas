@@ -1,7 +1,37 @@
-.example-container {
+.workspace {
+  position: relative; /* anchor for the absolutely-positioned overlay panels */
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  height: calc(100vh - 64px); /* viewport minus toolbar */
+  width: 100%;
+  overflow: hidden;
+}
+
+/*
+ * Panels overlay the canvas instead of pushing it, so the design and grid never shift when a panel
+ * toggles or resizes. The absolute host shrinks to the inner panel width, so the overlay tracks it.
+ */
+app-side-panel[side="left"] {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
+  z-index: 10;
+}
+
+app-side-panel[side="right"] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   right: 0;
+  z-index: 10;
+}
+
+.canvas-area {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
 }

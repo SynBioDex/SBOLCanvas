@@ -1,0 +1,283 @@
+@use './caret' as *;
+
+$rail-width: 48px;
+$transition: width 260ms cubic-bezier(0.4, 0, 0.2, 1);
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.side-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+
+  // Toggling the panel animates its width. A resize drag turns the transition off (via
+  // `body.panel-resizing`, below) so the panel tracks the pointer instantly.
+  transition: $transition;
+
+  &.side-right {
+    border-right: none;
+    border-left: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  &.collapsed {
+    width: $rail-width;
+    flex: 0 0 $rail-width;
+  }
+}
+
+// ---- Rail (collapsed state) ----
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.side-panel:not(.collapsed) .rail {
+  display: none;
+}
+
+.rail-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 34px; // uniform thickness; long labels extend along the text axis
+  min-height: 60px;
+  padding: 10px 0;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: 8px;
+  background: #eceef5;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+
+  &:hover {
+    background: #e3e6f0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #3f51b5;
+    outline-offset: 2px;
+  }
+}
+
+.rail-chip-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg); // read bottom-to-top, Safari-safe
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+// ---- Expanded chrome ----
+.side-panel.collapsed .expanded {
+  display: none;
+}
+
+.expanded {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+$divider: 1px solid rgba(0, 0, 0, 0.08);
+
+.title-bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 10px;
+  gap: 8px;
+  border-bottom: $divider;
+}
+
+.panel-name {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  line-height: 1;
+
+  &:hover {
+    background: #f5f6fa;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #3f51b5;
+    outline-offset: 2px;
+  }
+}
+
+// Thin line caret used by the panel toggles (shares geometry with the section chevron).
+.caret {
+  @include line-caret;
+  border-color: rgba(0, 0, 0, 0.5);
+
+  &.caret-left {
+    transform: translateX(1px) rotate(135deg);
+  }
+  &.caret-right {
+    transform: translateX(-1px) rotate(-45deg);
+  }
+}
+
+.all-row {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-bottom: $divider;
+
+  &.align-end {
+    justify-content: flex-end;
+  }
+}
+
+.link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+
+  &:hover {
+    color: rgba(0, 0, 0, 0.82);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #3f51b5;
+    outline-offset: 2px;
+  }
+
+  // Search drives section expansion, so the all-row is inert during an active search.
+  &:disabled {
+    color: rgba(0, 0, 0, 0.25);
+    cursor: default;
+
+    &:hover {
+      color: rgba(0, 0, 0, 0.25);
+    }
+  }
+}
+
+.dot {
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.search {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-bottom: $divider;
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 7px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    border-radius: 6px;
+    font: inherit;
+    font-size: 14px;
+
+    &::placeholder {
+      color: rgba(0, 0, 0, 0.38);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #3f51b5;
+    }
+  }
+}
+
+.scroll-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 12px 16px;
+}
+
+// ---- Resize grabber ----
+.grabber {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+
+  // Resting grip handle sitting on the panel seam; highlights on hover/focus so the
+  // resize boundary is discoverable.
+  &::after {
+    content: '';
+    width: 5px;
+    height: 72px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.16);
+    transition: background 120ms ease, height 120ms ease;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    background: #3f51b5;
+    height: 104px;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+// Center the grip on the panel's outer edge.
+.side-left .grabber {
+  right: -4px;
+}
+
+.side-right .grabber {
+  left: -4px;
+}
+
+// Snap (no width animation) while actively resizing, and for reduced-motion users.
+:host-context(.panel-resizing) .side-panel {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-panel {
+    transition: none;
+  }
+}

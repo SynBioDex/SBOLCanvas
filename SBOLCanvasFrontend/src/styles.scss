@@ -62,3 +62,15 @@ body {
 .mat-expansion-panel{
   box-shadow: none !important;
 }
+
+body.panel-resizing {
+  user-select: none;
+}
+body.panel-resizing app-canvas {
+  pointer-events: none;
+}
+body.panel-resizing .zoom-controls,
+body.panel-resizing #problems-expand,
+body.panel-resizing .hierarchy-controls {
+  transition: none;
+}

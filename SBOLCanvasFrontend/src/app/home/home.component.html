@@ -1,41 +1,62 @@
-<!-- Banner -->
-<!-- <app-banner></app-banner> -->
-
 <!-- Toolbar -->
 <app-toolbar></app-toolbar>
 
-<!-- We are using the Angular Material library for layout. -->
-<mat-sidenav-container style="height: 100vh;" [hasBackdrop]="false"><!-- A sidebar -->
+<!-- Workspace: left panel | canvas | right panel -->
+<div class="workspace">
 
-  <!-- On the left is the glyph menu -->
-  <mat-sidenav [(opened)]="leftBarOpened" position="start"
-  mode="side"
-  disableClose="true" [disableClose]="true">
-      <app-glyph-menu></app-glyph-menu>
-  </mat-sidenav>
+  <!-- LEFT: glyph palette -->
+  <app-side-panel
+    #leftPanel="sidePanel"
+    side="left"
+    panelName="GLYPHS"
+    [showSearch]="true"
+    [initialCollapsed]="false"
+    (searchPhraseChange)="glyphSearch = $event"
+  >
+    <ng-container *ngFor="let s of glyphSections">
+      <app-collapsible-section
+        *ngIf="s.alwaysShown || !palette.componentDefinitionMode"
+        [title]="s.title"
+        [searchMatch]="glyphSearch ? sectionHasMatch(s) : null"
+      >
+        <app-glyph-grid
+          [glyphs]="s.glyphs"
+          [elementType]="s.elementType"
+          [searchPhrase]="glyphSearch"
+          (glyphClicked)="s.add($event)"
+        ></app-glyph-grid>
+      </app-collapsible-section>
+    </ng-container>
 
-  <!-- On the right will be the info menu and color palette -->
-  <mat-sidenav [(opened)]="rightBarOpened" position="end"
-  mode="side" [disableClose]="true">
-    <mat-tab-group animationDuration="200ms">
-      <mat-tab label="Info">
-        <app-info-editor></app-info-editor>
-      </mat-tab>
-      <mat-tab label="Model">
-        <app-model-editor></app-model-editor>
-      </mat-tab>
-      <mat-tab label="Design">
-        <app-color-palette></app-color-palette>
-      </mat-tab>
-    </mat-tab-group>
-  </mat-sidenav>
+    <app-collapsible-section title="Util" [searchMatch]="glyphSearch ? palette.utilHasMatch(glyphSearch) : null">
+      <app-util-glyph-grid [searchPhrase]="glyphSearch"></app-util-glyph-grid>
+    </app-collapsible-section>
+  </app-side-panel>
 
-  <!-- In the middle is the canvas -->
-  <div ng-sidebar-content>
+  <!-- CENTER: canvas. The panel widths are published as CSS vars so the floating canvas widgets
+       (zoom controls, problems, hierarchy preview) sit beside the panels and track them. -->
+  <div
+    class="canvas-area"
+    [style.--left-panel-w]="leftPanel.outerWidth + 'px'"
+    [style.--right-panel-w]="rightPanel.outerWidth + 'px'"
+  >
     <app-canvas></app-canvas>
     <app-problems></app-problems>
     <app-hierarchy-preview></app-hierarchy-preview>
     <app-zoom-controls></app-zoom-controls>
   </div>
 
-</mat-sidenav-container>
+  <!-- RIGHT: inspector -->
+  <app-side-panel #rightPanel="sidePanel" side="right" panelName="INSPECTOR" [showSearch]="false">
+    <app-collapsible-section title="Info">
+      <app-info-editor></app-info-editor>
+    </app-collapsible-section>
+    <app-collapsible-section title="Model" [initialCollapsed]="true">
+      <app-model-editor></app-model-editor>
+    </app-collapsible-section>
+    <app-collapsible-section title="Design" [initialCollapsed]="true">
+      <app-color-palette></app-color-palette>
+    </app-collapsible-section>
+  </app-side-panel>
+
+</div>

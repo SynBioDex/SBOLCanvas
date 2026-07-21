@@ -1,0 +1,109 @@
+<div
+  #panelEl
+  class="side-panel"
+  [class.collapsed]="collapsed"
+  [class.side-left]="side === 'left'"
+  [class.side-right]="side === 'right'"
+  [style.width.px]="collapsed ? null : width"
+>
+  <!-- RAIL (shown when collapsed) -->
+  <div class="rail">
+    <button
+      type="button"
+      class="panel-toggle"
+      (click)="togglePanel()"
+      [attr.aria-expanded]="!collapsed"
+      [attr.aria-controls]="scrollAreaId"
+      [attr.aria-label]="'Expand ' + panelName + ' panel'"
+    >
+      <span
+        class="caret"
+        [class.caret-right]="side === 'left'"
+        [class.caret-left]="side === 'right'"
+        aria-hidden="true"
+      ></span>
+    </button>
+
+    <button
+      type="button"
+      class="rail-chip"
+      *ngFor="let s of sectionList"
+      (click)="onChipClick(s)"
+      [attr.aria-label]="s.title"
+    >
+      <span class="rail-chip-label" aria-hidden="true">{{ s.title }}</span>
+    </button>
+  </div>
+
+  <!-- EXPANDED CHROME (shown when not collapsed) -->
+  <div class="expanded">
+    <div class="title-bar">
+      <!-- Toggle sits on the outer edge per side: left is name then toggle,
+           right is toggle then name. -->
+      <ng-container *ngIf="side === 'left'">
+        <span class="panel-name">{{ panelName }}</span>
+        <button
+          type="button"
+          class="panel-toggle"
+          (click)="togglePanel()"
+          [attr.aria-expanded]="!collapsed"
+          [attr.aria-controls]="scrollAreaId"
+          [attr.aria-label]="'Collapse ' + panelName + ' panel'"
+        >
+          <span class="caret caret-left" aria-hidden="true"></span>
+        </button>
+      </ng-container>
+
+      <ng-container *ngIf="side === 'right'">
+        <button
+          type="button"
+          class="panel-toggle"
+          (click)="togglePanel()"
+          [attr.aria-expanded]="!collapsed"
+          [attr.aria-controls]="scrollAreaId"
+          [attr.aria-label]="'Collapse ' + panelName + ' panel'"
+        >
+          <span class="caret caret-right" aria-hidden="true"></span>
+        </button>
+        <span class="panel-name">{{ panelName }}</span>
+      </ng-container>
+    </div>
+
+    <div class="all-row" [class.align-end]="side === 'right'">
+      <button type="button" class="link" [disabled]="searchActive" (click)="expandAll()">Expand all</button>
+      <span class="dot" aria-hidden="true">·</span>
+      <button type="button" class="link" [disabled]="searchActive" (click)="collapseAll()">Collapse all</button>
+    </div>
+
+    <div class="search" *ngIf="showSearch">
+      <input
+        type="search"
+        placeholder="Search..."
+        [value]="searchPhrase"
+        (input)="onSearchInput($any($event.target).value)"
+        aria-label="Search"
+      />
+    </div>
+
+    <div class="scroll-area" [id]="scrollAreaId" #scrollArea>
+      <ng-content></ng-content>
+    </div>
+  </div>
+
+  <!-- RESIZE GRABBER (absent from the DOM when collapsed) -->
+  <div
+    *ngIf="!collapsed"
+    class="grabber"
+    role="separator"
+    aria-orientation="vertical"
+    tabindex="0"
+    aria-label="Resize panel"
+    [attr.aria-valuenow]="width"
+    [attr.aria-valuemin]="minWidth"
+    [attr.aria-valuemax]="maxWidth"
+    (pointerdown)="onGrabberPointerDown($event)"
+    (pointermove)="onGrabberPointerMove($event)"
+    (pointerup)="onGrabberPointerUp($event)"
+    (pointercancel)="onGrabberPointerUp($event)"
+  ></div>
+</div>

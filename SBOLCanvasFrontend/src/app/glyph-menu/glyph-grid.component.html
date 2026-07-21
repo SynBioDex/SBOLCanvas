@@ -1,0 +1,19 @@
+<div class="glyph-grid" appGlyphDragsources>
+  <button
+    type="button"
+    class="glyph-tile"
+    *ngFor="let pair of glyphs | keyvalue: keepOrder; trackBy: trackByKey"
+    [hidden]="!matches(pair.key)"
+    (click)="glyphClicked.emit(pair.key)"
+    [matTooltip]="pair.key"
+    [attr.aria-label]="pair.key"
+  >
+    <svg
+      [attr.elementType]="elementType"
+      [attr.glyphStyle]="pair.key"
+      width="52px"
+      height="52px"
+      [innerHTML]="pair.value"
+    ></svg>
+  </button>
+</div>

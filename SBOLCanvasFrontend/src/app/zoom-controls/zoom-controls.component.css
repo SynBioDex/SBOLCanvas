@@ -1,10 +1,12 @@
 .zoom-controls {
     position: absolute;
     top: -8px;
-    left: 4px;
+    /* Placed next to left panel, moves with collapse/resize. */
+    left: calc(var(--left-panel-w, 0px) + 4px);
     display: flex;
     flex-direction: row;
     padding: 8px;
 
     transform: scale(0.9);
+    transition: left 260ms cubic-bezier(0.4, 0, 0.2, 1);
 }
