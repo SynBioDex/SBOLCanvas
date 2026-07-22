@@ -1,0 +1,40 @@
+.glyph-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.glyph-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+
+  // Search hides non-matching tiles via [hidden]; this out-specifies the display:flex above so
+  // the UA hidden rule actually takes effect (the tile stays in the DOM, keeping its drag source).
+  &[hidden] {
+    display: none;
+  }
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  cursor: grab;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #3f51b5;
+    outline-offset: 1px;
+  }
+
+  svg {
+    width: 52px;
+    height: 52px;
+    // No pointer-events:none -- mxGraph registers the drag source on the <svg>, so it
+    // must receive pointer events.
+  }
+}

@@ -1,0 +1,25 @@
+<div class="section" [class.collapsed]="isCollapsed">
+  <button
+    type="button"
+    class="section-heading"
+    [id]="headingId"
+    [attr.aria-expanded]="!isCollapsed"
+    [attr.aria-controls]="bodyId"
+    (click)="toggle()"
+  >
+    <span class="section-title">{{ title }}</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </button>
+
+  <!-- Keep the body in the DOM when collapsed ([hidden], not *ngIf) so projected glyph grids
+       keep their mxGraph drag listeners. -->
+  <div
+    class="section-body"
+    [id]="bodyId"
+    role="region"
+    [attr.aria-labelledby]="headingId"
+    [hidden]="isCollapsed"
+  >
+    <ng-content></ng-content>
+  </div>
+</div>

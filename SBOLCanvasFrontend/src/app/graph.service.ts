@@ -41,10 +41,64 @@ export class GraphService extends GraphHelpers {
         // handle selection changes
         this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange))
         
-        // handle double click on glyph to enter it
-        this.graph.addListener(mx.mxEvent.DOUBLE_CLICK, mx.mxUtils.bind(this, this.enterGlyph))
-        
-        
+        // double-click a glyph's name label to rename it inline
+        this.graph.addListener(mx.mxEvent.DOUBLE_CLICK, mx.mxUtils.bind(this, this.onCanvasDoubleClick))
+
+        // Override mxGraph's label commit so renames write the GlyphInfo/ModuleInfo name,
+        // not cell.value (which holds the URI key).
+        let graphService = this
+        let mxGetEditingValue = mx.mxGraph.prototype.getEditingValue
+        this.graph.getEditingValue = function (cell, evt) {
+            if (graphService.isInlineRenamable(cell)) {
+                let info = <GlyphInfo>graphService.getFromInfoDict(cell.value)
+                if (info) {
+                    return info.name != null ? info.name : ''
+                }
+            }
+            return mxGetEditingValue.apply(this, arguments)
+        }
+        let mxCellLabelChanged = mx.mxGraph.prototype.cellLabelChanged
+        this.graph.cellLabelChanged = function (cell, value, autoSize) {
+            if (graphService.isInlineRenamable(cell)) {
+                let info = <GlyphInfo>graphService.getFromInfoDict(cell.value)
+                if (info) {
+                    let copy = <GlyphInfo>info.makeCopy()
+                    copy.name = value
+                    if (graphService.graph.getSelectionCell() !== cell) {
+                        graphService.graph.setSelectionCell(cell)
+                    }
+                    graphService.setSelectedCellInfo(copy)
+                    return
+                }
+            }
+            mxCellLabelChanged.apply(this, arguments)
+        }
+
+        // Give renamable name labels a text cursor so they read as editable on hover.
+        let baseRedrawLabel = this.graph.cellRenderer.redrawLabel
+        this.graph.cellRenderer.redrawLabel = function (state, forced) {
+            baseRedrawLabel.apply(this, arguments)
+            if (state && state.text && state.text.node && state.cell &&
+                graphService.isInlineRenamable(state.cell)) {
+                let labels = state.text.node.getElementsByTagName('text')
+                for (let i = 0; i < labels.length; i++) {
+                    labels[i].style.cursor = 'text'
+                }
+            }
+        }
+
+        // Enter commits a rename on renamable cells; text boxes keep multiline Enter.
+        let cellEditor: any = this.graph.cellEditor
+        let baseIsStopEditingEvent = cellEditor.isStopEditingEvent
+        cellEditor.isStopEditingEvent = function (evt) {
+            if (evt.keyCode == 13 && !mx.mxEvent.isControlDown(evt) && !mx.mxEvent.isShiftDown(evt) &&
+                graphService.isInlineRenamable(this.editingCell)) {
+                return true
+            }
+            return baseIsStopEditingEvent.apply(this, arguments)
+        }
+
+
         // --- For when SBOLCanvas is embedded in another app ---
 
         // Plasmid files from SynBioSuite should only open in Component Mode
@@ -454,6 +508,39 @@ export class GraphService extends GraphHelpers {
     isComponentView(){
         let cell = this.graph.getSelectionCells()[0];
         return (!cell && this.graph.getCurrentRoot().isComponentView()) || (cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isCircuitContainer()))
+    }
+
+    /**
+     * Routes a canvas double-click on a glyph's name label to inline rename.
+     * Consuming suppresses mxGraph's default double-click editor, which would
+     * edit the URI stored in cell.value.
+     */
+    onCanvasDoubleClick(sender, evt) {
+        let cell = evt.getProperty('cell')
+        if (cell) {
+            if (this.isInlineRenamable(cell) && this.isPointOnLabel(cell, evt.getProperty('event'))) {
+                this.graph.setSelectionCell(cell)
+                this.graph.startEditingAtCell(cell, evt.getProperty('event'))
+            } else {
+                this.graph.setSelectionCell(cell)
+                this.enterGlyph()
+            }
+            evt.consume()
+        }
+    }
+
+    /** Cells whose name label can be renamed inline (they carry a GlyphInfo/ModuleInfo name). */
+    isInlineRenamable(cell) {
+        return cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isModule())
+    }
+
+    isPointOnLabel(cell, mouseEvt) {
+        let state = this.graph.getView().getState(cell)
+        if (!state || !state.text || !state.text.boundingBox) {
+            return false
+        }
+        let pt = mx.mxUtils.convertPoint(this.graph.container, mx.mxEvent.getClientX(mouseEvt), mx.mxEvent.getClientY(mouseEvt))
+        return mx.mxUtils.contains(state.text.boundingBox, pt.x, pt.y)
     }
 
     /**

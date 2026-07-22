@@ -34,7 +34,9 @@
     margin: 10px;
     margin-right: 20px;
     position: absolute;
-    right: 0;
+    /* Placed next to right panel, moves with collapse/resize. */
+    right: var(--right-panel-w, 0px);
+    transition: right 260ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .problem-item {

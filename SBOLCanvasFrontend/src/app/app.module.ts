@@ -5,7 +5,10 @@ import { ReactiveFormsModule } from '@angular/forms'; // Added for color picker.
 
 import { AppComponent } from './app.component';
 import { ToolbarComponent } from './toolbar/toolbar.component';
-import { GlyphMenuComponent } from './glyph-menu/glyph-menu.component';
+import { GlyphGridComponent } from './glyph-menu/glyph-grid.component';
+import { UtilGlyphGridComponent } from './glyph-menu/util-glyph-grid.component';
+import { GlyphDragsourcesDirective } from './glyph-menu/glyph-dragsources.directive';
+import { GlyphPaletteService } from './glyph-menu/glyph-palette.service';
 import { CanvasComponent } from './canvas/canvas.component';
 import { DesignMenuComponent } from './design-menu/design-menu.component';
 import { InfoEditorComponent } from './info-editor/info-editor.component';
@@ -37,7 +40,6 @@ import { UploadGraphComponent } from './upload-graph/upload-graph.component';
 import { LoginComponent } from './login/login.component';
 import { DownloadGraphComponent } from './download-graph/download-graph.component';
 import { ErrorComponent } from './error/error.component';
-import { SearchfilterPipe } from './searchfilter.pipe';
 import { ExportImageComponent } from './export-image/export-image.component';
 import { LandingPageComponent } from './landing-page/landing-page.component';
 import { TutorialComponent } from './tutorial/tutorial.component';
@@ -48,12 +50,16 @@ import { CollectionCreationComponent } from './collection-creation/collection-cr
 import { CombinatorialDesignEditorComponent } from './combinatorial-design-editor/combinatorial-design-editor.component';
 import { LoadGraphComponent } from './load-graph/load-graph.component';
 import { EmbeddedService } from './embedded.service';
+import { SidePanelComponent } from './side-panel/side-panel.component';
+import { CollapsibleSectionComponent } from './side-panel/collapsible-section.component';
 
 
 @NgModule({ declarations: [
         AppComponent,
         ToolbarComponent,
-        GlyphMenuComponent,
+        GlyphGridComponent,
+        UtilGlyphGridComponent,
+        GlyphDragsourcesDirective,
         CanvasComponent,
         DesignMenuComponent,
         InfoEditorComponent,
@@ -69,7 +75,6 @@ import { EmbeddedService } from './embedded.service';
         LoginComponent,
         DownloadGraphComponent,
         ErrorComponent,
-        SearchfilterPipe,
         ExportImageComponent,
         LandingPageComponent,
         TutorialComponent,
@@ -78,7 +83,9 @@ import { EmbeddedService } from './embedded.service';
         ExportDesignComponent,
         CollectionCreationComponent,
         CombinatorialDesignEditorComponent,
-        LoadGraphComponent
+        LoadGraphComponent,
+        SidePanelComponent,
+        CollapsibleSectionComponent
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         FormsModule,
@@ -88,7 +95,7 @@ import { EmbeddedService } from './embedded.service';
         ReactiveFormsModule,
         MaterialModule,
         FlexLayoutModule,
-        ColorPickerModule], providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, {
+        ColorPickerModule], providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, GlyphPaletteService, {
             provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
         }, provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule {

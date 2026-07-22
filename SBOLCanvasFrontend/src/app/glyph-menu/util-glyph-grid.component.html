@@ -1,0 +1,75 @@
+<div class="glyph-grid" appGlyphDragsources>
+  <button
+    type="button"
+    class="glyph-tile"
+    [hidden]="!palette.utilTileVisible('backbone', searchPhrase)"
+    (click)="palette.addBackbone()"
+    matTooltip="Backbone"
+    aria-label="Backbone"
+  >
+    <svg [attr.elementType]="palette.elementTypes.BACKBONE" width="52px" height="52px"
+         [innerHTML]="palette.utilsDict['backbone']"></svg>
+  </button>
+
+  <button
+    type="button"
+    class="glyph-tile"
+    [hidden]="!palette.utilTileVisible('textBox', searchPhrase)"
+    (click)="palette.addTextBox()"
+    matTooltip="Text box"
+    aria-label="Text box"
+  >
+    <svg [attr.elementType]="palette.elementTypes.TEXT_BOX" width="52px" height="52px"
+         [innerHTML]="palette.utilsDict['textBox']"></svg>
+  </button>
+
+  <button
+    type="button"
+    class="glyph-tile"
+    [hidden]="!palette.utilTileVisible('circularPlasmid', searchPhrase)"
+    (click)="palette.addCircularPlasmid()"
+    matTooltip="Cir (Circular Backbone)"
+    aria-label="Circular Backbone"
+  >
+    <svg [attr.elementType]="palette.elementTypes.SEQUENCE_FEATURE"
+         glyphStyle="Cir (Circular Backbone)" width="52px" height="52px"
+         [innerHTML]="palette.utilsDict['Cir (Circular Backbone)']"></svg>
+  </button>
+
+  <button
+    type="button"
+    class="glyph-tile"
+    [hidden]="!palette.utilTileVisible('chromosomalLocus', searchPhrase)"
+    (click)="palette.addChromosomalLocus()"
+    matTooltip="Chromosomal Locus"
+    aria-label="Chromosomal Locus"
+  >
+    <svg [attr.elementType]="palette.elementTypes.SEQUENCE_FEATURE"
+         glyphStyle="Chromosomal-locus" width="52px" height="52px"
+         [innerHTML]="palette.utilsDict['Chromosomal-locus']"></svg>
+  </button>
+
+  <button
+    type="button"
+    class="glyph-tile"
+    [hidden]="!palette.utilTileVisible('module', searchPhrase)"
+    (click)="palette.addModule()"
+    matTooltip="Module"
+    aria-label="Module"
+  >
+    <svg [attr.elementType]="palette.elementTypes.MODULE" width="52px" height="52px"
+         [innerHTML]="palette.utilsDict['module']"></svg>
+  </button>
+
+  <button
+    type="button"
+    class="glyph-tile"
+    [hidden]="!palette.utilTileVisible('event', searchPhrase)"
+    (click)="palette.addEvent()"
+    matTooltip="Event"
+    aria-label="Event"
+  >
+    <svg [attr.elementType]="palette.elementTypes.EVENT" width="52px" height="52px"
+         [innerHTML]="palette.utilsDict['event']"></svg>
+  </button>
+</div>
