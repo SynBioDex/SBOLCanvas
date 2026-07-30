@@ -84,7 +84,7 @@ public class Convert extends HttpServlet {
 		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException
 				| TransformerException | SAXException | TransformerFactoryConfigurationError | URISyntaxException | SynBioHubException | javax.xml.stream.XMLStreamException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
-			String message = e.getMessage() != null ? e.getMessage() : "Export failed";
+			String message = errorMessage(e);
 			InputStream inputStream = new ByteArrayInputStream(message.getBytes());
 			IOUtils.copy(inputStream, outputStream);
 
@@ -92,7 +92,7 @@ public class Convert extends HttpServlet {
 			e.printStackTrace();
 		} catch (RuntimeException e) {
 			// Catch unchecked exceptions from SBML export
-			String message = e.getMessage() != null ? e.getMessage() : "Export failed";
+			String message = errorMessage(e);
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(message.getBytes());
 			IOUtils.copy(inputStream, outputStream);
@@ -100,6 +100,11 @@ public class Convert extends HttpServlet {
 			response.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 			e.printStackTrace();
 		}
+	}
+
+	private static String errorMessage(Throwable e) {
+		String message = e.getMessage();
+		return message != null ? e.getClass().getSimpleName() + ": " + message : e.getClass().getSimpleName();
 	}
 
 }
