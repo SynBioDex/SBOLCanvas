@@ -3,9 +3,7 @@
 import { GlyphService } from './glyph.service';
 import { GraphEdits } from './graph-edits';
 import { GlyphInfo } from './glyphInfo';
-import * as mxCell from 'mxgraph';
-import * as mxDragSource from 'mxgraph';
-import * as mxGraph from 'mxgraph';
+import type { mxCell, mxDragSource, mxGraph } from 'src/mxgraph';
 import { ConfirmComponent } from './confirm/confirm.component';
 import { MatDialog } from '@angular/material/dialog';
 import { GraphBase, mx } from './graph-base';
@@ -1297,7 +1295,7 @@ export class GraphHelpers extends GraphBase {
             }
         } else {
             layout.execute(this.graph.getDefaultParent())
-            for (let viewChild of this.graph.getDefualtParent().children) {
+            for (let viewChild of this.graph.getDefaultParent().children) {
                 if (viewChild.isEdge()) {
                     viewChild.setStyle(viewChild.getStyle().replace("noEdgeStyle=1;", ""))
                 }

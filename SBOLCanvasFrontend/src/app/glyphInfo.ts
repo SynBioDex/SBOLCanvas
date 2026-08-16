@@ -21,7 +21,7 @@ export class GlyphInfo extends Info {
     annotations: CanvasAnnotation[];
     derivedFroms: string[];
     generatedBys: string[];
-    simulationData = {};
+    simulationData: Record<string, number | string | boolean> = {};
 
     constructor({
         id,

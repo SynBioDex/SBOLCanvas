@@ -10,11 +10,11 @@ export class InteractionInfo extends Info {
   interactionType: string;
 
   // treat these as dictionaries, not arrays
-  sourceRefinement = [];
-  targetRefinement = [];
+  sourceRefinement: Record<string, string> = {};
+  targetRefinement: Record<string, string> = {};
   fromURI = [];
   toURI = [];
-  simulationData = {};
+  simulationData: Record<string, number | string | boolean> = {};
 
   constructor() {
     super();

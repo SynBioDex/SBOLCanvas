@@ -2,7 +2,7 @@ import { Info } from './info';
 import { environment } from 'src/environments/environment';
 
 export class EventInfo extends Info {
-    simulationData = {};
+    simulationData: Record<string, number | string | boolean> = {};
 
     constructor() {
         super();

@@ -7,7 +7,7 @@
 ///// <reference path="./graph-base.ts"/>
 
 import { Injectable } from '@angular/core';
-import * as mxCell from 'mxgraph';
+import type { mxCell } from 'src/mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { MetadataService } from './metadata.service';
 import { GlyphService } from './glyph.service';
@@ -277,7 +277,7 @@ export class GraphService extends GraphHelpers {
 
     isSelectedTargetEdge(): boolean {
         let selected = this.graph.getSelectionCells()
-        if (selected.lengh > 1 || selected.length == 0 || !selected[0].isInteraction()) {
+        if (selected.length > 1 || selected.length == 0 || !selected[0].isInteraction()) {
             return false
         }
 
@@ -286,7 +286,7 @@ export class GraphService extends GraphHelpers {
 
     isSelectedSourceEdge(): boolean {
         let selected = this.graph.getSelectionCells()
-        if (selected.lengh > 1 || selected.length == 0 || !selected[0].isInteraction()) {
+        if (selected.length > 1 || selected.length == 0 || !selected[0].isInteraction()) {
             return false
         }
 
@@ -1972,7 +1972,7 @@ export class GraphService extends GraphHelpers {
                 || selectionCells[0].isModule())) ||
                 (selectionCells.length == 2 && selectionCells[0].isCircularBackbone())) {
             // We're making a new cell to replace the selected one
-            let selectedCircularCells: mxCell[] = undefined // Used only if importing Ciruclar Backbones
+            let selectedCircularCells: mxCell[] = undefined // Used only if importing Circular Backbones
             let selectedCell
             if (selectionCells.length > 0) {
                 selectedCell = selectionCells[0]
@@ -2155,8 +2155,8 @@ export class GraphService extends GraphHelpers {
                             // copy to new dict as new id's may conflict with old
                             let newTo = []
                             let newFrom = []
-                            let newSource = []
-                            let newTarget = []
+                            let newSource: Record<string, string> = {};
+                            let newTarget: Record<string, string> = {};
                             let infoCopy = this.getFromInteractionDict(child.value).makeCopy()
                             for (let k = 0; k < child.edges.length; k++) {
                                 let edge = child.edges[k]
@@ -2323,7 +2323,7 @@ export class GraphService extends GraphHelpers {
         this.tempViewStack = [];
         this.clickedSequenceFeature = "";
       
-        // initalize the GlyphInfoDictionary
+        // initialize the GlyphInfoDictionary
         const cell0 = this.graph.getModel().getCell(0);
         const infoDict = [];
         const combinatorialDict = [];

@@ -23,26 +23,26 @@ import { registerInputSave } from '../input-save.util';
 
 export class InfoEditorComponent implements OnInit, OnDestroy {
 
-  registries: string[];
+  registries: string[] = [];
 
   // placeholders that get generated from http calls
-  partTypes: string[];
-  partRoles: string[];
-  partRefinements: string[]; // these depend on role
-  filteredPartRefinements: string[];
-  interactionTypes: string[];
-  filteredInteractionTypes: string[];
-  interactionRoles: {};
-  interactionSourceRefinements: String[];
-  interactionTargetRefinements: String[];
+  partTypes: string[] = [];
+  partRoles: string[] = [];
+  partRefinements: string[] = []; // these depend on role
+  filteredPartRefinements: string[] = [];
+  interactionTypes: string[] = [];
+  filteredInteractionTypes: string[] = [];
+  interactionRoles: Record<string, string[]> = {};
+  interactionSourceRefinements: string[] = [];
+  interactionTargetRefinements: string[] = [];
 
   // TODO get these from the backend
-  encodings: string[];
+  encodings: string[] = [];
 
-  glyphInfo: GlyphInfo;
-  moduleInfo: ModuleInfo;
-  interactionInfo: InteractionInfo;
-  glyphCtrl: FormControl;
+  glyphInfo: GlyphInfo | null = null;
+  moduleInfo: ModuleInfo | null = null;
+  interactionInfo: InteractionInfo | null = null;
+  glyphCtrl = new FormControl('', Validators.required);
 
 
   private teardownSave: (() => void) | null = null;
@@ -67,12 +67,14 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
   }
 
   getTypes() {
-    this.metadataService.loadTypes().subscribe(types => this.partTypes = types.filter(type => type != "Circular" && type != "Chromosomal"));
+    this.metadataService.loadTypes().subscribe((types: string[]) => {
+      this.partTypes = types.filter((type: string) => type != "Circular" && type != "Chromosomal");
+    });
   }
 
   getRoles() {
-    this.metadataService.loadRoles().subscribe(roles => {
-      this.partRoles = roles.filter(role => !role.includes("Cir (Circular Backbone Left") && !role.includes("Cir (Circular Backbone Right)"));
+    this.metadataService.loadRoles().subscribe((roles: string[]) => {
+      this.partRoles = roles.filter((role: string) => !role.includes("Cir (Circular Backbone Left") && !role.includes("Cir (Circular Backbone Right)"));
     });
   }
 
@@ -84,57 +86,75 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
   }
 
   getInteractions() {
-    this.metadataService.loadInteractions().subscribe(interactions => this.interactionTypes = interactions);
+    this.metadataService.loadInteractions().subscribe((interactions: string[]) => this.interactionTypes = interactions);
   }
 
   getInteractionRoles() {
-    this.metadataService.loadInteractionRoles().subscribe(interactionRoles => this.interactionRoles = interactionRoles);
+    this.metadataService.loadInteractionRoles().subscribe((interactionRoles: Record<string, string[]>) => {
+      this.interactionRoles = interactionRoles;
+    });
   }
 
   getInteractionSourceRefinements(sourceRole: string) {
-    this.metadataService.loadInteractionRoleRefinements(sourceRole).subscribe(sourceRefinements => this.interactionSourceRefinements = sourceRefinements);
+    this.metadataService.loadInteractionRoleRefinements(sourceRole).subscribe((sourceRefinements: string[]) => {
+      this.interactionSourceRefinements = sourceRefinements;
+    });
   }
 
   getInteractionTargetRefinements(targetRole: string) {
-    this.metadataService.loadInteractionRoleRefinements(targetRole).subscribe(targetRefinements => this.interactionTargetRefinements = targetRefinements);
+    this.metadataService.loadInteractionRoleRefinements(targetRole).subscribe((targetRefinements: string[]) => {
+      this.interactionTargetRefinements = targetRefinements;
+    });
   }
 
   dropDownChange(event: MatSelectChange) {
     this.filteredPartRefinements = this.partRefinements; // Reset filter input when clicking on dropdown again
     const id = event.source.id;
+    const glyphInfo = this.glyphInfo;
+    const interactionInfo = this.interactionInfo;
     switch (id) {
       case 'partType': {
-        this.glyphInfo.partType = event.value;
+        if (glyphInfo) {
+          glyphInfo.partType = event.value;
+        }
         break;
       }
       case 'partRole': {
-        this.glyphInfo.partRole = event.value;
-        this.glyphInfo.partRefine = '';
+        if (glyphInfo) {
+          glyphInfo.partRole = event.value;
+          glyphInfo.partRefine = '';
         if (event.value !== '') {
           this.getRefinements(event.value);
         } else {
           this.partRefinements = [];
         }
+        }
         break;
       }
       case 'partRefinement': {
-        if (event.value != 'none') {
-          this.glyphInfo.partRefine = event.value;
+        if (glyphInfo && event.value != 'none') {
+          glyphInfo.partRefine = event.value;
         }
         break;
       }
       case 'interactionType': {
-        this.interactionInfo.interactionType = event.value;
+        if (interactionInfo) {
+          interactionInfo.interactionType = event.value;
         this.getInteractionSourceRefinements(event.value);
         this.getInteractionTargetRefinements(event.value);
+        }
         break;
       }
       case 'interactionSourceRefinement': {
-        this.interactionInfo.sourceRefinement[this.graphService.getSelectedCellID()] = event.value;
+        if (interactionInfo) {
+          interactionInfo.sourceRefinement[this.graphService.getSelectedCellID()] = event.value;
+        }
         break;
       }
       case 'interactionTargetRefinement': {
-        this.interactionInfo.targetRefinement[this.graphService.getSelectedCellID()] = event.value;
+        if (interactionInfo) {
+          interactionInfo.targetRefinement[this.graphService.getSelectedCellID()] = event.value;
+        }
         break;
       } default: {
         console.log('Unexpected id encountered in info menu dropdown = ' + id);
@@ -142,55 +162,60 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (this.glyphInfo != null) {
-      this.graphService.setSelectedCellInfo(this.glyphInfo);
-    } else if (this.interactionInfo != null) {
-      this.graphService.setSelectedCellInfo(this.interactionInfo);
+    if (glyphInfo != null) {
+      this.graphService.setSelectedCellInfo(glyphInfo);
+    } else if (interactionInfo != null) {
+      this.graphService.setSelectedCellInfo(interactionInfo);
     }
   }
 
 
   inputChange(event: any) {
     const id = event.target.id;
+    const glyphInfo = this.glyphInfo;
+    const moduleInfo = this.moduleInfo;
+    const interactionInfo = this.interactionInfo;
 
     switch (id) {
       case 'displayID': {
         const replaced = event.target.value.replace(/[\W_]+/g, '_');
-        if (this.glyphInfo != null) {
+        if (glyphInfo != null) {
           if (replaced !== '') {
             //this.promptDisplayID();  
-            this.glyphInfo.displayID = replaced;
+            glyphInfo.displayID = replaced;
           }
-        } else if (this.interactionInfo != null) {
-          this.interactionInfo.displayID = replaced;
-        } else if (this.moduleInfo) {
-          this.moduleInfo.displayID = replaced;
+        } else if (interactionInfo != null) {
+          interactionInfo.displayID = replaced;
+        } else if (moduleInfo != null) {
+          moduleInfo.displayID = replaced;
         }
         break;
       }
       case 'name': {
-        if (this.glyphInfo)
-          this.glyphInfo.name = event.target.value;
-        else if (this.moduleInfo)
-          this.moduleInfo.name = event.target.value;
+        if (glyphInfo)
+          glyphInfo.name = event.target.value;
+        else if (moduleInfo)
+          moduleInfo.name = event.target.value;
         break;
       }
       case 'description': {
-        if (this.glyphInfo)
-          this.glyphInfo.description = event.target.value;
-        else if (this.moduleInfo)
-          this.moduleInfo.description = event.target.value;
+        if (glyphInfo)
+          glyphInfo.description = event.target.value;
+        else if (moduleInfo)
+          moduleInfo.description = event.target.value;
         break;
       }
       case 'version': {
-        if (this.glyphInfo)
-          this.glyphInfo.version = event.target.value;
-        else if (this.moduleInfo)
-          this.moduleInfo.version = event.target.value;
+        if (glyphInfo)
+          glyphInfo.version = event.target.value;
+        else if (moduleInfo)
+          moduleInfo.version = event.target.value;
         break;
       }
       case 'sequence': {
-        this.glyphInfo.sequence = event.target.value;
+        if (glyphInfo) {
+          glyphInfo.sequence = event.target.value;
+        }
         break;
       }
       default: {
@@ -199,12 +224,12 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
       }
     }
 
-    if (this.glyphInfo != null) {
-      this.graphService.setSelectedCellInfo(this.glyphInfo);
-    } else if (this.interactionInfo != null) {
-      this.graphService.setSelectedCellInfo(this.interactionInfo);
-    } else if (this.moduleInfo != null) {
-      this.graphService.setSelectedCellInfo(this.moduleInfo);
+    if (glyphInfo != null) {
+      this.graphService.setSelectedCellInfo(glyphInfo);
+    } else if (interactionInfo != null) {
+      this.graphService.setSelectedCellInfo(interactionInfo);
+    } else if (moduleInfo != null) {
+      this.graphService.setSelectedCellInfo(moduleInfo);
     }
   }
 
@@ -233,24 +258,25 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
    * Updates both the glyph info in the form and in the graph.
    * @param glyphInfo
    */
-  glyphInfoUpdated(glyphInfo: GlyphInfo) {
-    this.glyphInfo = glyphInfo;
+  glyphInfoUpdated(glyphInfo: GlyphInfo | null) {
+    const updatedGlyphInfo = glyphInfo;
+    this.glyphInfo = updatedGlyphInfo;
 
-    this.glyphCtrl = new FormControl(`${this.glyphInfo?.displayID}`, Validators.required);
-    if (glyphInfo != null) {
-      if (glyphInfo.partRole != null) {
-        if (this.glyphInfo.partRole.includes("Cir (Circular Backbone")) {
+    this.glyphCtrl = new FormControl(`${updatedGlyphInfo?.displayID ?? ''}`, Validators.required);
+    if (updatedGlyphInfo != null) {
+      if (updatedGlyphInfo.partRole != null) {
+        if (updatedGlyphInfo.partRole.includes("Cir (Circular Backbone")) {
           // fixes the part role name so it will show up in the info-editor
-          this.glyphInfo.partRole = "Cir (Circular Backbone)";
+          updatedGlyphInfo.partRole = "Cir (Circular Backbone)";
 
           // for some reason part refinements are not gotten for circular backbones correctly
-          if (this.glyphInfo.partRefine !== undefined && !this.partRefinements.includes(this.glyphInfo.partRefine)) {
+          if (updatedGlyphInfo.partRefine !== undefined && !this.partRefinements.includes(updatedGlyphInfo.partRefine)) {
             // if partRefine is not undefined the part refinement list needs to be manually set
-            this.partRefinements = [this.glyphInfo.partRefine];
+            this.partRefinements = [updatedGlyphInfo.partRefine];
           }
         }
 
-        if (this.glyphInfo.partRefine == undefined) this.getRefinements(this.glyphInfo.partRole);
+        if (updatedGlyphInfo.partRefine == undefined) this.getRefinements(updatedGlyphInfo.partRole);
       } else {
         this.partRefinements = [];
       }
@@ -264,7 +290,7 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
   /**
    * Updates both the module info in the form and in the graph.
    */
-  moduleInfoUpdated(moduleInfo: ModuleInfo) {
+  moduleInfoUpdated(moduleInfo: ModuleInfo | null) {
     this.moduleInfo = moduleInfo;
     // this needs to be called because we may have gotten here from an async function
     // an async function doesn't update the view for some reason
@@ -274,10 +300,11 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
   /**
    * Updates both the interaction info in the form and in the graph.
    */
-  interactionInfoUpdated(interactionInfo: InteractionInfo) {
-    this.interactionInfo = interactionInfo;
-    if (interactionInfo != null) {
-      if (interactionInfo.interactionType != null) {
+  interactionInfoUpdated(interactionInfo: InteractionInfo | null) {
+    const updatedInteractionInfo = interactionInfo;
+    this.interactionInfo = updatedInteractionInfo;
+    if (updatedInteractionInfo != null) {
+      if (updatedInteractionInfo.interactionType != null) {
         this.getInteractionSourceRefinements(this.getSourceInteractionRole());
         this.getInteractionTargetRefinements(this.getTargetInteractionRole());
       } else {
@@ -322,14 +349,22 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
   }
 
   getSourceInteractionRole() {
-    const interactionRole = this.interactionRoles[this.interactionInfo.interactionType];
+    const interactionType = this.interactionInfo?.interactionType;
     const NA = "NA";
+    if (!interactionType) {
+      return NA;
+    }
+    const interactionRole = this.interactionRoles[interactionType];
     return interactionRole ? interactionRole[0] || NA : NA;
   }
 
   getTargetInteractionRole() {
-    const interactionRole = this.interactionRoles[this.interactionInfo.interactionType];
+    const interactionType = this.interactionInfo?.interactionType;
     const NA = "NA";
+    if (!interactionType) {
+      return NA;
+    }
+    const interactionRole = this.interactionRoles[interactionType];
     return interactionRole ? interactionRole[1] || NA : NA;
   }
 
