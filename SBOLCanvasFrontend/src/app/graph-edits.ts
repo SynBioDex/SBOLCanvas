@@ -1,6 +1,5 @@
-import * as mxCell from 'mxgraph';
 import { GlyphInfo } from './glyphInfo';
-import { mxGraphView } from 'src/mxgraph';
+import type { mxCell, mxGraphView } from 'src/mxgraph';
 import { GraphService } from './graph.service';
 import { Info } from './info';
 import { mx, GraphBase } from './graph-base';
@@ -68,7 +67,7 @@ export class GraphEdits {
          * @param info The info you want to put in the dictionary (or null if removing)
          * @param previousInfo The info that is already there (or null if adding)
          */
-        constructor(cell0: string, info: Info, previousInfo: Info, dictionaryIndex = GraphBase.INFO_DICT_INDEX) {
+        constructor(cell0: mxCell, info: Info, previousInfo: Info, dictionaryIndex = GraphBase.INFO_DICT_INDEX) {
             this.cell0 = cell0;
             // store them in reverse so the execute performs the action the first time
             this.info = previousInfo;

@@ -6243,7 +6243,7 @@ export class mxGraphModel extends mxEventSource {
    *
    * @param id - A string representing the Id of the cell.
    */
-  getCell(id: string): mxCell;
+  getCell(id: string | number): mxCell;
   /**
    * Returns the cells from the given array where the given filter function
    * returns true.
@@ -11543,7 +11543,7 @@ export class mxGraph extends mxEventSource {
    * cells - Array of <mxCells> to move to the background. If null is
    * specified then the selection cells are used.
    */
-  orderCells(back: any, cells: any): any;
+  orderCells(back: any, cells?: any): any;
   /**
    * Moves the given cells to the front or back. This method fires
    * <mxEvent.CELLS_ORDERED> while the transaction is in progress.
@@ -12314,7 +12314,7 @@ export class mxGraph extends mxEventSource {
    *
    * @param cell - Optional <mxCell> for which the cell states should be cleared.
    */
-  refresh(cell: mxCell): void;
+  refresh(cell?: mxCell): void;
   /**
    * Snaps the given numeric value to the grid if <gridEnabled> is true.
    *
@@ -12346,7 +12346,7 @@ export class mxGraph extends mxEventSource {
    * Zooms the graph to the given scale with an optional boolean center
    * argument, which is passd to <zoom>.
    */
-  zoomTo(scale: any, center: any): void;
+  zoomTo(scale: any, center?: any): void;
   /**
    * Centers the graph in the container.
    *
@@ -12357,7 +12357,7 @@ export class mxGraph extends mxEventSource {
    * cx - Optional float that specifies the horizontal center. Default is 0.5.
    * cy - Optional float that specifies the vertical center. Default is 0.5.
    */
-  center(horizontal: any, vertical: any, cx: any, cy: any): void;
+  center(horizontal?: any, vertical?: any, cx?: any, cy?: any): void;
   /**
    * Zooms the graph using the given factor. Center is an optional boolean
    * argument that keeps the graph scrolled to the center. If the center argument
@@ -20018,6 +20018,56 @@ export class mxMedianHybridCrossingReduction extends mxHierarchicalLayoutStage {
    * rankValue - the rank that the connected cell lie upon
    */
   medianValue(connectedCells: any, rankValue: any): any;
+}
+
+export interface mxCell {
+  isStyle(styleName: string): boolean;
+  isBackbone(): boolean;
+  isMolecularSpeciesGlyph(): boolean;
+  isCircuitContainer(): boolean;
+  isCircularBackbone(): boolean;
+  isChromosomalLocus(): boolean;
+  isSequenceFeatureGlyph(): boolean;
+  isDnaObjectGlyph(): boolean;
+  isScar(): boolean;
+  isInteractionNode(): boolean;
+  isInteraction(): boolean;
+  isModule(): boolean;
+  isEvent(): boolean;
+  isViewCell(): boolean;
+  isModuleView(): boolean;
+  isComponentView(): boolean;
+  getRootId(): string;
+  hasCircularBackbone(): boolean;
+  hasChromosomalLocus(): boolean;
+  getBackbone(): mxCell | null;
+  getSequenceFeatureGlyph(): mxCell | null;
+  refreshBackbone(graph: mxGraph): void;
+  refreshCircuitContainer(graph: mxGraph): void;
+  refreshViewCell(graph: mxGraph): void;
+  getCircuitContainer(graph: mxGraph): mxCell | null;
+  replaceGeometry(
+    x: number | 'auto',
+    y: number | 'auto',
+    width: number | 'auto',
+    height: number | 'auto',
+    graph: mxGraph
+  ): void;
+  stayAtBeginning?: boolean;
+  stayAtEnd?: boolean;
+  circularBackbone?: boolean;
+}
+
+export interface mxEditor {
+  graph: mxGraph;
+  execute(actionname: any, cell?: any, evt?: any): void;
+  setGraphContainer(container: any): void;
+  undoManager: {
+    clear(): void;
+    undo(): void;
+    redo?(): void;
+    trim(): void;
+  };
 }
 /**
  * A utility class used to track cells whilst sorting occurs on the median

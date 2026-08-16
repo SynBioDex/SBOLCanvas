@@ -1,7 +1,5 @@
-import * as mxEditor from 'mxgraph';
-import * as mxGraph from 'mxgraph';
-import * as mxCell from 'mxgraph';
 import mxgraph from 'mxgraph'
+import type { mxEditor, mxGraph, mxCell } from 'src/mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { InteractionInfo } from './interactionInfo';
 import { GlyphService } from './glyph.service';
