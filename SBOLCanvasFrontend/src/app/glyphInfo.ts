@@ -36,24 +36,24 @@ export class GlyphInfo extends Info {
     } = {}) {
         super();
 
-        this.version = version
-        this.partType = partType
-        this.partRole = partRole
-        this.otherTypes = []
+        this.version = version;
+        this.partType = partType;
+        this.partRole = partRole;
+        this.otherTypes = [];
 
         // try to make a prefix from the part role
-        const partRolePrefix = partRole && (partRole.match(/^(\w+)/)|| [])[1];
+        const partRolePrefix = partRole && (partRole.match(/^(\w+)/) || [])[1];
         // generate id
         this.displayID = id || partRolePrefix ?
             `${partRolePrefix}_${customAlphabet(alphanumeric, 4)()}` :      // either use prefix and short ID
-            customAlphabet(alphanumeric, 8)()                               // or long ID
+            customAlphabet(alphanumeric, 8)();                               // or long ID
 
         // ensure ID doesn't start with a digit
-        if(/^\d/.test(this.displayID))
-            this.displayID = "i" + this.displayID
+        if (/^\d/.test(this.displayID))
+            this.displayID = "i" + this.displayID;
 
         // make a name so the displayed stuff is cleaner
-        this.name = partRolePrefix || " "
+        this.name = partRolePrefix || " ";
     }
 
     makeCopy() {

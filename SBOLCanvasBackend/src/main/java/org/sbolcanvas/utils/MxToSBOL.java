@@ -135,39 +135,39 @@ public class MxToSBOL extends Converter {
 
 		// cells may show up in the child array not based on their x location
 		enforceChildOrdering(model, graph);
-		
+
 		// create the document
 		SBOLDocument document = new SBOLDocument();
 		document.setDefaultURIprefix(URI_PREFIX);
 		document.setComplete(false);
 		document.setCreateDefaults(true);
-		
+
 		// add registries that we're logged into
 		for (String key : userTokens.keySet()) {
 			SynBioHubFrontend registry = document.addRegistry(key);
 			registry.setUser(userTokens.get(key));
 		}
-		
+
 		layoutHelper = new LayoutHelper(document, graph);
-		
+
 		// Arrays.stream is the java 8 way to cast Object[] to some other array
 		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
-		.toArray(mxCell[]::new);
-		
+				.toArray(mxCell[]::new);
+
 		// Get cells and create component definitions
 		for (mxCell viewCell : viewCells) {
 			mxCell[] viewChildren = Arrays.stream(mxGraphModel.getChildCells(model, viewCell, true, false))
-			.toArray(mxCell[]::new);
+					.toArray(mxCell[]::new);
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
-			.toArray(mxCell[]::new);
+					.toArray(mxCell[]::new);
 
-			for (mxCell circuitContainer : circuitContainers) {				
+			for (mxCell circuitContainer : circuitContainers) {
 				Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 
 				mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
-				.toArray(mxCell[]::new);
-	
-				for(mxCell glyph: glyphs){
+						.toArray(mxCell[]::new);
+
+				for (mxCell glyph : glyphs) {
 					try {
 						createComponentDefinition(document, graph, model, glyph);
 					} catch (Exception e) {
@@ -175,7 +175,7 @@ public class MxToSBOL extends Converter {
 					}
 				}
 
-				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null){
+				if (layoutHelper.getGraphicalLayout(URI.create((String) circuitContainer.getValue())) != null) {
 					continue;
 				}
 
@@ -187,16 +187,16 @@ public class MxToSBOL extends Converter {
 				}
 			}
 		}
-		
+
 		// construct the module definitions, and add text annotations for component
 		// definitions
 		for (mxCell viewCell : viewCells) {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, true);
 			mxCell[] circuitContainers = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
 					.toArray(mxCell[]::new);
-	
+
 			mxCell[] molecularSpecies = Arrays.stream(mxGraphModel.filterCells(viewChildren, molecularSpeciesFilter))
-			.toArray(mxCell[]::new);
+					.toArray(mxCell[]::new);
 
 			try {
 				if (STYLE_MODULE_VIEW.equals(viewCell.getStyle()) || circuitContainers.length > 1 || molecularSpecies.length > 0) {
@@ -209,14 +209,14 @@ public class MxToSBOL extends Converter {
 				System.err.println("Warning: SBOL export skipped view cell: " + e.getMessage());
 			}
 		}
-		
+
 		// link the component definitions (create components and set up references)
 		Set<String> handledContainers = new HashSet<String>();
 		for (mxCell viewCell : viewCells) {
 			Object[] viewChildren = mxGraphModel.getChildCells(model, viewCell, true, false);
 			mxCell[] cells = Arrays.stream(mxGraphModel.filterCells(viewChildren, containerFilter))
-			.toArray(mxCell[]::new);
-		
+					.toArray(mxCell[]::new);
+
 			for (mxCell cell : cells) {
 				if (handledContainers.contains((String) cell.getValue()))
 					continue;
@@ -287,7 +287,7 @@ public class MxToSBOL extends Converter {
 				.toArray(mxCell[]::new);
 
 		ModuleInfo modInfo = (ModuleInfo) infoDict.get(viewCell.getId());
-				
+
 		// if the uri is one of the synbiohub ones, just add the layout
 		boolean layoutOnly = false;
 		for (String registry : SBOLRegistries.known()) {
@@ -302,43 +302,43 @@ public class MxToSBOL extends Converter {
 				}
 			}
 		}
-		
+
 		if (modInfo.getUriPrefix() == null || modInfo.getUriPrefix().equals(""))
-		modInfo.setUriPrefix(URI_PREFIX);
-		
+			modInfo.setUriPrefix(URI_PREFIX);
+
 		ModuleDefinition modDef = null;
-		if(layoutOnly) {
+		if (layoutOnly) {
 			modDef = document.getModuleDefinition(new URI(modInfo.getFullURI()));
-		}else {
+		} else {
 			modDef = document.createModuleDefinition(modInfo.getUriPrefix(), modInfo.getDisplayID(),
-			modInfo.getVersion());		
+					modInfo.getVersion());
 		}
 		layoutHelper.createGraphicalLayout(modDef.getIdentity(), modDef.getDisplayId() + "_Layout");
-		
+
 		// text boxes
 		if (textBoxes.length > 0) {
 			attachTextBoxAnnotation(model, viewCell, modDef.getIdentity());
 		}
-		
+
 		// molecular species (proteins, small molecules, complexes, etc.)
 		for (mxCell molSpeciesCell : molecularSpecies) {
 			GlyphInfo molSpeciesInfo = (GlyphInfo) infoDict.get(molSpeciesCell.getValue());
 			if (molSpeciesInfo.getUriPrefix() == null)
-			molSpeciesInfo.setUriPrefix(URI_PREFIX);
+				molSpeciesInfo.setUriPrefix(URI_PREFIX);
 			FunctionalComponent molSpeciesFuncComp = null;
 			if (!layoutOnly) {
 				ComponentDefinition molSpeciesCD = document.getComponentDefinition(new URI((String) molSpeciesCell.getValue()));
 				if (molSpeciesCD == null) {
 					molSpeciesCD = document.createComponentDefinition(molSpeciesInfo.getUriPrefix(),
-					molSpeciesInfo.getDisplayID(), molSpeciesInfo.getVersion(),
-					SBOLData.types.getValue(molSpeciesInfo.getPartType()));
+							molSpeciesInfo.getDisplayID(), molSpeciesInfo.getVersion(),
+							SBOLData.types.getValue(molSpeciesInfo.getPartType()));
 					molSpeciesCD.setDescription(molSpeciesInfo.getDescription());
 					molSpeciesCD.setName(molSpeciesInfo.getName());
 					molSpeciesCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
 					writeSimulationAnnotations(molSpeciesCD, molSpeciesInfo.getSimulationData(), molSpeciesCD.getDisplayId());
 				}
 				molSpeciesFuncComp = modDef.createFunctionalComponent(molSpeciesCD.getDisplayId() + "_" + molSpeciesCell.getId(),
-				AccessType.PUBLIC, molSpeciesCD.getIdentity(), DirectionType.INOUT);
+						AccessType.PUBLIC, molSpeciesCD.getIdentity(), DirectionType.INOUT);
 			} else {
 				// find the correct functionalComponent from the set of functional components
 				Set<FunctionalComponent> funcComps = modDef.getFunctionalComponents();
@@ -350,7 +350,7 @@ public class MxToSBOL extends Converter {
 				}
 			}
 			// the layout information in the component definition
-			if(molSpeciesFuncComp == null){
+			if (molSpeciesFuncComp == null) {
 				throw new NullPointerException("Cannot upload an edited import, it is not owned by you! Create a copy or make a new design.");
 			}
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), molSpeciesFuncComp.getDisplayId(), molSpeciesCell);
@@ -393,8 +393,8 @@ public class MxToSBOL extends Converter {
 		// store extra mxGraph information
 		URI identity = URI.create(glyphInfo.getFullURI());
 		layoutHelper.createGraphicalLayout(identity, glyphInfo.getDisplayID() + "_Layout");
-		if(STYLE_CIRCUIT_CONTAINER.equals(circuitContainer.getStyle())){
-			
+		if (STYLE_CIRCUIT_CONTAINER.equals(circuitContainer.getStyle())) {
+
 			Object[] containerChildren = mxGraphModel.getChildCells(model, circuitContainer, true, false);
 			mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
 			layoutHelper.addGraphicalNode(identity, "container", circuitContainer);
@@ -450,8 +450,8 @@ public class MxToSBOL extends Converter {
 			Sequence sequence = document.createSequence(compDef.getDisplayId() + "_sequence", glyphInfo.getSequence(),
 					Sequence.IUPAC_DNA);
 			compDef.addSequence(sequence.getIdentity());
-//			if(glyphInfo.getSequenceURI() != null && !glyphInfo.getUriPrefix().equals(Converter.URI_PREFIX))
-//				compDef.addSequence(URI.create(glyphInfo.getSequenceURI()));
+			// if(glyphInfo.getSequenceURI() != null && !glyphInfo.getUriPrefix().equals(Converter.URI_PREFIX))
+			// compDef.addSequence(URI.create(glyphInfo.getSequenceURI()));
 		}
 
 		if (glyphInfo.getAnnotations() != null) {
@@ -465,11 +465,11 @@ public class MxToSBOL extends Converter {
 		}
 
 		// TODO come back to me when the activity objects are round tripping
-//		if(glyphInfo.getGeneratedBys() != null) {
-//			for(String generatedBy : glyphInfo.getGeneratedBys()) {
-//				compDef.addWasGeneratedBy(URI.create(generatedBy));
-//			}
-//		}
+		// if (glyphInfo.getGeneratedBys() != null) {
+		// 	for (String generatedBy : glyphInfo.getGeneratedBys()) {
+		// 		compDef.addWasGeneratedBy(URI.create(generatedBy));
+		// 	}
+		// }
 
 		// persist simulation data as annotation
 		writeSimulationAnnotations(compDef, glyphInfo.getSimulationData(), compDef.getDisplayId());
@@ -488,12 +488,12 @@ public class MxToSBOL extends Converter {
 		String strategy = combInfo.getStrategy();
 		if (strategy != null) {
 			switch (strategy) {
-			case "Enumerate":
-				combDer.setStrategy(StrategyType.ENUMERATE);
-				break;
-			case "Sample":
-				combDer.setStrategy(StrategyType.SAMPLE);
-				break;
+				case "Enumerate":
+					combDer.setStrategy(StrategyType.ENUMERATE);
+					break;
+				case "Sample":
+					combDer.setStrategy(StrategyType.SAMPLE);
+					break;
 			}
 		}
 		combDer.setName(combInfo.getName());
@@ -635,7 +635,6 @@ public class MxToSBOL extends Converter {
 		mxCell[] glyphs = Arrays.stream(mxGraphModel.filterCells(containerChildren, sequenceFeatureFilter))
 				.toArray(mxCell[]::new);
 
-		
 		if (compDef.getComponents().size() > 0) {
 			// the component definition was pulled in from a registry
 			List<Component> components = compDef.getSortedComponents();
@@ -654,16 +653,17 @@ public class MxToSBOL extends Converter {
 			Component previous = null;
 			int count = 0, start = 0, end = 0;
 			for (mxCell glyph : glyphs) {
-				GlyphInfo info = (GlyphInfo) infoDict.get(glyph.getValue());				
-                // ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String) glyph.getValue()));
-                ComponentDefinition glyphCD = getComponentDefinitionBetter(document, URI.create((String) glyph.getValue()));
-                Component component = compDef.createComponent(
-					info.getDisplayID() + "_" + glyph.getParent().getIndex(glyph), AccessType.PUBLIC,
-					URI.create((String) glyph.getValue()));
-					
-					// cell annotation
-					layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
-					GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
+				GlyphInfo info = (GlyphInfo) infoDict.get(glyph.getValue());
+				// ComponentDefinition glyphCD = document.getComponentDefinition(URI.create((String)
+				// glyph.getValue()));
+				ComponentDefinition glyphCD = getComponentDefinitionBetter(document, URI.create((String) glyph.getValue()));
+				Component component = compDef.createComponent(
+						info.getDisplayID() + "_" + glyph.getParent().getIndex(glyph), AccessType.PUBLIC,
+						URI.create((String) glyph.getValue()));
+
+				// cell annotation
+				layoutHelper.addGraphicalNode(compDef.getIdentity(), component.getDisplayId(), glyph);
+				GenericTopLevel layout = layoutHelper.getGraphicalLayout(URI.create(info.getFullURI()));
 				layoutHelper.addLayoutRef(compDef.getIdentity(), layout.getIdentity(),
 						component.getDisplayId() + "_Reference");
 
@@ -717,17 +717,17 @@ public class MxToSBOL extends Converter {
 			if (operatorString == null)
 				operatorString = "";
 			switch (operatorString) {
-			case "Zero Or One":
-				operator = OperatorType.ZEROORONE;
-				break;
-			case "Zero Or More":
-				operator = OperatorType.ZEROORMORE;
-				break;
-			case "One Or More":
-				operator = OperatorType.ONEORMORE;
-				break;
-			default:
-				operator = OperatorType.ONE;
+				case "Zero Or One":
+					operator = OperatorType.ZEROORONE;
+					break;
+				case "Zero Or More":
+					operator = OperatorType.ZEROORMORE;
+					break;
+				case "One Or More":
+					operator = OperatorType.ONEORMORE;
+					break;
+				default:
+					operator = OperatorType.ONE;
 			}
 
 			// we assume that the component is at the same index as the sorted glyphs
@@ -744,17 +744,17 @@ public class MxToSBOL extends Converter {
 				URI partURI = URI.create(idInfo.getUri());
 				addRegistry(document, partURI);
 				switch (idInfo.getType()) {
-				case "collection":
-					boolean complete = document.isComplete();
-					document.setComplete(false);
-					varComp.addVariantCollection(partURI);
-					document.setComplete(complete);
-					break;
-				case "combinatorial":
-					varComp.addVariantDerivation(partURI);
-					break;
-				default:
-					varComp.addVariant(partURI);
+					case "collection":
+						boolean complete = document.isComplete();
+						document.setComplete(false);
+						varComp.addVariantCollection(partURI);
+						document.setComplete(complete);
+						break;
+					case "combinatorial":
+						varComp.addVariantDerivation(partURI);
+						break;
+					default:
+						varComp.addVariant(partURI);
 				}
 			}
 		}
@@ -1043,53 +1043,51 @@ public class MxToSBOL extends Converter {
 		return sourceFC;
 	}
 
-    /*
-        Not using the libSBOLj method because it skips the entire document
-        when one top-level throws an exception, which causes it to skip copying
-        the actual ComponentDefintion sometimes.
-    */
-    private ComponentDefinition getComponentDefinitionBetter(SBOLDocument document, URI componentDefinitionURI) {
+	/*
+	 * Not using the libSBOLj method because it skips the entire document
+	 * when one top-level throws an exception, which causes it to skip copying
+	 * the actual ComponentDefinition sometimes.
+	 */
+	private ComponentDefinition getComponentDefinitionBetter(SBOLDocument document, URI componentDefinitionURI) {
 
-        // Try to find ComponentDefinition in document
-        for(ComponentDefinition cd : document.getComponentDefinitions()) {
-            if(cd.getIdentity().equals(componentDefinitionURI))
-                return cd;
-        }
+		// Try to find ComponentDefinition in document
+		for (ComponentDefinition cd : document.getComponentDefinitions()) {
+			if (cd.getIdentity().equals(componentDefinitionURI))
+				return cd;
+		}
 
-        // Look in SynBioHub for it
-        for (SynBioHubFrontend frontend : document.getRegistries()) {
+		// Look in SynBioHub for it
+		for (SynBioHubFrontend frontend : document.getRegistries()) {
 
-            // Fetch from SynBioHub
-            SBOLDocument remoteDocument = null;
-            try {
-                remoteDocument = frontend.getSBOL(componentDefinitionURI);
-            }
-            catch(SynBioHubException e) {
-                System.out.println(e);
-                // e.printStackTrace();
-            }
+			// Fetch from SynBioHub
+			SBOLDocument remoteDocument = null;
+			try {
+				remoteDocument = frontend.getSBOL(componentDefinitionURI);
+			} catch (SynBioHubException e) {
+				System.out.println(e);
+				// e.printStackTrace();
+			}
 
-            if (remoteDocument != null) {
-                /*
-                    Create a copy of each top level.
-
-                    Not using the libSBOLj method because it skips the entire document
-                    when one top-level throws an exception, which causes it to skip copying
-                    the actual ComponentDefintion sometimes.
-                */
-                for (TopLevel topLevel : remoteDocument.getTopLevels()) {
-                    try {
-                        document.createCopy(topLevel);
-                    }
-                    catch(SBOLValidationException e) {
-                        System.out.println("Failed to copy top-level:\n" + topLevel.getIdentity());
-                        System.out.println(e);
-                        // e.printStackTrace();
-                    }
-                }
-                return remoteDocument.getComponentDefinition(componentDefinitionURI);
-            }
-        }
+			if (remoteDocument != null) {
+				/*
+				 * Create a copy of each top level.
+				 * 
+				 * Not using the libSBOLj method because it skips the entire document
+				 * when one top-level throws an exception, which causes it to skip copying
+				 * the actual ComponentDefinition sometimes.
+				 */
+				for (TopLevel topLevel : remoteDocument.getTopLevels()) {
+					try {
+						document.createCopy(topLevel);
+					} catch (SBOLValidationException e) {
+						System.out.println("Failed to copy top-level:\n" + topLevel.getIdentity());
+						System.out.println(e);
+						// e.printStackTrace();
+					}
+				}
+				return remoteDocument.getComponentDefinition(componentDefinitionURI);
+			}
+		}
 
 		return null;
 	}

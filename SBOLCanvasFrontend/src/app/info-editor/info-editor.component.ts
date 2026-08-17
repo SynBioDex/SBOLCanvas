@@ -126,11 +126,11 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
         if (glyphInfo) {
           glyphInfo.partRole = event.value;
           glyphInfo.partRefine = '';
-        if (event.value !== '') {
-          this.getRefinements(event.value);
-        } else {
-          this.partRefinements = [];
-        }
+          if (event.value !== '') {
+            this.getRefinements(event.value);
+          } else {
+            this.partRefinements = [];
+          }
         }
         break;
       }
@@ -143,8 +143,8 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
       case 'interactionType': {
         if (interactionInfo) {
           interactionInfo.interactionType = event.value;
-        this.getInteractionSourceRefinements(event.value);
-        this.getInteractionTargetRefinements(event.value);
+          this.getInteractionSourceRefinements(event.value);
+          this.getInteractionTargetRefinements(event.value);
         }
         break;
       }

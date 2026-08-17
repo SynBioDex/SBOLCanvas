@@ -32,7 +32,11 @@ import org.sbml.jsbml.ext.layout.ReferenceGlyph;
 import org.sbml.jsbml.ext.layout.SpeciesGlyph;
 import org.sbml.jsbml.ext.layout.TextGlyph;
 
-/** Event layout (GeneralGlyph, ReferenceGlyph, TextGlyph) and event model output (Trigger, Delay, Assignment) for the SBOL -> SBML pipeline on the 4-event toggle fixture ({@link SBOLTestSupport#TOGGLE_RESOURCE}). */
+/**
+ * Event layout (GeneralGlyph, ReferenceGlyph, TextGlyph) and event model output (Trigger, Delay,
+ * Assignment) for the SBOL -> SBML pipeline on the 4-event toggle fixture
+ * ({@link SBOLTestSupport#TOGGLE_RESOURCE}).
+ */
 class SBOLToSBMLPipelineEventsTest {
 
     private static SBMLDocument doc;
@@ -202,16 +206,16 @@ class SBOLToSBMLPipelineEventsTest {
                 GeneralGlyph gg = (GeneralGlyph) obj;
                 for (ReferenceGlyph rg : gg.getListOfReferenceGlyphs()) {
                     assertTrue(rg.isSetBoundingBox(),
-                        "ReferenceGlyph '" + rg.getId() + "' (under GeneralGlyph '"
-                            + gg.getId() + "') is missing BoundingBox");
+                            "ReferenceGlyph '" + rg.getId() + "' (under GeneralGlyph '"
+                                    + gg.getId() + "') is missing BoundingBox");
                     assertTrue(rg.isSetCurve(),
-                        "ReferenceGlyph '" + rg.getId() + "' (under GeneralGlyph '"
-                            + gg.getId() + "') is missing Curve");
+                            "ReferenceGlyph '" + rg.getId() + "' (under GeneralGlyph '"
+                                    + gg.getId() + "') is missing Curve");
                     connectionGlyphsChecked++;
                 }
             }
             assertTrue(connectionGlyphsChecked > 0,
-                "Expected at least one event ReferenceGlyph in the events layout; found none");
+                    "Expected at least one event ReferenceGlyph in the events layout; found none");
         }
 
         /**
@@ -279,8 +283,10 @@ class SBOLToSBMLPipelineEventsTest {
 
         private Set<String> collectGlyphIds() {
             Set<String> ids = new HashSet<>();
-            for (SpeciesGlyph sg : layout.getListOfSpeciesGlyphs()) ids.add(sg.getId());
-            for (GraphicalObject obj : layout.getListOfAdditionalGraphicalObjects()) ids.add(obj.getId());
+            for (SpeciesGlyph sg : layout.getListOfSpeciesGlyphs())
+                ids.add(sg.getId());
+            for (GraphicalObject obj : layout.getListOfAdditionalGraphicalObjects())
+                ids.add(obj.getId());
             for (int i = 0; i < layout.getCompartmentGlyphCount(); i++) {
                 ids.add(layout.getCompartmentGlyph(i).getId());
             }
@@ -292,16 +298,20 @@ class SBOLToSBMLPipelineEventsTest {
 
         private GraphicalObject findGlyph(String id) {
             for (SpeciesGlyph sg : layout.getListOfSpeciesGlyphs()) {
-                if (sg.getId().equals(id)) return sg;
+                if (sg.getId().equals(id))
+                    return sg;
             }
             for (GraphicalObject obj : layout.getListOfAdditionalGraphicalObjects()) {
-                if (obj.getId().equals(id)) return obj;
+                if (obj.getId().equals(id))
+                    return obj;
             }
             for (int i = 0; i < layout.getCompartmentGlyphCount(); i++) {
-                if (layout.getCompartmentGlyph(i).getId().equals(id)) return layout.getCompartmentGlyph(i);
+                if (layout.getCompartmentGlyph(i).getId().equals(id))
+                    return layout.getCompartmentGlyph(i);
             }
             for (int i = 0; i < layout.getReactionGlyphCount(); i++) {
-                if (layout.getReactionGlyph(i).getId().equals(id)) return layout.getReactionGlyph(i);
+                if (layout.getReactionGlyph(i).getId().equals(id))
+                    return layout.getReactionGlyph(i);
             }
             return null;
         }
@@ -319,12 +329,19 @@ class SBOLToSBMLPipelineEventsTest {
         private final class Expected {
             private final double delay;
             private final double assignment;
+
             Expected(double delay, double assignment) {
                 this.delay = delay;
                 this.assignment = assignment;
             }
-            double delay() { return delay; }
-            double assignment() { return assignment; }
+
+            double delay() {
+                return delay;
+            }
+
+            double assignment() {
+                return assignment;
+            }
         }
 
         private Map<String, Expected> expectedByEventId() {

@@ -48,7 +48,7 @@ export class GraphEdits {
                 this.previous = tmp;
             }
         }
-    }
+    };
 
     /**
      * Edit object for glyphInfo/moduleInfo history. Replaces glyphInfo's in a dictionary stored in cell0's value variable.
@@ -95,7 +95,7 @@ export class GraphEdits {
                 this.previousInfo = tmpInfo;
             }
         }
-    }
+    };
 
     // because the mxCurrentRootChange doesn't do what we want
     /**
@@ -131,18 +131,18 @@ export class GraphEdits {
                     childViewCell = this.graphService.graph.getModel().getCell(this.glyphCell.value);
                     // add info to the selectionstack
                     // edge case of zooming back into rootview of the diagram (nothing should be put in the selectionStack)
-                    if(this.graphService.viewStack.length > 0)
+                    if (this.graphService.viewStack.length > 0)
                         this.graphService.selectionStack.push(this.glyphCell);
                 }
 
                 // add the info to the view stack
-                let previousView = this.graphService.viewStack[this.graphService.viewStack.length -1 ];
+                let previousView = this.graphService.viewStack[this.graphService.viewStack.length - 1];
                 this.graphService.viewStack.push(childViewCell);
-               
-                if(childViewCell.getStyle() == 'componentViewCell' || childViewCell.getStyle() == 'moduleViewCell'){
+
+                if (childViewCell.getStyle() == 'componentViewCell' || childViewCell.getStyle() == 'moduleViewCell') {
                     this.graphService.tempViewStack.push(childViewCell);
                 }
-               
+
                 // change the view
                 this.view.clear(this.view.currentRoot, true);
                 this.view.currentRoot = childViewCell;
@@ -154,7 +154,7 @@ export class GraphEdits {
                 //childViewCell.refreshViewCell(this.graphService.graph);
 
                 // set the selection to the circuit container
-                if(childViewCell.isComponentView())
+                if (childViewCell.isComponentView())
                     this.graphService.graph.setSelectionCell(childViewCell.children[0]);
                 else
                     this.graphService.graph.clearSelection();
@@ -182,11 +182,11 @@ export class GraphEdits {
                 // make sure we can add new strands/interactions/molecules on the top level
                 if (this.graphService.graph.getCurrentRoot() && this.graphService.graph.getCurrentRoot().isViewCell()) {
                     this.graphService.setComponentDefinitionMode(this.graphService.graph.getCurrentRoot().isComponentView());
-                    
+
                     // refresh the circuit containers
                     this.graphService.graph.getCurrentRoot().refreshViewCell(this.graphService.graph);
                 }
-                
+
                 if (newSelectedCell) {
                     this.glyphCell = newSelectedCell;
                 } else {
@@ -195,6 +195,6 @@ export class GraphEdits {
             }
             this.graphService.fitCamera();
         }
-    }
+    };
 
 }

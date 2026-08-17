@@ -82,9 +82,9 @@ public class Converter {
 	/**
 	 * mxObjectCodec that decodes to a Hashtable instead of an ArrayList.
 	 *
-	 * @param template    the template object (e.g., new GlyphInfo())
-	 * @param targetType  the expected runtime class of the decoded object
-	 * @param setter      applies the parsed Hashtable to the decoded object
+	 * @param template   the template object (e.g., new GlyphInfo())
+	 * @param targetType the expected runtime class of the decoded object
+	 * @param setter     applies the parsed Hashtable to the decoded object
 	 */
 	private static <T> mxObjectCodec createSimulationDataCodec(
 			Object template, Class<T> targetType,
@@ -177,7 +177,8 @@ public class Converter {
 	static Filter containerFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return (arg0 instanceof mxCell && ((mxCell) arg0).getStyle() != null && (((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER)) && (((mxCell) arg0).getChildCount() > 1));
+			return (arg0 instanceof mxCell && ((mxCell) arg0).getStyle() != null && (((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER))
+					&& (((mxCell) arg0).getChildCount() > 1));
 		}
 	};
 
@@ -256,12 +257,13 @@ public class Converter {
 	 * @see MxToSBML#sanitizeId for SBML SId sanitization (different spec, different rules)
 	 */
 	static String sanitizeAnnotationKey(String key) {
-		if (key == null || key.isEmpty()) return key;
+		if (key == null || key.isEmpty())
+			return key;
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < key.length(); i++) {
 			char c = key.charAt(i);
 			if (i == 0 ? (Character.isLetter(c) || c == '_')
-					   : (Character.isLetterOrDigit(c) || c == '.' || c == '-' || c == '_')) {
+					: (Character.isLetterOrDigit(c) || c == '.' || c == '-' || c == '_')) {
 				sb.append(c);
 			} else {
 				sb.append("_x").append(String.format("%04X", (int) c)).append("_");
@@ -274,7 +276,8 @@ public class Converter {
 	 * Reverse sanitizeAnnotationKey: decode _xHHHH_ sequences back to characters.
 	 */
 	static String desanitizeAnnotationKey(String key) {
-		if (key == null || key.isEmpty()) return key;
+		if (key == null || key.isEmpty())
+			return key;
 		StringBuilder sb = new StringBuilder();
 		int i = 0;
 		while (i < key.length()) {
@@ -380,7 +383,8 @@ public class Converter {
 	 */
 	static void writeSimulationAnnotations(Identified parent, Hashtable<String, Object> simulationData,
 			String identityPrefix) throws SBOLValidationException {
-		if (simulationData == null || simulationData.isEmpty()) return;
+		if (simulationData == null || simulationData.isEmpty())
+			return;
 		List<Annotation> annList = new ArrayList<Annotation>();
 		for (String key : new TreeSet<>(simulationData.keySet())) {
 			annList.add(new Annotation(createQName(sanitizeAnnotationKey(key)), simulationData.get(key).toString()));

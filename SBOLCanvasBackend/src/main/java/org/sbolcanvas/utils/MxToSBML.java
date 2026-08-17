@@ -351,7 +351,8 @@ public class MxToSBML extends Converter {
 			}
 		}
 
-		// Build one Production reaction per TU; TUs whose CDS-driven products are absent get a placeholder mRNA (matches iBioSim)
+		// Build one Production reaction per TU
+		// TUs with missing CDS products get a placeholder mRNA (matches iBioSim)
 		for (TUData tuData : tuMap.values()) {
 			GlyphInfo promoterInfo = tuData.mergedPromoterInfo;
 			String promoterId = tuData.promoterSpecies.getId();
