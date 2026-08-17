@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo } from '../interactionInfo';
+import { EventInfo } from '../eventInfo';
 import { MetadataService } from '../metadata.service';
 import { GraphService } from '../graph.service';
 import { FilesService } from '../files.service';
@@ -42,6 +43,7 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
   glyphInfo: GlyphInfo | null = null;
   moduleInfo: ModuleInfo | null = null;
   interactionInfo: InteractionInfo | null = null;
+  eventInfo: EventInfo | null = null;
   glyphCtrl = new FormControl('', Validators.required);
 
 
@@ -53,6 +55,7 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
     this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
     this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo));
     this.metadataService.selectedModuleInfo.subscribe(moduleInfo => this.moduleInfoUpdated(moduleInfo));
+    this.metadataService.selectedEventInfo.subscribe(eventInfo => this.eventInfoUpdated(eventInfo));
     this.filesService.getRegistries().subscribe(result => this.registries = result);
     this.getTypes();
     this.getRoles();
@@ -175,6 +178,7 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
     const glyphInfo = this.glyphInfo;
     const moduleInfo = this.moduleInfo;
     const interactionInfo = this.interactionInfo;
+    const eventInfo = this.eventInfo;
 
     switch (id) {
       case 'displayID': {
@@ -188,6 +192,8 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
           interactionInfo.displayID = replaced;
         } else if (moduleInfo != null) {
           moduleInfo.displayID = replaced;
+        } else if (eventInfo != null) {
+          eventInfo.displayID = replaced;
         }
         break;
       }
@@ -196,6 +202,8 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
           glyphInfo.name = event.target.value;
         else if (moduleInfo)
           moduleInfo.name = event.target.value;
+        else if (eventInfo)
+          eventInfo.name = event.target.value;
         break;
       }
       case 'description': {
@@ -203,6 +211,8 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
           glyphInfo.description = event.target.value;
         else if (moduleInfo)
           moduleInfo.description = event.target.value;
+        else if (eventInfo)
+          eventInfo.description = event.target.value;
         break;
       }
       case 'version': {
@@ -230,6 +240,8 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
       this.graphService.setSelectedCellInfo(interactionInfo);
     } else if (moduleInfo != null) {
       this.graphService.setSelectedCellInfo(moduleInfo);
+    } else if (eventInfo != null) {
+      this.graphService.setSelectedCellInfo(eventInfo);
     }
   }
 
@@ -282,8 +294,7 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
       }
     }
 
-    // this needs to be called because we may have gotten here from an async function
-    // an async function doesn't update the view for some reason
+    // nudge change detection: the subscription may fire outside Angular's pass
     this.changeDetector.detectChanges();
   }
 
@@ -292,8 +303,16 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
    */
   moduleInfoUpdated(moduleInfo: ModuleInfo | null) {
     this.moduleInfo = moduleInfo;
-    // this needs to be called because we may have gotten here from an async function
-    // an async function doesn't update the view for some reason
+    // nudge change detection: the subscription may fire outside Angular's pass
+    this.changeDetector.detectChanges();
+  }
+
+  /**
+   * Updates the event info shown in the form.
+   */
+  eventInfoUpdated(eventInfo: EventInfo | null) {
+    this.eventInfo = eventInfo;
+    // nudge change detection: the subscription may fire outside Angular's pass
     this.changeDetector.detectChanges();
   }
 
@@ -321,8 +340,7 @@ export class InfoEditorComponent implements OnInit, OnDestroy {
       }
     }
 
-    // this needs to be called because we may have gotten here from an async function
-    // an async function doesn't update the view for some reason
+    // nudge change detection: the subscription may fire outside Angular's pass
     this.changeDetector.detectChanges();
   }
 

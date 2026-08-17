@@ -153,50 +153,7 @@ public class SBOLToMx extends Converter {
 			}
 		}
 
-		// read events from GenericTopLevel objects and create event cells
-		// Event parent: uses the first module view cell found under cell1.
-		// Limitation: multi-module designs will attach all events to the first module.
-		// This matches the frontend behavior (events go to graph.getDefaultParent()).
-		mxCell cell1 = (mxCell) model.getCell("1");
-		mxCell eventParent = null;
-		for (int i = 0; i < cell1.getChildCount(); i++) {
-			mxCell child = (mxCell) cell1.getChildAt(i);
-			if (STYLE_MODULE_VIEW.equals(child.getStyle())) {
-				eventParent = child;
-				break;
-			}
-		}
-		for (GenericTopLevel gtl : document.getGenericTopLevels()) {
-			if (gtl.getRDFType().equals(createQName("Event"))) {
-				try {
-					EventInfo event = new EventInfo();
-					event.setDisplayID(gtl.getDisplayId());
-					event.setUriPrefix(getURIPrefix(gtl));
-
-					// Read simulation data from nested annotation
-					event.setSimulationData(readSimulationAnnotations(gtl));
-
-					// Read geometry from flat annotations
-					double x = 0, y = 0, width = 96, height = 40;
-					for (Annotation ann : gtl.getAnnotations()) {
-						switch (ann.getQName().getLocalPart()) {
-							case "x": x = Double.parseDouble(ann.getStringValue()); break;
-							case "y": y = Double.parseDouble(ann.getStringValue()); break;
-							case "width": width = Double.parseDouble(ann.getStringValue()); break;
-							case "height": height = Double.parseDouble(ann.getStringValue()); break;
-						}
-					}
-
-					eventDict.put(event.getFullURI(), event);
-					if (eventParent != null) {
-						graph.insertVertex(eventParent, event.getFullURI(), event.getFullURI(),
-								x, y, width, height, STYLE_EVENT);
-					}
-				} catch (Exception e) {
-					System.err.println("Skipping invalid event '" + gtl.getDisplayId() + "': " + e.toString());
-				}
-			}
-		}
+		setupModuleEvents(document, graph);
 
 		// convert the objects to the graph xml
 		graphStream.write(encodeMxGraphObject(model).getBytes());
@@ -494,6 +451,92 @@ public class SBOLToMx extends Converter {
 			}
 			
 		}
+	}
+
+	/**
+	 * Restore each Event GenericTopLevel via the Layout extension. An event with a layout node keeps
+	 * its authored position; one without is staggered into the root module view. An event that fails
+	 * to build is skipped and logged, leaving no orphan on re-export.
+	 */
+	private void setupModuleEvents(SBOLDocument document, mxGraph graph) {
+		mxGraphModel model = (mxGraphModel) graph.getModel();
+		mxCell rootView = firstModuleView(model);
+		double fallbackOffset = 0;
+
+		for (GenericTopLevel gtl : document.getGenericTopLevels()) {
+			if (!gtl.getRDFType().equals(createQName("Event")))
+				continue;
+			try {
+				EventInfo event = buildEventInfo(gtl);
+
+				// Use the event's layout node when it has one; otherwise stagger it at the root view.
+				mxCell layoutCell = null;
+				mxCell layoutView = null;
+				for (ModuleDefinition modDef : document.getModuleDefinitions()) {
+					mxCell view = (mxCell) model.getCell(modDef.getIdentity().toString());
+					if (view == null)
+						continue;
+					mxCell candidate = layoutHelper.getGraphicalObject(modDef.getIdentity(), gtl.getDisplayId());
+					if (candidate != null) {
+						layoutCell = candidate;
+						layoutView = view;
+						break;
+					}
+				}
+
+				if (layoutCell != null) {
+					layoutCell.setStyle(layoutCell.getStyle() != null
+							? STYLE_EVENT + ";" + layoutCell.getStyle() : STYLE_EVENT);
+					model.add(layoutView, layoutCell, 0);
+					layoutCell.setValue(event.getFullURI());
+					layoutCell.setConnectable(false);
+				} else if (rootView != null) {
+					mxCell eventCell = (mxCell) graph.insertVertex(rootView, null, event.getFullURI(),
+							fallbackOffset, fallbackOffset, 96, 40, STYLE_EVENT);
+					eventCell.setConnectable(false);
+					fallbackOffset += 20;
+				}
+				eventDict.put(event.getFullURI(), event);
+			} catch (Exception e) {
+				// event we cannot build: skip it (no eventDict entry, no orphan on re-export)
+				System.err.println("Skipping invalid event '" + gtl.getDisplayId() + "': " + e.toString());
+			}
+		}
+	}
+
+	/** The first module view cell under the root, used to place events that have no layout node. */
+	private mxCell firstModuleView(mxGraphModel model) {
+		mxCell cell1 = (mxCell) model.getCell("1");
+		for (int i = 0; i < cell1.getChildCount(); i++) {
+			mxCell child = (mxCell) cell1.getChildAt(i);
+			if (STYLE_MODULE_VIEW.equals(child.getStyle())) {
+				return child;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Build an {@link EventInfo} from an Event GenericTopLevel. The name comes from the SBOL name,
+	 * falling back to a name stored in simulationData when the SBOL name is absent (the stale key is
+	 * then dropped). An event with neither stays unnamed and falls back to its displayId downstream.
+	 */
+	private EventInfo buildEventInfo(GenericTopLevel gtl) {
+		EventInfo event = new EventInfo();
+		event.setDisplayID(gtl.getDisplayId());
+		event.setUriPrefix(getURIPrefix(gtl));
+		event.setDescription(gtl.getDescription());
+		Hashtable<String, Object> simData = readSimulationAnnotations(gtl);
+		String name = gtl.getName();
+		if ((name == null || name.isEmpty()) && simData != null && simData.get("name") != null) {
+			name = simData.get("name").toString();
+		}
+		if (simData != null) {
+			simData.remove("name");
+		}
+		event.setName(name);
+		event.setSimulationData(simData);
+		return event;
 	}
 
 	private void setInteractionEndpoints(SBOLDocument document, Interaction interaction, Participation participation,

@@ -158,4 +158,26 @@
   </mat-form-field>
 </div>
 
+  <div *ngIf="eventInfo" class="info-menu-container">
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Display ID</mat-label>
+      <input matInput id="displayID" value="{{ eventInfo.displayID }}" (change)="inputChange($event)"
+        matTooltipShowDelay="1000"
+        matTooltip="Must be composed of only alphanumeric or underscore characters and MUST NOT begin with a digit.">
+    </mat-form-field>
+
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Name</mat-label>
+      <input matInput id="name" value="{{ eventInfo.name }}" (change)="inputChange($event)" matTooltipShowDelay="1000"
+        matTooltip="Optional. Intended to be displayed to a human when visualizing an Identified object.">
+    </mat-form-field>
+
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Description</mat-label>
+      <textarea rows="1" matInput id="description" value="{{ eventInfo.description }}" (change)="inputChange($event)"
+        matTooltipShowDelay="1000"
+        matTooltip="Optional. Inteded to contain a more thorough text description of an Identified object."></textarea>
+    </mat-form-field>
+</div>
+
 </div>

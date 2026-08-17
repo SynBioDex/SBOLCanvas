@@ -37,7 +37,6 @@ public class SBOLData {
 	public static final String PARAM_KA_R = "Ka_r";
 
 	// Event parameter name constants
-	public static final String PARAM_EVENT_NAME = "name";
 	public static final String PARAM_EVENT_TARGET_SPECIES = "targetSpecies";
 	public static final String PARAM_EVENT_DELAY = "delay";
 	public static final String PARAM_EVENT_ASSIGNMENT_VALUE = "assignmentValue";

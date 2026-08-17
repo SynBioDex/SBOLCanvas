@@ -916,6 +916,20 @@ public class MxToSBML extends Converter {
 			return;
 		}
 
+		// Event cells, like all glyph cells, are keyed by value (fullURI); their ids are auto-generated.
+		Map<String, mxCell> eventCellsByValue = new HashMap<>();
+		mxCell[] eventViewCells = Arrays.stream(mxGraphModel.getChildCells(graphModel, graphModel.getCell("1"), true, false))
+				.toArray(mxCell[]::new);
+		for (mxCell viewCell : eventViewCells) {
+			for (Object child : mxGraphModel.getChildCells(graphModel, viewCell, true, false)) {
+				mxCell c = (mxCell) child;
+				String style = c.getStyle();
+				if (style != null && style.contains(STYLE_EVENT) && c.getValue() != null) {
+					eventCellsByValue.put(c.getValue().toString(), c);
+				}
+			}
+		}
+
 		for (EventInfo eventInfo : eventDict.values()) {
 			Hashtable<String, Object> simData = eventInfo.getSimulationData();
 			String context = "event '" + eventInfo.getDisplayID() + "'";
@@ -928,10 +942,12 @@ public class MxToSBML extends Converter {
 			// Resolve display name to SBML species ID. The user enters a display
 			// name (e.g., "LacI protein") but SBML uses sanitized IDs ("LacI_protein").
 			String speciesId = resolveSpeciesId(sbmlModel, targetSpecies, displayNameToSpeciesId);
-			if (speciesId == null)
+			if (speciesId == null) {
+				log.warn(context + ": targetSpecies '" + targetSpecies + "' did not resolve to a species; event skipped");
 				continue;
+			}
 
-			String eventName = getStringParam(simData, SBOLData.PARAM_EVENT_NAME);
+			String eventName = eventInfo.getName();
 			if (eventName == null || eventName.isEmpty()) {
 				eventName = eventInfo.getDisplayID();
 			}
@@ -966,7 +982,7 @@ public class MxToSBML extends Converter {
 
 			// Record geometry for layout.
 			// Events imported without position annotations have no cell.
-			mxCell eventCell = (mxCell) graphModel.getCell(eventInfo.getFullURI());
+			mxCell eventCell = eventCellsByValue.get(eventInfo.getFullURI());
 			mxGeometry geom = (eventCell != null) ? eventCell.getGeometry() : null;
 			if (geom != null) {
 				layoutBounds.update(geom);

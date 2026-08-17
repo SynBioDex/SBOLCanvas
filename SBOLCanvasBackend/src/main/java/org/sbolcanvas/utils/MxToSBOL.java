@@ -263,13 +263,6 @@ public class MxToSBOL extends Converter {
 			}
 		}
 
-		// write events as GenericTopLevel objects
-		try {
-			writeEvents(document, graph);
-		} catch (Exception e) {
-			System.err.println("Warning: SBOL export skipped events: " + e.getMessage());
-		}
-
 		return document;
 	}
 
@@ -607,6 +600,28 @@ public class MxToSBOL extends Converter {
 				// single source/target
 				addParticipant(document, model, modDef, interaction, true, intInfo, interactionCell);
 				addParticipant(document, model, modDef, interaction, false, intInfo, interactionCell);
+			}
+		}
+
+		// events: emit one Event GenericTopLevel per event cell in this module view,
+		// with geometry written via the Layout extension (same pattern as interactions)
+		mxCell[] eventCells = Arrays.stream(mxGraphModel.filterCells(viewChildren, eventFilter))
+				.toArray(mxCell[]::new);
+		for (mxCell eventCell : eventCells) {
+			try {
+				EventInfo event = eventDict.get(eventCell.getValue());
+				GenericTopLevel eventTL = document.createGenericTopLevel(
+						event.getUriPrefix(), event.getDisplayID(), "1", createQName("Event"));
+				if (event.getName() != null && !event.getName().isEmpty()) {
+					eventTL.setName(event.getName());
+				}
+				if (event.getDescription() != null && !event.getDescription().isEmpty()) {
+					eventTL.setDescription(event.getDescription());
+				}
+				writeSimulationAnnotations(eventTL, event.getSimulationData(), eventTL.getDisplayId());
+				layoutHelper.addGraphicalNode(modDef.getIdentity(), event.getDisplayID(), eventCell);
+			} catch (SBOLValidationException e) {
+				System.err.println("Warning: SBOL export skipped event '" + eventCell.getValue() + "': " + e.toString());
 			}
 		}
 	}
@@ -1026,31 +1041,6 @@ public class MxToSBOL extends Converter {
 
 		}
 		return sourceFC;
-	}
-
-	private void writeEvents(SBOLDocument document, mxGraph graph) throws SBOLValidationException {
-		if (eventDict == null || eventDict.isEmpty()) return;
-		for (EventInfo event : eventDict.values()) {
-			GenericTopLevel eventTL = document.createGenericTopLevel(
-					event.getUriPrefix(), event.getDisplayID(), "1", createQName("Event"));
-
-			// Write simulation data as nested annotation (same pattern as glyphs/interactions)
-			writeSimulationAnnotations(eventTL, event.getSimulationData(),
-					eventTL.getDisplayId());
-
-			// Save event cell position/geometry as flat annotations
-			mxCell eventCell = (mxCell) ((mxGraphModel) graph.getModel()).getCell(event.getFullURI());
-			if (eventCell != null && eventCell.getGeometry() != null) {
-				eventTL.createAnnotation(createQName("x"),
-						String.valueOf(eventCell.getGeometry().getX()));
-				eventTL.createAnnotation(createQName("y"),
-						String.valueOf(eventCell.getGeometry().getY()));
-				eventTL.createAnnotation(createQName("width"),
-						String.valueOf(eventCell.getGeometry().getWidth()));
-				eventTL.createAnnotation(createQName("height"),
-						String.valueOf(eventCell.getGeometry().getHeight()));
-			}
-		}
 	}
 
     /*

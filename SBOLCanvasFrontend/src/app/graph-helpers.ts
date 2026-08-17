@@ -758,6 +758,56 @@ export class GraphHelpers extends GraphBase {
         }
     }
 
+    /**
+     * Saves edits to the selected event, mirroring updateSelectedInteractionInfo.
+     * Events have a single fixed style, so there is no glyph mutation step.
+     */
+    protected updateSelectedEventInfo(this: GraphService, info: EventInfo) {
+        let selectedCells = this.graph.getSelectionCells()
+        if (selectedCells.length > 1 || selectedCells.length < 0) {
+            console.error("Trying to change info on too many or too few cells!")
+            return
+        }
+        let selectedCell = selectedCells[0]
+
+        // gather all the cells referencing this event
+        let cell1 = this.graph.getModel().getCell("1")
+        let cells = []
+        for (let viewChild of cell1.children) {
+            if (viewChild.children) {
+                for (let child of viewChild.children) {
+                    if (child.isEvent() && child.getValue() === selectedCell.getValue()) {
+                        cells.push(child)
+                    }
+                }
+            }
+        }
+
+        this.graph.getModel().beginUpdate()
+        try {
+            let prevURI = selectedCell.value
+            if (prevURI != info.getFullURI()) {
+                // check for duplication and error
+                let conflictEvent = this.getFromEventDict(info.getFullURI())
+                if (conflictEvent) {
+                    this.dialog.open(ErrorComponent, { data: "The part " + info.getFullURI() + " already exists as an Event!" })
+                }
+
+                if (this.getFromEventDict(prevURI))
+                    this.removeFromEventDict(prevURI)
+                this.addToEventDict(info)
+
+                for (let cell of cells) {
+                    this.graph.getModel().setValue(cell, info.getFullURI())
+                }
+            } else {
+                this.updateEventDict(info)
+            }
+        } finally {
+            this.graph.getModel().endUpdate()
+        }
+    }
+
     protected isDuplicateURI(newURI: string, ignoreComponents: boolean = false): boolean {
         let conflictInfo = this.getFromInfoDict(newURI)
         if (conflictInfo && conflictInfo instanceof ModuleInfo) {
@@ -2171,8 +2221,8 @@ export class GraphHelpers extends GraphBase {
                 let info = <EventInfo>graphService.getFromEventDict(cell.value)
                 if (!info) {
                     return cell.value
-                } else if (info.simulationData && info.simulationData['name'] != null && info.simulationData['name'] != '') {
-                    return info.simulationData['name']
+                } else if (info.name != null && info.name != '') {
+                    return info.name
                 } else {
                     return info.displayID
                 }

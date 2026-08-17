@@ -215,6 +215,16 @@ public class Converter {
 		}
 	};
 
+	/**
+	 * Filters mxCells that contain "eventGlyph" in the style string
+	 */
+	static Filter eventFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle() != null && ((mxCell) arg0).getStyle().contains(STYLE_EVENT);
+		}
+	};
+
 	protected static URI getParticipantType(boolean source, Set<URI> interactionTypes) {
 		URI interactionType = null;
 		for (URI interactionURI : SBOLData.interactions.values()) {
@@ -317,7 +327,7 @@ public class Converter {
 		infoDict = loadDictionary(dataContainer, INFO_DICT_INDEX);
 		combinatorialDict = loadDictionary(dataContainer, COMBINATORIAL_DICT_INDEX);
 		interactionDict = loadDictionary(dataContainer, INTERACTION_DICT_INDEX);
-		loadEventDictOrEmpty(dataContainer);
+		eventDict = loadDictionary(dataContainer, EVENT_DICT_INDEX);
 		return graph;
 	}
 
@@ -331,6 +341,10 @@ public class Converter {
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T extends Info> Hashtable<String, T> loadDictionary(ArrayList<Object> dataContainer, int dictionaryIndex) {
+		// Older designs predate this slot; treat an absent slot as an empty dictionary.
+		if (dictionaryIndex >= dataContainer.size()) {
+			return new Hashtable<String, T>();
+		}
 		if (dataContainer.get(dictionaryIndex) instanceof ArrayList) {
 			// 90% sure it only happens when it's empty meaning that we could just return a
 			// empty hash table.
@@ -393,18 +407,6 @@ public class Converter {
 			}
 		}
 		return new Hashtable<>();
-	}
-
-	/**
-	 * Load eventDict from the dataContainer, falling back to an empty Hashtable
-	 * for designs created before events were added.
-	 */
-	protected void loadEventDictOrEmpty(ArrayList<Object> dataContainer) {
-		if (dataContainer.size() > EVENT_DICT_INDEX) {
-			eventDict = loadDictionary(dataContainer, EVENT_DICT_INDEX);
-		} else {
-			eventDict = new Hashtable<>();
-		}
 	}
 
 }

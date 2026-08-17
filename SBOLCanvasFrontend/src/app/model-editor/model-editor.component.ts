@@ -205,7 +205,7 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
     // Parse value based on field type
     if (id === 'boundaryCondition') {
       value = event.checked;
-    } else if (['name', 'targetSpecies'].includes(id)) {
+    } else if (['targetSpecies'].includes(id)) {
       value = event.target.value;
     } else {
       value = parseFloat(event.target.value);

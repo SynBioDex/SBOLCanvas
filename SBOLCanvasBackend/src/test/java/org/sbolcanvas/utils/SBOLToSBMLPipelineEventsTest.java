@@ -311,7 +311,11 @@ class SBOLToSBMLPipelineEventsTest {
     @DisplayName("Model-side events (createEvents output)")
     class EventSBML {
 
-        /** Hand-derived expectation per event id; see the toggle fixture's 4 events. */
+        /**
+         * Expectation per event id, hand-derived from the toggle fixture's 4 events.
+         * The SBML event id is sanitize(eventName) where eventName is the SBOL name
+         * (dcterms:title). assignmentValue defaults to 0 when the fixture omits it.
+         */
         private final class Expected {
             private final double delay;
             private final double assignment;

@@ -112,7 +112,8 @@ export class GlyphPaletteService {
     return mainString.toLowerCase().indexOf(searchString.toLowerCase()) !== -1;
   }
 
-  /** Single source for util-tile search visibility. */
+  /** Search keywords per Util tile -- single source for util-tile visibility (utilTileVisible /
+   *  utilHasMatch). Backbone, Module, and Event are additionally gated by componentDefinitionMode. */
   private readonly utilSearchTerms = {
     backbone: 'backbone dna strand circuit',
     textBox: 'textbox text box',
@@ -123,7 +124,7 @@ export class GlyphPaletteService {
   };
 
   utilTileVisible(tile: keyof typeof this.utilSearchTerms, searchPhrase: string): boolean {
-    if ((tile === 'backbone' || tile === 'module') && this.componentDefinitionMode) {
+    if ((tile === 'backbone' || tile === 'module' || tile === 'event') && this.componentDefinitionMode) {
       return false;
     }
     return this.stringMatches(this.utilSearchTerms[tile], searchPhrase);
