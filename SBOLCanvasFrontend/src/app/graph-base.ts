@@ -1383,13 +1383,13 @@ export class GraphBase {
 
         // edges can't connect to edges
         if ((source && source.isEdge()) || (target && target.isEdge())) {
-            return "Edges are dissallowed to connect to edges.";
+            return "Edges are disallowed to connect to edges.";
         }
 
         // certain edge types can't connect to interaction nodes
         if (((source && source.isInteractionNode()) || (target && target.isInteractionNode())) &&
             (interactionType == 'Control' || interactionType == 'Inhibition' || interactionType == 'Stimulation')) {
-            return 'Edge type dissallowed to connect to an interaction node.';
+            return 'Edge type disallowed to connect to an interaction node.';
         }
 
         // prevent degredation from using anything as a target
