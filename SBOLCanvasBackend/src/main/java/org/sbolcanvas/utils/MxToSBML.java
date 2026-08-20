@@ -27,6 +27,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 // JSBML API Docs: https://sbml.org/jsbml/files/doc/api/1.6.1/overview-summary.html
+import org.sbml.jsbml.SBase;
 import org.sbml.jsbml.SBMLDocument;
 import org.sbml.jsbml.Model;
 import org.sbml.jsbml.Species;
@@ -277,6 +278,15 @@ public class MxToSBML extends Converter {
 				promoterSpecies.setBoundaryCondition(false);
 				promoterSpecies.setName(mergedName);
 
+				// A merged promoter species combines several SBOL parts, so it
+				// carries one identity annotation per source part.
+				for (mxCell promoterGlyph : promoterGlyphs) {
+					GlyphInfo info = (GlyphInfo) infoDict.get(promoterGlyph.getValue());
+					if (info != null) {
+						attachSbolIdentity(promoterSpecies, info.getFullURI());
+					}
+				}
+
 				mxGeometry backboneGeom = backbone.getGeometry();
 				SpeciesData mergedSpeciesData = new SpeciesData(promoterSpecies, backboneGeom);
 				for (mxCell promoterGlyph : promoterGlyphs) {
@@ -381,7 +391,7 @@ public class MxToSBML extends Converter {
 			}
 
 			if (reaction.getProductCount() == 0) {
-				Species mRNA = createPlaceholderMRnaSpecies(sbmlModel, promoterId);
+				Species mRNA = createPlaceholderMRnaSpecies(sbmlModel, promoterId, tuData.promoterSpecies);
 				SpeciesReference product = reaction.createProduct(mRNA);
 				product.setConstant(true);
 				product.setStoichiometry(np);
@@ -675,8 +685,9 @@ public class MxToSBML extends Converter {
 	 * TUs without an explicit product are assumed to create an undocumented mRNA.
 	 * Placeholder mRNA created as `<promoterId>_mRNA` species (SBO:0000250, initialAmount 0).
 	 * This matches how iBioSim handles promoter species without products.
+	 * The mRNA is synthetic, so it inherits its promoter's SBOL identity annotations.
 	 */
-	private Species createPlaceholderMRnaSpecies(Model sbmlModel, String promoterId) {
+	private Species createPlaceholderMRnaSpecies(Model sbmlModel, String promoterId, Species promoterSpecies) {
 		String mRnaId = sanitizeId(promoterId + "_mRNA");
 		Species mRNA = sbmlModel.createSpecies(mRnaId);
 		mRNA.setCompartment("Cell");
@@ -685,6 +696,13 @@ public class MxToSBML extends Converter {
 		mRNA.setHasOnlySubstanceUnits(true);
 		mRNA.setConstant(false);
 		mRNA.setBoundaryCondition(false);
+		if (promoterSpecies.isSetAnnotation() && promoterSpecies.getAnnotation().isSetNonRDFannotation()) {
+			try {
+				mRNA.appendAnnotation(promoterSpecies.getAnnotation().getNonRDFannotationAsString());
+			} catch (XMLStreamException e) {
+				throw new IllegalStateException("Failed to copy SBOL identity annotations to " + mRnaId, e);
+			}
+		}
 		return mRNA;
 	}
 
@@ -957,6 +975,7 @@ public class MxToSBML extends Converter {
 			if (eventInfo.getName() != null && !eventInfo.getName().isEmpty()) {
 				event.setName(eventInfo.getName());
 			}
+			attachSbolIdentity(event, eventInfo.getFullURI());
 			event.setUseValuesFromTriggerTime(false);
 
 			// Trigger hardcoded to true. TODO: add conditional triggers
@@ -1021,6 +1040,7 @@ public class MxToSBML extends Converter {
 		if (glyphInfo.getName() != null && !glyphInfo.getName().isEmpty()) {
 			species.setName(glyphInfo.getName());
 		}
+		attachSbolIdentity(species, glyphInfo.getFullURI());
 
 		String partType = glyphInfo.getPartType();
 		URI typeURI = SBOLData.types.getValue(partType);
@@ -1360,6 +1380,26 @@ public class MxToSBML extends Converter {
 		}
 		usedIds.add(sanitized);
 		return sanitized;
+	}
+
+	/**
+	 * Attaches the source SBOL identity as a non-RDF annotation so the SBML element
+	 * stays traceable to the SBOLCanvas part it came from. Tools that do not know
+	 * the namespace ignore it (SBML spec).
+	 *
+	 * @param element The SBML element to annotate
+	 * @param fullURI The full SBOL URI (uriPrefix/displayID/version)
+	 */
+	private void attachSbolIdentity(SBase element, String fullURI) {
+		String escaped = fullURI.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"",
+				"&quot;");
+		String xml = "<" + Converter.ANN_PREFIX + ":identity xmlns:" + Converter.ANN_PREFIX + "=\"" + Converter.URI_PREFIX
+				+ "\" " + Converter.ANN_PREFIX + ":uri=\"" + escaped + "\"/>";
+		try {
+			element.appendAnnotation(xml);
+		} catch (XMLStreamException e) {
+			throw new IllegalStateException("Failed to attach SBOL identity annotation for " + fullURI, e);
+		}
 	}
 
 }
