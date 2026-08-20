@@ -1326,21 +1326,26 @@ public class MxToSBML extends Converter {
 	}
 
 	/**
-	 * Sanitizes an ID to be a valid SBML SId. SBML SId must:
+	 * Sanitizes an ID to be a valid SBML SId. IDs produced by this method (species,
+	 * reaction, event, and other model-entity ids) must:
 	 * - be unique
 	 * - start with a letter or underscore
 	 * - contain only letters, digits, and underscores
+	 * - never contain "__" (iBioSim parses "__" as its internal submodel separator)
+	 * Layout glyph ids are built separately (see glyphId) and intentionally use the
+	 * "Glyph__" prefix.
 	 *
 	 * @param id The raw ID string
 	 * @return A valid, unique SBML SId
 	 * @see Converter#sanitizeAnnotationKey for XML NCName sanitization (different rules)
 	 */
-	private String sanitizeId(String id) {
+	String sanitizeId(String id) {
 		if (id == null || id.isEmpty()) {
 			id = "unnamed";
 		}
-		// Replace invalid characters with underscore
-		String sanitized = id.replaceAll("[^a-zA-Z0-9_]", "_");
+		// Replace runs of invalid characters with a single underscore, then collapse
+		// underscore runs so the result never contains "__"
+		String sanitized = id.replaceAll("[^a-zA-Z0-9_]+", "_").replaceAll("_+", "_");
 		// Ensure it starts with a letter or underscore (not a digit)
 		if (Character.isDigit(sanitized.charAt(0))) {
 			sanitized = "_" + sanitized;
@@ -1348,10 +1353,10 @@ public class MxToSBML extends Converter {
 		// Make unique: if ID already used, find next available suffix
 		if (usedIds.contains(sanitized)) {
 			int suffix = 2;
-			while (usedIds.contains(sanitized + "__" + suffix)) {
+			while (usedIds.contains(sanitized + "_" + suffix)) {
 				suffix++;
 			}
-			sanitized = sanitized + "__" + suffix;
+			sanitized = sanitized + "_" + suffix;
 		}
 		usedIds.add(sanitized);
 		return sanitized;

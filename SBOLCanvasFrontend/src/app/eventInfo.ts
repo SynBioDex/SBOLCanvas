@@ -1,7 +1,5 @@
 import { Info } from './info';
 import { environment } from 'src/environments/environment';
-import { customAlphabet } from 'nanoid';
-import { alphanumeric } from 'nanoid-dictionary';
 
 export class EventInfo extends Info {
     name: string = '';
@@ -11,8 +9,7 @@ export class EventInfo extends Info {
     constructor() {
         super();
         this.uriPrefix = environment.baseURI;
-        // Static 'Event_' prefix never starts with a digit, so the displayID is NCName-safe without a guard.
-        this.displayID = 'Event_' + customAlphabet(alphanumeric, 8)();
+        this.displayID = Info.generateID('Event');
     }
 
     getFullURI(): string {

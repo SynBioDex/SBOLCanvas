@@ -1,12 +1,8 @@
 import { Info } from './info';
-import { environment } from 'src/environments/environment';
-import { customAlphabet } from 'nanoid';
-import { alphanumeric } from 'nanoid-dictionary';
 
 
 export class InteractionInfo extends Info {
   // Remember that when you change this you need to change the encode function in graph service
-  static counter: number = 0;
   interactionType: string;
 
   // treat these as dictionaries, not arrays
@@ -18,7 +14,7 @@ export class InteractionInfo extends Info {
 
   constructor() {
     super();
-    this.displayID = 'Interaction_' + customAlphabet(alphanumeric, 8)();
+    this.displayID = Info.generateID('Interaction');
   }
 
   makeCopy() {

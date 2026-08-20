@@ -1,13 +1,8 @@
-import { ParsedEventType } from '@angular/compiler';
 import { CanvasAnnotation } from './canvasAnnotation';
 import { Info } from './info';
-import { environment } from 'src/environments/environment';
-import { customAlphabet } from 'nanoid';
-import { alphanumeric } from 'nanoid-dictionary';
 
 export class GlyphInfo extends Info {
     // Remember that when you change this you need to change the encode function in graph service
-    static counter: number = 0;
     partType: string;
     otherTypes: string[];
     partRole: string;
@@ -24,12 +19,10 @@ export class GlyphInfo extends Info {
     simulationData: Record<string, number | string | boolean> = {};
 
     constructor({
-        id,
         version = "1",
         partType = "DNA region",
         partRole,
     }: {
-        id?,
         version?,
         partType?,
         partRole?,
@@ -43,14 +36,7 @@ export class GlyphInfo extends Info {
 
         // try to make a prefix from the part role
         const partRolePrefix = partRole && (partRole.match(/^(\w+)/) || [])[1];
-        // generate id
-        this.displayID = id || partRolePrefix ?
-            `${partRolePrefix}_${customAlphabet(alphanumeric, 4)()}` :      // either use prefix and short ID
-            customAlphabet(alphanumeric, 8)();                               // or long ID
-
-        // ensure ID doesn't start with a digit
-        if (/^\d/.test(this.displayID))
-            this.displayID = "i" + this.displayID;
+        this.displayID = Info.generateID(partRolePrefix || 'part');
 
         // make a name so the displayed stuff is cleaner
         this.name = partRolePrefix || " ";
