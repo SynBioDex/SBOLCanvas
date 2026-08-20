@@ -44,13 +44,15 @@ export class GraphService extends GraphHelpers {
         // double-click a glyph's name label to rename it inline
         this.graph.addListener(mx.mxEvent.DOUBLE_CLICK, mx.mxUtils.bind(this, this.onCanvasDoubleClick));
 
-        // Override mxGraph's label commit so renames write the GlyphInfo/ModuleInfo name,
-        // not cell.value (which holds the URI key).
+        // Override mxGraph's label commit so renames write the GlyphInfo/ModuleInfo/EventInfo
+        // name, not cell.value (which holds the URI key).
         let graphService = this;
         let mxGetEditingValue = mx.mxGraph.prototype.getEditingValue;
         this.graph.getEditingValue = function (cell, evt) {
             if (graphService.isInlineRenamable(cell)) {
-                let info = <GlyphInfo>graphService.getFromInfoDict(cell.value);
+                let info = cell.isEvent()
+                    ? graphService.getFromEventDict(cell.value)
+                    : <GlyphInfo>graphService.getFromInfoDict(cell.value);
                 if (info) {
                     return info.name != null ? info.name : '';
                 }
@@ -60,9 +62,11 @@ export class GraphService extends GraphHelpers {
         let mxCellLabelChanged = mx.mxGraph.prototype.cellLabelChanged;
         this.graph.cellLabelChanged = function (cell, value, autoSize) {
             if (graphService.isInlineRenamable(cell)) {
-                let info = <GlyphInfo>graphService.getFromInfoDict(cell.value);
+                let info = cell.isEvent()
+                    ? graphService.getFromEventDict(cell.value)
+                    : <GlyphInfo>graphService.getFromInfoDict(cell.value);
                 if (info) {
-                    let copy = <GlyphInfo>info.makeCopy();
+                    let copy = info.makeCopy();
                     copy.name = value;
                     if (graphService.graph.getSelectionCell() !== cell) {
                         graphService.graph.setSelectionCell(cell);
@@ -529,9 +533,9 @@ export class GraphService extends GraphHelpers {
         }
     }
 
-    /** Cells whose name label can be renamed inline (they carry a GlyphInfo/ModuleInfo name). */
+    /** Cells whose name label can be renamed inline (they carry a GlyphInfo/ModuleInfo/EventInfo name). */
     isInlineRenamable(cell) {
-        return cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isModule());
+        return cell && (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isModule() || cell.isEvent());
     }
 
     isPointOnLabel(cell, mouseEvt) {

@@ -610,6 +610,11 @@ public class MxToSBOL extends Converter {
 		for (mxCell eventCell : eventCells) {
 			try {
 				EventInfo event = eventDict.get(eventCell.getValue());
+				if (event == null) {
+					System.err.println("Warning: SBOL export skipped event: no EventInfo for cell value "
+							+ eventCell.getValue());
+					continue;
+				}
 				GenericTopLevel eventTL = document.createGenericTopLevel(
 						event.getUriPrefix(), event.getDisplayID(), "1", createQName("Event"));
 				if (event.getName() != null && !event.getName().isEmpty()) {

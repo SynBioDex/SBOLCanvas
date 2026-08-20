@@ -954,6 +954,9 @@ public class MxToSBML extends Converter {
 			}
 			String eventId = sanitizeId(eventName);
 			Event event = sbmlModel.createEvent(eventId);
+			if (eventInfo.getName() != null && !eventInfo.getName().isEmpty()) {
+				event.setName(eventInfo.getName());
+			}
 			event.setUseValuesFromTriggerTime(false);
 
 			// Trigger hardcoded to true. TODO: add conditional triggers

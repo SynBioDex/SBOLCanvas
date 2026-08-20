@@ -444,6 +444,18 @@ class SBOLToSBMLPipelineEventsTest {
                                 + " simulationData/assignmentValue (default 0 when omitted)");
             }
         }
+
+        @Test
+        @DisplayName("Each event's SBML name is set and matches one of the fixture's event titles")
+        void eventNamesAreSet() {
+            for (int i = 0; i < model.getEventCount(); i++) {
+                Event event = model.getEvent(i);
+                assertTrue(event.isSetName(), event.getId() + " should carry its SBOL name");
+                assertTrue(expectedByEventId().containsKey(event.getName()),
+                        event.getId() + " name '" + event.getName()
+                                + "' should be one of the fixture's event titles");
+            }
+        }
     }
 
 }
