@@ -243,17 +243,13 @@ public class MxToSBML extends Converter {
 						continue;
 					}
 					promoterGlyphs.add(glyph);
-					String name = info.getName();
-					if (name == null || name.isEmpty()) {
-						name = info.getDisplayID();
-					}
-					individualNames.add(name);
+					individualNames.add(info.getDisplayName());
 				}
 				if (promoterGlyphs.isEmpty())
 					continue;
 
 				String mergedName = String.join("+", individualNames);
-				String mergedId = sanitizeId(mergedName);
+				String mergedId = Identifiers.toSId(mergedName, usedIds);
 
 				Hashtable<String, Object> mergedSimData = new Hashtable<>();
 				for (String param : MERGED_PROMOTER_PARAMS) {
@@ -688,7 +684,7 @@ public class MxToSBML extends Converter {
 	 * The mRNA is synthetic, so it inherits its promoter's SBOL identity annotations.
 	 */
 	private Species createPlaceholderMRnaSpecies(Model sbmlModel, String promoterId, Species promoterSpecies) {
-		String mRnaId = sanitizeId(promoterId + "_mRNA");
+		String mRnaId = Identifiers.toSId(promoterId + "_mRNA", usedIds);
 		Species mRNA = sbmlModel.createSpecies(mRnaId);
 		mRNA.setCompartment("Cell");
 		mRNA.setSBOTerm(250); // SBO:0000250 Ribonucleic acid
@@ -1026,18 +1022,16 @@ public class MxToSBML extends Converter {
 		if (glyphInfo == null)
 			return null;
 
-		// SBML ID becomes the label. Pick Name over DisplayID
-		String displayName = glyphInfo.getDisplayID();
-		if (glyphInfo.getName() != null && !glyphInfo.getName().isEmpty()) {
-			displayName = glyphInfo.getName();
-		}
-		String speciesId = sanitizeId(displayName);
+		// SBML ID becomes the label: the species' display name (the same fallback
+		// chain the canvas label uses)
+		String displayName = glyphInfo.getDisplayName();
+		String speciesId = Identifiers.toSId(displayName, usedIds);
 		displayNameToSpeciesId.put(displayName, speciesId);
 
 		Species species = model.createSpecies(speciesId);
 		species.setCompartment("Cell");
 
-		if (glyphInfo.getName() != null && !glyphInfo.getName().isEmpty()) {
+		if (glyphInfo.getName() != null && !glyphInfo.getName().trim().isEmpty()) {
 			species.setName(glyphInfo.getName());
 		}
 		attachSbolIdentity(species, glyphInfo.getFullURI());
@@ -1343,43 +1337,6 @@ public class MxToSBML extends Converter {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * Sanitizes an ID to be a valid SBML SId. IDs produced by this method (species,
-	 * reaction, event, and other model-entity ids) must:
-	 * - be unique
-	 * - start with a letter or underscore
-	 * - contain only letters, digits, and underscores
-	 * - never contain "__" (iBioSim parses "__" as its internal submodel separator)
-	 * Layout glyph ids are built separately (see glyphId) and intentionally use the
-	 * "Glyph__" prefix.
-	 *
-	 * @param id The raw ID string
-	 * @return A valid, unique SBML SId
-	 * @see Converter#sanitizeAnnotationKey for XML NCName sanitization (different rules)
-	 */
-	String sanitizeId(String id) {
-		if (id == null || id.isEmpty()) {
-			id = "unnamed";
-		}
-		// Replace runs of invalid characters with a single underscore, then collapse
-		// underscore runs so the result never contains "__"
-		String sanitized = id.replaceAll("[^a-zA-Z0-9_]+", "_").replaceAll("_+", "_");
-		// Ensure it starts with a letter or underscore (not a digit)
-		if (Character.isDigit(sanitized.charAt(0))) {
-			sanitized = "_" + sanitized;
-		}
-		// Make unique: if ID already used, find next available suffix
-		if (usedIds.contains(sanitized)) {
-			int suffix = 2;
-			while (usedIds.contains(sanitized + "_" + suffix)) {
-				suffix++;
-			}
-			sanitized = sanitized + "_" + suffix;
-		}
-		usedIds.add(sanitized);
-		return sanitized;
 	}
 
 	/**
