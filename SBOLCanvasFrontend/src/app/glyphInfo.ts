@@ -8,9 +8,7 @@ export class GlyphInfo extends Info {
     partRole: string;
     otherRoles: string[];
     partRefine: string;
-    name: string;
     description: string;
-    version: string;
     sequence: string;
     sequenceURI: string;
     annotations: CanvasAnnotation[];
@@ -38,8 +36,9 @@ export class GlyphInfo extends Info {
         const partRolePrefix = partRole && (partRole.match(/^(\w+)/) || [])[1];
         this.displayID = Info.generateID(partRolePrefix || 'part');
 
-        // make a name so the displayed stuff is cleaner
-        this.name = partRolePrefix || " ";
+        // default name is the part role, same convention as molecular species'
+        // palette names ("prot", "chem"); the user replaces it on rename
+        this.name = partRolePrefix || '';
     }
 
     makeCopy() {
@@ -80,14 +79,6 @@ export class GlyphInfo extends Info {
         this.derivedFroms = other.derivedFroms ? other.derivedFroms.slice() : null;
         this.generatedBys = other.generatedBys ? other.generatedBys.slice() : null;
         this.simulationData = other.simulationData ? { ...other.simulationData } : {};
-    }
-
-    getFullURI(): string {
-        let fullURI = this.uriPrefix + '/' + this.displayID;
-        if (this.version && this.version.length > 0) {
-            fullURI += '/' + this.version;
-        }
-        return fullURI;
     }
 
     encode(enc: any) {

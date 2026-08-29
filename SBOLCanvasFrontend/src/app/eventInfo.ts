@@ -9,17 +9,17 @@ export class EventInfo extends Info {
     constructor() {
         super();
         this.uriPrefix = environment.baseURI;
+        this.version = "1";
         this.displayID = Info.generateID('Event');
-    }
-
-    getFullURI(): string {
-        return this.uriPrefix + '/' + this.displayID;
+        // default name is the type, same convention as molecular species ("prot")
+        this.name = 'Event';
     }
 
     makeCopy(): EventInfo {
         const copy: EventInfo = new EventInfo();
         copy.uriPrefix = this.uriPrefix;
         copy.displayID = this.displayID;
+        copy.version = this.version;
         copy.name = this.name;
         copy.description = this.description;
         copy.simulationData = this.simulationData ? { ...this.simulationData } : {};
@@ -29,6 +29,7 @@ export class EventInfo extends Info {
     copyDataFrom(other: EventInfo) {
         this.uriPrefix = other.uriPrefix;
         this.displayID = other.displayID;
+        this.version = other.version;
         this.name = other.name;
         this.description = other.description;
         this.simulationData = other.simulationData ? { ...other.simulationData } : {};
@@ -40,6 +41,8 @@ export class EventInfo extends Info {
             node.setAttribute("uriPrefix", this.uriPrefix);
         if (this.displayID)
             node.setAttribute("displayID", this.displayID);
+        if (this.version && this.version.length > 0)
+            node.setAttribute("version", this.version);
         if (this.name && this.name.length > 0)
             node.setAttribute("name", this.name);
         if (this.description && this.description.length > 0)

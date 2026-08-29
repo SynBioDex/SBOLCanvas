@@ -656,6 +656,7 @@ public class SBOLToMx extends Converter {
 	private InteractionInfo genInteractionInfo(Interaction interaction) {
 		InteractionInfo info = new InteractionInfo();
 		info.setDisplayID(interaction.getDisplayId());
+		info.setVersion(interaction.getVersion());
 		info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
 		info.setUriPrefix(getURIPrefix(interaction));
 		info.setSimulationData(readSimulationAnnotations(interaction));

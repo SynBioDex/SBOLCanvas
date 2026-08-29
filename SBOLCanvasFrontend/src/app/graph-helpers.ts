@@ -2196,41 +2196,23 @@ export class GraphHelpers extends GraphBase {
     }
 
     protected initLabelDrawing() {
-        // label drawing
+        // label drawing: every info-bearing cell shows its display name
         let graphService = this;
         this.graph.convertValueToString = function (cell) {
-            if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()) {
-                let info = <GlyphInfo>graphService.getFromInfoDict(cell.value);
-                if (!info) {
-                    return cell.value;
-                } else if (info.name != null && info.name != '') {
-                    return info.name;
-                } else {
-                    return info.displayID;
-                }
-            } else if (cell.isModule()) {
-                let info = <ModuleInfo>graphService.getFromInfoDict(cell.value);
-                if (!info) {
-                    return cell.value;
-                } else if (info.name != null && info.name != '') {
-                    return info.name;
-                } else {
-                    return info.displayID;
-                }
+            let info: Info = null;
+            if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph() || cell.isModule()) {
+                info = graphService.getFromInfoDict(cell.value);
             } else if (cell.isEvent()) {
-                let info = <EventInfo>graphService.getFromEventDict(cell.value);
-                if (!info) {
-                    return cell.value;
-                } else if (info.name != null && info.name != '') {
-                    return info.name;
-                } else {
-                    return info.displayID;
-                }
+                info = graphService.getFromEventDict(cell.value);
             } else if (cell.isCircuitContainer() || cell.isInteraction() || cell.isInteractionNode()) {
                 return null;
             } else {
                 return cell.value;
             }
+            if (!info) {
+                return cell.value;
+            }
+            return info.getDisplayName();
         };
 
         // label truncation

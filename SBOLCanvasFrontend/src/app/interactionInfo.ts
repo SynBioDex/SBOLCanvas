@@ -14,12 +14,15 @@ export class InteractionInfo extends Info {
 
   constructor() {
     super();
+    // no version: libSBOLj's createInteraction has no version overload, so
+    // interaction identities are versionless in the SBOL we write
     this.displayID = Info.generateID('Interaction');
   }
 
   makeCopy() {
     const copy: InteractionInfo = new InteractionInfo();
     copy.displayID = this.displayID;
+    copy.version = this.version;
     copy.uriPrefix = this.uriPrefix;
     copy.interactionType = this.interactionType;
     for(let key in this.sourceRefinement){
@@ -42,6 +45,7 @@ export class InteractionInfo extends Info {
 
   copyDataFrom(other: InteractionInfo) {
     this.displayID = other.displayID;
+    this.version = other.version;
     this.uriPrefix = other.uriPrefix;
     this.interactionType = other.interactionType;
     for(let key in other.sourceRefinement){
@@ -61,14 +65,12 @@ export class InteractionInfo extends Info {
     }
   }
 
-  getFullURI() {
-    return this.uriPrefix + '/' + this.displayID;
-  }
-
   encode(enc: any) {
     let node = enc.document.createElement('InteractionInfo');
     if (this.displayID)
       node.setAttribute("displayID", this.displayID);
+    if (this.version && this.version.length > 0)
+      node.setAttribute("version", this.version);
     if (this.interactionType)
       node.setAttribute("interactionType", this.interactionType);
     if(this.uriPrefix)

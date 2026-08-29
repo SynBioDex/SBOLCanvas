@@ -5,7 +5,6 @@ import java.util.Hashtable;
 public class CombinatorialInfo extends Info {
 
 	private String templateURI;
-	private String version;
 	private String strategy;
 	private String name;
 	private String description;
@@ -17,14 +16,6 @@ public class CombinatorialInfo extends Info {
 
 	public void setTemplateURI(String templateURI) {
 		this.templateURI = templateURI;
-	}
-
-	public String getVersion() {
-		return version;
-	}
-
-	public void setVersion(String version) {
-		this.version = version;
 	}
 
 	public String getStrategy() {
@@ -57,14 +48,6 @@ public class CombinatorialInfo extends Info {
 
 	public void setVariableComponents(Hashtable<String, VariableComponentInfo> variableComponents) {
 		this.variableComponents = variableComponents;
-	}
-
-	public String getFullURI() {
-		String fullURI = this.uriPrefix + '/' + this.displayID;
-		if (this.version != null && this.version.length() > 0) {
-			fullURI += '/' + this.version;
-		}
-		return fullURI;
 	}
 
 }

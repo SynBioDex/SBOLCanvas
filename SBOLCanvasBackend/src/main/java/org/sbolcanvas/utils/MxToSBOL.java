@@ -333,7 +333,9 @@ public class MxToSBOL extends Converter {
 							molSpeciesInfo.getDisplayID(), molSpeciesInfo.getVersion(),
 							SBOLData.types.getValue(molSpeciesInfo.getPartType()));
 					molSpeciesCD.setDescription(molSpeciesInfo.getDescription());
-					molSpeciesCD.setName(molSpeciesInfo.getName());
+					if (molSpeciesInfo.getName() != null && !molSpeciesInfo.getName().trim().isEmpty()) {
+						molSpeciesCD.setName(molSpeciesInfo.getName());
+					}
 					molSpeciesCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
 					writeSimulationAnnotations(molSpeciesCD, molSpeciesInfo.getSimulationData(), molSpeciesCD.getDisplayId());
 				}
@@ -442,7 +444,9 @@ public class MxToSBOL extends Converter {
 			}
 		}
 
-		compDef.setName(glyphInfo.getName());
+		if (glyphInfo.getName() != null && !glyphInfo.getName().trim().isEmpty()) {
+			compDef.setName(glyphInfo.getName());
+		}
 		compDef.setDescription(glyphInfo.getDescription());
 
 		// component sequence

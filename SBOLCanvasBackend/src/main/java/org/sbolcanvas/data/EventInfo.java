@@ -8,15 +8,6 @@ public class EventInfo extends Info {
 	private String name;
 	private String description;
 
-	@Override
-	public String getFullURI() {
-		if (uriPrefix == null || displayID == null) {
-			throw new IllegalStateException(
-					"EventInfo has null uriPrefix or displayID (uriPrefix=" + uriPrefix + ", displayID=" + displayID + ")");
-		}
-		return uriPrefix + "/" + displayID;
-	}
-
 	public Hashtable<String, Object> getSimulationData() {
 		return simulationData;
 	}

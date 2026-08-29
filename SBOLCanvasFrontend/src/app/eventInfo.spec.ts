@@ -12,9 +12,9 @@ describe('EventInfo', () => {
     expect(new EventInfo().displayID).not.toBe(new EventInfo().displayID);
   });
 
-  it('builds getFullURI from uriPrefix and displayID', () => {
+  it('builds getFullURI from uriPrefix, displayID, and version', () => {
     const info = new EventInfo();
-    expect(info.getFullURI()).toBe(info.uriPrefix + '/' + info.displayID);
+    expect(info.getFullURI()).toBe(info.uriPrefix + '/' + info.displayID + '/' + info.version);
   });
 
   it('carries name, description, and simulationData through makeCopy as a distinct object', () => {
@@ -51,8 +51,9 @@ describe('EventInfo', () => {
     expect(node.getAttribute('name')).toBe('Trigger A');
     expect(node.hasAttribute('description')).toBe(false);
 
+    // the default name is the type, matching molecular species ("prot")
     const blank = new EventInfo();
     const blankNode = blank.encode({ document });
-    expect(blankNode.hasAttribute('name')).toBe(false);
+    expect(blankNode.getAttribute('name')).toBe('Event');
   });
 });
