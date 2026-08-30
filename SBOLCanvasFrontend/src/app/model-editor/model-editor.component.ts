@@ -156,6 +156,14 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
     this.changeDetector.detectChanges();
   }
 
+  /** The Target Species field shows the species' canvas label; the stored value is its URI. */
+  getTargetSpeciesLabel(): string {
+    const stored = (this.eventInfo && this.eventInfo.simulationData)
+      ? this.eventInfo.simulationData['targetSpecies'] : null;
+    if (!stored) return '';
+    return this.graphService.getSpeciesLabelForURI(String(stored)) || String(stored);
+  }
+
   /**
    * Each reactant's interaction arrow in Complex Formation has its own parameter values.
    * Example: "nc_<sourceURI>" for the nc parameter on the interaction arrow.
@@ -206,7 +214,20 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
     if (id === 'boundaryCondition') {
       value = event.checked;
     } else if (['targetSpecies'].includes(id)) {
-      value = event.target.value;
+      // store the species' identity, not its label: names are display-only and
+      // may change or collide; the URI is the stable reference
+      const typed = (event.target.value || '').trim();
+      if (typed) {
+        const uri = this.graphService.getSpeciesURIForLabel(typed);
+        if (!uri) {
+          this.validationErrors[id] = `No unique species named '${typed}' on the canvas`;
+          this.changeDetector.detectChanges();
+          return;
+        }
+        value = uri;
+      } else {
+        value = '';
+      }
     } else {
       value = parseFloat(event.target.value);
       const error = this.validateNumericParam(id, value);

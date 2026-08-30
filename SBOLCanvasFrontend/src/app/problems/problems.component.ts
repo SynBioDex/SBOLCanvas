@@ -159,7 +159,7 @@ export class ProblemsComponent implements OnInit, OnDestroy {
             if (!edge.source || (!edge.target && !isDegradation)) {
                 const connectedEnd = edge.source || edge.target
                 const endInfo = connectedEnd ? this.graphService.lookupInfo(connectedEnd.value) : null
-                const endName = (endInfo && (endInfo.name || endInfo.displayID)) || 'unknown'
+                const endName = endInfo ? endInfo.getDisplayName() : 'unknown'
                 const missing = !edge.source ? 'no source' : 'no target'
                 warnings.push(`${type} edge on '${endName}': ${missing}`)
             }
@@ -181,7 +181,7 @@ export class ProblemsComponent implements OnInit, OnDestroy {
                 .filter(e => e.source)
                 .map(e => {
                     const ri = this.graphService.lookupInfo(e.source.value)
-                    return (ri && (ri.name || ri.displayID)) || '?'
+                    return ri ? ri.getDisplayName() : '?'
                 })
                 .join(', ') || 'none'
 

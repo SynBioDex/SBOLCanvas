@@ -526,6 +526,7 @@ public class SBOLToMx extends Converter {
 	private EventInfo buildEventInfo(GenericTopLevel gtl) {
 		EventInfo event = new EventInfo();
 		event.setDisplayID(gtl.getDisplayId());
+		event.setVersion(gtl.getVersion());
 		event.setUriPrefix(getURIPrefix(gtl));
 		event.setDescription(gtl.getDescription());
 		Hashtable<String, Object> simData = readSimulationAnnotations(gtl);

@@ -97,8 +97,9 @@
 
     <mat-form-field floatLabel="always">
       <mat-label>Target Species</mat-label>
-      <input matInput id="targetSpecies" value="{{eventInfo.simulationData['targetSpecies'] || ''}}"
+      <input matInput id="targetSpecies" value="{{ getTargetSpeciesLabel() }}"
         (change)="inputChange($event)">
+      <mat-error *ngIf="validationErrors['targetSpecies']">{{validationErrors['targetSpecies']}}</mat-error>
     </mat-form-field>
 
     <mat-form-field floatLabel="always">

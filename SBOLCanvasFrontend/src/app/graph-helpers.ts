@@ -2130,6 +2130,33 @@ export class GraphHelpers extends GraphBase {
     }
 
     /**
+     * Resolve a species' display name to the species glyph's full URI.
+     * Returns null unless exactly one species on the canvas has that label.
+     */
+    public getSpeciesURIForLabel(label: string): string {
+        let match: string = null;
+        const model = this.graph.getModel();
+        for (const cell of Object.values(model.cells) as any[]) {
+            if (!cell || !cell.isMolecularSpeciesGlyph || !cell.isMolecularSpeciesGlyph()) {
+                continue;
+            }
+            const info = <GlyphInfo>this.getFromInfoDict(<string>cell.value);
+            if (info && info.getDisplayName() === label) {
+                if (match) {
+                    return null; // ambiguous: two species share the label
+                }
+                match = <string>cell.value;
+            }
+        }
+        return match;
+    }
+
+    public getSpeciesLabelForURI(uri: string): string {
+        const info = this.getFromInfoDict(uri);
+        return info ? info.getDisplayName() : null;
+    }
+
+    /**
      * Updates an Combinatorial object
      * NOTE: Should only be used if the fullURI is the same
      */

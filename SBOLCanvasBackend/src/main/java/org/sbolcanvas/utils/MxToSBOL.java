@@ -620,7 +620,8 @@ public class MxToSBOL extends Converter {
 					continue;
 				}
 				GenericTopLevel eventTL = document.createGenericTopLevel(
-						event.getUriPrefix(), event.getDisplayID(), "1", createQName("Event"));
+						event.getUriPrefix(), event.getDisplayID(),
+						event.getVersion() != null ? event.getVersion() : "1", createQName("Event"));
 				if (event.getName() != null && !event.getName().isEmpty()) {
 					eventTL.setName(event.getName());
 				}

@@ -954,19 +954,21 @@ public class MxToSBML extends Converter {
 				continue;
 			}
 
-			// Resolve display name to SBML species ID. The user enters a display
-			// name (e.g., "LacI protein") but SBML uses sanitized IDs ("LacI_protein").
-			String speciesId = resolveSpeciesId(sbmlModel, targetSpecies, displayNameToSpeciesId);
+			// The stored value is the species glyph's full URI when set from the
+			// frontend; older files carry a display name instead
+			String speciesId = null;
+			SpeciesData target = glyphToSpeciesData.get(targetSpecies);
+			if (target != null) {
+				speciesId = target.species.getId();
+			} else {
+				speciesId = resolveSpeciesId(sbmlModel, targetSpecies, displayNameToSpeciesId);
+			}
 			if (speciesId == null) {
 				log.warn(context + ": targetSpecies '" + targetSpecies + "' did not resolve to a species; event skipped");
 				continue;
 			}
 
-			String eventName = eventInfo.getName();
-			if (eventName == null || eventName.isEmpty()) {
-				eventName = eventInfo.getDisplayID();
-			}
-			String eventId = sanitizeId(eventName);
+			String eventId = Identifiers.toSId(eventInfo.getDisplayName(), usedIds);
 			Event event = sbmlModel.createEvent(eventId);
 			if (eventInfo.getName() != null && !eventInfo.getName().isEmpty()) {
 				event.setName(eventInfo.getName());
