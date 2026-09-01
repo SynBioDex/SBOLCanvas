@@ -57,7 +57,7 @@ class ToggleExportStructureTest {
         void toggleSwitchHas13Species() {
             assertEquals(13, toggleModel.getSpeciesCount(),
                 "4 promoters + 3 proteins + 2 small molecules + 2 complexes "
-                + "+ 2 placeholder mRNA (pLac__2_mRNA, pTet__2_mRNA for the two promoters without explicit product)");
+                + "+ 2 placeholder mRNA (pLac_2_mRNA, pTet_2_mRNA for the two promoters without explicit product)");
         }
 
         @Test
@@ -71,7 +71,7 @@ class ToggleExportStructureTest {
                         "Promoter '" + s.getId() + "' initialAmount (ng default)");
                 }
             }
-            assertEquals(4, count, "4 promoter species (pTet, pLac, pLac__2, pTet__2)");
+            assertEquals(4, count, "4 promoter species (pTet, pLac, pLac_2, pTet_2)");
         }
 
     }
@@ -81,9 +81,9 @@ class ToggleExportStructureTest {
     class Reactions {
 
         @Test
-        @DisplayName("No-CDS production reactions (pLac__2, pTet__2) get a placeholder mRNA product")
+        @DisplayName("No-CDS production reactions (pLac_2, pTet_2) get a placeholder mRNA product")
         void noCdsProductionReactionsHavePlaceholderMRna() {
-            for (String promoterId : new String[]{"pLac__2", "pTet__2"}) {
+            for (String promoterId : new String[]{"pLac_2", "pTet_2"}) {
                 Reaction r = toggleModel.getReaction("Production_" + promoterId);
                 assertNotNull(r, "Production_" + promoterId + " should exist");
                 assertProductionReactionInvariants(r);
@@ -161,7 +161,7 @@ class ToggleExportStructureTest {
         @Test
         @DisplayName("Placeholder mRNA species carries SBO:0000250 with initialAmount=0 in the Cell compartment")
         void placeholderMRnaSpeciesCarriesSbo250WithInitialAmountZero() {
-            for (String promoterId : new String[]{"pLac__2", "pTet__2"}) {
+            for (String promoterId : new String[]{"pLac_2", "pTet_2"}) {
                 Reaction r = toggleModel.getReaction("Production_" + promoterId);
                 String mRnaId = r.getProduct(0).getSpecies();
 

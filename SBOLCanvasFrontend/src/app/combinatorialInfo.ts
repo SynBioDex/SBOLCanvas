@@ -5,10 +5,8 @@ export class CombinatorialInfo extends Info{
 
     static counter: number = 0;
 
-    templateURI: string;    
-    version: string;
+    templateURI: string;
     strategy: string;
-    name: string;
     description: string;
     variableComponents = [];
 
@@ -93,14 +91,6 @@ export class CombinatorialInfo extends Info{
             node.appendChild(varCompsNode);
         }
         return node;
-    }
-
-    getFullURI(): string {
-        let fullURI = this.uriPrefix + '/' + this.displayID;
-        if (this.version && this.version.length > 0) {
-          fullURI += '/' + this.version;
-        }
-        return fullURI;
     }
 
 }

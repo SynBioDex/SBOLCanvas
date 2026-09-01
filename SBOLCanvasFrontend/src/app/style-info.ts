@@ -1,5 +1,3 @@
-import * as mxGraph from 'mxgraph';
-import * as mxCell from 'mxgraph';
 import mxgraph from 'mxgraph';
 
 declare var require: any;

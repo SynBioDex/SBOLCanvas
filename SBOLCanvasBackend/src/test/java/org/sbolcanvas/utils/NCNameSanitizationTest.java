@@ -11,20 +11,20 @@ import static org.sbolcanvas.utils.SBOLTestSupport.NCNAME;
 class NCNameSanitizationTest {
 
     @Nested
-    @DisplayName("sanitizeAnnotationKey")
+    @DisplayName("toNCName")
     class SanitizeAnnotationKey {
 
         @Test
         @DisplayName("plain alphanumeric input passes through unchanged")
         void plainAlphanumericUnchanged() {
-            assertEquals("hello", Converter.sanitizeAnnotationKey("hello"));
-            assertEquals("abc123", Converter.sanitizeAnnotationKey("abc123"));
+            assertEquals("hello", Identifiers.toNCName("hello"));
+            assertEquals("abc123", Identifiers.toNCName("abc123"));
         }
 
         @Test
         @DisplayName("leading digit is hex-encoded to produce a valid NCName")
         void leadingDigitEncoded() {
-            String result = Converter.sanitizeAnnotationKey("1abc");
+            String result = Identifiers.toNCName("1abc");
             assertTrue(result.startsWith("_x"), "Leading digit should be hex-encoded");
             assertNotEquals("1abc", result);
         }
@@ -34,19 +34,19 @@ class NCNameSanitizationTest {
     @Test
     @DisplayName("hex escape sequence _x002F_ is decoded back to '/'")
     void decodesHexSequence() {
-        assertEquals("a/b", Converter.desanitizeAnnotationKey("a_x002F_b"));
+        assertEquals("a/b", Identifiers.fromNCName("a_x002F_b"));
     }
 
     @Test
     @DisplayName("URI key produces a valid NCName and survives sanitize->desanitize round-trip")
     void uriKeyRoundTrips() {
         String original = "nc_https://sbolcanvas.org/FKha2kkU/1";
-        String sanitized = Converter.sanitizeAnnotationKey(original);
+        String sanitized = Identifiers.toNCName(original);
 
         assertTrue(NCNAME.matcher(sanitized).matches(),
             "Sanitized output must be a valid XML NCName; got: " + sanitized);
 
-        String desanitized = Converter.desanitizeAnnotationKey(sanitized);
+        String desanitized = Identifiers.fromNCName(sanitized);
         assertEquals(original, desanitized,
             "URI key should survive sanitize->desanitize round-trip");
     }

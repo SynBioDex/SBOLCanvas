@@ -59,14 +59,14 @@ class TwoPromotersOneBackboneMergeTest {
         }
 
         @Test
-        @DisplayName("Merged species ids are unique after NCName sanitization")
-        void mergedSpeciesIdsAreUniqueAfterNCNameSanitization() {
+        @DisplayName("Merged species ids are unique after SId sanitization")
+        void mergedSpeciesIdsAreUniqueAfterSIdSanitization() {
             Set<String> ids = model.getListOfSpecies().stream()
                     .filter(sp -> sp.getSBOTerm() == 590)
                     .map(Species::getId)
                     .collect(Collectors.toSet());
             assertEquals(2, ids.size(), "exactly two merged species expected");
-            assertTrue(ids.contains("pTet_pLac"), "merged id should be the NCName-sanitized form pTet_pLac (display name pTet+pLac)");
+            assertTrue(ids.contains("pTet_pLac"), "merged id should be the SId-sanitized form pTet_pLac (display name pTet+pLac)");
         }
     }
 
@@ -147,7 +147,7 @@ class TwoPromotersOneBackboneMergeTest {
 
         private Reaction noCdsProductionReaction() {
             return model.getListOfReactions().stream()
-                    .filter(rx -> rx.getId().startsWith("Production_pTet_pLac__"))
+                    .filter(rx -> rx.getId().startsWith("Production_pTet_pLac_"))
                     .findFirst()
                     .orElseThrow(() -> new AssertionError(
                             "Expected a Production reaction for the second merged backbone"));

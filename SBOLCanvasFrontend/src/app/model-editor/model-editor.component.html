@@ -88,12 +88,6 @@
   <div *ngIf="eventInfo" class="model-menu-container">
     <h4>Event</h4>
     <mat-form-field floatLabel="always">
-      <mat-label>Name</mat-label>
-      <input matInput id="name" value="{{eventInfo.simulationData['name'] || ''}}" (change)="inputChange($event)"
-        matTooltip="Event identifier used in SBML (e.g., 'IPTG_High', 'aTc_Low')">
-    </mat-form-field>
-
-    <mat-form-field floatLabel="always">
       <mat-label>Delay (time)</mat-label>
       <input matInput id="delay" type="number"
         value="{{eventInfo.simulationData['delay'] !== undefined ? eventInfo.simulationData['delay'] : 0}}"
@@ -103,8 +97,9 @@
 
     <mat-form-field floatLabel="always">
       <mat-label>Target Species</mat-label>
-      <input matInput id="targetSpecies" value="{{eventInfo.simulationData['targetSpecies'] || ''}}"
+      <input matInput id="targetSpecies" value="{{ getTargetSpeciesLabel() }}"
         (change)="inputChange($event)">
+      <mat-error *ngIf="validationErrors['targetSpecies']">{{validationErrors['targetSpecies']}}</mat-error>
     </mat-form-field>
 
     <mat-form-field floatLabel="always">

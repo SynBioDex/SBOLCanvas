@@ -32,7 +32,11 @@ import org.sbml.jsbml.ext.layout.ReferenceGlyph;
 import org.sbml.jsbml.ext.layout.SpeciesGlyph;
 import org.sbml.jsbml.ext.layout.TextGlyph;
 
-/** Event layout (GeneralGlyph, ReferenceGlyph, TextGlyph) and event model output (Trigger, Delay, Assignment) for the SBOL -> SBML pipeline on the 4-event toggle fixture ({@link SBOLTestSupport#TOGGLE_RESOURCE}). */
+/**
+ * Event layout (GeneralGlyph, ReferenceGlyph, TextGlyph) and event model output (Trigger, Delay,
+ * Assignment) for the SBOL -> SBML pipeline on the 4-event toggle fixture
+ * ({@link SBOLTestSupport#TOGGLE_RESOURCE}).
+ */
 class SBOLToSBMLPipelineEventsTest {
 
     private static SBMLDocument doc;
@@ -202,16 +206,16 @@ class SBOLToSBMLPipelineEventsTest {
                 GeneralGlyph gg = (GeneralGlyph) obj;
                 for (ReferenceGlyph rg : gg.getListOfReferenceGlyphs()) {
                     assertTrue(rg.isSetBoundingBox(),
-                        "ReferenceGlyph '" + rg.getId() + "' (under GeneralGlyph '"
-                            + gg.getId() + "') is missing BoundingBox");
+                            "ReferenceGlyph '" + rg.getId() + "' (under GeneralGlyph '"
+                                    + gg.getId() + "') is missing BoundingBox");
                     assertTrue(rg.isSetCurve(),
-                        "ReferenceGlyph '" + rg.getId() + "' (under GeneralGlyph '"
-                            + gg.getId() + "') is missing Curve");
+                            "ReferenceGlyph '" + rg.getId() + "' (under GeneralGlyph '"
+                                    + gg.getId() + "') is missing Curve");
                     connectionGlyphsChecked++;
                 }
             }
             assertTrue(connectionGlyphsChecked > 0,
-                "Expected at least one event ReferenceGlyph in the events layout; found none");
+                    "Expected at least one event ReferenceGlyph in the events layout; found none");
         }
 
         /**
@@ -236,10 +240,8 @@ class SBOLToSBMLPipelineEventsTest {
         @Test
         @DisplayName("One textGlyph per species, event, and compartment")
         void oneTextGlyphPerSpeciesEventAndCompartment() {
-            // Hand-counted from the toggle fixture: 9 species
-            // (3 Protein + 2 SmallMolecule + 2 Complex + 2 merged promoter species
-            // from the pTet/pLac promoter ComponentDefinitions) + 4 events
-            // + 1 "Cell" compartment = 14 textGlyphs.
+            // Hand-counted from the toggle fixture: 9 species glyphs (3 Protein + 2 SmallMolecule
+            // + 2 Complex + 2 promoter glyphs); the synthetic placeholder mRNAs carry no glyph.
             assertEquals(9, layout.getSpeciesGlyphCount(), "fixture should produce 9 species glyphs");
             assertEquals(4, layout.getAdditionalGraphicalObjectCount(), "fixture should produce 4 event glyphs");
             assertEquals(1, layout.getCompartmentGlyphCount(), "fixture should produce 1 compartment glyph");
@@ -279,8 +281,10 @@ class SBOLToSBMLPipelineEventsTest {
 
         private Set<String> collectGlyphIds() {
             Set<String> ids = new HashSet<>();
-            for (SpeciesGlyph sg : layout.getListOfSpeciesGlyphs()) ids.add(sg.getId());
-            for (GraphicalObject obj : layout.getListOfAdditionalGraphicalObjects()) ids.add(obj.getId());
+            for (SpeciesGlyph sg : layout.getListOfSpeciesGlyphs())
+                ids.add(sg.getId());
+            for (GraphicalObject obj : layout.getListOfAdditionalGraphicalObjects())
+                ids.add(obj.getId());
             for (int i = 0; i < layout.getCompartmentGlyphCount(); i++) {
                 ids.add(layout.getCompartmentGlyph(i).getId());
             }
@@ -292,16 +296,20 @@ class SBOLToSBMLPipelineEventsTest {
 
         private GraphicalObject findGlyph(String id) {
             for (SpeciesGlyph sg : layout.getListOfSpeciesGlyphs()) {
-                if (sg.getId().equals(id)) return sg;
+                if (sg.getId().equals(id))
+                    return sg;
             }
             for (GraphicalObject obj : layout.getListOfAdditionalGraphicalObjects()) {
-                if (obj.getId().equals(id)) return obj;
+                if (obj.getId().equals(id))
+                    return obj;
             }
             for (int i = 0; i < layout.getCompartmentGlyphCount(); i++) {
-                if (layout.getCompartmentGlyph(i).getId().equals(id)) return layout.getCompartmentGlyph(i);
+                if (layout.getCompartmentGlyph(i).getId().equals(id))
+                    return layout.getCompartmentGlyph(i);
             }
             for (int i = 0; i < layout.getReactionGlyphCount(); i++) {
-                if (layout.getReactionGlyph(i).getId().equals(id)) return layout.getReactionGlyph(i);
+                if (layout.getReactionGlyph(i).getId().equals(id))
+                    return layout.getReactionGlyph(i);
             }
             return null;
         }
@@ -311,16 +319,27 @@ class SBOLToSBMLPipelineEventsTest {
     @DisplayName("Model-side events (createEvents output)")
     class EventSBML {
 
-        /** Hand-derived expectation per event id; see the toggle fixture's 4 events. */
+        /**
+         * Expectation per event id, hand-derived from the toggle fixture's 4 events.
+         * The SBML event id is sanitize(eventName) where eventName is the SBOL name
+         * (dcterms:title). assignmentValue defaults to 0 when the fixture omits it.
+         */
         private final class Expected {
             private final double delay;
             private final double assignment;
+
             Expected(double delay, double assignment) {
                 this.delay = delay;
                 this.assignment = assignment;
             }
-            double delay() { return delay; }
-            double assignment() { return assignment; }
+
+            double delay() {
+                return delay;
+            }
+
+            double assignment() {
+                return assignment;
+            }
         }
 
         private Map<String, Expected> expectedByEventId() {
@@ -421,6 +440,52 @@ class SBOLToSBMLPipelineEventsTest {
                 assertEquals(expectedAssignment, actual, 1e-9,
                         event.getId() + " assignment value should equal fixture"
                                 + " simulationData/assignmentValue (default 0 when omitted)");
+            }
+        }
+
+        @Test
+        @DisplayName("Each event's SBML name is set and matches one of the fixture's event titles")
+        void eventNamesAreSet() {
+            for (int i = 0; i < model.getEventCount(); i++) {
+                Event event = model.getEvent(i);
+                assertTrue(event.isSetName(), event.getId() + " should carry its SBOL name");
+                assertTrue(expectedByEventId().containsKey(event.getName()),
+                        event.getId() + " name '" + event.getName()
+                                + "' should be one of the fixture's event titles");
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("SBOL identity annotations")
+    class SbolIdentityAnnotations {
+
+        @Test
+        @DisplayName("Each event carries a non-RDF annotation with its SBOL URI")
+        void eventsCarrySbolIdentity() throws Exception {
+            for (int i = 0; i < model.getEventCount(); i++) {
+                Event event = model.getEvent(i);
+                assertTrue(event.isSetAnnotation(), event.getId() + " should have an annotation");
+                String annotation = event.getAnnotationString();
+                assertTrue(annotation.contains("SBOLCanvas:identity"),
+                        event.getId() + " annotation should use the SBOLCanvas:identity element");
+                assertTrue(annotation.contains("/Event_"),
+                        event.getId() + " annotation should carry the SBOL event URI");
+            }
+        }
+
+        @Test
+        @DisplayName("Every species carries a non-RDF annotation with its SBOL URI")
+        void speciesCarrySbolIdentity() throws Exception {
+            assertTrue(model.getSpeciesCount() > 0, "fixture should produce species");
+            for (int i = 0; i < model.getSpeciesCount(); i++) {
+                org.sbml.jsbml.Species species = model.getSpecies(i);
+                assertTrue(species.isSetAnnotation(), species.getId() + " should have an annotation");
+                String annotation = species.getAnnotationString();
+                assertTrue(annotation.contains("SBOLCanvas:identity"),
+                        species.getId() + " annotation should use the SBOLCanvas:identity element");
+                assertTrue(annotation.contains("SBOLCanvas:uri=\"https://sbolcanvas.org/"),
+                        species.getId() + " annotation URI attribute should sit under the SBOLCanvas URI prefix");
             }
         }
     }
