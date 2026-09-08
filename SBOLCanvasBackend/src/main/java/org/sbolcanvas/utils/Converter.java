@@ -82,9 +82,9 @@ public class Converter {
 	/**
 	 * mxObjectCodec that decodes to a Hashtable instead of an ArrayList.
 	 *
-	 * @param template    the template object (e.g., new GlyphInfo())
-	 * @param targetType  the expected runtime class of the decoded object
-	 * @param setter      applies the parsed Hashtable to the decoded object
+	 * @param template   the template object (e.g., new GlyphInfo())
+	 * @param targetType the expected runtime class of the decoded object
+	 * @param setter     applies the parsed Hashtable to the decoded object
 	 */
 	private static <T> mxObjectCodec createSimulationDataCodec(
 			Object template, Class<T> targetType,
@@ -177,7 +177,8 @@ public class Converter {
 	static Filter containerFilter = new Filter() {
 		@Override
 		public boolean filter(Object arg0) {
-			return (arg0 instanceof mxCell && ((mxCell) arg0).getStyle() != null && (((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER)) && (((mxCell) arg0).getChildCount() > 1));
+			return (arg0 instanceof mxCell && ((mxCell) arg0).getStyle() != null && (((mxCell) arg0).getStyle().contains(STYLE_CIRCUIT_CONTAINER))
+					&& (((mxCell) arg0).getChildCount() > 1));
 		}
 	};
 
@@ -215,6 +216,16 @@ public class Converter {
 		}
 	};
 
+	/**
+	 * Filters mxCells that contain "eventGlyph" in the style string
+	 */
+	static Filter eventFilter = new Filter() {
+		@Override
+		public boolean filter(Object arg0) {
+			return arg0 instanceof mxCell && ((mxCell) arg0).getStyle() != null && ((mxCell) arg0).getStyle().contains(STYLE_EVENT);
+		}
+	};
+
 	protected static URI getParticipantType(boolean source, Set<URI> interactionTypes) {
 		URI interactionType = null;
 		for (URI interactionURI : SBOLData.interactions.values()) {
@@ -238,59 +249,8 @@ public class Converter {
 	}
 
 	/**
-	 * Sanitize a string to be a valid XML NCName for use as a QName local part.
-	 * Characters not valid in NCNames are encoded as _xHHHH_ where HHHH is 4-digit uppercase hex.
-	 * Needed because InteractionInfo simulationData keys can contain full URIs
-	 * (e.g., "nc_https://sbolcanvas.org/FKha2kkU/1") which are invalid XML element names.
-	 *
-	 * @see MxToSBML#sanitizeId for SBML SId sanitization (different spec, different rules)
-	 */
-	static String sanitizeAnnotationKey(String key) {
-		if (key == null || key.isEmpty()) return key;
-		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < key.length(); i++) {
-			char c = key.charAt(i);
-			if (i == 0 ? (Character.isLetter(c) || c == '_')
-					   : (Character.isLetterOrDigit(c) || c == '.' || c == '-' || c == '_')) {
-				sb.append(c);
-			} else {
-				sb.append("_x").append(String.format("%04X", (int) c)).append("_");
-			}
-		}
-		return sb.toString();
-	}
-
-	/**
-	 * Reverse sanitizeAnnotationKey: decode _xHHHH_ sequences back to characters.
-	 */
-	static String desanitizeAnnotationKey(String key) {
-		if (key == null || key.isEmpty()) return key;
-		StringBuilder sb = new StringBuilder();
-		int i = 0;
-		while (i < key.length()) {
-			if (i + 6 < key.length() && key.charAt(i) == '_' && key.charAt(i + 1) == 'x'
-					&& isHexDigit(key.charAt(i + 2)) && isHexDigit(key.charAt(i + 3))
-					&& isHexDigit(key.charAt(i + 4)) && isHexDigit(key.charAt(i + 5))
-					&& key.charAt(i + 6) == '_') {
-				sb.append((char) Integer.parseInt(key.substring(i + 2, i + 6), 16));
-				i += 7;
-			} else {
-				sb.append(key.charAt(i));
-				i++;
-			}
-		}
-		return sb.toString();
-	}
-
-	private static boolean isHexDigit(char c) {
-		return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
-	}
-
-	// Helpers shared between MxToSBOL and MxToSBML
-
-	/**
 	 * Parses an mxGraph from an input stream.
-	 * 
+	 *
 	 * @param graphStream
 	 * @return
 	 * @throws IOException
@@ -317,20 +277,24 @@ public class Converter {
 		infoDict = loadDictionary(dataContainer, INFO_DICT_INDEX);
 		combinatorialDict = loadDictionary(dataContainer, COMBINATORIAL_DICT_INDEX);
 		interactionDict = loadDictionary(dataContainer, INTERACTION_DICT_INDEX);
-		loadEventDictOrEmpty(dataContainer);
+		eventDict = loadDictionary(dataContainer, EVENT_DICT_INDEX);
 		return graph;
 	}
 
 	/**
 	 * Dictionaries from the front end sometimes get decoded as array lists. This
 	 * method ensures that we load them as hash tables.
-	 * 
+	 *
 	 * @param <T>
 	 * @param dataContainer
 	 * @param dictionaryIndex
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T extends Info> Hashtable<String, T> loadDictionary(ArrayList<Object> dataContainer, int dictionaryIndex) {
+		// Older designs predate this slot; treat an absent slot as an empty dictionary.
+		if (dictionaryIndex >= dataContainer.size()) {
+			return new Hashtable<String, T>();
+		}
 		if (dataContainer.get(dictionaryIndex) instanceof ArrayList) {
 			// 90% sure it only happens when it's empty meaning that we could just return a
 			// empty hash table.
@@ -366,10 +330,11 @@ public class Converter {
 	 */
 	static void writeSimulationAnnotations(Identified parent, Hashtable<String, Object> simulationData,
 			String identityPrefix) throws SBOLValidationException {
-		if (simulationData == null || simulationData.isEmpty()) return;
+		if (simulationData == null || simulationData.isEmpty())
+			return;
 		List<Annotation> annList = new ArrayList<Annotation>();
 		for (String key : new TreeSet<>(simulationData.keySet())) {
-			annList.add(new Annotation(createQName(sanitizeAnnotationKey(key)), simulationData.get(key).toString()));
+			annList.add(new Annotation(createQName(Identifiers.toNCName(key)), simulationData.get(key).toString()));
 		}
 		parent.createAnnotation(
 				createQName("simulationData"),
@@ -387,24 +352,12 @@ public class Converter {
 			if (annotation.getQName().getLocalPart().equals("simulationData")) {
 				Hashtable<String, Object> simData = new Hashtable<String, Object>();
 				for (Annotation child : annotation.getAnnotations()) {
-					simData.put(desanitizeAnnotationKey(child.getQName().getLocalPart()), child.getStringValue());
+					simData.put(Identifiers.fromNCName(child.getQName().getLocalPart()), child.getStringValue());
 				}
 				return simData;
 			}
 		}
 		return new Hashtable<>();
-	}
-
-	/**
-	 * Load eventDict from the dataContainer, falling back to an empty Hashtable
-	 * for designs created before events were added.
-	 */
-	protected void loadEventDictOrEmpty(ArrayList<Object> dataContainer) {
-		if (dataContainer.size() > EVENT_DICT_INDEX) {
-			eventDict = loadDictionary(dataContainer, EVENT_DICT_INDEX);
-		} else {
-			eventDict = new Hashtable<>();
-		}
 	}
 
 }

@@ -72,6 +72,21 @@ public class SynBioHub extends HttpServlet {
 		return api;
 	}
 
+	/**
+	 * Splits an "email:password" Authorization value on the first colon only.
+	 * Returns {email, password}, or null when the value has no colon.
+	 */
+	static String[] parseCredentials(String authorization) {
+		if (authorization == null) {
+			return null;
+		}
+		int separator = authorization.indexOf(':');
+		if (separator < 0) {
+			return null;
+		}
+		return new String[] { authorization.substring(0, separator), authorization.substring(separator + 1) };
+	}
+
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
 
@@ -80,10 +95,10 @@ public class SynBioHub extends HttpServlet {
 			String email = null;
 			String password = null;
 			String user = null;
-			if (authorization != null && authorization.split(":").length > 1) {
-				String[] tokens = authorization.split(":");
-				email = tokens[0];
-				password = tokens[1];
+			String[] credentials = parseCredentials(authorization);
+			if (credentials != null) {
+				email = credentials[0];
+				password = credentials[1];
 			} else {
 				user = authorization;
 			}

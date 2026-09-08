@@ -26,7 +26,7 @@ export interface ColorPickerStartupData {
 export class DesignMenuComponent implements OnInit, OnDestroy {
 
   // Style options for the selected glyphs
-  styleInfo: StyleInfo;
+  styleInfo: StyleInfo = new StyleInfo([]);
 
   // Put a reference to the mxGraph namespace in the class so it's accessible to the component's html part
   mx: any = mx;

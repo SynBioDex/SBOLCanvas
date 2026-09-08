@@ -82,9 +82,10 @@ public class Convert extends HttpServlet {
 
 			response.setStatus(HttpStatus.SC_OK);
 		} catch (SBOLValidationException | IOException | SBOLConversionException | ParserConfigurationException
-				| TransformerException | SAXException | TransformerFactoryConfigurationError | URISyntaxException | SynBioHubException | javax.xml.stream.XMLStreamException e) {
+			| TransformerException | SAXException | TransformerFactoryConfigurationError | URISyntaxException | SynBioHubException | javax.xml.stream.XMLStreamException e) {
 			ServletOutputStream outputStream = response.getOutputStream();
-			String message = errorMessage(e);
+			String action = "/toMxGraph".equals(request.getPathInfo()) ? "Import" : "Export";
+			String message = errorMessage(e, action);
 			InputStream inputStream = new ByteArrayInputStream(message.getBytes());
 			IOUtils.copy(inputStream, outputStream);
 
@@ -92,7 +93,8 @@ public class Convert extends HttpServlet {
 			e.printStackTrace();
 		} catch (RuntimeException e) {
 			// Catch unchecked exceptions from SBML export
-			String message = errorMessage(e);
+			String action = "/toMxGraph".equals(request.getPathInfo()) ? "Import" : "Export";
+			String message = errorMessage(e, action);
 			ServletOutputStream outputStream = response.getOutputStream();
 			InputStream inputStream = new ByteArrayInputStream(message.getBytes());
 			IOUtils.copy(inputStream, outputStream);
@@ -102,9 +104,10 @@ public class Convert extends HttpServlet {
 		}
 	}
 
-	private static String errorMessage(Throwable e) {
+	private static String errorMessage(Throwable e, String action) {
 		String message = e.getMessage();
-		return message != null ? e.getClass().getSimpleName() + ": " + message : e.getClass().getSimpleName();
+		return message != null ? e.getClass().getSimpleName() + ": " + message
+				: action + " failed (" + e.getClass().getSimpleName() + ")";
 	}
 
 }

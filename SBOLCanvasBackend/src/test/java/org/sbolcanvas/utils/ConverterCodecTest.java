@@ -129,11 +129,12 @@ class ConverterCodecTest {
     class EventInfoCodec {
 
         @Test
-        @DisplayName("simulationData survives encode/decode as Hashtable")
-        void simulationDataPreservedAsHashtable() {
+        @DisplayName("name, description, and simulationData all survive encode/decode")
+        void nameDescriptionAndSimulationDataPreserved() {
             EventInfo original = new EventInfo();
+            original.setName("IPTG_High");
+            original.setDescription("IPTG set to high level");
             Hashtable<String, Object> simData = new Hashtable<>();
-            simData.put("name", "IPTG_High");
             simData.put("targetSpecies", "IPTG");
             simData.put("delay", "100");
             simData.put("assignmentValue", "50");
@@ -143,11 +144,15 @@ class ConverterCodecTest {
             assertInstanceOf(EventInfo.class, decoded);
             EventInfo decodedInfo = (EventInfo) decoded;
 
+            assertEquals("IPTG_High", decodedInfo.getName(),
+                    "name field should survive encode/decode");
+            assertEquals("IPTG set to high level", decodedInfo.getDescription(),
+                    "description field should survive encode/decode");
+
             Hashtable<String, Object> decodedSimData = decodedInfo.getSimulationData();
             assertNotNull(decodedSimData, "simulationData should not be null after decode");
             assertInstanceOf(Hashtable.class, decodedSimData,
                     "simulationData should be Hashtable, not ArrayList");
-            assertEquals("IPTG_High", decodedSimData.get("name"));
             assertEquals("IPTG", decodedSimData.get("targetSpecies"));
             assertEquals("100", decodedSimData.get("delay"));
             assertEquals("50", decodedSimData.get("assignmentValue"));

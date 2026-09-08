@@ -11,7 +11,6 @@ public class GlyphInfo extends Info {
 	private String partRefine;
 	private String name;
 	private String description;
-	private String version;
 	private String sequence;
 	private String sequenceURI;
 	private CanvasAnnotation[] annotations;
@@ -75,14 +74,6 @@ public class GlyphInfo extends Info {
 		this.description = description;
 	}
 
-	public String getVersion() {
-		return version;
-	}
-
-	public void setVersion(String version) {
-		this.version = version;
-	}
-
 	public String getSequence() {
 		return this.sequence;
 	}
@@ -129,13 +120,5 @@ public class GlyphInfo extends Info {
 
 	public void setSimulationData(Hashtable<String, Object> simulationData) {
 		this.simulationData = simulationData;
-	}
-	
-	public String getFullURI() {
-		String fullURI = this.uriPrefix + '/' + this.displayID;
-		if(this.version != null && this.version.length() > 0) {
-			fullURI += '/' + this.version;
-		}
-		return fullURI;
 	}
 }

@@ -74,10 +74,10 @@ const COMPLEX_NODE_PARAMS: ParamDef[] = [
 })
 export class ModelEditorComponent implements OnInit, OnDestroy {
 
-  glyphInfo: GlyphInfo;
-  interactionInfo: InteractionInfo;
-  eventInfo: EventInfo;
-  simulationConfig: SimulationConfig = null;
+  glyphInfo: GlyphInfo | null = null;
+  interactionInfo: InteractionInfo | null = null;
+  eventInfo: EventInfo | null = null;
+  simulationConfig: SimulationConfig | null = null;
   configLoadError = false;
 
   validationErrors: { [fieldId: string]: string } = {};
@@ -129,31 +129,39 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
     return value !== undefined ? value : 0;
   }
 
-  glyphInfoUpdated(glyphInfo: GlyphInfo) {
+  glyphInfoUpdated(glyphInfo: GlyphInfo | null) {
     this.glyphInfo = glyphInfo;
     this.validationErrors = {};
     if (glyphInfo != null) {
-      if (!this.glyphInfo.simulationData) this.glyphInfo.simulationData = {};
+      if (!glyphInfo.simulationData) glyphInfo.simulationData = {};
     }
     this.changeDetector.detectChanges();
   }
 
-  interactionInfoUpdated(interactionInfo: InteractionInfo) {
+  interactionInfoUpdated(interactionInfo: InteractionInfo | null) {
     this.interactionInfo = interactionInfo;
     this.validationErrors = {};
     if (interactionInfo != null) {
-      if (!this.interactionInfo.simulationData) this.interactionInfo.simulationData = {};
+      if (!interactionInfo.simulationData) interactionInfo.simulationData = {};
     }
     this.changeDetector.detectChanges();
   }
 
-  eventInfoUpdated(eventInfo: EventInfo) {
+  eventInfoUpdated(eventInfo: EventInfo | null) {
     this.eventInfo = eventInfo;
     this.validationErrors = {};
     if (eventInfo != null) {
-      if (!this.eventInfo.simulationData) this.eventInfo.simulationData = {};
+      if (!eventInfo.simulationData) eventInfo.simulationData = {};
     }
     this.changeDetector.detectChanges();
+  }
+
+  /** The Target Species field shows the species' canvas label; the stored value is its URI. */
+  getTargetSpeciesLabel(): string {
+    const stored = (this.eventInfo && this.eventInfo.simulationData)
+      ? this.eventInfo.simulationData['targetSpecies'] : null;
+    if (!stored) return '';
+    return this.graphService.getSpeciesLabelForURI(String(stored)) || String(stored);
   }
 
   /**
@@ -182,12 +190,20 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
    */
   getInteractionParamValue(paramName: string, roleOrType: string): number {
     const defaultValue = this.getDefaultValue(roleOrType, paramName);
-    if (!this.interactionInfo?.simulationData) {
+    const interactionInfo = this.interactionInfo;
+    if (!interactionInfo?.simulationData) {
       return defaultValue;
     }
     const paramKey = this.getReactantParamKey(paramName);
-    const value = this.interactionInfo.simulationData[paramKey];
-    return value !== undefined ? value : defaultValue;
+    const value = interactionInfo.simulationData[paramKey];
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : defaultValue;
+    }
+    return defaultValue;
   }
 
   inputChange(event: any, paramName?: string) {
@@ -197,8 +213,21 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
     // Parse value based on field type
     if (id === 'boundaryCondition') {
       value = event.checked;
-    } else if (['name', 'targetSpecies'].includes(id)) {
-      value = event.target.value;
+    } else if (['targetSpecies'].includes(id)) {
+      // store the species' identity, not its label: names are display-only and
+      // may change or collide; the URI is the stable reference
+      const typed = (event.target.value || '').trim();
+      if (typed) {
+        const uri = this.graphService.getSpeciesURIForLabel(typed);
+        if (!uri) {
+          this.validationErrors[id] = `No unique species named '${typed}' on the canvas`;
+          this.changeDetector.detectChanges();
+          return;
+        }
+        value = uri;
+      } else {
+        value = '';
+      }
     } else {
       value = parseFloat(event.target.value);
       const error = this.validateNumericParam(id, value);
@@ -211,21 +240,25 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
 
     delete this.validationErrors[id];
 
-    if (this.eventInfo) {
-      if (!this.eventInfo.simulationData) this.eventInfo.simulationData = {};
-      this.eventInfo.simulationData[id] = value;
-      this.graphService.setSelectedCellInfo(this.eventInfo);
-    } else if (this.glyphInfo) {
+    const eventInfo = this.eventInfo;
+    const glyphInfo = this.glyphInfo;
+    const interactionInfo = this.interactionInfo;
+
+    if (eventInfo) {
+      if (!eventInfo.simulationData) eventInfo.simulationData = {};
+      eventInfo.simulationData[id] = value;
+      this.graphService.setSelectedCellInfo(eventInfo);
+    } else if (glyphInfo) {
       // Simulation data properties (glyphs)
-      if (!this.glyphInfo.simulationData) this.glyphInfo.simulationData = {};
-      this.glyphInfo.simulationData[id] = value;
-      this.graphService.setSelectedCellInfo(this.glyphInfo);
-    } else if (this.interactionInfo) {
+      if (!glyphInfo.simulationData) glyphInfo.simulationData = {};
+      glyphInfo.simulationData[id] = value;
+      this.graphService.setSelectedCellInfo(glyphInfo);
+    } else if (interactionInfo) {
       // Simulation data properties (interaction lines)
-      if (!this.interactionInfo.simulationData) this.interactionInfo.simulationData = {};
+      if (!interactionInfo.simulationData) interactionInfo.simulationData = {};
       const paramKey = this.getReactantParamKey(id);
-      this.interactionInfo.simulationData[paramKey] = value;
-      this.graphService.setSelectedCellInfo(this.interactionInfo);
+      interactionInfo.simulationData[paramKey] = value;
+      this.graphService.setSelectedCellInfo(interactionInfo);
     }
   }
 

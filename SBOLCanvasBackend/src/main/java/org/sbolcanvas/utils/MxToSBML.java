@@ -27,6 +27,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 // JSBML API Docs: https://sbml.org/jsbml/files/doc/api/1.6.1/overview-summary.html
+import org.sbml.jsbml.SBase;
 import org.sbml.jsbml.SBMLDocument;
 import org.sbml.jsbml.Model;
 import org.sbml.jsbml.Species;
@@ -242,17 +243,13 @@ public class MxToSBML extends Converter {
 						continue;
 					}
 					promoterGlyphs.add(glyph);
-					String name = info.getName();
-					if (name == null || name.isEmpty()) {
-						name = info.getDisplayID();
-					}
-					individualNames.add(name);
+					individualNames.add(info.getDisplayName());
 				}
 				if (promoterGlyphs.isEmpty())
 					continue;
 
 				String mergedName = String.join("+", individualNames);
-				String mergedId = sanitizeId(mergedName);
+				String mergedId = Identifiers.toSId(mergedName, usedIds);
 
 				Hashtable<String, Object> mergedSimData = new Hashtable<>();
 				for (String param : MERGED_PROMOTER_PARAMS) {
@@ -276,6 +273,15 @@ public class MxToSBML extends Converter {
 				promoterSpecies.setConstant(false);
 				promoterSpecies.setBoundaryCondition(false);
 				promoterSpecies.setName(mergedName);
+
+				// A merged promoter species combines several SBOL parts, so it
+				// carries one identity annotation per source part.
+				for (mxCell promoterGlyph : promoterGlyphs) {
+					GlyphInfo info = (GlyphInfo) infoDict.get(promoterGlyph.getValue());
+					if (info != null) {
+						attachSbolIdentity(promoterSpecies, info.getFullURI());
+					}
+				}
 
 				mxGeometry backboneGeom = backbone.getGeometry();
 				SpeciesData mergedSpeciesData = new SpeciesData(promoterSpecies, backboneGeom);
@@ -351,7 +357,8 @@ public class MxToSBML extends Converter {
 			}
 		}
 
-		// Build one Production reaction per TU; TUs whose CDS-driven products are absent get a placeholder mRNA (matches iBioSim)
+		// Build one Production reaction per TU
+		// TUs with missing CDS products get a placeholder mRNA (matches iBioSim)
 		for (TUData tuData : tuMap.values()) {
 			GlyphInfo promoterInfo = tuData.mergedPromoterInfo;
 			String promoterId = tuData.promoterSpecies.getId();
@@ -380,7 +387,7 @@ public class MxToSBML extends Converter {
 			}
 
 			if (reaction.getProductCount() == 0) {
-				Species mRNA = createPlaceholderMRnaSpecies(sbmlModel, promoterId);
+				Species mRNA = createPlaceholderMRnaSpecies(sbmlModel, promoterId, tuData.promoterSpecies);
 				SpeciesReference product = reaction.createProduct(mRNA);
 				product.setConstant(true);
 				product.setStoichiometry(np);
@@ -674,9 +681,10 @@ public class MxToSBML extends Converter {
 	 * TUs without an explicit product are assumed to create an undocumented mRNA.
 	 * Placeholder mRNA created as `<promoterId>_mRNA` species (SBO:0000250, initialAmount 0).
 	 * This matches how iBioSim handles promoter species without products.
+	 * The mRNA is synthetic, so it inherits its promoter's SBOL identity annotations.
 	 */
-	private Species createPlaceholderMRnaSpecies(Model sbmlModel, String promoterId) {
-		String mRnaId = sanitizeId(promoterId + "_mRNA");
+	private Species createPlaceholderMRnaSpecies(Model sbmlModel, String promoterId, Species promoterSpecies) {
+		String mRnaId = Identifiers.toSId(promoterId + "_mRNA", usedIds);
 		Species mRNA = sbmlModel.createSpecies(mRnaId);
 		mRNA.setCompartment("Cell");
 		mRNA.setSBOTerm(250); // SBO:0000250 Ribonucleic acid
@@ -684,6 +692,13 @@ public class MxToSBML extends Converter {
 		mRNA.setHasOnlySubstanceUnits(true);
 		mRNA.setConstant(false);
 		mRNA.setBoundaryCondition(false);
+		if (promoterSpecies.isSetAnnotation() && promoterSpecies.getAnnotation().isSetNonRDFannotation()) {
+			try {
+				mRNA.appendAnnotation(promoterSpecies.getAnnotation().getNonRDFannotationAsString());
+			} catch (XMLStreamException e) {
+				throw new IllegalStateException("Failed to copy SBOL identity annotations to " + mRnaId, e);
+			}
+		}
 		return mRNA;
 	}
 
@@ -916,6 +931,20 @@ public class MxToSBML extends Converter {
 			return;
 		}
 
+		// Event cells, like all glyph cells, are keyed by value (fullURI); their ids are auto-generated.
+		Map<String, mxCell> eventCellsByValue = new HashMap<>();
+		mxCell[] eventViewCells = Arrays.stream(mxGraphModel.getChildCells(graphModel, graphModel.getCell("1"), true, false))
+				.toArray(mxCell[]::new);
+		for (mxCell viewCell : eventViewCells) {
+			for (Object child : mxGraphModel.getChildCells(graphModel, viewCell, true, false)) {
+				mxCell c = (mxCell) child;
+				String style = c.getStyle();
+				if (style != null && style.contains(STYLE_EVENT) && c.getValue() != null) {
+					eventCellsByValue.put(c.getValue().toString(), c);
+				}
+			}
+		}
+
 		for (EventInfo eventInfo : eventDict.values()) {
 			Hashtable<String, Object> simData = eventInfo.getSimulationData();
 			String context = "event '" + eventInfo.getDisplayID() + "'";
@@ -925,18 +954,26 @@ public class MxToSBML extends Converter {
 				continue;
 			}
 
-			// Resolve display name to SBML species ID. The user enters a display
-			// name (e.g., "LacI protein") but SBML uses sanitized IDs ("LacI_protein").
-			String speciesId = resolveSpeciesId(sbmlModel, targetSpecies, displayNameToSpeciesId);
-			if (speciesId == null)
-				continue;
-
-			String eventName = getStringParam(simData, SBOLData.PARAM_EVENT_NAME);
-			if (eventName == null || eventName.isEmpty()) {
-				eventName = eventInfo.getDisplayID();
+			// The stored value is the species glyph's full URI when set from the
+			// frontend; older files carry a display name instead
+			String speciesId = null;
+			SpeciesData target = glyphToSpeciesData.get(targetSpecies);
+			if (target != null) {
+				speciesId = target.species.getId();
+			} else {
+				speciesId = resolveSpeciesId(sbmlModel, targetSpecies, displayNameToSpeciesId);
 			}
-			String eventId = sanitizeId(eventName);
+			if (speciesId == null) {
+				log.warn(context + ": targetSpecies '" + targetSpecies + "' did not resolve to a species; event skipped");
+				continue;
+			}
+
+			String eventId = Identifiers.toSId(eventInfo.getDisplayName(), usedIds);
 			Event event = sbmlModel.createEvent(eventId);
+			if (eventInfo.getName() != null && !eventInfo.getName().isEmpty()) {
+				event.setName(eventInfo.getName());
+			}
+			attachSbolIdentity(event, eventInfo.getFullURI());
 			event.setUseValuesFromTriggerTime(false);
 
 			// Trigger hardcoded to true. TODO: add conditional triggers
@@ -966,7 +1003,7 @@ public class MxToSBML extends Converter {
 
 			// Record geometry for layout.
 			// Events imported without position annotations have no cell.
-			mxCell eventCell = (mxCell) graphModel.getCell(eventInfo.getFullURI());
+			mxCell eventCell = eventCellsByValue.get(eventInfo.getFullURI());
 			mxGeometry geom = (eventCell != null) ? eventCell.getGeometry() : null;
 			if (geom != null) {
 				layoutBounds.update(geom);
@@ -987,20 +1024,19 @@ public class MxToSBML extends Converter {
 		if (glyphInfo == null)
 			return null;
 
-		// SBML ID becomes the label. Pick Name over DisplayID
-		String displayName = glyphInfo.getDisplayID();
-		if (glyphInfo.getName() != null && !glyphInfo.getName().isEmpty()) {
-			displayName = glyphInfo.getName();
-		}
-		String speciesId = sanitizeId(displayName);
+		// SBML ID becomes the label: the species' display name (the same fallback
+		// chain the canvas label uses)
+		String displayName = glyphInfo.getDisplayName();
+		String speciesId = Identifiers.toSId(displayName, usedIds);
 		displayNameToSpeciesId.put(displayName, speciesId);
 
 		Species species = model.createSpecies(speciesId);
 		species.setCompartment("Cell");
 
-		if (glyphInfo.getName() != null && !glyphInfo.getName().isEmpty()) {
+		if (glyphInfo.getName() != null && !glyphInfo.getName().trim().isEmpty()) {
 			species.setName(glyphInfo.getName());
 		}
+		attachSbolIdentity(species, glyphInfo.getFullURI());
 
 		String partType = glyphInfo.getPartType();
 		URI typeURI = SBOLData.types.getValue(partType);
@@ -1306,35 +1342,23 @@ public class MxToSBML extends Converter {
 	}
 
 	/**
-	 * Sanitizes an ID to be a valid SBML SId. SBML SId must:
-	 * - be unique
-	 * - start with a letter or underscore
-	 * - contain only letters, digits, and underscores
+	 * Attaches the source SBOL identity as a non-RDF annotation so the SBML element
+	 * stays traceable to the SBOLCanvas part it came from. Tools that do not know
+	 * the namespace ignore it (SBML spec).
 	 *
-	 * @param id The raw ID string
-	 * @return A valid, unique SBML SId
-	 * @see Converter#sanitizeAnnotationKey for XML NCName sanitization (different rules)
+	 * @param element The SBML element to annotate
+	 * @param fullURI The full SBOL URI (uriPrefix/displayID/version)
 	 */
-	private String sanitizeId(String id) {
-		if (id == null || id.isEmpty()) {
-			id = "unnamed";
+	private void attachSbolIdentity(SBase element, String fullURI) {
+		String escaped = fullURI.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"",
+				"&quot;");
+		String xml = "<" + Converter.ANN_PREFIX + ":identity xmlns:" + Converter.ANN_PREFIX + "=\"" + Converter.URI_PREFIX
+				+ "\" " + Converter.ANN_PREFIX + ":uri=\"" + escaped + "\"/>";
+		try {
+			element.appendAnnotation(xml);
+		} catch (XMLStreamException e) {
+			throw new IllegalStateException("Failed to attach SBOL identity annotation for " + fullURI, e);
 		}
-		// Replace invalid characters with underscore
-		String sanitized = id.replaceAll("[^a-zA-Z0-9_]", "_");
-		// Ensure it starts with a letter or underscore (not a digit)
-		if (Character.isDigit(sanitized.charAt(0))) {
-			sanitized = "_" + sanitized;
-		}
-		// Make unique: if ID already used, find next available suffix
-		if (usedIds.contains(sanitized)) {
-			int suffix = 2;
-			while (usedIds.contains(sanitized + "__" + suffix)) {
-				suffix++;
-			}
-			sanitized = sanitized + "__" + suffix;
-		}
-		usedIds.add(sanitized);
-		return sanitized;
 	}
 
 }

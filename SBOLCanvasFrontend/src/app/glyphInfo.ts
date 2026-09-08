@@ -1,59 +1,44 @@
-import { ParsedEventType } from '@angular/compiler';
 import { CanvasAnnotation } from './canvasAnnotation';
 import { Info } from './info';
-import { environment } from 'src/environments/environment';
-import { customAlphabet } from 'nanoid';
-import { alphanumeric } from 'nanoid-dictionary';
 
 export class GlyphInfo extends Info {
     // Remember that when you change this you need to change the encode function in graph service
-    static counter: number = 0;
     partType: string;
     otherTypes: string[];
     partRole: string;
     otherRoles: string[];
     partRefine: string;
-    name: string;
     description: string;
-    version: string;
     sequence: string;
     sequenceURI: string;
     annotations: CanvasAnnotation[];
     derivedFroms: string[];
     generatedBys: string[];
-    simulationData = {};
+    simulationData: Record<string, number | string | boolean> = {};
 
     constructor({
-        id,
         version = "1",
         partType = "DNA region",
         partRole,
     }: {
-        id?,
         version?,
         partType?,
         partRole?,
     } = {}) {
         super();
 
-        this.version = version
-        this.partType = partType
-        this.partRole = partRole
-        this.otherTypes = []
+        this.version = version;
+        this.partType = partType;
+        this.partRole = partRole;
+        this.otherTypes = [];
 
         // try to make a prefix from the part role
-        const partRolePrefix = partRole && (partRole.match(/^(\w+)/)|| [])[1];
-        // generate id
-        this.displayID = id || partRolePrefix ?
-            `${partRolePrefix}_${customAlphabet(alphanumeric, 4)()}` :      // either use prefix and short ID
-            customAlphabet(alphanumeric, 8)()                               // or long ID
+        const partRolePrefix = partRole && (partRole.match(/^(\w+)/) || [])[1];
+        this.displayID = Info.generateID(partRolePrefix || 'part');
 
-        // ensure ID doesn't start with a digit
-        if(/^\d/.test(this.displayID))
-            this.displayID = "i" + this.displayID
-
-        // make a name so the displayed stuff is cleaner
-        this.name = partRolePrefix || " "
+        // default name is the part role, same convention as molecular species'
+        // palette names ("prot", "chem"); the user replaces it on rename
+        this.name = partRolePrefix || '';
     }
 
     makeCopy() {
@@ -94,14 +79,6 @@ export class GlyphInfo extends Info {
         this.derivedFroms = other.derivedFroms ? other.derivedFroms.slice() : null;
         this.generatedBys = other.generatedBys ? other.generatedBys.slice() : null;
         this.simulationData = other.simulationData ? { ...other.simulationData } : {};
-    }
-
-    getFullURI(): string {
-        let fullURI = this.uriPrefix + '/' + this.displayID;
-        if (this.version && this.version.length > 0) {
-            fullURI += '/' + this.version;
-        }
-        return fullURI;
     }
 
     encode(enc: any) {
