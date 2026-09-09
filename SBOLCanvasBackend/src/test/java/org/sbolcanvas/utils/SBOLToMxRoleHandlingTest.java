@@ -79,12 +79,12 @@ class SBOLToMxRoleHandlingTest {
         return document;
     }
 
-    /** Choose a second role whose HashSet iteration precedes the circular role. */
+    /** Choose a non-circular role whose Set iteration precedes the circular role. */
     private static void addCircularRoleAfterAnotherRole(ComponentDefinition glyph) {
         for (int i = 0; i < 1000; i++) {
             glyph.clearRoles();
-            glyph.addRole(CIRCULAR_BACKBONE);
             glyph.addRole(URI.create("https://example.org/non-circular-role-" + i));
+            glyph.addRole(CIRCULAR_BACKBONE);
             if (!CIRCULAR_BACKBONE.equals(glyph.getRoles().iterator().next())) {
                 return;
             }
