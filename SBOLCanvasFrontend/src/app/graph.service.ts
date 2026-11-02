@@ -50,6 +50,8 @@ export class GraphService extends GraphHelpers {
         super(dialog, metadataService, glyphService);
 
         this.installEditCheck();
+        this.installCanvasAccessibility();
+        this.installKeyboardShortcuts();
 
         // handle selection changes
         this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
@@ -219,6 +221,65 @@ export class GraphService extends GraphHelpers {
             interactions: value[GraphBase.INTERACTION_DICT_INDEX] || {},
             events: value[GraphBase.EVENT_DICT_INDEX] || {},
         }, this.metadataService);
+    }
+
+    private installKeyboardShortcuts(): void {
+        const container = this.graphContainer;
+        const arrows: Record<string, [number, number]> = {
+            ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+        };
+        window.addEventListener('keydown', (evt: KeyboardEvent) => {
+            if (!this.graph.isEnabled() || this.graph.isEditing() || this.dialog.openDialogs.length > 0) {
+                return;
+            }
+            const target = evt.target as HTMLElement | null;
+            const inCanvas = !!target && container.contains(target);
+            if (!inCanvas && target && (['INPUT', 'TEXTAREA', 'DIV'].includes(target.tagName) || target.closest('mat-form-field'))) {
+                return;
+            }
+            const direction = inCanvas && arrows[evt.key];
+            if (direction) {
+                const selected = this.graph.getSelectionCells();
+                if (selected.length === 0) {
+                    return;
+                }
+                evt.preventDefault();
+                evt.stopPropagation();
+                const step = (evt.shiftKey ? 10 : 1) * this.graph.gridSize;
+                this.graph.moveCells(selected, direction[0] * step, direction[1] * step);
+                return;
+            }
+            if (evt.key === 'Delete' || evt.key === 'Backspace') {
+                if (this.graph.getSelectionCells().length === 0) {
+                    return;
+                }
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.delete();
+                return;
+            }
+            if (!(evt.ctrlKey || evt.metaKey)) {
+                return;
+            }
+            const key = evt.key.toLowerCase();
+            if (key === 'z') {
+                evt.preventDefault();
+                evt.stopPropagation();
+                if (evt.shiftKey) {
+                    this.redo();
+                } else {
+                    this.undo();
+                }
+            } else if (key === 'c') {
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.copy();
+            } else if (key === 'v') {
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.paste();
+            }
+        });
     }
 
     private getPrimarySelectedCell() {
