@@ -1296,13 +1296,7 @@ public class MxToSBML extends Converter {
 			return 0.0;
 		}
 
-		LinkedHashMap<String, Object> params = SBOLData.getSimulationConfig().get(key);
-		if (params == null) {
-			log.warn("no default for '" + paramName + "' on " + context + ": no config for type '" + key + "', using 0.0");
-			return 0.0;
-		}
-
-		Object val = params.get(paramName);
+		Object val = SBOLData.getDefault(key, paramName);
 		if (val == null) {
 			log.warn("no default for '" + paramName + "' on " + context + ": missing from config, using 0.0");
 			return 0.0;

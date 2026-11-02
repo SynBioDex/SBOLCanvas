@@ -45,3 +45,8 @@ export abstract class Info{
     abstract encode(enc: any);
 
 }
+export function valueType(value: number | boolean | string): string {
+    if (typeof value === 'number') return 'number';
+    if (typeof value === 'boolean') return 'boolean';
+    return 'string';
+}

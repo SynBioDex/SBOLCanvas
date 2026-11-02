@@ -1,4 +1,4 @@
-import { Info } from './info';
+import { Info, valueType } from './info';
 
 
 export class InteractionInfo extends Info {
@@ -8,8 +8,10 @@ export class InteractionInfo extends Info {
   // treat these as dictionaries, not arrays
   sourceRefinement: Record<string, string> = {};
   targetRefinement: Record<string, string> = {};
-  fromURI = [];
-  toURI = [];
+  sourceCoefficient: Record<string, number> = {};
+  targetCoefficient: Record<string, number> = {};
+  fromURI: Record<string, string> = {};
+  toURI: Record<string, string> = {};
   simulationData: Record<string, number | string | boolean> = {};
 
   constructor() {
@@ -37,6 +39,8 @@ export class InteractionInfo extends Info {
     for(let key in this.toURI){
       copy.toURI[key] = this.toURI[key];
     }
+    copy.sourceCoefficient = { ...this.sourceCoefficient };
+    copy.targetCoefficient = { ...this.targetCoefficient };
     for(let key in this.simulationData){
       copy.simulationData[key] = this.simulationData[key];
     }
@@ -119,6 +123,18 @@ export class InteractionInfo extends Info {
       }
       node.appendChild(toURINode);
     }
+    for (const field of ['sourceCoefficient', 'targetCoefficient']) {
+      const values = enc.document.createElement('Array');
+      values.setAttribute('as', field);
+      for (const key in this[field]) {
+        const entry = enc.document.createElement('add');
+        entry.setAttribute('value', this[field][key]);
+        entry.setAttribute('as', key);
+        entry.setAttribute('type', valueType(this[field][key]));
+        values.appendChild(entry);
+      }
+      node.appendChild(values);
+    }
     if (this.simulationData) {
       let simulationDataNode = enc.document.createElement("Array");
       simulationDataNode.setAttribute("as", "simulationData");
@@ -126,6 +142,7 @@ export class InteractionInfo extends Info {
         let dataNode = enc.document.createElement("add");
         dataNode.setAttribute("value", this.simulationData[key]);
         dataNode.setAttribute("as", key);
+        dataNode.setAttribute("type", valueType(this.simulationData[key]));
         simulationDataNode.appendChild(dataNode);
       }
       node.appendChild(simulationDataNode);
