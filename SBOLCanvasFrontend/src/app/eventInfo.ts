@@ -42,15 +42,6 @@ export class EventInfo extends Info {
         return copy;
     }
 
-    copyDataFrom(other: EventInfo) {
-        this.uriPrefix = other.uriPrefix;
-        this.displayID = other.displayID;
-        this.version = other.version;
-        this.name = other.name;
-        this.description = other.description;
-        this.simulationData = other.simulationData ? { ...other.simulationData } : {};
-    }
-
     encode(enc: any) {
         let node = enc.document.createElement('EventInfo');
         if (this.uriPrefix)

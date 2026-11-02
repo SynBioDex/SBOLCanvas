@@ -1,8 +1,17 @@
 import { Info, valueType } from './info';
+import type { mxCell } from 'src/mxgraph';
 
+export type ParticipantSide = 'source' | 'target';
+
+export function typeFollowsEndpoints(type: string): boolean {
+  return type === 'Biochemical Reaction' || type === 'Genetic Production';
+}
+
+export function processEdgeType(source: mxCell, target: mxCell): string {
+  return source && source.isSequenceFeatureGlyph() ? 'Genetic Production' : 'Biochemical Reaction';
+}
 
 export class InteractionInfo extends Info {
-  // Remember that when you change this you need to change the encode function in graph service
   interactionType: string;
 
   // treat these as dictionaries, not arrays
@@ -45,28 +54,6 @@ export class InteractionInfo extends Info {
       copy.simulationData[key] = this.simulationData[key];
     }
     return copy;
-  }
-
-  copyDataFrom(other: InteractionInfo) {
-    this.displayID = other.displayID;
-    this.version = other.version;
-    this.uriPrefix = other.uriPrefix;
-    this.interactionType = other.interactionType;
-    for(let key in other.sourceRefinement){
-      this.sourceRefinement[key] = other.sourceRefinement[key];
-    }
-    for(let key in other.targetRefinement){
-      this.targetRefinement[key] = other.targetRefinement[key];
-    }
-    for(let key in other.fromURI){
-      this.fromURI[key] = other.fromURI[key];
-    }
-    for(let key in other.toURI){
-      this.toURI[key] = other.toURI[key];
-    }
-    for(let key in other.simulationData){
-      this.simulationData[key] = other.simulationData[key];
-    }
   }
 
   encode(enc: any) {

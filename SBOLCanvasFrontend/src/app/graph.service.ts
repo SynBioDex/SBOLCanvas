@@ -11,7 +11,7 @@ import type { mxCell } from 'src/mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { MetadataService } from './metadata.service';
 import { GlyphService } from './glyph.service';
-import { InteractionInfo } from './interactionInfo';
+import { InteractionInfo, processEdgeType } from './interactionInfo';
 import { environment } from 'src/environments/environment';
 import { MatDialog } from '@angular/material/dialog';
 import { GraphEdits } from './graph-edits';
@@ -24,19 +24,32 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { CELL_REFERENCE_PREFIX, EventInfo, isCellReference } from './eventInfo';
 import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { debounceTime, share } from 'rxjs/operators';
 import { DomSanitizer } from '@angular/platform-browser';
+import { ErrorComponent } from './error/error.component';
+import { collectDesignFindings, participantsOf } from './validation/inspect';
+import { checkReaction, type Finding } from './validation/rules';
+
+function findingKey(finding: Finding): string {
+    const { viewId, cellId, field } = finding.location;
+    return [finding.code, viewId, cellId, field ?? ''].join('|');
+}
 
 @Injectable({
     providedIn: 'root'
 })
 export class GraphService extends GraphHelpers {
 
+    private readonly findings = new BehaviorSubject<Finding[]>([]);
+    public readonly designFindings$ = this.findings.asObservable();
+    private loadingDocument = false;
+    private acceptedViolations = new Set<string>();
+
     constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService, private sanitizer: DomSanitizer) {
         super(dialog, metadataService, glyphService);
 
-
+        this.installEditCheck();
 
         // handle selection changes
         this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
@@ -169,6 +182,45 @@ export class GraphService extends GraphHelpers {
         });
     }
 
+    private installEditCheck() {
+        const model = this.graph.getModel();
+        model.addListener(mx.mxEvent.END_EDIT, () => {
+            const edit = model.currentEdit;
+            if (!edit || edit.isEmpty()) {
+                return;
+            }
+            const findings = this.designFindings();
+            const enforced = findings.filter(finding => finding.enforced);
+            const broken = this.loadingDocument ? undefined
+                : enforced.find(finding => !this.acceptedViolations.has(findingKey(finding)));
+            if (!broken) {
+                this.publishFindings(findings);
+                return;
+            }
+            for (let i = edit.changes.length - 1; i >= 0; i--) {
+                edit.changes[i].execute();
+            }
+            edit.changes = [];
+            this.dialog.open(ErrorComponent, { data: { type: 'refusal', message: broken.message } });
+            this.filterSelectionCells();
+        });
+    }
+
+    private publishFindings(findings: Finding[]) {
+        this.acceptedViolations = new Set(findings.filter(finding => finding.enforced).map(findingKey));
+        this.findings.next(findings);
+    }
+
+    private designFindings(): Finding[] {
+        const cell0 = this.graph.getModel().getCell(0);
+        const value = (cell0 && cell0.value) || [];
+        return collectDesignFindings(this.graph, {
+            info: value[GraphBase.INFO_DICT_INDEX] || {},
+            interactions: value[GraphBase.INTERACTION_DICT_INDEX] || {},
+            events: value[GraphBase.EVENT_DICT_INDEX] || {},
+        }, this.metadataService);
+    }
+
     private getPrimarySelectedCell() {
         const selected = this.graph.getSelectionCells();
         if (!selected || selected.length === 0) {
@@ -273,7 +325,16 @@ export class GraphService extends GraphHelpers {
         }
 
         if (selected[0].isInteractionNode()) {
-            return interactionType == "Biochemical Reaction" || interactionType == "Dissociation" || interactionType == "Genetic Production" || interactionType == "Non-Covalent Binding";
+            const nodeTypes = ["Biochemical Reaction", "Dissociation", "Non-Covalent Binding"];
+            const node = selected[0];
+            const stored = this.getFromInteractionDict(node.value);
+            const rules = this.metadataService.interactionRules;
+            if (!nodeTypes.includes(interactionType) || !stored || !rules) {
+                return nodeTypes.includes(interactionType);
+            }
+            const candidate = stored.makeCopy();
+            candidate.interactionType = interactionType;
+            return checkReaction(candidate, participantsOf(this.graph, node), rules).length === 0;
         }
 
         return false;
@@ -815,6 +876,7 @@ export class GraphService extends GraphHelpers {
         // clearing the selection avoids a lot of exceptions from mxgraph code for some reason.
         this.graph.clearSelection();
         this.editor.execute('undo');
+        this.publishFindings(this.designFindings());
 
         this.removeCircularType();
 
@@ -840,6 +902,7 @@ export class GraphService extends GraphHelpers {
 
         this.graph.clearSelection();
         this.editor.execute('redo');
+        this.publishFindings(this.designFindings());
 
         // If the undo caused scars to become visible, we should update
         this.showingScars = this.getScarsVisible();
@@ -1586,7 +1649,7 @@ export class GraphService extends GraphHelpers {
 
             // Default name for a process interaction
             if (name == "Process") {
-                name = "Genetic Production";
+                name = processEdgeType(cell.source, cell.target);
             }
 
             if (addToDictionary) {
@@ -1903,6 +1966,15 @@ export class GraphService extends GraphHelpers {
      * and uses it to replace the current graph
      */
     setGraphToXML(graphString: string) {
+        this.loadingDocument = true;
+        try {
+            this.decodeGraphXML(graphString);
+        } finally {
+            this.loadingDocument = false;
+        }
+    }
+
+    private decodeGraphXML(graphString: string) {
         GraphBase.unFormatedCells.clear();
         this.graph.home();
         this.graph.getModel().clear();

@@ -309,16 +309,59 @@ public class SBOLData {
 		return interactionNames;
 	}
 
-	/**
-	 * Returns a hashmap of interaction name to valid roles
-	 */
-	public static HashMap<String, String[]> getInteractionRoles() {
-		HashMap<String, String[]> result = new HashMap<String, String[]>();
-		for (URI interactionURI : interactions.values()) {
-			String[] roles = new String[2];
-			roles[0] = interactionRoles.getKey(interactionSourceRoles.get(interactionURI));
-			roles[1] = interactionRoles.getKey(interactionTargetRoles.get(interactionURI));
-			result.put(interactions.getKey(interactionURI), roles);
+	public static Map<String, Object> getInteractionRules() {
+		Map<String, Object> result = new LinkedHashMap<>();
+		for (String interactionType : getInteractions()) {
+			Map<String, Object> record = new LinkedHashMap<>();
+			Map<String, Object> source = roleDescriptor(interactionType, true);
+			Map<String, Object> target = roleDescriptor(interactionType, false);
+			if ("Degradation".equals(interactionType)) {
+				source.put("endpointTypes", Arrays.asList("species"));
+				target.put("endpointTypes", Arrays.asList());
+				record.put("targetless", true);
+				record.put("maxReactants", 1);
+			} else if ("Inhibition".equals(interactionType) || "Stimulation".equals(interactionType) || "Control".equals(interactionType)) {
+				source.put("endpointTypes", Arrays.asList("species"));
+				target.put("endpointTypes", Arrays.asList("dna"));
+			} else if ("Process".equals(interactionType) || "Biochemical Reaction".equals(interactionType)) {
+				source.put("endpointTypes", Arrays.asList("species", "dna", "node"));
+				target.put("endpointTypes", Arrays.asList("species", "node"));
+			} else if ("Genetic Production".equals(interactionType)) {
+				source.put("endpointTypes", Arrays.asList("dna"));
+				target.put("endpointTypes", Arrays.asList("species"));
+			}
+			if ("Non-Covalent Binding".equals(interactionType)) {
+				record.put("maxProducts", 1);
+			}
+			if ("Dissociation".equals(interactionType)) record.put("maxReactants", 1);
+			record.put("source", source);
+			record.put("target", target);
+			record.put("massAction", isMassActionInteraction(interactionType));
+			result.put(interactionType, record);
+		}
+		return result;
+	}
+
+	private static Map<String, Object> roleDescriptor(String interactionType, boolean source) {
+		URI type = interactions.getValue(interactionType);
+		URI role = (source ? interactionSourceRoles : interactionTargetRoles).get(type);
+		String name = interactionRoles.getKey(role);
+		List<String> names = new ArrayList<>();
+		names.add(name);
+		names.addAll(Arrays.asList(getInteractionRoleRefinement(name)));
+		boolean hasStrictRoles = "Non-Covalent Binding".equals(interactionType) || "Dissociation".equals(interactionType);
+		if (isMassActionInteraction(interactionType) && !hasStrictRoles) {
+			if (!names.contains("Modifier")) names.add("Modifier");
+			names.addAll(Arrays.asList(getInteractionRoleRefinement("Modifier")));
+		}
+		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("defaultRole", name);
+		result.put("roles", names);
+		if ("Non-Covalent Binding".equals(interactionType) && !source) {
+			result.put("fixedCoefficient", 1.0);
+		}
+		if (isMassActionInteraction(interactionType)) {
+			result.put("coefficientDefault", getParticipantCoefficientDefault(interactionType, source));
 		}
 		return result;
 	}

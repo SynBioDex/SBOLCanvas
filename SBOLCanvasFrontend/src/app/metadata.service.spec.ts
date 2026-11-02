@@ -29,8 +29,6 @@ describe('MetadataService', () => {
     ['loadTypes',             '/data/types'],
     ['loadRoles',             '/data/roles'],
     ['loadInteractions',      '/data/interactions'],
-    ['loadInteractionRoles',  '/data/interactionRoles'],
-    ['loadSimulationConfig',  '/data/simulationConfig'],
   ])('%s issues a GET to %s', (method, path) => {
     (service as any)[method]().subscribe();
     const req = http.expectOne(r => r.url.endsWith(path));
@@ -38,13 +36,18 @@ describe('MetadataService', () => {
     req.flush({});
   });
 
-  it.each([
-    ['loadRefinements',                '/data/refine'],
-    ['loadInteractionRoleRefinements', '/data/interactionRoleRefine'],
-  ])('%s forwards parent as a query param', (method, path) => {
-    (service as any)[method]('SO:0000167').subscribe();
-    const req = http.expectOne(r => r.url.endsWith(path));
+  it('loadRefinements forwards parent as a query param', () => {
+    service.loadRefinements('SO:0000167').subscribe();
+    const req = http.expectOne(r => r.url.endsWith('/data/refine'));
     expect(req.request.params.get('parent')).toBe('SO:0000167');
     req.flush({});
+  });
+
+  it('lets startup finish when the backend cannot be reached', async () => {
+    const started = service.initialize();
+    http.match(() => true)[0].error(new ProgressEvent('error'), { status: 0 });
+    await expect(started).resolves.toBeUndefined();
+    expect(service.interactionRules).toBeUndefined();
+    expect(service.hasLoadError).toBe(true);
   });
 });

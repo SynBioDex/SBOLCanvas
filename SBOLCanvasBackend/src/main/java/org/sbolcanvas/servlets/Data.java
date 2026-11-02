@@ -44,8 +44,8 @@ public class Data extends HttpServlet {
 				body = gson.toJson(SBOLData.getRefinement(parent));
 			} else if (request.getPathInfo().equals("/interactions")) {
 				body = gson.toJson(SBOLData.getInteractions());
-			}else if (request.getPathInfo().equals("/interactionRoles")) {
-				body = gson.toJson(SBOLData.getInteractionRoles());
+			}else if (request.getPathInfo().equals("/interactionRules")) {
+				body = gson.toJson(SBOLData.getInteractionRules());
 			}else if (request.getPathInfo().equals("/interactionRoleRefine")) {
 				String parent = request.getParameter("parent");
 				if(parent == null) {

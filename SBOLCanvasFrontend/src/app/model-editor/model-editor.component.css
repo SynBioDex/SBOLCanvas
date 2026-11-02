@@ -21,6 +21,13 @@
   width: 100%;
 }
 
+.param-error {
+  color: #f44336;
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 2px 0;
+  white-space: normal;
+}
 .config-error {
   color: #f44336;
   padding: 8px;

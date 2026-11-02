@@ -1,7 +1,7 @@
 import mxgraph from 'mxgraph';
 import type { mxEditor, mxGraph, mxCell } from 'src/mxgraph';
 import { GlyphInfo } from './glyphInfo';
-import { InteractionInfo } from './interactionInfo';
+import { InteractionInfo, typeFollowsEndpoints, processEdgeType } from './interactionInfo';
 import { GlyphService } from './glyph.service';
 import { CanvasAnnotation } from './canvasAnnotation';
 import { environment } from 'src/environments/environment';
@@ -39,7 +39,7 @@ export const mx = mxgraph({
 /**
  * The base class that represents our mxGraph. Primarily contains initalizers, and core methods.
  */
-export class GraphBase {
+export abstract class GraphBase {
 
     // static variables
     // Constants
@@ -447,7 +447,7 @@ export class GraphBase {
                     } else {
                         // interaction
                         let name = intInfo.interactionType;
-                        if (name == "Biochemical Reaction" || name == "Non-Covalent Binding" || name == "Genetic Production") {
+                        if (GraphBase.usesProcessStyle(name)) {
                             name = "Process";
                         }
                         if (!cell.style) {
@@ -1211,6 +1211,11 @@ export class GraphBase {
                     }
                 }
 
+                const ends = [edge.source, edge.target];
+                if (typeFollowsEndpoints(infoCopy.interactionType)
+                    && ends.every(end => !end || end.isMolecularSpeciesGlyph() || end.isSequenceFeatureGlyph())) {
+                    infoCopy.interactionType = processEdgeType(edge.source, edge.target);
+                }
                 this.updateInteractionDict(infoCopy);
             } finally {
                 sender.getModel().endUpdate();
@@ -1374,7 +1379,7 @@ export class GraphBase {
         // We have to override this method because multiplicities only are checked when there is a source and target.
         // Multiplicities also base their type on cell.value, not cell.style
         let oldGetEdgeValidationError = mx.mxGraph.prototype.getEdgeValidationError;
-        let validateInteractionRef = this.validateInteraction;
+        const graphBaseRef = this;
         mx.mxGraph.prototype.getEdgeValidationError = function (edge, source, target) {
             let result = oldGetEdgeValidationError.apply(this, arguments);
 
@@ -1389,73 +1394,16 @@ export class GraphBase {
             endIdx = endIdx > 0 ? endIdx : styleString.length;
             let interactionType = styleString.slice(startIdx, endIdx);
 
-            let validationMessage = validateInteractionRef(interactionType, source, target);
+            let validationMessage = graphBaseRef.validateInteraction(interactionType, source, target);
 
             return validationMessage;
         };
     }
 
-    protected validateInteraction(interactionType: string, source: mxCell, target: mxCell) {
+    protected abstract validateInteraction(interactionType: string, source: mxCell, target: mxCell): string | null;
 
-        // edges can't connect to edges
-        if ((source && source.isEdge()) || (target && target.isEdge())) {
-            return "Edges are disallowed to connect to edges.";
-        }
-
-        // certain edge types can't connect to interaction nodes
-        if (((source && source.isInteractionNode()) || (target && target.isInteractionNode())) &&
-            (interactionType == 'Control' || interactionType == 'Inhibition' || interactionType == 'Stimulation')) {
-            return 'Edge type disallowed to connect to an interaction node.';
-        }
-
-        // prevent degredation from using anything as a target
-        if (interactionType == 'Degradation' && target) {
-            return 'Degradation isn\'t allowed target anything.';
-        }
-
-        // prevent degredation from having anything but a molecular species as a source
-        if (interactionType == 'Degradation' && source && !source.isMolecularSpeciesGlyph()) {
-            return 'Degredation is only allowed molecular species as a source.';
-        }
-
-        // prevent interaction nodes from chaining
-        if (source && target && source.isInteractionNode() && target.isInteractionNode()) {
-            return 'Interaction nodes aren\'t allowed to connect.';
-        }
-
-        // Prevent connecting of an edge to circuit container by clicking it and then an interaction 
-        if (source?.isCircuitContainer()) {
-            return 'Edge type disallowed to connect to a circuit container. Please connect to the glyph itself.';
-        }
-
-        // Prevent inhibition having its source only be a molecular species
-        if ((interactionType == 'Inhibition' || interactionType == 'Stimulation' || interactionType == 'Control') && source) {
-            if (!source.isMolecularSpeciesGlyph()) {
-                return 'Inhibition, Stimulation and Control are only allowed from a molecular species.';
-            }
-        }
-
-        // Prevent inhibition from having its endpoint not be a dna object
-        if ((interactionType == 'Inhibition' || interactionType == 'Stimulation' || interactionType == 'Control') && target) {
-            if (!target.isSequenceFeatureGlyph()) {
-                return 'Inhibition, Stimulation and Control are only allowed to a DNA object';
-            }
-        }
-
-        //Process can connect from DNA object to molecular species, connect two molecular species, connect molecular species to/from association, disassociation, and process
-        if (interactionType == 'Process' && source) {
-            if (!(source.isSequenceFeatureGlyph() || source.isMolecularSpeciesGlyph() || source.isInteractionNode())) {
-                return 'Process can only connect from a DNA object, molecular species, or interaction node.';
-            }
-        }
-
-        if (interactionType == 'Process' && target) {
-            if (!(target.isMolecularSpeciesGlyph() || target.isInteractionNode())) {
-                return 'Process can only connect to a molecular species or interaction node.';
-            }
-        }
-
-        return null;
+    static usesProcessStyle(type: string): boolean {
+        return ['Biochemical Reaction', 'Non-Covalent Binding', 'Dissociation', 'Genetic Production'].includes(type);
     }
 
     protected interactionNodeNametoType(name: string) {
@@ -1465,7 +1413,7 @@ export class GraphBase {
             case "dissociation":
                 return "Dissociation";
             case "process":
-                return "Process";
+                return "Biochemical Reaction";
         }
     }
 
@@ -1478,6 +1426,7 @@ export class GraphBase {
             case "Inhibition":
             case "Stimulation":
             case "Biochemical Reaction":
+            case "Process":
             case "Degradation":
             case "Genetic Production":
             case "Control":

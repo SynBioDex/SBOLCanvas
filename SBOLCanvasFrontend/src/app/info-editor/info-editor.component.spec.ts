@@ -31,8 +31,6 @@ describe('InfoEditorComponent', () => {
       loadRoles: jest.fn().mockReturnValue(of([])),
       loadRefinements: jest.fn().mockReturnValue(of([])),
       loadInteractions: jest.fn().mockReturnValue(of([])),
-      loadInteractionRoles: jest.fn().mockReturnValue(of({})),
-      loadInteractionRoleRefinements: jest.fn().mockReturnValue(of([])),
     };
     graphService = {
       setSelectedCellInfo: jest.fn(),
@@ -82,8 +80,9 @@ describe('InfoEditorComponent', () => {
     it('sanitizes displayID by replacing non-word runs with underscores', () => {
       component.glyphInfo = new GlyphInfo();
       component.inputChange(event('displayID', 'my display ID!'));
-      expect(component.glyphInfo.displayID).toBe('my_display_ID_');
-      expect(graphService.setSelectedCellInfo).toHaveBeenCalledWith(component.glyphInfo);
+      const sent = graphService.setSelectedCellInfo.mock.calls[0][0];
+      expect(sent.displayID).toBe('my_display_ID_');
+      expect(sent).not.toBe(component.glyphInfo);
     });
 
     it('does not overwrite displayID when the input is empty', () => {
@@ -96,18 +95,18 @@ describe('InfoEditorComponent', () => {
     it('routes name/description writes to whichever info object is currently set', () => {
       component.glyphInfo = new GlyphInfo();
       component.inputChange(event('name', 'new-name'));
-      expect(component.glyphInfo.name).toBe('new-name');
+      expect(graphService.setSelectedCellInfo.mock.calls[0][0].name).toBe('new-name');
 
       component.glyphInfo = null;
       component.moduleInfo = new ModuleInfo();
       component.inputChange(event('description', 'desc'));
-      expect(component.moduleInfo.description).toBe('desc');
+      expect(graphService.setSelectedCellInfo.mock.calls[1][0].description).toBe('desc');
     });
 
     it('routes sequence writes only to glyphInfo (other info types do not have a sequence field)', () => {
       component.glyphInfo = new GlyphInfo();
       component.inputChange(event('sequence', 'ACGT'));
-      expect(component.glyphInfo.sequence).toBe('ACGT');
+      expect(graphService.setSelectedCellInfo.mock.calls[0][0].sequence).toBe('ACGT');
     });
   });
 
@@ -130,20 +129,6 @@ describe('InfoEditorComponent', () => {
       component.glyphInfo = null;
       component.moduleInfo = null;
       expect(component.localDesign()).toBe(true);
-    });
-  });
-
-  describe('interaction role lookups', () => {
-    it.each([
-      ['known interactionType returns role pair',  { type: 'Inhibition', map: { Inhibition: ['Inhibitor', 'Inhibited'] } }, 'Inhibitor', 'Inhibited'],
-      ['unknown interactionType falls back to NA', { type: 'Unknown',    map: {} },         'NA',        'NA'],
-    ])('%s', (_label, setup, expectedSource, expectedTarget) => {
-      component.interactionInfo = new InteractionInfo();
-      component.interactionInfo.interactionType = (setup as any).type;
-      component.interactionRoles = (setup as any).map;
-
-      expect(component.getSourceInteractionRole()).toBe(expectedSource);
-      expect(component.getTargetInteractionRole()).toBe(expectedTarget);
     });
   });
 

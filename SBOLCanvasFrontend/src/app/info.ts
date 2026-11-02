@@ -41,7 +41,6 @@ export abstract class Info{
     }
 
     abstract makeCopy(): Info;
-    abstract copyDataFrom(info: Info);
     abstract encode(enc: any);
 
 }

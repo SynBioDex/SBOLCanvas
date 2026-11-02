@@ -32,17 +32,6 @@ describe('EventInfo', () => {
     expect(copy.simulationData).not.toBe(info.simulationData);
   });
 
-  it('copies name and description through copyDataFrom', () => {
-    const source = new EventInfo();
-    source.name = 'Src';
-    source.description = 'd';
-    const target = new EventInfo();
-    target.copyDataFrom(source);
-    expect(target.name).toBe('Src');
-    expect(target.description).toBe('d');
-    expect(target.displayID).toBe(source.displayID);
-  });
-
   it('encodes name and description as attributes only when set', () => {
     const info = new EventInfo();
     info.name = 'Trigger A';

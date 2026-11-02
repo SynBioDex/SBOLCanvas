@@ -18,8 +18,9 @@ import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-select
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
-import { InteractionInfo } from './interactionInfo';
+import { InteractionInfo, ParticipantSide } from './interactionInfo';
 import { CELL_REFERENCE_PREFIX, EventInfo, isCellReference, type SpeciesInstanceRef } from './eventInfo';
+import { checkConnection, isReactionOwner } from './validation/rules';
 // import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
@@ -64,6 +65,7 @@ export class GraphHelpers extends GraphBase {
         this.updateAngularMetadata(this.graph.getSelectionCells());
 
         this.initLabelDrawing();
+        this.initReversibleArrows();
     }
 
     protected getParentInfo(cell: mxCell): GlyphInfo {
@@ -759,6 +761,7 @@ export class GraphHelpers extends GraphBase {
 
         } finally {
             this.graph.getModel().endUpdate();
+            cells.forEach(cell => this.graph.refresh(cell));
         }
     }
 
@@ -2409,4 +2412,71 @@ export class GraphHelpers extends GraphBase {
     protected showError(message: string) {
         this.dialog.open(ErrorComponent, { data: message });
     }
+
+    protected validateInteraction(interactionType: string, source: mxCell, target: mxCell): string | null {
+        const rules = this.metadataService.interactionRules;
+        if (!rules) {
+            return null;
+        }
+        const issues = checkConnection(interactionType, source, target, rules);
+        return issues.length > 0 ? issues[0].message : null;
+    }
+
+    protected initReversibleArrows() {
+        const helpers = this;
+        const baseGetCellStyle = this.graph.getCellStyle;
+        this.graph.getCellStyle = function (cell: mxCell) {
+            const style = baseGetCellStyle.apply(this, arguments);
+            if (!cell || !cell.isInteraction || !cell.isInteraction()) {
+                return style;
+            }
+            const node = [cell.source, cell.target].find(end => end && end.isInteractionNode());
+            const owner = node ?? cell;
+            const info = helpers.getFromInteractionDict(owner.value);
+            if (!info || !helpers.isReactionReversible(info)
+                || (node && cell.target === node && info.sourceRefinement[cell.getId()] === 'Modifier')) {
+                return style;
+            }
+            return { ...style, startArrow: 'block', startFill: 1, startSize: 10 };
+        };
+    }
+
+    protected isReactionReversible(info: InteractionInfo): boolean {
+        const rules = this.metadataService.interactionRules;
+        const interactionType = info?.interactionType;
+        if (!rules || !interactionType || !Object.prototype.hasOwnProperty.call(rules, interactionType)) {
+            return false;
+        }
+        if (rules[interactionType].massAction === false) {
+            return false;
+        }
+        if (info?.simulationData?.['reversible'] !== undefined) {
+            return info.simulationData['reversible'] === true;
+        }
+        const field = (this.metadataService.simulationConfig?.[interactionType] || [])
+            .find(entry => entry.key === 'reversible');
+        return field?.default === true;
+    }
+
+    isSelectedReactionOwner(): boolean {
+        const selected = this.graph.getSelectionCells();
+        return selected.length === 1 && isReactionOwner(selected[0]);
+    }
+
+    selectedParticipantSides(info: InteractionInfo): ParticipantSide[] {
+        const edge = this.graph.getSelectionCell();
+        if (!info || !edge?.isEdge()) return [];
+        const sides: ParticipantSide[] = [];
+        if (!edge.getTerminal(true)?.isInteractionNode()) sides.push('source');
+        if (!this.metadataService.interactionRules[info.interactionType]?.targetless &&
+            !edge.getTerminal(false)?.isInteractionNode()) sides.push('target');
+        return sides;
+    }
+
+    selectedParticipantRole(info: InteractionInfo, side: ParticipantSide): string {
+        const refinements = side === 'source' ? info.sourceRefinement : info.targetRefinement;
+        return refinements[this.graph.getSelectionCell()?.getId()]
+            || this.metadataService.interactionRules[info.interactionType][side].defaultRole;
+    }
+
 }
