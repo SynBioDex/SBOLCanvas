@@ -6,14 +6,20 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
+
+import javax.xml.namespace.QName;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
@@ -45,6 +51,7 @@ import org.sbolstandard.core2.SBOLConversionException;
 import org.sbolstandard.core2.SBOLDocument;
 import org.sbolstandard.core2.SBOLReader;
 import org.sbolstandard.core2.SBOLValidationException;
+import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.sbolstandard.core2.Sequence;
 import org.sbolstandard.core2.SequenceAnnotation;
 import org.sbolstandard.core2.StrategyType;
@@ -72,11 +79,13 @@ public class SBOLToMx extends Converter {
 
 	HashMap<ComponentInstance, mxCell> compToCell;
 	HashMap<FunctionalComponent, ComponentInstance> mappings;
+	private final HashMap<String, Map.Entry<Hashtable<String, Object>, String>> participationEdges;
 
 	public SBOLToMx() {
 		super();
 		compToCell = new HashMap<ComponentInstance, mxCell>();
 		mappings = new HashMap<FunctionalComponent, ComponentInstance>();
+		participationEdges = new HashMap<String, Map.Entry<Hashtable<String, Object>, String>>();
 	}
 
 	public void toGraph(InputStream sbolStream, OutputStream graphStream)
@@ -98,6 +107,15 @@ public class SBOLToMx extends Converter {
 			throws SAXException, IOException, ParserConfigurationException, SBOLValidationException, URISyntaxException,
 			TransformerFactoryConfigurationError, TransformerException {
 		document.setDefaultURIprefix(URI_PREFIX);
+		modelHelper = new ModelHelper(document);
+
+		int formatVersion = ModelHelper.formatVersion(document);
+		if (formatVersion == 0) {
+			migrateLegacyDesign(document);
+		} else if (formatVersion > ModelHelper.FORMAT_VERSION) {
+			System.err.println("Warning: Model format " + formatVersion + " is newer than this SBOLCanvas ("
+					+ ModelHelper.FORMAT_VERSION + "); unknown entries are not shown.");
+		}
 
 		// set up the graph and glyphdict
 		mxGraph graph = new mxGraph();
@@ -154,6 +172,7 @@ public class SBOLToMx extends Converter {
 		}
 
 		setupModuleEvents(document, graph);
+		applyModelEntries(document);
 
 		// convert the objects to the graph xml
 		graphStream.write(encodeMxGraphObject(model).getBytes());
@@ -426,6 +445,7 @@ public class SBOLToMx extends Converter {
 			for (Participation participation : participations) {
 				// determine if the participation is a source or target
 				boolean source = SBOLData.isSourceParticipant(participation);
+				mxCell boundEdge;
 				// pull the interaction edge from the participation if connected to an interaction node or create a
 				// new one
 				if (hasNode) {
@@ -446,99 +466,400 @@ public class SBOLToMx extends Converter {
 					} else {
 						interactionEdge.setSource(interactionCell);
 					}
+					boundEdge = interactionEdge;
 				} else {
 					setInteractionEndpoints(document, interaction, participation, source, interactionCell);
+					boundEdge = interactionCell;
 				}
+				participationEdges.put(participation.getIdentity().toString(), new AbstractMap.SimpleEntry<>(
+						source ? intInfo.getSourceCoefficient() : intInfo.getTargetCoefficient(), boundEdge.getId()));
 			}
 
 		}
 	}
 
-	/**
-	 * Restore each Event GenericTopLevel via the Layout extension. An event with a layout node keeps
-	 * its authored position; one without is staggered into the root module view. An event that fails
-	 * to build is skipped and logged, leaving no orphan on re-export.
-	 */
+	private void remapEventTargetValue(SBOLDocument document, Hashtable<String, Object> simData) {
+		if (!simData.containsKey(SBOLData.PARAM_EVENT_TARGET_SPECIES)) {
+			return;
+		}
+		URI target = (URI) simData.get(SBOLData.PARAM_EVENT_TARGET_SPECIES);
+		for (ModuleDefinition module : document.getModuleDefinitions()) {
+			FunctionalComponent component = module.getFunctionalComponent(target);
+			if (component == null) {
+				continue;
+			}
+			mxCell cell = compToCell.get(component);
+			if (cell != null && cell.getStyle().contains(STYLE_MOLECULAR_SPECIES)) {
+				simData.put(SBOLData.PARAM_EVENT_TARGET_SPECIES, CELL_REFERENCE_PREFIX + cell.getId());
+				return;
+			}
+		}
+		simData.remove(SBOLData.PARAM_EVENT_TARGET_SPECIES);
+	}
+
 	private void setupModuleEvents(SBOLDocument document, mxGraph graph) {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
-		mxCell rootView = firstModuleView(model);
-		double fallbackOffset = 0;
-
-		for (GenericTopLevel gtl : document.getGenericTopLevels()) {
-			if (!gtl.getRDFType().equals(createQName("Event")))
+		for (GenericTopLevel modelRecord : ModelHelper.findModels(document)) {
+			URI owner = ModelHelper.owner(modelRecord);
+			mxCell ownerView = owner != null ? (mxCell) model.getCell(owner.toString()) : null;
+			if (ownerView == null || document.getModuleDefinition(owner) == null) {
+				if (!ModelHelper.events(modelRecord).isEmpty())
+					System.err.println("Warning: dropped the Events of " + modelRecord.getIdentity()
+							+ ", whose objectRef names no module in the design");
 				continue;
-			try {
-				EventInfo event = buildEventInfo(gtl);
-
-				// Use the event's layout node when it has one; otherwise stagger it at the root view.
-				mxCell layoutCell = null;
-				mxCell layoutView = null;
-				for (ModuleDefinition modDef : document.getModuleDefinitions()) {
-					mxCell view = (mxCell) model.getCell(modDef.getIdentity().toString());
-					if (view == null)
-						continue;
-					mxCell candidate = layoutHelper.getGraphicalObject(modDef.getIdentity(), gtl.getDisplayId());
-					if (candidate != null) {
-						layoutCell = candidate;
-						layoutView = view;
-						break;
-					}
+			}
+			double fallbackOffset = 0;
+			for (Annotation eventRecord : ModelHelper.events(modelRecord)) {
+				EventInfo event = buildEventInfo(modelRecord, eventRecord);
+				if (event == null) {
+					continue;
 				}
-
+				applyEventEntries(document, event, eventRecord);
+				mxCell layoutCell = layoutHelper.getGraphicalObject(owner, event.getDisplayID());
 				if (layoutCell != null) {
 					layoutCell.setStyle(layoutCell.getStyle() != null
 							? STYLE_EVENT + ";" + layoutCell.getStyle()
 							: STYLE_EVENT);
-					model.add(layoutView, layoutCell, 0);
+					model.add(ownerView, layoutCell, 0);
 					layoutCell.setValue(event.getFullURI());
 					layoutCell.setConnectable(false);
-				} else if (rootView != null) {
-					mxCell eventCell = (mxCell) graph.insertVertex(rootView, null, event.getFullURI(),
+				} else {
+					mxCell eventCell = (mxCell) graph.insertVertex(ownerView, null, event.getFullURI(),
 							fallbackOffset, fallbackOffset, 96, 40, STYLE_EVENT);
 					eventCell.setConnectable(false);
 					fallbackOffset += 20;
 				}
 				eventDict.put(event.getFullURI(), event);
-			} catch (Exception e) {
-				// event we cannot build: skip it (no eventDict entry, no orphan on re-export)
-				System.err.println("Skipping invalid event '" + gtl.getDisplayId() + "': " + e.toString());
 			}
 		}
 	}
 
-	/** The first module view cell under the root, used to place events that have no layout node. */
-	private mxCell firstModuleView(mxGraphModel model) {
-		mxCell cell1 = (mxCell) model.getCell("1");
-		for (int i = 0; i < cell1.getChildCount(); i++) {
-			mxCell child = (mxCell) cell1.getChildAt(i);
-			if (STYLE_MODULE_VIEW.equals(child.getStyle())) {
-				return child;
+
+	private void migrateLegacyDesign(SBOLDocument document) throws SBOLValidationException {
+		for (ComponentDefinition definition : document.getComponentDefinitions()) {
+			migrateLegacyDefinitionValues(document, definition);
+		}
+		for (ModuleDefinition module : document.getModuleDefinitions()) {
+			for (Interaction interaction : module.getInteractions()) {
+				migrateLegacyInteractionValues(module, interaction);
+			}
+		}
+		migrateLegacyEvents(document);
+	}
+
+	private void migrateLegacyDefinitionValues(SBOLDocument document, ComponentDefinition definition)
+			throws SBOLValidationException {
+		Hashtable<String, Object> data = takeLegacyValues(definition, "species", "Promoter");
+		if (data.isEmpty()) {
+			return;
+		}
+		boolean placed = false;
+		for (ModuleDefinition module : document.getModuleDefinitions()) {
+			for (FunctionalComponent component : module.getFunctionalComponents()) {
+				if (definition.getIdentity().equals(component.getDefinitionIdentity())) {
+					addLegacyEntries(modelHelper.getOrCreateModel(module.getIdentity(), module.getDisplayId()),
+							ModelHelper.path(module, component), data);
+					placed = true;
+				}
+			}
+		}
+		if (!placed) {
+			addLegacyEntries(modelHelper.getOrCreateModel(definition.getIdentity(), definition.getDisplayId()), "", data);
+		}
+	}
+
+	private void migrateLegacyInteractionValues(ModuleDefinition module, Interaction interaction)
+			throws SBOLValidationException {
+		Hashtable<String, Object> data = takeLegacyValues(interaction, SBOLData.INTERACTION_FIELD_CONTEXTS);
+		if (data.isEmpty()) {
+			return;
+		}
+		GenericTopLevel record = modelHelper.getOrCreateModel(module.getIdentity(), module.getDisplayId());
+		String keyedPrefix = SBOLData.PARAM_NC + "_";
+		for (Map.Entry<String, Object> entry : data.entrySet()) {
+			String key = entry.getKey();
+			if (key.startsWith(keyedPrefix)) {
+				Participation source = legacyNcSource(interaction, key.substring(keyedPrefix.length()));
+				Double nc = legacyNumber(entry.getValue());
+				if (source != null && nc != null) {
+					ModelHelper.addEntry(record, ModelHelper.entry(ModelHelper.path(module, source), "coefficient", nc));
+				}
+			} else if (key.equals(SBOLData.PARAM_NC)) {
+				Double nc = legacyNumber(entry.getValue());
+				if (nc != null && (interaction.containsType(SystemsBiologyOntology.INHIBITION)
+						|| interaction.containsType(SystemsBiologyOntology.STIMULATION))) {
+					ModelHelper.addEntry(record, ModelHelper.entry(ModelHelper.path(module, interaction),
+							SBOLData.PARAM_COOPERATIVITY, nc));
+				}
+			} else {
+				ModelHelper.addEntry(record, ModelHelper.entry(ModelHelper.path(module, interaction), key, entry.getValue()));
+			}
+		}
+	}
+
+	private static Participation legacyNcSource(Interaction interaction, String species) {
+		if (!interaction.containsType(SystemsBiologyOntology.NON_COVALENT_BINDING)
+				&& !interaction.containsType(SystemsBiologyOntology.BIOCHEMICAL_REACTION)) {
+			return null;
+		}
+		for (Participation participation : interaction.getParticipations()) {
+			FunctionalComponent participant = participation.getParticipant();
+			if (participant != null && SBOLData.isSourceParticipant(participation)
+					&& (species.equals(String.valueOf(participant.getDefinitionIdentity()))
+					|| species.equals(participant.getIdentity().toString()))) {
+				return participation;
 			}
 		}
 		return null;
 	}
 
-	/**
-	 * Build an {@link EventInfo} from an Event GenericTopLevel. The name comes from the SBOL name,
-	 * falling back to a name stored in simulationData when the SBOL name is absent (the stale key is
-	 * then dropped). An event with neither stays unnamed and falls back to its displayId downstream.
-	 */
-	private EventInfo buildEventInfo(GenericTopLevel gtl) {
+	private void migrateLegacyEvents(SBOLDocument document) throws SBOLValidationException {
+		List<GenericTopLevel> events = new ArrayList<>();
+		for (GenericTopLevel topLevel : document.getGenericTopLevels()) {
+			if (createQName("Event").equals(topLevel.getRDFType()))
+				events.add(topLevel);
+		}
+		List<ModuleDefinition> modules = new ArrayList<>(document.getRootModuleDefinitions());
+		for (ModuleDefinition module : document.getModuleDefinitions()) {
+			if (!modules.contains(module))
+				modules.add(module);
+		}
+		Map<String, URI> glyphOwners = layoutGlyphOwners(document);
+		for (GenericTopLevel event : events) {
+			document.removeGenericTopLevel(event);
+			if (modules.isEmpty()) {
+				continue;
+			}
+			URI owner = glyphOwners.get(event.getDisplayId());
+			ModuleDefinition home = owner != null && document.getModuleDefinition(owner) != null
+					? document.getModuleDefinition(owner) : modules.get(0);
+			List<ModuleDefinition> searchOrder = new ArrayList<>(modules);
+			searchOrder.remove(home);
+			searchOrder.add(0, home);
+
+			String name = event.getName();
+			String target = null;
+			Annotation annotation = event.getAnnotation(createQName("simulationData"));
+			if (annotation != null && annotation.isNestedAnnotations()) {
+				for (Annotation child : annotation.getAnnotations()) {
+					String key = child.getQName().getLocalPart();
+					String text = child.isStringValue() ? child.getStringValue()
+							: child.isURIValue() ? child.getURIValue().toString() : null;
+					if ("name".equals(key) && (name == null || name.isEmpty()))
+						name = text;
+					else if (SBOLData.PARAM_EVENT_TARGET_SPECIES.equals(key))
+						target = text;
+				}
+			}
+			List<Annotation> fields = new ArrayList<>();
+			if (name != null && !name.isEmpty())
+				fields.add(new Annotation(createQName("name"), name));
+			if (event.getDescription() != null && !event.getDescription().isEmpty())
+				fields.add(new Annotation(createQName("description"), event.getDescription()));
+			List<ModelHelper.Entry> values = new ArrayList<>();
+			Hashtable<String, Object> data = takeLegacyValues(event, "event");
+			for (String key : new TreeSet<>(data.keySet())) {
+				if (!SBOLData.PARAM_EVENT_TARGET_SPECIES.equals(key) && !"name".equals(key))
+					values.add(ModelHelper.entry("", key, data.get(key)));
+			}
+			ModelHelper.Reference reference = target == null ? null : legacyEventTarget(searchOrder, target.trim());
+			if (reference != null)
+				values.add(new ModelHelper.Entry("", SBOLData.PARAM_EVENT_TARGET_SPECIES, "reference", reference));
+			ModelHelper.putEvent(modelHelper.getOrCreateModel(home.getIdentity(), home.getDisplayId()),
+					event.getDisplayId(), fields, values);
+		}
+	}
+
+	private static ModelHelper.Reference legacyEventTarget(List<ModuleDefinition> modules, String stored) {
+		for (ModuleDefinition module : modules) {
+			for (FunctionalComponent component : module.getFunctionalComponents()) {
+				ComponentDefinition definition = component.getDefinition();
+				if (stored.equals(component.getIdentity().toString()) || stored.equals(component.getDisplayId())
+						|| stored.equals(component.getName()) || (definition != null
+						&& (stored.equals(definition.getIdentity().toString()) || stored.equals(definition.getDisplayId())
+						|| stored.equals(definition.getName())))) {
+					return new ModelHelper.Reference(module.getIdentity(), ModelHelper.path(module, component));
+				}
+			}
+		}
+		return null;
+	}
+
+	private Map<String, URI> layoutGlyphOwners(SBOLDocument document) {
+		Map<String, URI> owners = new HashMap<>();
+		for (GenericTopLevel topLevel : document.getGenericTopLevels()) {
+			Annotation ref = topLevel.getAnnotation(createQName("objectRef"));
+			if (!createQName("Layout").equals(topLevel.getRDFType()) || ref == null || ref.getURIValue() == null)
+				continue;
+			for (Annotation annotation : topLevel.getAnnotations()) {
+				if (!annotation.isNestedAnnotations())
+					continue;
+				for (Annotation child : annotation.getAnnotations()) {
+					if (createQName("displayId").equals(child.getQName()) && child.isStringValue())
+						owners.putIfAbsent(child.getStringValue(), ref.getURIValue());
+				}
+			}
+		}
+		return owners;
+	}
+
+	private static Hashtable<String, Object> takeLegacyValues(Identified identified, String... contexts) {
+		Hashtable<String, Object> data = new Hashtable<>();
+		Annotation annotation = identified.getAnnotation(createQName("simulationData"));
+		if (annotation == null || !annotation.isNestedAnnotations()) {
+			return data;
+		}
+		identified.removeAnnotation(annotation);
+		for (Annotation child : annotation.getAnnotations()) {
+			String key = Identifiers.fromNCName(child.getQName().getLocalPart());
+			Object value = child.isDoubleValue() ? (Object) child.getDoubleValue()
+					: child.isIntegerValue() ? (Object) (double) child.getIntegerValue()
+					: child.isBooleanValue() ? (Object) child.getBooleanValue()
+					: child.isStringValue() ? child.getStringValue() : null;
+			if (value == null || data.containsKey(key))
+				continue;
+			Map<String, Object> field = knownField(key, contexts);
+			if (field != null && "boolean".equals(field.get("type")) && ("true".equals(value) || "false".equals(value)))
+				value = Boolean.valueOf((String) value);
+			try {
+				data.put(key, checkedValue(key, value, contexts));
+			} catch (IllegalArgumentException malformed) {
+				continue;
+			}
+		}
+		return data;
+	}
+
+	private static Double legacyNumber(Object value) {
+		try {
+			return numericValue(value, "nc", 0.0);
+		} catch (IllegalArgumentException malformed) {
+			return null;
+		}
+	}
+
+	private static void addLegacyEntries(GenericTopLevel record, String path, Hashtable<String, Object> data)
+			throws SBOLValidationException {
+		for (Map.Entry<String, Object> entry : data.entrySet()) {
+			ModelHelper.addEntry(record, ModelHelper.entry(path, entry.getKey(), entry.getValue()));
+		}
+	}
+
+	private void applyModelEntries(SBOLDocument document) throws SBOLValidationException {
+		Map<URI, Set<String>> applied = new HashMap<>();
+		for (GenericTopLevel modelRecord : ModelHelper.findModels(document)) {
+			URI owner = ModelHelper.owner(modelRecord);
+			for (ModelHelper.Entry entry : ModelHelper.readEntries(modelRecord)) {
+				Identified target = owner != null ? ModelHelper.resolve(document, owner, entry.getPath()) : null;
+				if (target == null) {
+					System.err.println("Warning: dropped " + entry.getKey() + " for '" + entry.getPath()
+							+ "', which names nothing in " + owner);
+					continue;
+				}
+				URI subject = definitionOfInstance(document, target.getIdentity());
+				if (!applied.computeIfAbsent(subject, key -> new HashSet<>()).add(entry.getKey()))
+					continue;
+				try {
+					applyEntry(subject, entry);
+				} catch (IllegalArgumentException dropped) {
+					System.err.println("Warning: dropped " + entry.getKey() + " for '" + entry.getPath() + "': "
+							+ dropped.getMessage());
+				}
+			}
+		}
+	}
+
+	private void applyEventEntries(SBOLDocument document, EventInfo event, Annotation eventRecord) {
+		for (ModelHelper.Entry entry : ModelHelper.readEntries(eventRecord)) {
+			try {
+				if (SBOLData.PARAM_EVENT_TARGET_SPECIES.equals(entry.getKey())) {
+					if (!(entry.getValue() instanceof ModelHelper.Reference))
+						throw new IllegalArgumentException("the target is not a species reference");
+					ModelHelper.Reference reference = (ModelHelper.Reference) entry.getValue();
+					Identified target = ModelHelper.resolve(document, reference.getOwner(), reference.getPath());
+					if (target == null)
+						throw new IllegalArgumentException("'" + reference.getPath() + "' names nothing in "
+								+ reference.getOwner());
+					Hashtable<String, Object> remap = new Hashtable<>();
+					remap.put(entry.getKey(), target.getIdentity());
+					remapEventTargetValue(document, remap);
+					if (remap.containsKey(entry.getKey()))
+						event.getSimulationData().put(entry.getKey(), remap.get(entry.getKey()));
+				} else {
+					readValue(event.getSimulationData(), entry.getKey(), entry, "event");
+				}
+			} catch (IllegalArgumentException dropped) {
+				System.err.println("Warning: dropped " + entry.getKey() + " of Event " + event.getDisplayID() + ": "
+						+ dropped.getMessage());
+			}
+		}
+	}
+
+	private static URI definitionOfInstance(SBOLDocument document, URI subject) {
+		for (ModuleDefinition module : document.getModuleDefinitions()) {
+			FunctionalComponent component = module.getFunctionalComponent(subject);
+			if (component != null && component.getDefinitionIdentity() != null)
+				return component.getDefinitionIdentity();
+		}
+		return subject;
+	}
+
+	private void applyEntry(URI subject, ModelHelper.Entry entry) {
+		String key = entry.getKey();
+		Info info = infoDict.get(subject.toString());
+		GlyphInfo glyph = info instanceof GlyphInfo ? (GlyphInfo) info : null;
+		if (glyph != null) {
+			readValue(glyph.getSimulationData(), key, entry, "species", "Promoter");
+			return;
+		}
+		InteractionInfo interaction = interactionDict.get(subject.toString());
+		if (interaction != null) {
+			readValue(interaction.getSimulationData(), key, entry, SBOLData.INTERACTION_FIELD_CONTEXTS);
+			return;
+		}
+		Map.Entry<Hashtable<String, Object>, String> coefficientSlot = participationEdges.get(subject.toString());
+		if (coefficientSlot != null) {
+			readCoefficient(coefficientSlot.getKey(), coefficientSlot.getValue(), entry);
+			return;
+		}
+		throw new IllegalArgumentException("Unsupported parameter subject: " + subject + " " + key);
+	}
+
+	private void readValue(Hashtable<String, Object> target, String key, ModelHelper.Entry entry,
+			String... contexts) {
+		if ("reference".equals(entry.getType())) {
+			throw new IllegalArgumentException("Unsupported reference-valued parameter: " + key);
+		}
+		target.put(key, checkedValue(key, entry.getValue(), contexts));
+	}
+
+	private void readCoefficient(Hashtable<String, Object> coefficients, String edgeId, ModelHelper.Entry entry) {
+		Map<String, Object> field = SBOLData.field("participation", entry.getKey());
+		if (field == null) {
+			throw new IllegalArgumentException("Unsupported participation parameter: " + entry.getKey());
+		}
+		coefficients.put(edgeId, readNumber(entry.getValue(), entry.getKey(), (Double) field.get("min")));
+	}
+
+	private EventInfo buildEventInfo(GenericTopLevel modelRecord, Annotation eventRecord) {
+		String displayId = ModelHelper.eventDisplayId(eventRecord);
+		if (displayId == null) {
+			System.err.println("Warning: skipped an Event without a displayId in " + modelRecord.getIdentity());
+			return null;
+		}
 		EventInfo event = new EventInfo();
-		event.setDisplayID(gtl.getDisplayId());
-		event.setVersion(gtl.getVersion());
-		event.setUriPrefix(getURIPrefix(gtl));
-		event.setDescription(gtl.getDescription());
-		Hashtable<String, Object> simData = readSimulationAnnotations(gtl);
-		String name = gtl.getName();
-		if ((name == null || name.isEmpty()) && simData != null && simData.get("name") != null) {
-			name = simData.get("name").toString();
+		event.setDisplayID(displayId);
+		event.setVersion("");
+		event.setUriPrefix(modelRecord.getPersistentIdentity().toString());
+		for (Annotation child : eventRecord.getAnnotations()) {
+			String key = child.getQName().getLocalPart();
+			if ("name".equals(key) && child.isStringValue()) {
+				event.setName(child.getStringValue());
+			} else if ("description".equals(key) && child.isStringValue()) {
+				event.setDescription(child.getStringValue());
+			}
 		}
-		if (simData != null) {
-			simData.remove("name");
-		}
-		event.setName(name);
-		event.setSimulationData(simData);
+		event.setSimulationData(new Hashtable<String, Object>());
 		return event;
 	}
 
@@ -619,7 +940,7 @@ public class SBOLToMx extends Converter {
 			glyphInfo.setSequence(sequence.getElements());
 			glyphInfo.setSequenceURI(sequence.getIdentity().toString());
 		}
-		glyphInfo.setVersion(glyphCD.getVersion());
+		glyphInfo.setVersion(glyphCD.getVersion() != null ? glyphCD.getVersion() : "");
 		glyphInfo.setUriPrefix(getURIPrefix(glyphCD));
 
 		if (glyphCD.getWasDerivedFroms() != null && glyphCD.getWasDerivedFroms().size() > 0) {
@@ -642,15 +963,8 @@ public class SBOLToMx extends Converter {
 			glyphInfo.setGeneratedBys(generatedBys);
 		}
 
-		// filter out simulationData annotation before converting to canvas annotations
-		List<Annotation> nonSimAnnotations = new ArrayList<Annotation>();
-		for (Annotation ann : glyphCD.getAnnotations()) {
-			if (!ann.getQName().getLocalPart().equals("simulationData")) {
-				nonSimAnnotations.add(ann);
-			}
-		}
-		glyphInfo.setAnnotations(convertSBOLAnnotations(nonSimAnnotations));
-		glyphInfo.setSimulationData(readSimulationAnnotations(glyphCD));
+		glyphInfo.setAnnotations(convertSBOLAnnotations(glyphCD.getAnnotations()));
+		glyphInfo.setSimulationData(new Hashtable<String, Object>());
 		return glyphInfo;
 	}
 
@@ -660,7 +974,7 @@ public class SBOLToMx extends Converter {
 		info.setVersion(interaction.getVersion());
 		info.setInteractionType(SBOLData.interactions.getKey(interaction.getTypes().iterator().next()));
 		info.setUriPrefix(getURIPrefix(interaction));
-		info.setSimulationData(readSimulationAnnotations(interaction));
+		info.setSimulationData(new Hashtable<String, Object>());
 		return info;
 	}
 

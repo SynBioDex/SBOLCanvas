@@ -1,0 +1,92 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:sbol="http://sbols.org/v2#" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:prov="http://www.w3.org/ns/prov#" xmlns:om="http://www.ontology-of-units-of-measure.org/resource/om-2/" xmlns:SBOLCanvas="https://sbolcanvas.org/">
+  <sbol:ModuleDefinition rdf:about="https://sbolcanvas.org/module1">
+    <sbol:persistentIdentity rdf:resource="https://sbolcanvas.org/module1"/>
+    <sbol:displayId>module1</sbol:displayId>
+    <sbol:functionalComponent>
+      <sbol:FunctionalComponent rdf:about="https://sbolcanvas.org/module1/x9znM0bG_3">
+        <sbol:persistentIdentity rdf:resource="https://sbolcanvas.org/module1/x9znM0bG_3"/>
+        <sbol:displayId>x9znM0bG_3</sbol:displayId>
+        <sbol:definition rdf:resource="https://sbolcanvas.org/x9znM0bG/1"/>
+        <sbol:access rdf:resource="http://sbols.org/v2#public"/>
+        <sbol:direction rdf:resource="http://sbols.org/v2#inout"/>
+      </sbol:FunctionalComponent>
+    </sbol:functionalComponent>
+    <sbol:functionalComponent>
+      <sbol:FunctionalComponent rdf:about="https://sbolcanvas.org/module1/huaIiMJB_2">
+        <sbol:persistentIdentity rdf:resource="https://sbolcanvas.org/module1/huaIiMJB_2"/>
+        <sbol:displayId>huaIiMJB_2</sbol:displayId>
+        <sbol:definition rdf:resource="https://sbolcanvas.org/huaIiMJB/1"/>
+        <sbol:access rdf:resource="http://sbols.org/v2#public"/>
+        <sbol:direction rdf:resource="http://sbols.org/v2#inout"/>
+      </sbol:FunctionalComponent>
+    </sbol:functionalComponent>
+    <sbol:interaction>
+      <sbol:Interaction rdf:about="https://sbolcanvas.org/module1/Interaction_OYkUOTt2">
+        <sbol:persistentIdentity rdf:resource="https://sbolcanvas.org/module1/Interaction_OYkUOTt2"/>
+        <sbol:displayId>Interaction_OYkUOTt2</sbol:displayId>
+        <sbol:type rdf:resource="http://identifiers.org/biomodels.sbo/SBO:0000176"/>
+        <sbol:participation>
+          <sbol:Participation rdf:about="https://sbolcanvas.org/module1/Interaction_OYkUOTt2/Interaction_OYkUOTt2_0">
+            <sbol:persistentIdentity rdf:resource="https://sbolcanvas.org/module1/Interaction_OYkUOTt2/Interaction_OYkUOTt2_0"/>
+            <sbol:displayId>Interaction_OYkUOTt2_0</sbol:displayId>
+            <sbol:role rdf:resource="http://identifiers.org/biomodels.sbo/SBO:0000010"/>
+            <sbol:participant rdf:resource="https://sbolcanvas.org/module1/huaIiMJB_2"/>
+          </sbol:Participation>
+        </sbol:participation>
+        <sbol:participation>
+          <sbol:Participation rdf:about="https://sbolcanvas.org/module1/Interaction_OYkUOTt2/Interaction_OYkUOTt2_1">
+            <sbol:persistentIdentity rdf:resource="https://sbolcanvas.org/module1/Interaction_OYkUOTt2/Interaction_OYkUOTt2_1"/>
+            <sbol:displayId>Interaction_OYkUOTt2_1</sbol:displayId>
+            <sbol:role rdf:resource="http://identifiers.org/biomodels.sbo/SBO:0000011"/>
+            <sbol:participant rdf:resource="https://sbolcanvas.org/module1/x9znM0bG_3"/>
+          </sbol:Participation>
+        </sbol:participation>
+      </sbol:Interaction>
+    </sbol:interaction>
+  </sbol:ModuleDefinition>
+  <sbol:ComponentDefinition rdf:about="https://sbolcanvas.org/huaIiMJB/1">
+    <sbol:persistentIdentity rdf:resource="https://sbolcanvas.org/huaIiMJB"/>
+    <sbol:displayId>huaIiMJB</sbol:displayId>
+    <sbol:version>1</sbol:version>
+    <dcterms:title>luxI</dcterms:title>
+    <sbol:type rdf:resource="http://www.biopax.org/release/biopax-level3.owl#Protein"/>
+    <sbol:role rdf:resource="http://identifiers.org/biomodels.sbo/SBO:0000020"/>
+  </sbol:ComponentDefinition>
+  <sbol:ComponentDefinition rdf:about="https://sbolcanvas.org/x9znM0bG/1">
+    <sbol:persistentIdentity rdf:resource="https://sbolcanvas.org/x9znM0bG"/>
+    <sbol:displayId>x9znM0bG</sbol:displayId>
+    <sbol:version>1</sbol:version>
+    <dcterms:title>OC6</dcterms:title>
+    <sbol:type rdf:resource="http://www.biopax.org/release/biopax-level3.owl#SmallMolecule"/>
+    <sbol:role rdf:resource="http://identifiers.org/biomodels.sbo/SBO:0000020"/>
+  </sbol:ComponentDefinition>
+  <SBOLCanvas:Layout rdf:about="https://sbolcanvas.org/module1_Layout">
+    <sbol:persistentIdentity rdf:resource="https://sbolcanvas.org/module1_Layout"/>
+    <sbol:displayId>module1_Layout</sbol:displayId>
+    <SBOLCanvas:objectRef rdf:resource="https://sbolcanvas.org/module1"/>
+    <SBOLCanvas:nodeGlyph>
+      <SBOLCanvas:NodeGlyph rdf:about="https://sbolcanvas.org/module1_Layout/NodeGlyph_2">
+        <SBOLCanvas:x>720.0</SBOLCanvas:x>
+        <SBOLCanvas:y>365.0</SBOLCanvas:y>
+        <SBOLCanvas:width>50.0</SBOLCanvas:width>
+        <SBOLCanvas:height>50.0</SBOLCanvas:height>
+        <SBOLCanvas:displayId>huaIiMJB_2</SBOLCanvas:displayId>
+      </SBOLCanvas:NodeGlyph>
+    </SBOLCanvas:nodeGlyph>
+    <SBOLCanvas:nodeGlyph>
+      <SBOLCanvas:NodeGlyph rdf:about="https://sbolcanvas.org/module1_Layout/NodeGlyph_3">
+        <SBOLCanvas:x>720.0</SBOLCanvas:x>
+        <SBOLCanvas:y>520.0</SBOLCanvas:y>
+        <SBOLCanvas:width>50.0</SBOLCanvas:width>
+        <SBOLCanvas:height>50.0</SBOLCanvas:height>
+        <SBOLCanvas:displayId>x9znM0bG_3</SBOLCanvas:displayId>
+      </SBOLCanvas:NodeGlyph>
+    </SBOLCanvas:nodeGlyph>
+    <SBOLCanvas:edgeGlyph>
+      <SBOLCanvas:EdgeGlyph rdf:about="https://sbolcanvas.org/module1_Layout/EdgeGlyph_4">
+        <SBOLCanvas:displayId>Interaction_OYkUOTt2</SBOLCanvas:displayId>
+      </SBOLCanvas:EdgeGlyph>
+    </SBOLCanvas:edgeGlyph>
+  </SBOLCanvas:Layout>
+</rdf:RDF>

@@ -85,7 +85,7 @@ class SBOLToMxStructureTest {
         return matches;
     }
 
-    /** Finds the unique circuitContainer child of {@code parent} whose value is {@code valueUri}. */
+    /** Finds the unique circuitContainer child of {@code parent} whose definition is {@code valueUri}. */
     private static mxCell containerByValue(mxCell parent, String valueUri) {
         mxCell found = null;
         for (int i = 0; i < parent.getChildCount(); i++) {
@@ -101,7 +101,7 @@ class SBOLToMxStructureTest {
 
     /**
      * Asserts the shared recipe produced the expected container shape: one backbone child plus
-     * sequenceFeature glyph children whose value-URIs match {@code expectedGlyphs} in order.
+     * sequenceFeature glyph children whose definition URIs match {@code expectedGlyphs} in order.
      */
     private static void assertContainerShape(mxCell container, String[] expectedGlyphs) {
         List<mxCell> backbones = childrenWithStyle(container, Converter.STYLE_BACKBONE);

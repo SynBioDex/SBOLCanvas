@@ -1,5 +1,15 @@
-import { Info } from './info';
+import { Info, valueType } from './info';
 import { environment } from 'src/environments/environment';
+
+export const CELL_REFERENCE_PREFIX = 'cell:';
+
+export function isCellReference(raw: unknown): raw is string {
+  if (typeof raw !== 'string' || !raw.startsWith(CELL_REFERENCE_PREFIX)) {
+    return false;
+  }
+  const cellId = raw.slice(CELL_REFERENCE_PREFIX.length);
+  return cellId.length > 0 && !/\s/.test(cellId);
+}
 
 export class EventInfo extends Info {
     name: string = '';
@@ -41,8 +51,7 @@ export class EventInfo extends Info {
             node.setAttribute("uriPrefix", this.uriPrefix);
         if (this.displayID)
             node.setAttribute("displayID", this.displayID);
-        if (this.version && this.version.length > 0)
-            node.setAttribute("version", this.version);
+        node.setAttribute("version", this.version == null ? "" : this.version);
         if (this.name && this.name.length > 0)
             node.setAttribute("name", this.name);
         if (this.description && this.description.length > 0)
@@ -54,6 +63,7 @@ export class EventInfo extends Info {
                 let dataNode = enc.document.createElement("add");
                 dataNode.setAttribute("value", this.simulationData[key]);
                 dataNode.setAttribute("as", key);
+                dataNode.setAttribute("type", valueType(this.simulationData[key]));
                 simulationDataNode.appendChild(dataNode);
             }
             node.appendChild(simulationDataNode);

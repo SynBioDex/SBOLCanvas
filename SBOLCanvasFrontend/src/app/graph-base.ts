@@ -11,6 +11,22 @@ import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { EventInfo } from './eventInfo';
 import { CustomShapes } from './CustomShapes';
+import { parseSimulationNumber, type SimulationValue } from './simulation-parameters';
+
+export function decodeTypedValue(value: string, type: string): SimulationValue {
+    if (value == null) throw new Error('A stored entry must contain a value');
+    if (type === 'number') {
+        return parseSimulationNumber(value, 'Stored value');
+    }
+    if (type === 'boolean') {
+        if (value !== 'true' && value !== 'false') throw new Error(`Value '${value}' is not a boolean`);
+        return value === 'true';
+    }
+    if (type === 'string') {
+        return value;
+    }
+    throw new Error(`Value '${value}' has unsupported entry type '${type || ''}'`);
+}
 
 // mx is used here as the typings file for mxgraph isn't up to date.
 // Also if it weren't exported, other classes wouldn't get our extensions of the mxCell class.
@@ -31,6 +47,9 @@ export class GraphBase {
     static readonly COMBINATORIAL_DICT_INDEX = 1;
     static readonly INTERACTION_DICT_INDEX = 2;
     static readonly EVENT_DICT_INDEX = 3;
+    static readonly edgeKeyedFields = ['fromURI', 'toURI', 'sourceRefinement', 'targetRefinement',
+        'sourceCoefficient', 'targetCoefficient'];
+    private static readonly metadataMapFields = ['simulationData', ...GraphBase.edgeKeyedFields];
 
     static readonly sequenceFeatureGlyphWidth = 50;
     static readonly sequenceFeatureGlyphHeight = 100;
@@ -185,12 +204,27 @@ export class GraphBase {
                 for (let i = 0; i < meta.attributes.length; i++) {
                     const attrib = meta.attributes[i];
                     if (attrib.specified == true && attrib.name != 'as') {
+                        if (GraphBase.metadataMapFields.includes(attrib.name)) {
+                            throw new Error(`${attrib.name} must be encoded as a field map`);
+                        }
                         into[attrib.name] = attrib.value;
                     }
                 }
                 for (let i = 0; i < meta.children.length; i++) {
                     const childNode = meta.children[i];
-                    into[childNode.getAttribute("as")] = dec.decode(childNode);
+                    const key = childNode.getAttribute('as');
+                    if (!GraphBase.metadataMapFields.includes(key)) {
+                        into[key] = dec.decode(childNode);
+                        continue;
+                    }
+                    const entryNodes = childNode.children as HTMLCollectionOf<Element>;
+                    const typed = key === 'simulationData'
+                        || ((key === 'sourceCoefficient' || key === 'targetCoefficient') && into instanceof InteractionInfo);
+                    into[key] = Object.fromEntries(Array.from(entryNodes, (entry): [string, SimulationValue] => [
+                        entry.getAttribute('as') || '',
+                        typed ? decodeTypedValue(entry.getAttribute('value') || '', entry.getAttribute('type') || '')
+                            : entry.getAttribute('value'),
+                    ]));
                 }
             }
             return into;
@@ -1118,24 +1152,19 @@ export class GraphBase {
 
                 // previous terminal was an interaction node, we need to decouple from it
                 if (previous && previous.isInteractionNode()) {
-                    // remove any refinements with this edge from original
-                    let sourceRefinement = infoCopy.sourceRefinement[edge.getId()];
-                    let targetRefinement = infoCopy.targetRefinement[edge.getId()];
-                    delete infoCopy.sourceRefinement[edge.getId()];
-                    delete infoCopy.targetRefinement[edge.getId()];
+                    const edgeValues = {};
+                    for (const field of GraphBase.edgeKeyedFields) {
+                        edgeValues[field] = infoCopy[field][edge.getId()];
+                        delete infoCopy[field][edge.getId()];
+                    }
                     this.updateInteractionDict(infoCopy);
                     infoCopy = infoCopy.makeCopy(); // shouldn't modify the original copy anymore, or we mess up the history
 
-                    // remove all refinements from the copy
-                    infoCopy.sourceRefinement = {};
-                    infoCopy.targetRefinement = {};
-
-                    // add back refinements relating to ours
-                    if (sourceRefinement) {
-                        infoCopy.sourceRefinement[edge.getId()] = sourceRefinement;
+                    for (const field of GraphBase.edgeKeyedFields) {
+                        infoCopy[field] = {};
+                        if (edgeValues[field] !== undefined) {
+                            infoCopy[field][edge.getId()] = edgeValues[field];
                     }
-                    if (targetRefinement) {
-                        infoCopy.targetRefinement[edge.getId()] = targetRefinement;
                     }
 
                     // make a dummy info so we can steal it's id
@@ -1160,23 +1189,10 @@ export class GraphBase {
                     let nodeInfo = this.getFromInteractionDict(terminal.value).makeCopy();
                     this.graph.getModel().setValue(edge, nodeInfo.getFullURI());
 
-                    // duplicate over the nescessary info
-                    // module targets
-                    if (infoCopy.fromURI[edge.getId()]) {
-                        nodeInfo.fromURI[edge.getId()] = infoCopy.fromURI[edge.getId()];
+                    for (const field of GraphBase.edgeKeyedFields) {
+                        if (infoCopy[field][edge.getId()] !== undefined) {
+                            nodeInfo[field][edge.getId()] = infoCopy[field][edge.getId()];
                     }
-                    if (infoCopy.toURI[edge.getId()]) {
-                        nodeInfo.toURI[edge.getId()] = infoCopy.toURI[edge.getId()];
-                    }
-
-                    // edge refinements
-                    let sourceRefinement = infoCopy.sourceRefinement[edge.getId()];
-                    if (sourceRefinement) {
-                        nodeInfo.sourceRefinement[edge.getId()] = sourceRefinement;
-                    }
-                    let targetRefinement = infoCopy.targetRefinement[edge.getId()];
-                    if (targetRefinement) {
-                        nodeInfo.targetRefinement[edge.getId()] = targetRefinement;
                     }
 
                     // if the previous wasn't an interaction node, then we need to remove the info from the dictionary

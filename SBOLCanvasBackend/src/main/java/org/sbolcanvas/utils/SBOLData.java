@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.TreeSet;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.Participation;
@@ -16,11 +19,12 @@ public class SBOLData {
 
 	// Simulation parameter name constants. Used by SBOLData and MxToSBML
 	// Frontend model-editor component uses these same string values.
-	// If a frontend key doesn't match, getParam() silently falls through to defaults.
 	public static final String PARAM_KD = "kd";
 	public static final String PARAM_KC_F = "Kc_f";
 	public static final String PARAM_KC_R = "Kc_r";
+	public static final String PARAM_REVERSIBLE = "reversible";
 	public static final String PARAM_NC = "nc";
+	public static final String PARAM_COOPERATIVITY = "cooperativity";
 	public static final String PARAM_NG = "ng";
 	public static final String PARAM_NP = "np";
 	public static final String PARAM_KO = "ko";
@@ -52,7 +56,8 @@ public class SBOLData {
 	public static BiMap<String, URI> interactionRoles;
 	public static HashMap<URI, URI> interactionSourceRoles;
 	public static HashMap<URI, URI> interactionTargetRoles;
-	public static HashMap<String, LinkedHashMap<String, Object>> simulationConfig;
+	public static LinkedHashMap<String, List<LinkedHashMap<String, Object>>> simulationConfig;
+	public static final String[] INTERACTION_FIELD_CONTEXTS;
 
 	static {
 		so = new SequenceOntology();
@@ -171,53 +176,56 @@ public class SBOLData {
 
 		// Using values from iBioSim as default values for simulation parameters
 		// LinkedHashMap keeps parameters in order in the UI.
-		simulationConfig = new HashMap<String, LinkedHashMap<String, Object>>();
+		simulationConfig = new LinkedHashMap<>();
+		simulationConfig.put("species", Arrays.asList(
+				field("initialAmount", "number", "Initial amount", 0.0, 0.0),
+				field("boundaryCondition", "boolean", "Boundary condition", false, null)));
+		simulationConfig.put("event", Arrays.asList(
+				field(PARAM_EVENT_DELAY, "number", "Delay", 0.0, 0.0),
+				field(PARAM_EVENT_ASSIGNMENT_VALUE, "number", "Assignment value", 0.0, null),
+				field(PARAM_EVENT_TARGET_SPECIES, "species-reference", "Target species", null, null)));
+		simulationConfig.put("participation", Arrays.asList(
+				field("coefficient", "number", "Stoichiometry", null, 0.0)));
+		simulationConfig.put("Degradation", Arrays.asList(number(PARAM_KD, "Degradation rate", 0.0075)));
+		List<LinkedHashMap<String, Object>> massAction = Arrays.asList(
+				number(PARAM_KC_F, "Forward rate", 0.1),
+				number(PARAM_KC_R, "Reverse rate", 1.0),
+				field(PARAM_REVERSIBLE, "boolean", "Reversible", false, null));
+		simulationConfig.put("Biochemical Reaction", massAction);
+		List<LinkedHashMap<String, Object>> bindingAction = Arrays.asList(
+				number(PARAM_KC_F, "Forward rate", 0.05),
+				number(PARAM_KC_R, "Reverse rate", 1.0),
+				field(PARAM_REVERSIBLE, "boolean", "Reversible", true, null));
+		simulationConfig.put("Non-Covalent Binding", bindingAction);
+		simulationConfig.put("Dissociation", massAction);
+		simulationConfig.put("Process", massAction);
+		simulationConfig.put("Promoter", Arrays.asList(
+				number(PARAM_NG, "Initial promoter count", 2.0),
+				number(PARAM_NP, "Stoichiometry of production", 10.0),
+				number(PARAM_KO, "Open complex production rate", 0.05),
+				number(PARAM_KB, "Basal production rate", 0.0001),
+				number(PARAM_KA, "Activation production rate", 0.25),
+				number(PARAM_KO_F, "Forward RNAP binding rate", 0.033),
+				number(PARAM_KO_R, "Reverse RNAP binding rate", 1.0),
+				number(PARAM_KAO_F, "Forward activated RNAP binding rate", 1.0),
+				number(PARAM_KAO_R, "Reverse activated RNAP binding rate", 1.0),
+				number(PARAM_NR, "Initial RNAP count", 30.0)));
+		simulationConfig.put("Inhibition", Arrays.asList(
+				number(PARAM_KR_F, "Forward repression binding rate", 0.5),
+				number(PARAM_KR_R, "Reverse repression binding rate", 1.0),
+				number(PARAM_COOPERATIVITY, "Stoichiometry of binding", 2.0)));
+		simulationConfig.put("Stimulation", Arrays.asList(
+				number(PARAM_KA_F, "Forward activation binding rate", 0.0033),
+				number(PARAM_KA_R, "Reverse activation binding rate", 1.0),
+				number(PARAM_COOPERATIVITY, "Stoichiometry of binding", 2.0)));
 
-		// Degradation (SBO:0000179)
-		LinkedHashMap<String, Object> degradationParams = new LinkedHashMap<>();
-		degradationParams.put(PARAM_KD, 0.0075); // Default degradation rate
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.DEGRADATION), degradationParams);
-
-		// Complex Formation (SBO:0000177)
-		// Kc_f/Kc_r on node, nc per-reactant on arrows to node
-		// Kc (complex formation) = Kc_f / Kc_r
-		LinkedHashMap<String, Object> complexParams = new LinkedHashMap<>();
-		complexParams.put(PARAM_KC_F, 0.05); // Forward complex formation rate
-		complexParams.put(PARAM_KC_R, 1.0); // Reverse complex formation rate
-		complexParams.put(PARAM_NC, 2.0); // Stoichiometry of binding
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.BIOCHEMICAL_REACTION), complexParams);
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.NON_COVALENT_BINDING), complexParams);
-
-		// Genetic Production (SBO:0000589) - Parameters are on the Promoter
-		LinkedHashMap<String, Object> promoterParams = new LinkedHashMap<>();
-		promoterParams.put(PARAM_NG, 2.0); // Initial promoter count
-		promoterParams.put(PARAM_NP, 10.0); // Stoichiometry of production
-		promoterParams.put(PARAM_KO, 0.05); // Open complex production rate
-		promoterParams.put(PARAM_KB, 0.0001); // Basal production rate
-		promoterParams.put(PARAM_KA, 0.25); // Activation production rate
-		promoterParams.put(PARAM_KO_F, 0.033); // Forward RNAP binding rate (Ko = Ko_f/Ko_r)
-		promoterParams.put(PARAM_KO_R, 1.0); // Reverse RNAP binding rate
-		promoterParams.put(PARAM_KAO_F, 1.0); // Forward activated RNAP binding rate (Kao = Kao_f/Kao_r)
-		promoterParams.put(PARAM_KAO_R, 1.0); // Reverse activated RNAP binding rate
-		promoterParams.put(PARAM_NR, 30.0); // Initial RNAP count
-		simulationConfig.put(roles.getKey(SequenceOntology.PROMOTER), promoterParams);
-
-		// Inhibition (SBO:0000169)
-		// Kr (repression binding) = Kr_f / Kr_r
-		LinkedHashMap<String, Object> inhibitionParams = new LinkedHashMap<>();
-		inhibitionParams.put(PARAM_KR_F, 0.5); // Forward repression binding rate
-		inhibitionParams.put(PARAM_KR_R, 1.0); // Reverse repression binding rate
-		inhibitionParams.put(PARAM_NC, 2.0); // Stoichiometry of binding
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.INHIBITION), inhibitionParams);
-
-		// Stimulation (SBO:0000170)
-		// Ka (activation binding) = Ka_f / Ka_r
-		LinkedHashMap<String, Object> stimulationParams = new LinkedHashMap<>();
-		stimulationParams.put(PARAM_KA_F, 0.0033); // Forward activation binding rate
-		stimulationParams.put(PARAM_KA_R, 1.0); // Reverse activation binding rate
-		stimulationParams.put(PARAM_NC, 2.0); // Stoichiometry of binding
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.STIMULATION), stimulationParams);
-
+		List<String> interactionContexts = new ArrayList<>();
+		for (String context : simulationConfig.keySet()) {
+			if (interactions.getValue(context) != null) {
+				interactionContexts.add(context);
+			}
+		}
+		INTERACTION_FIELD_CONTEXTS = interactionContexts.toArray(new String[0]);
 	}
 
 	/**
@@ -335,7 +343,35 @@ public class SBOLData {
 		return false;
 	}
 
-	public static HashMap<String, LinkedHashMap<String, Object>> getSimulationConfig() {
+	public static LinkedHashMap<String, List<LinkedHashMap<String, Object>>> getSimulationConfig() {
 		return simulationConfig;
+	}
+
+	private static LinkedHashMap<String, Object> number(String key, String label, double value) {
+		return field(key, "number", label, value, 0.0);
+	}
+
+	private static LinkedHashMap<String, Object> field(String key, String type, String label, Object value, Double min) {
+		LinkedHashMap<String, Object> field = new LinkedHashMap<>();
+		field.put("key", key);
+		field.put("type", type);
+		field.put("label", label);
+		if (value != null) field.put("default", value);
+		if (min != null) field.put("min", min);
+		return field;
+	}
+
+	public static LinkedHashMap<String, Object> field(String context, String key) {
+		List<LinkedHashMap<String, Object>> fields = simulationConfig.get(context);
+		if (fields == null) return null;
+		for (LinkedHashMap<String, Object> field : fields) {
+			if (key.equals(field.get("key"))) return field;
+		}
+		return null;
+	}
+
+	public static Object getDefault(String context, String key) {
+		LinkedHashMap<String, Object> field = field(context, key);
+		return field == null ? null : field.get("default");
 	}
 }
