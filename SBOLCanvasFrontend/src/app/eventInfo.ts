@@ -3,6 +3,12 @@ import { environment } from 'src/environments/environment';
 
 export const CELL_REFERENCE_PREFIX = 'cell:';
 
+export interface SpeciesInstanceRef {
+  definitionUri: string;
+  cellId: string;
+  label: string;
+}
+
 export function isCellReference(raw: unknown): raw is string {
   if (typeof raw !== 'string' || !raw.startsWith(CELL_REFERENCE_PREFIX)) {
     return false;

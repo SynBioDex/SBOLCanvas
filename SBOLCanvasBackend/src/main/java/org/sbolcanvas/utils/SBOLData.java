@@ -324,11 +324,42 @@ public class SBOLData {
 	}
 
 	public static URI getInteractionRoleRefinementFromName(String name) {
-		return sbo.getURIbyName(name);
+		URI role = interactionRoles.getValue(name);
+		return role != null ? role : sbo.getURIbyName(name);
 	}
 
 	public static String getInteractionRoleRefinementName(URI refinement) {
-		return sbo.getName(refinement);
+		String name = interactionRoles.getKey(refinement);
+		return name != null ? name : sbo.getName(refinement);
+	}
+
+	public static boolean isMassActionInteraction(Set<URI> types) {
+		return types.contains(SystemsBiologyOntology.BIOCHEMICAL_REACTION)
+				|| types.contains(SystemsBiologyOntology.NON_COVALENT_BINDING)
+				|| types.contains(SystemsBiologyOntology.DISSOCIATION)
+				|| types.contains(SystemsBiologyOntology.PROCESS);
+	}
+
+	public static double getParticipantCoefficientDefault(String interactionType, boolean source) {
+		return "Non-Covalent Binding".equals(interactionType) && source ? 2.0 : 1.0;
+	}
+
+	public static boolean isMassActionInteraction(String interactionType) {
+		URI uri = interactions.getValue(interactionType);
+		return uri != null && isMassActionInteraction(java.util.Collections.singleton(uri));
+	}
+
+	public static boolean isRoleAllowed(String interactionType, boolean source, URI role) {
+		URI type = interactions.getValue(interactionType);
+		URI parent = (source ? interactionSourceRoles : interactionTargetRoles).get(type);
+		if (parent == null || role == null) {
+			return false;
+		}
+		if (parent.equals(role) || sbo.isDescendantOf(role, parent)) {
+			return true;
+		}
+		return isMassActionInteraction(java.util.Collections.singleton(type))
+				&& isRole(role, SystemsBiologyOntology.MODIFIER);
 	}
 
 	public static boolean isSourceParticipant(Participation participant) {
@@ -341,6 +372,21 @@ public class SBOLData {
 			}
 		}
 		return false;
+	}
+
+	public static boolean isRole(URI role, URI parent) {
+		return role != null && parent != null && (role.equals(parent) || sbo.isDescendantOf(role, parent));
+	}
+
+	public static URI getParticipantRole(String interactionType, String refinement, boolean source) {
+		URI type = interactions.getValue(interactionType);
+		URI role = refinement == null || refinement.isEmpty()
+				? (source ? interactionSourceRoles : interactionTargetRoles).get(type)
+				: getInteractionRoleRefinementFromName(refinement);
+		if (!isRoleAllowed(interactionType, source, role)) {
+			throw new IllegalArgumentException("Unsupported " + (source ? "source" : "target") + " role for " + interactionType + ": " + refinement);
+		}
+		return role;
 	}
 
 	public static LinkedHashMap<String, List<LinkedHashMap<String, Object>>> getSimulationConfig() {

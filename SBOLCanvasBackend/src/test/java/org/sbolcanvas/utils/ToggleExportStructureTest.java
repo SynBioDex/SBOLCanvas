@@ -15,7 +15,6 @@ import org.sbml.jsbml.Reaction;
 import org.sbml.jsbml.SBMLDocument;
 import org.sbml.jsbml.Species;
 import org.sbml.jsbml.KineticLaw;
-import org.sbml.jsbml.LocalParameter;
 import org.sbml.jsbml.ModifierSpeciesReference;
 import org.sbml.jsbml.ext.layout.Layout;
 import org.sbml.jsbml.ext.layout.LayoutModelPlugin;
@@ -30,7 +29,7 @@ class ToggleExportStructureTest {
 
     @BeforeAll
     static void convertToggleSwitch() throws Exception {
-        toggleDoc = SBOLToSBMLPipeline.convertSbolToSbml("sbolcanvas_sbol-toggle.xml");
+        toggleDoc = SBOLToSBMLPipeline.convertSbolToSbml(SBOLTestSupport.TOGGLE_RESOURCE);
         toggleModel = toggleDoc.getModel();
         assertNotNull(toggleModel, "SBML document should have a model");
     }
@@ -42,10 +41,14 @@ class ToggleExportStructureTest {
     }
 
     @Test
-    @DisplayName("FBC package not enabled on exported model (#18)")
-    void fbcPackageNotEnabledOnExportedModel() {
-        assertFalse(toggleModel.isPackageEnabled("fbc"),
-                "FBC package should not be enabled on the toggle SBML model");
+    @DisplayName("FBC package enabled with strict=false on exported model")
+    void fbcPackageStrictFalseOnExportedModel() {
+        assertTrue(toggleModel.isPackageEnabled("fbc"),
+                "FBC package should be enabled on the toggle SBML model");
+        org.sbml.jsbml.ext.fbc.FBCModelPlugin fbc =
+                (org.sbml.jsbml.ext.fbc.FBCModelPlugin) toggleModel.getPlugin("fbc");
+        assertNotNull(fbc, "the model should carry an fbc plugin");
+        assertFalse(fbc.getStrict(), "the fbc plugin should not be strict");
     }
 
     @Nested
@@ -53,16 +56,8 @@ class ToggleExportStructureTest {
     class SpeciesTests {
 
         @Test
-        @DisplayName("Toggle switch has 13 species")
-        void toggleSwitchHas13Species() {
-            assertEquals(13, toggleModel.getSpeciesCount(),
-                "4 promoters + 3 proteins + 2 small molecules + 2 complexes "
-                + "+ 2 placeholder mRNA (pLac_2_mRNA, pTet_2_mRNA for the two promoters without explicit product)");
-        }
-
-        @Test
-        @DisplayName("4 promoter species with SBO:0000590 and initialAmount=2.0")
-        void fourPromoterSpeciesWithSBO590AndInitialAmount2() {
+        @DisplayName("2 promoter species with SBO:0000590 and initialAmount=2.0")
+        void twoPromoterSpeciesWithSBO590AndInitialAmount2() {
             int count = 0;
             for (Species s : toggleModel.getListOfSpecies()) {
                 if (s.getSBOTerm() == 590) {
@@ -71,7 +66,7 @@ class ToggleExportStructureTest {
                         "Promoter '" + s.getId() + "' initialAmount (ng default)");
                 }
             }
-            assertEquals(4, count, "4 promoter species (pTet, pLac, pLac_2, pTet_2)");
+            assertEquals(2, count, "2 promoter species, one per module promoter");
         }
 
     }
@@ -79,20 +74,6 @@ class ToggleExportStructureTest {
     @Nested
     @DisplayName("Reactions")
     class Reactions {
-
-        @Test
-        @DisplayName("No-CDS production reactions (pLac_2, pTet_2) get a placeholder mRNA product")
-        void noCdsProductionReactionsHavePlaceholderMRna() {
-            for (String promoterId : new String[]{"pLac_2", "pTet_2"}) {
-                Reaction r = toggleModel.getReaction("Production_" + promoterId);
-                assertNotNull(r, "Production_" + promoterId + " should exist");
-                assertProductionReactionInvariants(r);
-                assertEquals(1, r.getProductCount(),
-                    r.getId() + " should produce exactly one placeholder mRNA");
-                assertTrue(r.getProduct(0).getSpecies().endsWith("_mRNA"),
-                    r.getId() + " product should be a <promoterId>_mRNA placeholder species");
-            }
-        }
 
         private void assertProductionReactionInvariants(Reaction r) {
             assertEquals(589, r.getSBOTerm());
@@ -104,8 +85,6 @@ class ToggleExportStructureTest {
 
             KineticLaw law = r.getKineticLaw();
             assertNotNull(law, r.getId() + " should have a kinetic law");
-            assertTrue(law.getLocalParameterCount() > 0,
-                r.getId() + " kinetic law should have local parameters");
             assertNotNull(law.getMath(),
                 r.getId() + " kinetic law should have math expression");
         }
@@ -159,49 +138,40 @@ class ToggleExportStructureTest {
         }
 
         @Test
-        @DisplayName("Placeholder mRNA species carries SBO:0000250 with initialAmount=0 in the Cell compartment")
-        void placeholderMRnaSpeciesCarriesSbo250WithInitialAmountZero() {
-            for (String promoterId : new String[]{"pLac_2", "pTet_2"}) {
-                Reaction r = toggleModel.getReaction("Production_" + promoterId);
-                String mRnaId = r.getProduct(0).getSpecies();
-
-                Species mRNA = toggleModel.getSpecies(mRnaId);
-                assertNotNull(mRNA, "Placeholder mRNA species '" + mRnaId + "' should exist in the model");
-                assertEquals(250, mRNA.getSBOTerm(),
-                    "Placeholder mRNA should be SBO:0000250 (RNA)");
-                assertEquals(0.0, mRNA.getInitialAmount(), 1e-9,
-                    "Placeholder mRNA initialAmount should be 0");
-                assertEquals("Cell", mRNA.getCompartment());
-                assertTrue(mRNA.getHasOnlySubstanceUnits());
-                assertFalse(mRNA.getConstant());
-                assertFalse(mRNA.getBoundaryCondition());
-            }
-        }
-
-        @Test
         @DisplayName("5 degradation reactions exist")
         void fiveDegradationReactionsExist() {
-            long count = toggleModel.getListOfReactions().stream()
-                    .filter(r -> r.getId().startsWith("Degradation_"))
-                    .count();
-            assertEquals(5, count,
+            assertEquals(5, degradationReactions().size(),
                 "5 degradation reactions (aTc_TetR, TetR, GFP, IPTG_LacI, LacI)");
         }
 
-        @Test
-        @DisplayName("Each degradation reaction is SBO:0000179, irreversible, with kd=0.0075")
-        void eachDegradationReactionHasExpectedInvariants() {
+        private java.util.List<Reaction> degradationReactions() {
+            java.util.List<Reaction> degradations = new java.util.ArrayList<>();
             for (Reaction r : toggleModel.getListOfReactions()) {
-                if (!r.getId().startsWith("Degradation_")) continue;
+                if (r.getSBOTerm() == 179) {
+                    degradations.add(r);
+                }
+            }
+            return degradations;
+        }
+
+        @Test
+        @DisplayName("Each degradation reaction is SBO:0000179, irreversible, in Cell, using the global kd=0.0075")
+        void degradationReactionsUseIBioSimShape() {
+            org.sbml.jsbml.Parameter kd = toggleModel.getParameter("kd");
+            assertNotNull(kd, "the model should carry the global kd parameter");
+            assertEquals(0.0075, kd.getValue(), 1e-6);
+            for (Reaction r : degradationReactions()) {
                 assertEquals(179, r.getSBOTerm());
                 assertFalse(r.getReversible());
                 assertEquals(1, r.getReactantCount());
+                assertEquals("Cell", r.getCompartment(), r.getId() + " should name the Cell compartment");
 
                 KineticLaw law = r.getKineticLaw();
                 assertNotNull(law);
-                LocalParameter kd = law.getLocalParameter("kd");
-                assertNotNull(kd, r.getId() + " should have kd parameter");
-                assertEquals(0.0075, kd.getValue(), 1e-6);
+                assertNull(law.getLocalParameter("kd"),
+                    r.getId() + " should use the global kd when the interaction sets no explicit value");
+                assertTrue(law.getMath().toString().contains("kd"),
+                    r.getId() + " kinetic law should reference kd");
             }
         }
 
@@ -209,31 +179,40 @@ class ToggleExportStructureTest {
         @DisplayName("2 complex formation reactions exist")
         void twoComplexFormationReactionsExist() {
             long count = toggleModel.getListOfReactions().stream()
-                    .filter(r -> r.getId().startsWith("Complex_"))
+                    .filter(r -> r.getSBOTerm() == 177)
                     .count();
-            assertEquals(2, count, "2 complex formation reactions");
+            assertEquals(2, count, "2 mass-action reactions (SBO:177)");
         }
 
         @Test
-        @DisplayName("Each complex formation reaction is SBO:0000177, reversible, with kc_f and kc_r params")
-        void eachComplexFormationReactionHasExpectedInvariants() {
+        @DisplayName("Each complex formation reaction (SBO:0000177) is reversible, Complex_-named, product stoichiometry 1, with global kc rates")
+        void complexFormationReactionsUseIBioSimShape() {
+            int count = 0;
             for (Reaction r : toggleModel.getListOfReactions()) {
-                if (!r.getId().startsWith("Complex_")) continue;
-                assertEquals(177, r.getSBOTerm());
-                assertTrue(r.getReversible(),
-                    r.getId() + " should be reversible");
+                if (r.getSBOTerm() != 177) continue;
+                count++;
+                assertTrue(r.getId().startsWith("Complex_"),
+                    r.getId() + " should be named Complex_<productSpeciesId>");
+                assertTrue(r.getReversible(), r.getId() + " complex formation is reversible");
                 assertTrue(r.getReactantCount() >= 2,
                     r.getId() + " should have 2+ reactants");
                 assertEquals(1, r.getProductCount(),
                     r.getId() + " should have 1 product (the complex)");
+                assertEquals(1.0, r.getProduct(0).getStoichiometry(),
+                    r.getId() + " product stoichiometry is always 1");
+                assertEquals("Cell", r.getCompartment(),
+                    r.getId() + " should name the Cell compartment");
 
                 KineticLaw law = r.getKineticLaw();
                 assertNotNull(law, r.getId() + " should have kinetic law");
-                assertNotNull(law.getLocalParameter("kc_f"),
-                    r.getId() + " should have kc_f parameter");
-                assertNotNull(law.getLocalParameter("kc_r"),
-                    r.getId() + " should have kc_r parameter");
+                assertNull(law.getLocalParameter("kc_f"),
+                    r.getId() + " should use the global kc_f when the interaction sets no explicit value");
+                assertNull(law.getLocalParameter("kc_r"),
+                    r.getId() + " should use the global kc_r when the interaction sets no explicit value");
+                assertTrue(law.getMath().toString().contains(r.getProduct(0).getSpecies()),
+                    r.getId() + " kinetic law should reference the complex product linearly");
             }
+            assertEquals(2, count, "both fixture binding reactions export as mass action");
         }
     }
 
@@ -280,14 +259,14 @@ class ToggleExportStructureTest {
     }
 
     @Nested
-    @DisplayName("Promoter defaults (from SBOLData.simulationConfig)")
+    @DisplayName("Promoter defaults")
     class PromoterDefaults {
 
         @Test
         @DisplayName("Production reactions use default np=10.0 as product stoichiometry")
         void productionReactionsUseDefaultNpAsProductStoichiometry() {
             for (Reaction r : toggleModel.getListOfReactions()) {
-                if (r.getId().startsWith("Production_")) {
+                if (r.getSBOTerm() == 589) {
                     for (int i = 0; i < r.getProductCount(); i++) {
                         assertEquals(10.0, r.getProduct(i).getStoichiometry(), 1e-6,
                                 r.getId() + " product '" + r.getProduct(i).getSpecies()
@@ -298,42 +277,58 @@ class ToggleExportStructureTest {
         }
 
         @Test
-        @DisplayName("Repression kinetic law has correct default parameters")
-        void repressionKineticLawHasCorrectDefaultParameters() {
-            Reaction r = toggleModel.getReaction("Production_pTet");
-            assertNotNull(r, "Production_pTet should exist");
+        @DisplayName("Repression with default rates uses the global parameters and no locals")
+        void repressionKineticLawUsesGlobalDefaults() {
+            assertParamValue(toggleModel, "ko", 0.05, "ko (open complex production rate)");
+            assertParamValue(toggleModel, "ko_f", 0.033, "ko_f (forward RNAP binding)");
+            assertParamValue(toggleModel, "ko_r", 1.0, "ko_r (reverse RNAP binding)");
+            assertParamValue(toggleModel, "nr", 30.0, "nr (initial RNAP count)");
+            assertParamValue(toggleModel, "kr_f", 0.5, "kr_f (forward repression binding)");
+            assertParamValue(toggleModel, "kr_r", 1.0, "kr_r (reverse repression binding)");
+            assertParamValue(toggleModel, "nc", 2.0, "nc (cooperativity)");
+
+            for (Reaction r : productionReactions()) {
             KineticLaw law = r.getKineticLaw();
-            assertNotNull(law, "Should have kinetic law");
-
-            assertParamValue(law, "ko", 0.05, "ko (open complex production rate)");
-            assertParamValue(law, "ko_f", 0.033, "ko_f (forward RNAP binding)");
-            assertParamValue(law, "ko_r", 1.0, "ko_r (reverse RNAP binding)");
-            assertParamValue(law, "nr", 30.0, "nr (initial RNAP count)");
-
-            assertParamValue(law, "kr_TetR_f", 0.5, "kr_TetR_f (forward repression binding for TetR)");
-            assertParamValue(law, "kr_TetR_r", 1.0, "kr_TetR_r (reverse repression binding for TetR)");
-            assertParamValue(law, "nc_TetR_r", 2.0, "nc_TetR_r (TetR cooperativity, repressor variant)");
+                assertNotNull(law, r.getId() + " should have a kinetic law");
+                assertEquals(0, law.getLocalParameterCount(),
+                    r.getId() + " should have no local parameters when the fixture overrides nothing");
+                String math = law.getMath().toString();
+                assertTrue(math.contains("ko_f") && math.contains("nr"),
+                    r.getId() + " kinetic law should reference the global promoter parameters");
+            }
         }
     }
 
     @Test
-    @DisplayName("Repression formula references promoter species")
-    void repressionFormulaReferencesPromoter() {
-        for (Reaction r : toggleModel.getListOfReactions()) {
-            if (r.getId().startsWith("Production_")) {
-                String promoterId = r.getId().replace("Production_", "");
+    @DisplayName("Production formulas reference the promoter species")
+    void productionFormulasReferenceThePromoter() {
+        for (Reaction r : productionReactions()) {
+            String promoterId = null;
+            for (ModifierSpeciesReference m : r.getListOfModifiers()) {
+                if (m.getSBOTerm() == 598) promoterId = m.getSpecies();
+            }
+            assertNotNull(promoterId, r.getId() + " should carry a promoter modifier");
                 org.sbml.jsbml.ASTNode math = r.getKineticLaw().getMath();
                 assertTrue(astReferencesSpecies(math, promoterId),
                         r.getId() + " kinetic-law AST should reference promoter species '"
                                 + promoterId + "'");
             }
         }
+
+    private java.util.List<Reaction> productionReactions() {
+        java.util.List<Reaction> productions = new java.util.ArrayList<>();
+        for (Reaction r : toggleModel.getListOfReactions()) {
+            if (r.getSBOTerm() == 589) {
+                productions.add(r);
+            }
+        }
+        return productions;
     }
 
-    /** Asserts {@code law} has a local parameter named {@code paramId} with the expected value. */
-    private static void assertParamValue(KineticLaw law, String paramId,
+    /** Asserts {@code model} has a global parameter named {@code paramId} with the expected value. */
+    private static void assertParamValue(Model model, String paramId,
             double expected, String description) {
-        LocalParameter param = law.getLocalParameter(paramId);
+        org.sbml.jsbml.Parameter param = model.getParameter(paramId);
         assertNotNull(param, "Missing parameter '" + paramId + "' (" + description + ")");
         assertEquals(expected, param.getValue(), 1e-6,
                 description + " should be " + expected);
