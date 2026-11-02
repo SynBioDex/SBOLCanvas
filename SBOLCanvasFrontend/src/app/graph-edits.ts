@@ -18,39 +18,6 @@ export class GraphEdits {
     */
 
     /**
-     * Edit object for interaction history. Swaps the interaction cells info.
-     */
-    static interactionEdit = class {
-        cell: mxCell;
-        info: any;
-        previous: any;
-
-        /**
-         * 
-         * @param cell The cell you wish to change the interaction info on. 
-         * @param info The new info you wish to change the info to.
-         */
-        constructor(cell, info) {
-            this.cell = cell;
-            this.info = info;
-            this.previous = info;
-        }
-
-        execute() {
-            if (this.cell != null) {
-                let tmp = this.cell.value.makeCopy();
-                if (this.previous == null) {
-                    this.cell.value = null;
-                } else {
-                    this.cell.value.copyDataFrom(this.previous);
-                }
-
-                this.previous = tmp;
-            }
-        }
-    };
-
-    /**
      * Edit object for glyphInfo/moduleInfo history. Replaces glyphInfo's in a dictionary stored in cell0's value variable.
      */
     static infoEdit = class {

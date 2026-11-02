@@ -2,14 +2,15 @@ package org.sbolcanvas.utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Hashtable;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.sbml.jsbml.ASTNode;
 import org.sbml.jsbml.Compartment;
@@ -19,12 +20,6 @@ import org.sbml.jsbml.KineticLaw;
 import org.sbml.jsbml.SBMLDocument;
 import org.sbml.jsbml.Species;
 
-import com.mxgraph.model.mxCell;
-
-import org.sbolcanvas.data.GlyphInfo;
-import org.sbolcanvas.data.InteractionInfo;
-
-/** MxToSBML formula AST vs iBioSim reference exports across the seven regulator variants. */
 class KineticLawBaselineTest {
 
     private MxToSBML converter;
@@ -47,23 +42,11 @@ class KineticLawBaselineTest {
         return r.getKineticLaw().getMath();
     }
 
-    private static GlyphInfo createPromoterInfo() {
-        GlyphInfo info = new GlyphInfo();
-        Hashtable<String, Object> simData = new Hashtable<>();
-        simData.put("ko", 0.05);
-        simData.put("kb", 0.0001);
-        simData.put("ka", 0.25);
-        simData.put("ko_f", 0.033);
-        simData.put("ko_r", 1.0);
-        simData.put("kao_f", 1.0);
-        simData.put("kao_r", 1.0);
-        simData.put("nr", 30.0);
-        info.setSimulationData(simData);
-        return info;
+    private MxToSBML.Regulator regulator(String speciesId) {
+        return regulator(speciesId, null, null, null);
     }
 
-    private mxCell createRegulatorEdge(String speciesId, String edgeKey,
-            String interactionType, Hashtable<String, Object> edgeSimData) {
+    private MxToSBML.Regulator regulator(String speciesId, Double rateF, Double rateR, Double nc) {
         Species species = sbmlModel.getSpecies(speciesId);
         if (species == null) {
             species = sbmlModel.createSpecies(speciesId);
@@ -73,40 +56,7 @@ class KineticLawBaselineTest {
             species.setConstant(false);
             species.setHasOnlySubstanceUnits(true);
         }
-
-        String glyphKey = "glyph_" + speciesId;
-        converter.glyphToSpeciesData.put(glyphKey,
-                new MxToSBML.SpeciesData(species, null));
-
-        mxCell sourceCell = new mxCell(glyphKey);
-
-        mxCell edge = new mxCell(edgeKey);
-        edge.setSource(sourceCell);
-
-        InteractionInfo interactionInfo = new InteractionInfo();
-        interactionInfo.setInteractionType(interactionType);
-        if (edgeSimData != null) {
-            interactionInfo.setSimulationData(edgeSimData);
-        }
-        converter.interactionDict.put(edgeKey, interactionInfo);
-
-        return edge;
-    }
-
-    private static Hashtable<String, Object> defaultRepressorSimData() {
-        Hashtable<String, Object> simData = new Hashtable<>();
-        simData.put("kr_f", 0.5);
-        simData.put("kr_r", 1.0);
-        simData.put("nc", 2.0);
-        return simData;
-    }
-
-    private static Hashtable<String, Object> defaultActivatorSimData() {
-        Hashtable<String, Object> simData = new Hashtable<>();
-        simData.put("ka_f", 0.0033);
-        simData.put("ka_r", 1.0);
-        simData.put("nc", 2.0);
-        return simData;
+        return new MxToSBML.Regulator(new MxToSBML.SpeciesData(species, null), rateF, rateR, nc);
     }
 
     private static ASTNode getActualAst(Reaction reaction) {
@@ -129,8 +79,8 @@ class KineticLawBaselineTest {
             Reaction reaction = sbmlModel.createReaction("Production_P0");
             reaction.setReversible(false);
 
-            converter.buildRepressionFormula(reaction, "P0", createPromoterInfo(),
-                    Collections.emptyList());
+            converter.buildRepressionFormula(reaction, "P0", reaction.createKineticLaw(),
+                    Collections.<MxToSBML.Regulator>emptyList());
 
             ASTAssertions.assertAstEquals(expected, getActualAst(reaction),
                     "Repression with 0 repressors should match constitutive baseline");
@@ -144,16 +94,31 @@ class KineticLawBaselineTest {
             Reaction reaction = sbmlModel.createReaction("Production_P0");
             reaction.setReversible(false);
 
-            mxCell rep = createRegulatorEdge("S0", "inh_S0",
-                    "Inhibition", defaultRepressorSimData());
-
-            List<mxCell> repressors = new ArrayList<>();
-            repressors.add(rep);
-            converter.buildRepressionFormula(reaction, "P0", createPromoterInfo(), repressors);
+            List<MxToSBML.Regulator> repressors = new ArrayList<>();
+            repressors.add(regulator("S0"));
+            converter.buildRepressionFormula(reaction, "P0", reaction.createKineticLaw(), repressors);
 
             ASTNode actualGlobalized = ASTAssertions.rewriteParamNames(getActualAst(reaction), "S0");
             ASTAssertions.assertAstEquals(expected, actualGlobalized,
                     "Repression with 1 repressor should match single repressor baseline (globalized)");
+        }
+
+        @Test
+        @DisplayName("Authored repressor rates become per-factor local parameters (kr_S0_f/kr_S0_r)")
+        void authoredRepressorRatesBecomeLocalParameters() {
+            Reaction reaction = sbmlModel.createReaction("Production_Explicit");
+            reaction.setReversible(false);
+
+            List<MxToSBML.Regulator> repressors = new ArrayList<>();
+            repressors.add(regulator("S0", 0.7, 1.2, 3.0));
+            converter.buildRepressionFormula(reaction, "P0", reaction.createKineticLaw(), repressors);
+
+            KineticLaw law = reaction.getKineticLaw();
+            assertEquals(0.7, law.getLocalParameter("kr_S0_f").getValue(), 1e-9);
+            assertEquals(1.2, law.getLocalParameter("kr_S0_r").getValue(), 1e-9);
+            assertEquals(3.0, law.getLocalParameter("nc_S0_r").getValue(), 1e-9);
+            assertTrue(ASTAssertions.astReferencesSpecies(law.getMath(), "kr_S0_f"),
+                    "the formula references the local per-factor rate");
         }
 
         @Test
@@ -164,15 +129,10 @@ class KineticLawBaselineTest {
             Reaction reaction = sbmlModel.createReaction("Production_P0");
             reaction.setReversible(false);
 
-            mxCell rep0 = createRegulatorEdge("S0", "inh_S0",
-                    "Inhibition", defaultRepressorSimData());
-            mxCell rep1 = createRegulatorEdge("S1", "inh_S1",
-                    "Inhibition", defaultRepressorSimData());
-
-            List<mxCell> repressors = new ArrayList<>();
-            repressors.add(rep0);
-            repressors.add(rep1);
-            converter.buildRepressionFormula(reaction, "P0", createPromoterInfo(), repressors);
+            List<MxToSBML.Regulator> repressors = new ArrayList<>();
+            repressors.add(regulator("S0"));
+            repressors.add(regulator("S1"));
+            converter.buildRepressionFormula(reaction, "P0", reaction.createKineticLaw(), repressors);
 
             ASTNode actualGlobalized = ASTAssertions.rewriteParamNames(getActualAst(reaction), "S0", "S1");
             ASTAssertions.assertAstEquals(expected, actualGlobalized,
@@ -192,13 +152,10 @@ class KineticLawBaselineTest {
             Reaction reaction = sbmlModel.createReaction("Production_P0");
             reaction.setReversible(false);
 
-            mxCell act = createRegulatorEdge("S0", "stim_S0",
-                    "Stimulation", defaultActivatorSimData());
-
-            List<mxCell> activators = new ArrayList<>();
-            activators.add(act);
-            converter.buildActivationFormula(reaction, "P0", createPromoterInfo(),
-                    activators, Collections.emptyList());
+            List<MxToSBML.Regulator> activators = new ArrayList<>();
+            activators.add(regulator("S0"));
+            converter.buildActivationFormula(reaction, "P0", reaction.createKineticLaw(),
+                    activators, Collections.<MxToSBML.Regulator>emptyList());
 
             ASTNode actualGlobalized = ASTAssertions.rewriteParamNames(getActualAst(reaction), "S0");
             ASTAssertions.assertAstEquals(expected, actualGlobalized,
@@ -213,16 +170,11 @@ class KineticLawBaselineTest {
             Reaction reaction = sbmlModel.createReaction("Production_P0");
             reaction.setReversible(false);
 
-            mxCell act0 = createRegulatorEdge("S0", "stim_S0",
-                    "Stimulation", defaultActivatorSimData());
-            mxCell act1 = createRegulatorEdge("S1", "stim_S1",
-                    "Stimulation", defaultActivatorSimData());
-
-            List<mxCell> activators = new ArrayList<>();
-            activators.add(act0);
-            activators.add(act1);
-            converter.buildActivationFormula(reaction, "P0", createPromoterInfo(),
-                    activators, Collections.emptyList());
+            List<MxToSBML.Regulator> activators = new ArrayList<>();
+            activators.add(regulator("S0"));
+            activators.add(regulator("S1"));
+            converter.buildActivationFormula(reaction, "P0", reaction.createKineticLaw(),
+                    activators, Collections.<MxToSBML.Regulator>emptyList());
 
             ASTNode actualGlobalized = ASTAssertions.rewriteParamNames(getActualAst(reaction), "S0", "S1");
             ASTAssertions.assertAstEquals(expected, actualGlobalized,
@@ -237,16 +189,11 @@ class KineticLawBaselineTest {
             Reaction reaction = sbmlModel.createReaction("Production_P0");
             reaction.setReversible(false);
 
-            mxCell act = createRegulatorEdge("S0", "stim_S0",
-                    "Stimulation", defaultActivatorSimData());
-            mxCell rep = createRegulatorEdge("S1", "inh_S1",
-                    "Inhibition", defaultRepressorSimData());
-
-            List<mxCell> activators = new ArrayList<>();
-            activators.add(act);
-            List<mxCell> repressors = new ArrayList<>();
-            repressors.add(rep);
-            converter.buildActivationFormula(reaction, "P0", createPromoterInfo(),
+            List<MxToSBML.Regulator> activators = new ArrayList<>();
+            activators.add(regulator("S0"));
+            List<MxToSBML.Regulator> repressors = new ArrayList<>();
+            repressors.add(regulator("S1"));
+            converter.buildActivationFormula(reaction, "P0", reaction.createKineticLaw(),
                     activators, repressors);
 
             ASTNode actualGlobalized = ASTAssertions.rewriteParamNames(getActualAst(reaction), "S0", "S1");
@@ -262,16 +209,11 @@ class KineticLawBaselineTest {
             Reaction reaction = sbmlModel.createReaction("Production_P0");
             reaction.setReversible(false);
 
-            mxCell act = createRegulatorEdge("S0", "stim_S0",
-                    "Stimulation", defaultActivatorSimData());
-            mxCell rep = createRegulatorEdge("S0", "inh_S0",
-                    "Inhibition", defaultRepressorSimData());
-
-            List<mxCell> activators = new ArrayList<>();
-            activators.add(act);
-            List<mxCell> repressors = new ArrayList<>();
-            repressors.add(rep);
-            converter.buildActivationFormula(reaction, "P0", createPromoterInfo(),
+            List<MxToSBML.Regulator> activators = new ArrayList<>();
+            activators.add(regulator("S0"));
+            List<MxToSBML.Regulator> repressors = new ArrayList<>();
+            repressors.add(regulator("S0"));
+            converter.buildActivationFormula(reaction, "P0", reaction.createKineticLaw(),
                     activators, repressors);
 
             ASTNode actualGlobalized = ASTAssertions.rewriteParamNames(getActualAst(reaction), "S0");

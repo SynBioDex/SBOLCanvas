@@ -21,14 +21,6 @@ export class ModuleInfo extends Info{
         return copy;
     }
 
-    copyDataFrom(other: ModuleInfo) {
-        this.displayID = other.displayID;
-        this.name = other.name;
-        this.description = other.description;
-        this.version = other.version;
-        this.uriPrefix = other.uriPrefix;
-    }
-
     encode(enc: any) {
         let node = enc.document.createElement('ModuleInfo');
         if (this.displayID)

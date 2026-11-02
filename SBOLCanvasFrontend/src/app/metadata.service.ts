@@ -1,14 +1,16 @@
 import { Injectable } from '@angular/core';
 import {GlyphInfo} from './glyphInfo';
-import { BehaviorSubject } from 'rxjs';
-import { Observable } from 'rxjs';
-import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { BehaviorSubject, firstValueFrom, forkJoin, Observable } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import {InteractionInfo} from "./interactionInfo";
 import {StyleInfo} from './style-info';
 import { ModuleInfo } from './moduleInfo';
 import { CombinatorialInfo } from './combinatorialInfo';
 import { EventInfo } from './eventInfo';
+import { InteractionRules, SimulationConfig } from './simulation-parameters';
+
+export const PROMOTER_ROLE = 'Pro (Promoter)';
 
 @Injectable({
   providedIn: 'root'
@@ -38,8 +40,10 @@ export class MetadataService {
   private rolesURL = environment.backendURL + '/data/roles';
   private refinementsURL = environment.backendURL + '/data/refine';
   private interactionsURL = environment.backendURL + '/data/interactions';
-  private interactionRolesURL = environment.backendURL + '/data/interactionRoles';
-  private interactionRoleRefinementURL = environment.backendURL + '/data/interactionRoleRefine';
+  simulationConfig: SimulationConfig;
+  hasLoadError = false;
+  interactionRules: InteractionRules;
+  private initialization: Promise<void>;
 
   // Glyph Info
   private glyphInfoSource = new BehaviorSubject(null);
@@ -100,18 +104,24 @@ export class MetadataService {
     return this.http.get(this.interactionsURL);
   }
 
-  loadInteractionRoles() : Observable<any> {
-    return this.http.get(this.interactionRolesURL);
+  initialize(): Promise<void> {
+    if (!this.initialization) {
+      this.initialization = firstValueFrom(forkJoin({
+        simulationConfig: this.http.get<SimulationConfig>(environment.backendURL + '/data/simulationConfig'),
+        interactionRules: this.http.get<InteractionRules>(environment.backendURL + '/data/interactionRules')
+      })).then(({ simulationConfig, interactionRules }) => {
+        this.simulationConfig = simulationConfig;
+        this.interactionRules = interactionRules;
+      }, error => {
+        this.hasLoadError = true;
+        console.error('[MetadataService] Backend metadata is unavailable; the editor starts without it.', error);
+      });
+    }
+    return this.initialization;
   }
 
-  loadInteractionRoleRefinements(parent: string): Observable<any> {
-    let params = new HttpParams();
-    params = params.append("parent", parent);
-    return this.http.get(this.interactionRoleRefinementURL, {params: params});
-  }
-
-  loadSimulationConfig(): Observable<any> {
-    return this.http.get(environment.backendURL + '/data/simulationConfig');
+  isPromoter(info: GlyphInfo): boolean {
+    return info.partRole === PROMOTER_ROLE;
   }
 
   setSelectedStyleInfo(newInfo: StyleInfo) {

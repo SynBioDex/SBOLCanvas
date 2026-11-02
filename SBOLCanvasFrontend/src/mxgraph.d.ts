@@ -3583,6 +3583,14 @@ export class mxUndoableEdit {
 export class mxUndoManager extends mxEventSource {
   constructor(size: any);
   /**
+   * Array that contains the steps of the command history.
+   */
+  history: mxUndoableEdit[];
+  /**
+   * Index of the next step in the history.
+   */
+  indexOfNextAdd: number;
+  /**
    * Returns true if the history is empty.
    */
   isEmpty(): boolean;
@@ -20062,12 +20070,7 @@ export interface mxEditor {
   graph: mxGraph;
   execute(actionname: any, cell?: any, evt?: any): void;
   setGraphContainer(container: any): void;
-  undoManager: {
-    clear(): void;
-    undo(): void;
-    redo?(): void;
-    trim(): void;
-  };
+  undoManager: mxUndoManager;
 }
 /**
  * A utility class used to track cells whilst sorting occurs on the median

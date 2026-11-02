@@ -1,15 +1,25 @@
-import { Info } from './info';
+import { Info, valueType } from './info';
+import type { mxCell } from 'src/mxgraph';
 
+export function typeFollowsEndpoints(type: string): boolean {
+  return type === 'Biochemical Reaction' || type === 'Genetic Production';
+}
+
+export function processEdgeType(source: mxCell, target: mxCell): string {
+  return source && source.isMolecularSpeciesGlyph() && target && target.isMolecularSpeciesGlyph()
+    ? 'Biochemical Reaction' : 'Genetic Production';
+}
 
 export class InteractionInfo extends Info {
-  // Remember that when you change this you need to change the encode function in graph service
   interactionType: string;
 
   // treat these as dictionaries, not arrays
   sourceRefinement: Record<string, string> = {};
   targetRefinement: Record<string, string> = {};
-  fromURI = [];
-  toURI = [];
+  sourceCoefficient: Record<string, number> = {};
+  targetCoefficient: Record<string, number> = {};
+  fromURI: Record<string, string> = {};
+  toURI: Record<string, string> = {};
   simulationData: Record<string, number | string | boolean> = {};
 
   constructor() {
@@ -37,32 +47,12 @@ export class InteractionInfo extends Info {
     for(let key in this.toURI){
       copy.toURI[key] = this.toURI[key];
     }
+    copy.sourceCoefficient = { ...this.sourceCoefficient };
+    copy.targetCoefficient = { ...this.targetCoefficient };
     for(let key in this.simulationData){
       copy.simulationData[key] = this.simulationData[key];
     }
     return copy;
-  }
-
-  copyDataFrom(other: InteractionInfo) {
-    this.displayID = other.displayID;
-    this.version = other.version;
-    this.uriPrefix = other.uriPrefix;
-    this.interactionType = other.interactionType;
-    for(let key in other.sourceRefinement){
-      this.sourceRefinement[key] = other.sourceRefinement[key];
-    }
-    for(let key in other.targetRefinement){
-      this.targetRefinement[key] = other.targetRefinement[key];
-    }
-    for(let key in other.fromURI){
-      this.fromURI[key] = other.fromURI[key];
-    }
-    for(let key in other.toURI){
-      this.toURI[key] = other.toURI[key];
-    }
-    for(let key in other.simulationData){
-      this.simulationData[key] = other.simulationData[key];
-    }
   }
 
   encode(enc: any) {
@@ -119,6 +109,18 @@ export class InteractionInfo extends Info {
       }
       node.appendChild(toURINode);
     }
+    for (const field of ['sourceCoefficient', 'targetCoefficient']) {
+      const values = enc.document.createElement('Array');
+      values.setAttribute('as', field);
+      for (const key in this[field]) {
+        const entry = enc.document.createElement('add');
+        entry.setAttribute('value', this[field][key]);
+        entry.setAttribute('as', key);
+        entry.setAttribute('type', valueType(this[field][key]));
+        values.appendChild(entry);
+      }
+      node.appendChild(values);
+    }
     if (this.simulationData) {
       let simulationDataNode = enc.document.createElement("Array");
       simulationDataNode.setAttribute("as", "simulationData");
@@ -126,6 +128,7 @@ export class InteractionInfo extends Info {
         let dataNode = enc.document.createElement("add");
         dataNode.setAttribute("value", this.simulationData[key]);
         dataNode.setAttribute("as", key);
+        dataNode.setAttribute("type", valueType(this.simulationData[key]));
         simulationDataNode.appendChild(dataNode);
       }
       node.appendChild(simulationDataNode);

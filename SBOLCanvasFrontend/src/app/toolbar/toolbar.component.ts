@@ -27,7 +27,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   @ViewChild('backbone') backbone: ElementRef;
 
   filename: string;
-  popupOpen: boolean;
   users: {};
 
   constructor(public graphService: GraphService, private filesService: FilesService,
@@ -89,12 +88,8 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
   }
 
   openLoadDialog(): void {
-    const dialogRef = this.dialog.open(LoadGraphComponent, {
+    this.dialog.open(LoadGraphComponent, {
       data: { file: null }
-    });
-    this.popupOpen = true;
-    dialogRef.afterClosed().subscribe(result => {
-      this.popupOpen = false;
     });
   }
 

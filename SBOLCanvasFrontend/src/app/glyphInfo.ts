@@ -1,5 +1,5 @@
 import { CanvasAnnotation } from './canvasAnnotation';
-import { Info } from './info';
+import { Info, valueType } from './info';
 
 export class GlyphInfo extends Info {
     // Remember that when you change this you need to change the encode function in graph service
@@ -62,25 +62,6 @@ export class GlyphInfo extends Info {
         return copy;
     }
 
-    copyDataFrom(other: GlyphInfo) {
-        this.partType = other.partType;
-        this.otherTypes = other.otherTypes ? other.otherTypes.slice() : null;
-        this.partRole = other.partRole;
-        this.otherRoles = other.otherRoles ? other.otherRoles.slice() : null;
-        this.partRefine = other.partRefine;
-        this.displayID = other.displayID;
-        this.name = other.name;
-        this.description = other.description;
-        this.version = other.version;
-        this.sequence = other.sequence;
-        this.sequenceURI = other.sequenceURI;
-        this.uriPrefix = other.uriPrefix;
-        this.annotations = other.annotations ? other.annotations.slice() : null;
-        this.derivedFroms = other.derivedFroms ? other.derivedFroms.slice() : null;
-        this.generatedBys = other.generatedBys ? other.generatedBys.slice() : null;
-        this.simulationData = other.simulationData ? { ...other.simulationData } : {};
-    }
-
     encode(enc: any) {
         let node = enc.document.createElement('GlyphInfo');
         if (this.partType)
@@ -105,8 +86,7 @@ export class GlyphInfo extends Info {
             node.setAttribute("name", this.name);
         if (this.description && this.description.length > 0)
             node.setAttribute("description", this.description);
-        if (this.version && this.version.length > 0)
-            node.setAttribute("version", this.version);
+        node.setAttribute("version", this.version == null ? "" : this.version);
         if (this.sequence && this.sequence.length > 0)
             node.setAttribute("sequence", this.sequence);
         if (this.sequenceURI && this.sequenceURI.length > 0)
@@ -136,6 +116,7 @@ export class GlyphInfo extends Info {
                 let dataNode = enc.document.createElement("add");
                 dataNode.setAttribute("value", this.simulationData[key]);
                 dataNode.setAttribute("as", key);
+                dataNode.setAttribute("type", valueType(this.simulationData[key]));
                 simulationDataNode.appendChild(dataNode);
             }
             node.appendChild(simulationDataNode);
