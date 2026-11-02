@@ -19,7 +19,7 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { InteractionInfo } from './interactionInfo';
-import { EventInfo } from './eventInfo';
+import { CELL_REFERENCE_PREFIX, EventInfo, isCellReference, type SpeciesInstanceRef } from './eventInfo';
 // import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
@@ -550,6 +550,7 @@ export class GraphHelpers extends GraphBase {
                 }
 
                 let viewCell = this.graph.getModel().getCell(oldModuleURI);
+                const originalView = viewCell;
                 // if we're decoupling create a clone
                 if (shouldDecouple) {
                     viewCell = this.graph.getModel().cloneCell(viewCell);
@@ -566,6 +567,9 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     // otherwise update the view cell
                     this.updateViewCell(viewCell, newModuleURI);
+                }
+                if (shouldDecouple && !(shouldCouple && !keepSubstructure)) {
+                    this.remapToModuleCopy(originalView, this.graph.getModel().getCell(newModuleURI), moduleZoomed ?? selectedCell);
                 }
 
                 // update the selected module value
@@ -1637,7 +1641,61 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().remove(cell);
         // clone it because the previous remove will keep the id change if we don't
         newViewCell.id = newGlyphURI;
+        GraphHelpers.forEachChildPair(cell, newViewCell, (child, clone) => clone.id = child.id);
         this.graph.getModel().add(this.graph.getModel().getCell(1), newViewCell);
+    }
+
+    protected static forEachChildPair(original: mxCell, copy: mxCell, visit: (from: mxCell, to: mxCell) => void) {
+        (original.children || []).forEach((child, i) => {
+            const copied = copy.children && copy.children[i];
+            if (!copied) return;
+            visit(child, copied);
+            GraphHelpers.forEachChildPair(child, copied, visit);
+        });
+    }
+
+    protected remapToModuleCopy(original: mxCell, moduleCopy: mxCell, placement: mxCell) {
+        const ids = new Map<string, string>([[original.getId(), moduleCopy.getId()]]);
+        GraphHelpers.forEachChildPair(original, moduleCopy, (from, to) => ids.set(from.getId(), to.getId()));
+        GraphHelpers.forEachChildPair(original, moduleCopy, (from, to) => {
+            const source = to.isEvent() ? this.getFromEventDict(from.value) : undefined;
+            if (!source) return;
+            const copy = source.makeCopy();
+            copy.displayID = new EventInfo().displayID;
+            const target = copy.simulationData['targetSpecies'];
+            if (isCellReference(target) && ids.has(target.slice(CELL_REFERENCE_PREFIX.length))) {
+                copy.simulationData['targetSpecies'] = CELL_REFERENCE_PREFIX + ids.get(target.slice(CELL_REFERENCE_PREFIX.length));
+            }
+            this.addToEventDict(copy);
+            this.graph.getModel().setValue(to, copy.getFullURI());
+        });
+        const interactions = this.graph.getModel().getCell(0).value[GraphBase.INTERACTION_DICT_INDEX];
+        for (const uri of Object.keys(interactions)) {
+            const info: InteractionInfo = interactions[uri];
+            const updated = info.makeCopy();
+            let changed = false;
+            for (const field of GraphBase.edgeKeyedFields) {
+                for (const edgeId of Object.keys(info[field])) {
+                    if (ids.has(edgeId)) {
+                        updated[field][ids.get(edgeId)] = info[field][edgeId];
+                        changed = true;
+                    }
+                }
+            }
+            for (const edge of placement.edges || []) {
+                for (const field of ['fromURI', 'toURI']) {
+                    const ref: string = updated[field][edge.getId()];
+                    const cellId = ref ? ref.substring(ref.lastIndexOf('_') + 1) : undefined;
+                    if (cellId && ids.has(cellId)) {
+                        updated[field][edge.getId()] = ref.substring(0, ref.lastIndexOf('_') + 1) + ids.get(cellId);
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) {
+                this.updateInteractionDict(updated);
+            }
+        }
     }
 
     protected removeViewCell(viewCell: mxCell) {
@@ -2047,19 +2105,19 @@ export class GraphHelpers extends GraphBase {
         }
         // reverse the info to/from
         let newInfo = this.getFromInteractionDict(cell.value).makeCopy();
-        let oldTo = newInfo.toURI[cell.id];
-        let oldFrom = newInfo.toURI[cell.id];
-        delete newInfo.toURI[cell.id];
-        delete newInfo.fromURI[cell.id];
-        if (oldTo) {
-            newInfo.fromURI[cell.id] = oldTo;
+        for (const [sourceField, targetField] of [['fromURI', 'toURI'], ['sourceRefinement', 'targetRefinement'],
+            ['sourceCoefficient', 'targetCoefficient']] as const) {
+            const oldSource = newInfo[sourceField][cell.id];
+            const oldTarget = newInfo[targetField][cell.id];
+            delete newInfo[sourceField][cell.id];
+            delete newInfo[targetField][cell.id];
+            if (oldTarget !== undefined) {
+                newInfo[sourceField][cell.id] = oldTarget as never;
+            }
+            if (oldSource !== undefined) {
+                newInfo[targetField][cell.id] = oldSource as never;
+            }
         }
-        if (oldFrom) {
-            newInfo.toURI[cell.id] = oldFrom;
-        }
-        // nuke the refinemnets, as source refinements don't match target refinements
-        delete newInfo.sourceRefinement[cell.id];
-        delete newInfo.targetRefinement[cell.id];
         this.updateInteractionDict(newInfo);
         this.updateAngularMetadata(this.graph.getSelectionCells());
     }
@@ -2129,31 +2187,21 @@ export class GraphHelpers extends GraphBase {
         return cell0.value[GraphBase.EVENT_DICT_INDEX][eventURI];
     }
 
-    /**
-     * Resolve a species' display name to the species glyph's full URI.
-     * Returns null unless exactly one species on the canvas has that label.
-     */
-    public getSpeciesURIForLabel(label: string): string {
-        let match: string = null;
+    public getSpeciesInstances(): SpeciesInstanceRef[] {
+        const instances: SpeciesInstanceRef[] = [];
         const model = this.graph.getModel();
-        for (const cell of Object.values(model.cells) as any[]) {
+        for (const cell of Object.values(model.cells) as mxCell[]) {
             if (!cell || !cell.isMolecularSpeciesGlyph || !cell.isMolecularSpeciesGlyph()) {
                 continue;
             }
-            const info = <GlyphInfo>this.getFromInfoDict(<string>cell.value);
-            if (info && info.getDisplayName() === label) {
-                if (match) {
-                    return null; // ambiguous: two species share the label
+            const info = <GlyphInfo>this.getFromInfoDict(cell.value);
+            instances.push({
+                definitionUri: cell.value,
+                cellId: cell.getId(),
+                label: info ? info.getDisplayName() : '',
+            });
                 }
-                match = <string>cell.value;
-            }
-        }
-        return match;
-    }
-
-    public getSpeciesLabelForURI(uri: string): string {
-        const info = this.getFromInfoDict(uri);
-        return info ? info.getDisplayName() : null;
+        return instances;
     }
 
     /**

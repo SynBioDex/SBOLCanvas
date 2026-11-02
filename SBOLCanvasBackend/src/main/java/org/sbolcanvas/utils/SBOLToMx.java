@@ -61,6 +61,7 @@ import org.xml.sax.SAXException;
 
 import com.mxgraph.io.mxCodec;
 import com.mxgraph.model.mxCell;
+import com.mxgraph.model.mxGeometry;
 import com.mxgraph.model.mxGraphModel;
 import com.mxgraph.util.mxConstants;
 import com.mxgraph.view.mxGraph;
@@ -400,9 +401,8 @@ public class SBOLToMx extends Converter {
 			// store the cell so we can use it in interactions (module view only)
 			if (wiringFuncComp != null) {
 				for (MapsTo mapsTo : wiringFuncComp.getMapsTos()) {
-					if (mapsTo.getLocalDefinition().equals(glyphComponent.getDefinition())) {
+					if (mapsTo.getRemoteIdentity().equals(glyphComponent.getIdentity())) {
 						compToCell.put((FunctionalComponent) mapsTo.getLocal(), glyphCell);
-						break;
 					}
 				}
 			}
@@ -419,13 +419,31 @@ public class SBOLToMx extends Converter {
 		Set<Interaction> interactions = modDef.getInteractions();
 		for (Interaction interaction : interactions) {
 			Participation[] participations = interaction.getParticipations().toArray(new Participation[0]);
-			boolean hasNode = participations.length > 2;
 			mxCell interactionCell = layoutHelper.getGraphicalObject(modDef.getIdentity(), interaction.getDisplayId());
+			int sources = 0;
+			int targets = 0;
+			for (Participation participation : participations) {
+				if (SBOLData.isSourceParticipant(participation)) {
+					sources++;
+				} else {
+					targets++;
+				}
+			}
+			boolean nodeByCapacity = sources > 1 || targets > 1;
+			boolean hasNode;
+			if (interactionCell != null) {
+				if (!interactionCell.isVertex() && nodeByCapacity) {
+					interactionCell = convertCondensedEdgeToNode(graph, rootViewCell, interactionCell);
+				}
+				hasNode = interactionCell.isVertex();
+			} else {
+				hasNode = nodeByCapacity;
+			}
 			if (interactionCell != null) {
 				if (interactionCell.getStyle() != null)
 					if (hasNode)
 						interactionCell.setStyle(STYLE_INTERACTION_NODE + ";" + interactionCell.getStyle());
-					else
+				else
 						interactionCell.setStyle(STYLE_INTERACTION + ";" + interactionCell.getStyle());
 				else if (hasNode)
 					interactionCell.setStyle(STYLE_INTERACTION_NODE);
@@ -436,7 +454,7 @@ public class SBOLToMx extends Converter {
 				if (hasNode)
 					interactionCell = (mxCell) graph.insertVertex(rootViewCell, null, null, 0, 0, 0, 0, STYLE_INTERACTION_NODE);
 				else
-					interactionCell = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
+					interactionCell = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null, STYLE_INTERACTION);
 			}
 			InteractionInfo intInfo = genInteractionInfo(interaction);
 			interactionDict.put(intInfo.getFullURI(), intInfo);
@@ -457,7 +475,7 @@ public class SBOLToMx extends Converter {
 							interactionEdge.setStyle(STYLE_INTERACTION);
 						interactionEdge = (mxCell) model.add(rootViewCell, interactionEdge, 0);
 					} else {
-						interactionEdge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null);
+						interactionEdge = (mxCell) graph.insertEdge(rootViewCell, null, null, null, null, STYLE_INTERACTION);
 					}
 					interactionEdge.setValue(intInfo.getFullURI());
 					setInteractionEndpoints(document, interaction, participation, source, interactionEdge);
@@ -476,6 +494,18 @@ public class SBOLToMx extends Converter {
 			}
 
 		}
+	}
+
+	private static mxCell convertCondensedEdgeToNode(mxGraph graph, mxCell parent, mxCell edgeGlyph) {
+		mxGeometry geometry = edgeGlyph.getGeometry();
+		mxCell node = (mxCell) graph.insertVertex(parent, null, null,
+				geometry != null ? geometry.getX() : 0.0,
+				geometry != null ? geometry.getY() : 0.0,
+				geometry != null ? geometry.getWidth() : 0.0,
+				geometry != null ? geometry.getHeight() : 0.0,
+				null);
+		node.setStyle(edgeGlyph.getStyle());
+		return node;
 	}
 
 	private void remapEventTargetValue(SBOLDocument document, Hashtable<String, Object> simData) {

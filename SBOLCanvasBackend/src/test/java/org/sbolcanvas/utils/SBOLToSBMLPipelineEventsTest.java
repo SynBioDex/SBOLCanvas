@@ -28,9 +28,12 @@ import org.sbml.jsbml.ext.layout.Layout;
 import org.sbml.jsbml.ext.layout.LayoutModelPlugin;
 import org.sbml.jsbml.ext.layout.LineSegment;
 import org.sbml.jsbml.ext.layout.Point;
+import org.sbml.jsbml.ext.layout.ReactionGlyph;
 import org.sbml.jsbml.ext.layout.ReferenceGlyph;
 import org.sbml.jsbml.ext.layout.SpeciesGlyph;
 import org.sbml.jsbml.ext.layout.TextGlyph;
+
+import org.sbolcanvas.data.EventInfo;
 
 /**
  * Event layout (GeneralGlyph, ReferenceGlyph, TextGlyph) and event model output (Trigger, Delay,
@@ -240,24 +243,14 @@ class SBOLToSBMLPipelineEventsTest {
         @Test
         @DisplayName("One textGlyph per species, event, and compartment")
         void oneTextGlyphPerSpeciesEventAndCompartment() {
-            // Hand-counted from the toggle fixture: 9 species glyphs (3 Protein + 2 SmallMolecule
-            // + 2 Complex + 2 promoter glyphs); the synthetic placeholder mRNAs carry no glyph.
-            assertEquals(9, layout.getSpeciesGlyphCount(), "fixture should produce 9 species glyphs");
-            assertEquals(4, layout.getAdditionalGraphicalObjectCount(), "fixture should produce 4 event glyphs");
-            assertEquals(1, layout.getCompartmentGlyphCount(), "fixture should produce 1 compartment glyph");
-            assertEquals(14, layout.getTextGlyphCount(),
-                    "textGlyph count should cover species + events + compartments");
-        }
-
-        @Test
-        @DisplayName("Each textGlyph targets an existing graphical object")
-        void graphicalObjectReferencesResolve() {
-            Set<String> knownIds = collectGlyphIds();
-            for (TextGlyph tg : layout.getListOfTextGlyphs()) {
-                assertTrue(knownIds.contains(tg.getGraphicalObject()),
-                        "textGlyph '" + tg.getId() + "' points to unknown glyph '"
-                                + tg.getGraphicalObject() + "'");
-            }
+            Set<String> expected = collectGlyphIds();
+            for (ReactionGlyph glyph : layout.getListOfReactionGlyphs())
+                expected.remove(glyph.getId());
+            Set<String> labeled = new HashSet<>();
+            for (TextGlyph glyph : layout.getListOfTextGlyphs())
+                labeled.add(glyph.getGraphicalObject());
+            assertEquals(expected, labeled);
+            assertEquals(expected.size(), layout.getTextGlyphCount());
         }
 
         @Test
@@ -463,14 +456,22 @@ class SBOLToSBMLPipelineEventsTest {
         @Test
         @DisplayName("Each event carries a non-RDF annotation with its SBOL URI")
         void eventsCarrySbolIdentity() throws Exception {
+            org.sbolstandard.core2.SBOLDocument source =
+                    SBOLTestSupport.loadSbol(SBOLTestSupport.TOGGLE_RESOURCE);
+            SBOLToMx converter = SBOLTestSupport.convertToGraph(source);
             for (int i = 0; i < model.getEventCount(); i++) {
                 Event event = model.getEvent(i);
                 assertTrue(event.isSetAnnotation(), event.getId() + " should have an annotation");
                 String annotation = event.getAnnotationString();
                 assertTrue(annotation.contains("SBOLCanvas:identity"),
                         event.getId() + " annotation should use the SBOLCanvas:identity element");
-                assertTrue(annotation.contains("/Event_"),
-                        event.getId() + " annotation should carry the SBOL event URI");
+                String identity = null;
+                for (EventInfo candidate : converter.eventDict.values()) {
+                    if (event.getName().equals(candidate.getName())) identity = candidate.getFullURI();
+                }
+                assertNotNull(identity);
+                assertTrue(annotation.contains(identity),
+                        event.getId() + " annotation should carry its exact SBOL event URI");
             }
         }
 

@@ -21,7 +21,7 @@ import { StyleInfo } from './style-info';
 import { ModuleInfo } from './moduleInfo';
 import { Info } from './info';
 import { CombinatorialInfo } from './combinatorialInfo';
-import { EventInfo } from './eventInfo';
+import { CELL_REFERENCE_PREFIX, EventInfo, isCellReference } from './eventInfo';
 import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
 import { Observable } from 'rxjs';
@@ -2143,6 +2143,11 @@ export class GraphService extends GraphHelpers {
                                 this.removeFromInteractionDict(child.value);
                             }
                             this.addToInteractionDict(subGlyphDict[GraphBase.INTERACTION_DICT_INDEX][child.value]);
+                        } else if (child.isEvent() && subGlyphDict[GraphBase.EVENT_DICT_INDEX]?.[child.value]) {
+                            if (this.getFromEventDict(child.value) != null) {
+                                this.removeFromEventDict(child.value);
+                            }
+                            this.addToEventDict(subGlyphDict[GraphBase.EVENT_DICT_INDEX][child.value]);
                         }
                     }
                 }
@@ -2150,49 +2155,40 @@ export class GraphService extends GraphHelpers {
                 // relink the interactions now that their ID's have likely changed
                 for (let i = 1; i < viewCells.length; i++) {
                     let viewClone = this.graph.getModel().getCell(viewCells[i].getId());
+                    const cloneIdOf = (cellRef: string): string | undefined => {
+                        const oldCell = subGraph.getModel().getCell(cellRef);
+                        const oldParentView = oldCell && oldCell.getParent();
+                        const newParentView = oldParentView && this.graph.getModel().getCell(oldParentView.getId());
+                        return newParentView?.children?.[oldParentView.getIndex(oldCell)]?.getId();
+                    };
+                    const relinkEdge = (info: InteractionInfo, from: InteractionInfo, originalEdge: mxCell, edge: mxCell) => {
+                        for (const field of GraphBase.edgeKeyedFields) {
+                            const value = from[field][originalEdge.getId()];
+                            if (value === undefined) continue;
+                            if (field !== 'fromURI' && field !== 'toURI') {
+                                info[field][edge.getId()] = value;
+                                continue;
+                            }
+                            const cloneId = cloneIdOf(value.substring(value.lastIndexOf('_') + 1));
+                            if (cloneId) {
+                                info[field][edge.getId()] = value.substring(0, value.lastIndexOf('_') + 1) + cloneId;
+                            }
+                        }
+                    };
                     for (let j = 0; j < viewClone.children.length; j++) {
                         // for now it seems that cloning the cell keeps the child order in tact
                         let child = viewClone.children[j];
                         let originalChild = viewCells[i].children[j];
                         if (child.isInteractionNode()) {
                             // copy to new dict as new id's may conflict with old
-                            let newTo = [];
-                            let newFrom = [];
-                            let newSource: Record<string, string> = {};
-                            let newTarget: Record<string, string> = {};
-                            let infoCopy = this.getFromInteractionDict(child.value).makeCopy();
-                            for (let k = 0; k < child.edges.length; k++) {
-                                let edge = child.edges[k];
-                                let originalEdge = originalChild.edges[k];
-                                if (infoCopy.toURI[originalEdge.getId()]) {
-                                    // find the original cell
-                                    let cellRef = infoCopy.toURI[originalEdge.getId()];
-                                    let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_") + 1));
-                                    let oldParentView = oldCell.getParent();
-                                    let newParentView = this.graph.getModel().getCell(oldParentView.getId());
-                                    // replace with the new id
-                                    newTo[edge.getId()] = cellRef.substring(0, cellRef.lastIndexOf("_") + 1) + newParentView.children[oldParentView.getIndex(oldCell)].getId();
-                                }
-                                if (infoCopy.fromURI[originalEdge.getId()]) {
-                                    // find the original cell
-                                    let cellRef = infoCopy.fromURI[originalEdge.getId()];
-                                    let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_") + 1));
-                                    let oldParentView = oldCell.getParent();
-                                    let newParentView = this.graph.getModel().getCell(oldParentView.getId());
-                                    // replace with the new id
-                                    newFrom[edge.getId()] = cellRef.substring(0, cellRef.lastIndexOf("_") + 1) + newParentView.children[oldParentView.getIndex(oldCell)].getId();
-                                }
-                                if (infoCopy.sourceRefinement[originalEdge.getId()]) {
-                                    newSource[edge.getId()] = infoCopy.sourceRefinement[originalEdge.getId()];
-                                }
-                                if (infoCopy.targetRefinement[originalEdge.getId()]) {
-                                    newTarget[edge.getId()] = infoCopy.targetRefinement[originalEdge.getId()];
-                                }
+                            const stored = this.getFromInteractionDict(child.value);
+                            let infoCopy = stored.makeCopy();
+                            for (const field of GraphBase.edgeKeyedFields) {
+                                infoCopy[field] = {};
                             }
-                            infoCopy.toURI = newTo;
-                            infoCopy.fromURI = newFrom;
-                            infoCopy.sourceRefinement = newSource;
-                            infoCopy.targetRefinement = newTarget;
+                            for (let k = 0; k < child.edges.length; k++) {
+                                relinkEdge(infoCopy, stored, originalChild.edges[k], child.edges[k]);
+                                }
                             this.updateInteractionDict(infoCopy);
                         }
                         if (child.isInteraction()) {
@@ -2200,34 +2196,24 @@ export class GraphService extends GraphHelpers {
                             if ((child.source && child.source.isInteractionNode()) || (child.target && child.target.isInteractionNode())) {
                                 continue;
                             }
-                            let infoCopy = this.getFromInteractionDict(child.value).makeCopy();
-                            if (infoCopy.fromURI[originalChild.getId()]) {
-                                let cellRef = infoCopy.fromURI[originalChild.getId()];
-                                delete infoCopy.fromURI[originalChild.getId()];
-                                let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_") + 1));
-                                let oldParentView = oldCell.getParent();
-                                let newParentView = this.graph.getModel().getCell(oldParentView.getId());
-                                infoCopy.fromURI[child.getId()] = cellRef.substring(0, cellRef.lastIndexOf("_") + 1) + newParentView.children[oldParentView.getIndex(oldCell)].getId();;
+                            const stored = this.getFromInteractionDict(child.value);
+                            let infoCopy = stored.makeCopy();
+                            for (const field of GraphBase.edgeKeyedFields) {
+                                delete infoCopy[field][originalChild.getId()];
                             }
-                            if (infoCopy.toURI[originalChild.getId()]) {
-                                let cellRef = infoCopy.toURI[originalChild.getId()];
-                                delete infoCopy.toURI[originalChild.getId()];
-                                let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_") + 1));
-                                let oldParentView = oldCell.getParent();
-                                let newParentView = this.graph.getModel().getCell(oldParentView.getId());
-                                infoCopy.toURI[child.getId()] = cellRef.substring(0, cellRef.lastIndexOf("_") + 1) + newParentView.children[oldParentView.getIndex(oldCell)].getId();;
-                            }
-                            if (infoCopy.sourceRefinement[originalChild.getId()]) {
-                                let value = infoCopy.sourceRefinement[originalChild.getId()];
-                                delete infoCopy.sourceRefinement[originalChild.getId()];
-                                infoCopy.sourceRefinement[child.getId()] = value;
-                            }
-                            if (infoCopy.targetRefinement[originalChild.getId()]) {
-                                let value = infoCopy.targetRefinement[originalChild.getId()];
-                                delete infoCopy.targetRefinement[originalChild.getId()];
-                                infoCopy.targetRefinement[child.getId()] = value;
-                            }
+                            relinkEdge(infoCopy, stored, originalChild, child);
                             this.updateInteractionDict(infoCopy);
+                            }
+                        if (child.isEvent()) {
+                            const eventInfo = this.getFromEventDict(child.value);
+                            const target = eventInfo?.simulationData?.['targetSpecies'];
+                            if (isCellReference(target)) {
+                                const updated = eventInfo.makeCopy();
+                                const cloneId = cloneIdOf(target.slice(CELL_REFERENCE_PREFIX.length));
+                                if (cloneId) updated.simulationData['targetSpecies'] = CELL_REFERENCE_PREFIX + cloneId;
+                                else delete updated.simulationData['targetSpecies'];
+                                this.updateEventDict(updated);
+                            }
                         }
                     }
                 }

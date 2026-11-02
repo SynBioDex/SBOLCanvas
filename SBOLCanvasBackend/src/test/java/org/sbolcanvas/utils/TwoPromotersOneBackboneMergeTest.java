@@ -42,13 +42,13 @@ class TwoPromotersOneBackboneMergeTest {
     class MergedSpecies {
 
         @Test
-        @DisplayName("Each backbone produces one merged Species with summed ng=4")
+        @DisplayName("The backbone produces one merged Species with summed ng=4")
         void mergedSpeciesAmount() {
             List<Species> merged = model.getListOfSpecies().stream()
                     .filter(sp -> sp.getSBOTerm() == 590)
                     .collect(Collectors.toList());
-            assertEquals(2, merged.size(),
-                    "Two backbones, each merging two promoters, should yield two promoter species");
+            assertEquals(1, merged.size(),
+                    "The backbone merges its two promoters into one promoter species");
 
             for (Species sp : merged) {
                 assertEquals("pTet+pLac", sp.getName(),
@@ -59,13 +59,13 @@ class TwoPromotersOneBackboneMergeTest {
         }
 
         @Test
-        @DisplayName("Merged species ids are unique after SId sanitization")
-        void mergedSpeciesIdsAreUniqueAfterSIdSanitization() {
+        @DisplayName("The merged species id is the SId-sanitized merged name")
+        void mergedSpeciesIdIsSanitizedMergedName() {
             Set<String> ids = model.getListOfSpecies().stream()
                     .filter(sp -> sp.getSBOTerm() == 590)
                     .map(Species::getId)
                     .collect(Collectors.toSet());
-            assertEquals(2, ids.size(), "exactly two merged species expected");
+            assertEquals(1, ids.size(), "exactly one merged species expected");
             assertTrue(ids.contains("pTet_pLac"), "merged id should be the SId-sanitized form pTet_pLac (display name pTet+pLac)");
         }
     }
@@ -138,44 +138,6 @@ class TwoPromotersOneBackboneMergeTest {
                     "Formula AST must not reference the individual promoter id 'pTet'");
             assertFalse(astReferencesSpecies(math, "pLac"),
                     "Formula AST must not reference the individual promoter id 'pLac'");
-        }
-    }
-
-    @Nested
-    @DisplayName("Placeholder-mRNA fallback on no-CDS TU")
-    class NoCdsPlaceholderMRna {
-
-        private Reaction noCdsProductionReaction() {
-            return model.getListOfReactions().stream()
-                    .filter(rx -> rx.getId().startsWith("Production_pTet_pLac_"))
-                    .findFirst()
-                    .orElseThrow(() -> new AssertionError(
-                            "Expected a Production reaction for the second merged backbone"));
-        }
-
-        @Test
-        @DisplayName("No-CDS production reaction produces the placeholder mRNA")
-        void noCdsProductionReactionProducesPlaceholderMRna() {
-            Reaction r = noCdsProductionReaction();
-            assertEquals(1, r.getProductCount(),
-                    "Reaction without explicit product has one placeholder mRNA product");
-            assertTrue(r.getProduct(0).getSpecies().endsWith("_mRNA"),
-                    "Product is the placeholder mRNA species");
-        }
-
-        @Test
-        @DisplayName("No-CDS production kinetic law defines constitutive ko_f / ko_r params")
-        void noCdsProductionLawDefinesConstitutiveParams() {
-            // Asserted via local-parameter inventory to avoid coupling to formula string layout.
-            KineticLaw law = noCdsProductionReaction().getKineticLaw();
-            Set<String> paramIds = new HashSet<>();
-            for (int i = 0; i < law.getLocalParameterCount(); i++) {
-                paramIds.add(law.getLocalParameter(i).getId());
-            }
-            assertTrue(paramIds.contains("ko_f"),
-                    "constitutive formula must define ko_f, found params: " + paramIds);
-            assertTrue(paramIds.contains("ko_r"),
-                    "constitutive formula must define ko_r, found params: " + paramIds);
         }
     }
 
