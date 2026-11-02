@@ -57,6 +57,10 @@ export function initializeMetadata(metadata: MetadataService): () => Promise<voi
     return () => metadata.initialize();
 }
 
+export function startEmbeddedListener(): () => void {
+    return () => undefined;
+}
+
 
 @NgModule({ declarations: [
         AppComponent,
@@ -101,6 +105,8 @@ export function initializeMetadata(metadata: MetadataService): () => Promise<voi
         FlexLayoutModule,
         ColorPickerModule], providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, GlyphPaletteService, {
             provide: APP_INITIALIZER, useFactory: initializeMetadata, deps: [MetadataService], multi: true
+        }, {
+            provide: APP_INITIALIZER, useFactory: startEmbeddedListener, deps: [EmbeddedService], multi: true
         }, {
             provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
         }, provideHttpClient(withInterceptorsFromDi())] })
