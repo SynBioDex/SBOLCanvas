@@ -1,5 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ReactiveFormsModule } from '@angular/forms'; // Added for color picker.
 
@@ -53,6 +53,10 @@ import { EmbeddedService } from './embedded.service';
 import { SidePanelComponent } from './side-panel/side-panel.component';
 import { CollapsibleSectionComponent } from './side-panel/collapsible-section.component';
 
+export function initializeMetadata(metadata: MetadataService): () => Promise<void> {
+    return () => metadata.initialize();
+}
+
 
 @NgModule({ declarations: [
         AppComponent,
@@ -96,6 +100,8 @@ import { CollapsibleSectionComponent } from './side-panel/collapsible-section.co
         MaterialModule,
         FlexLayoutModule,
         ColorPickerModule], providers: [PendingChangesGuard, GraphService, MetadataService, EmbeddedService, GlyphPaletteService, {
+            provide: APP_INITIALIZER, useFactory: initializeMetadata, deps: [MetadataService], multi: true
+        }, {
             provide: HTTP_INTERCEPTORS, useClass: AppHttpInterceptor, multi: true
         }, provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule {

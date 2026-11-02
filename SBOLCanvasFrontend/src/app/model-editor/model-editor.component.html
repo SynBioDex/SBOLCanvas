@@ -1,113 +1,59 @@
-<div *ngIf="configLoadError && !simulationConfig" class="config-error">
-  Failed to load simulation fields<br>
-  from backend.<br>
+<div *ngIf="metadataService.hasLoadError" class="config-error">
+  Could not load data from the backend.
 </div>
-<div *ngIf="simulationConfig">
-  <!-- Glyph Simulation Parameters -->
-  <div *ngIf="glyphInfo" class="model-menu-container">
-    <div class="model-section" *ngIf="isMolecularSpecies()">
-      <h4>Species</h4>
+<div class="model-menu-container" *ngIf="metadataService.simulationConfig && metadataService.interactionRules && (glyphInfo || interactionInfo || eventInfo)">
+  <ng-container *ngIf="interactionInfo">
+    <ng-container *ngIf="metadataService.interactionRules[interactionInfo.interactionType] as rule">
+      <div class="model-section" *ngIf="rule.massAction && graphService.isSelectedReactionOwner()">
+        <h4>Reaction</h4>
       <mat-form-field floatLabel="always">
-        <mat-label>Initial Amount</mat-label>
-        <input matInput type="number"
-          value="{{glyphInfo.simulationData['initialAmount'] !== undefined ? glyphInfo.simulationData['initialAmount'] : 0}}"
-          (change)="inputChange($event, 'initialAmount')">
-        <mat-error *ngIf="validationErrors['initialAmount']">{{validationErrors['initialAmount']}}</mat-error>
+          <mat-label>Interaction type</mat-label>
+          <mat-select [value]="interactionInfo.interactionType" [placeholder]="interactionInfo.interactionType" (selectionChange)="interactionTypeChange($event.value)">
+            <mat-option *ngFor="let interactionType of massActionTypes()" [value]="interactionType" [disabled]="!graphService.isInteractionTypeAllowed(interactionType)">{{interactionType}}</mat-option>
+          </mat-select>
       </mat-form-field>
-      <mat-checkbox id="boundaryCondition" [checked]="glyphInfo.simulationData['boundaryCondition']"
-        (change)="inputChange($event, 'boundaryCondition')" matTooltipShowDelay="1000"
-        matTooltip="Optional. Select if the species is a constant amount during simulation.">Boundary Condition</mat-checkbox>
     </div>
+      <div class="model-section" *ngFor="let side of participantSides()">
+        <h4>{{side === 'source' ? 'Source' : 'Target'}} participation</h4>
+        <mat-form-field floatLabel="always" *ngIf="rule[side].roles.length">
+          <mat-label>Role</mat-label>
+          <mat-select [value]="roleValue(side)" (selectionChange)="roleChange(side, $event.value)">
+            <mat-option *ngFor="let role of rule[side].roles" [value]="role">{{role}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <ng-container *ngIf="rule.massAction && !isModifierRole(side)">
+          <mat-form-field floatLabel="always" *ngFor="let field of metadataService.simulationConfig.participation">
+            <mat-label>{{field.label}}</mat-label>
+            <input matInput type="number" step="any" [min]="field.min" [value]="coefficientValue(side)"
+              [attr.aria-invalid]="!!validationErrors[side + ':' + field.key]"
+              [attr.aria-describedby]="side + '-' + field.key + '-error'"
+              (change)="coefficientChange(side, field, $event.target.validity.badInput ? $event.target.valueAsNumber : ($event.target.value === '' ? undefined : $event.target.value))">
+            <div class="param-error" [id]="side + '-' + field.key + '-error'" role="alert" *ngIf="validationErrors[side + ':' + field.key]">{{validationErrors[side + ':' + field.key]}}</div>
+          </mat-form-field>
+        </ng-container>
+  </div>
+    </ng-container>
+  </ng-container>
 
-    <div class="model-section" *ngIf="glyphInfo.partRole && glyphInfo.partRole.includes('Promoter')">
-      <h4>Promoter</h4>
-      <mat-form-field floatLabel="always" *ngFor="let param of promoterParams">
-        <mat-label>{{param.label}}</mat-label>
-        <input matInput type="number"
-          value="{{glyphInfo.simulationData[param.name] !== undefined ? glyphInfo.simulationData[param.name] : getDefaultValue('Pro (Promoter)', param.name)}}"
-          (change)="inputChange($event, param.name)">
-        <mat-error *ngIf="validationErrors[param.name]">{{validationErrors[param.name]}}</mat-error>
+  <div class="model-section">
+    <ng-container *ngFor="let field of fields()" [ngSwitch]="field.type">
+      <mat-form-field floatLabel="always" *ngSwitchCase="'number'">
+        <mat-label>{{field.label}}</mat-label>
+        <input matInput type="number" step="any" [id]="field.key" [min]="field.min" [value]="fieldValue(field)"
+          [attr.aria-invalid]="!!validationErrors[field.key]" [attr.aria-describedby]="field.key + '-error'"
+          (change)="fieldChange(field, $event.target.validity.badInput ? $event.target.valueAsNumber : ($event.target.value === '' ? undefined : $event.target.value))">
+        <div class="param-error" [id]="field.key + '-error'" role="alert" *ngIf="validationErrors[field.key]">{{validationErrors[field.key]}}</div>
       </mat-form-field>
+      <mat-checkbox *ngSwitchCase="'boolean'" [id]="field.key" [checked]="fieldValue(field)"
+        (change)="fieldChange(field, $event.checked)">{{field.label}}</mat-checkbox>
+      <mat-form-field floatLabel="always" *ngSwitchCase="'species-reference'">
+        <mat-label>{{field.label}}</mat-label>
+        <mat-select [id]="field.key" [value]="fieldValue(field)" (selectionChange)="fieldChange(field, $event.value)">
+          <mat-option [value]="undefined">None</mat-option>
+          <mat-option *ngFor="let option of targetSpeciesOptions()" [value]="option.value">{{option.label}}</mat-option>
+        </mat-select>
+        <div class="param-error" role="alert" *ngIf="validationErrors[field.key]">{{validationErrors[field.key]}}</div>
+      </mat-form-field>
+    </ng-container>
     </div>
   </div>
-
-  <!-- Interaction Simulation Parameters -->
-  <div *ngIf="interactionInfo" class="model-menu-container">
-    <div class="model-section" *ngIf="interactionInfo.interactionType == 'Degradation'">
-      <h4>Degradation</h4>
-      <mat-form-field floatLabel="always">
-        <mat-label>Degradation Rate (kd)</mat-label>
-        <input matInput type="number" value="{{getInteractionParamValue('kd', 'Degradation')}}"
-          (change)="inputChange($event, 'kd')">
-        <mat-error *ngIf="validationErrors['kd']">{{validationErrors['kd']}}</mat-error>
-      </mat-form-field>
-    </div>
-
-    <div class="model-section" *ngIf="isComplexFormation() && isInteractionNode()">
-      <h4>Complex Formation (Node)</h4>
-      <mat-form-field floatLabel="always" *ngFor="let param of complexNodeParams">
-        <mat-label>{{param.label}}</mat-label>
-        <input matInput type="number" value="{{getInteractionParamValue(param.name, interactionInfo.interactionType)}}"
-          (change)="inputChange($event, param.name)">
-        <mat-error *ngIf="validationErrors[param.name]">{{validationErrors[param.name]}}</mat-error>
-      </mat-form-field>
-    </div>
-
-    <div class="model-section" *ngIf="isComplexFormation() && !isInteractionNode()">
-      <h4>Complex Formation (Reactant)</h4>
-      <mat-form-field floatLabel="always" *ngFor="let param of complexEdgeParams">
-        <mat-label>{{param.label}}</mat-label>
-        <input matInput type="number" value="{{getInteractionParamValue(param.name, interactionInfo.interactionType)}}"
-          (change)="inputChange($event, param.name)">
-        <mat-error *ngIf="validationErrors[param.name]">{{validationErrors[param.name]}}</mat-error>
-      </mat-form-field>
-    </div>
-
-    <div class="model-section" *ngIf="interactionInfo.interactionType == 'Inhibition'">
-      <h4>Repression</h4>
-      <mat-form-field floatLabel="always" *ngFor="let param of inhibitionParams">
-        <mat-label>{{param.label}}</mat-label>
-        <input matInput type="number" value="{{getInteractionParamValue(param.name, 'Inhibition')}}"
-          (change)="inputChange($event, param.name)">
-        <mat-error *ngIf="validationErrors[param.name]">{{validationErrors[param.name]}}</mat-error>
-      </mat-form-field>
-    </div>
-
-    <div class="model-section" *ngIf="interactionInfo.interactionType == 'Stimulation'">
-      <h4>Activation</h4>
-      <mat-form-field floatLabel="always" *ngFor="let param of stimulationParams">
-        <mat-label>{{param.label}}</mat-label>
-        <input matInput type="number" value="{{getInteractionParamValue(param.name, 'Stimulation')}}"
-          (change)="inputChange($event, param.name)">
-        <mat-error *ngIf="validationErrors[param.name]">{{validationErrors[param.name]}}</mat-error>
-      </mat-form-field>
-    </div>
-  </div>
-
-  <!-- Event Parameters -->
-  <div *ngIf="eventInfo" class="model-menu-container">
-    <h4>Event</h4>
-    <mat-form-field floatLabel="always">
-      <mat-label>Delay (time)</mat-label>
-      <input matInput id="delay" type="number"
-        value="{{eventInfo.simulationData['delay'] !== undefined ? eventInfo.simulationData['delay'] : 0}}"
-        (change)="inputChange($event)">
-      <mat-error *ngIf="validationErrors['delay']">{{validationErrors['delay']}}</mat-error>
-    </mat-form-field>
-
-    <mat-form-field floatLabel="always">
-      <mat-label>Target Species</mat-label>
-      <input matInput id="targetSpecies" value="{{ getTargetSpeciesLabel() }}"
-        (change)="inputChange($event)">
-      <mat-error *ngIf="validationErrors['targetSpecies']">{{validationErrors['targetSpecies']}}</mat-error>
-    </mat-form-field>
-
-    <mat-form-field floatLabel="always">
-      <mat-label>Assignment Value</mat-label>
-      <input matInput id="assignmentValue" type="number"
-        value="{{eventInfo.simulationData['assignmentValue'] !== undefined ? eventInfo.simulationData['assignmentValue'] : 0}}"
-        (change)="inputChange($event)">
-      <mat-error *ngIf="validationErrors['assignmentValue']">{{validationErrors['assignmentValue']}}</mat-error>
-    </mat-form-field>
-  </div>
-</div>
