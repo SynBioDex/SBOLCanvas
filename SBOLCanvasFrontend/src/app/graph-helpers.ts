@@ -3,7 +3,7 @@
 import { GlyphService } from './glyph.service';
 import { GraphEdits } from './graph-edits';
 import { GlyphInfo } from './glyphInfo';
-import type { mxCell, mxDragSource, mxGraph } from 'src/mxgraph';
+import type { mxCell, mxCellState, mxDragSource, mxEventObject, mxGraph } from 'src/mxgraph';
 import { ConfirmComponent } from './confirm/confirm.component';
 import { MatDialog } from '@angular/material/dialog';
 import { GraphBase, mx } from './graph-base';
@@ -2479,4 +2479,135 @@ export class GraphHelpers extends GraphBase {
             || this.metadataService.interactionRules[info.interactionType][side].defaultRole;
     }
 
+    protected installCanvasAccessibility(): void {
+        const container = this.graphContainer;
+        container.setAttribute('tabindex', '0');
+        container.setAttribute('role', 'group');
+        container.setAttribute('aria-label', 'Circuit design canvas');
+
+        container.addEventListener('pointerdown', (evt: PointerEvent) => {
+            const target = evt.target as Element | null;
+            if (target && (target.closest('input, textarea, select') ||
+                (target instanceof HTMLElement && target.isContentEditable))) {
+                return;
+            }
+            if (this.graph.isEditing()) {
+                return;
+            }
+            container.focus();
+        }, true);
+
+        const shapeOwnsFocus = (node: Element): boolean =>
+            node === document.activeElement || node.contains(document.activeElement);
+        const activationAllowed = (): boolean =>
+            this.graph.isEnabled() && !this.graph.isEditing() && this.dialog.openDialogs.length === 0;
+        const renderer = this.graph.cellRenderer;
+        const self = this;
+        const baseInstallListeners = renderer.installListeners;
+        const baseRedrawLabel = renderer.redrawLabel;
+
+        const applyAccessibleState = (state: mxCellState) => {
+            const node = state && state.shape && state.shape.node;
+            if (!node || node.nodeType !== 1) {
+                return;
+            }
+            const label = self.canvasAccessibleName(state.cell);
+            if (!label) {
+                node.removeAttribute('role');
+                node.removeAttribute('aria-label');
+                node.removeAttribute('tabindex');
+                node.removeAttribute('aria-pressed');
+                return;
+            }
+            node.setAttribute('role', 'button');
+            node.setAttribute('aria-label', label);
+            node.setAttribute('tabindex', '0');
+            node.setAttribute('aria-pressed', self.graph.isCellSelected(state.cell) ? 'true' : 'false');
+        };
+
+        renderer.installListeners = function (state: mxCellState) {
+            baseInstallListeners.apply(this, arguments);
+            const node = state.shape && state.shape.node;
+            if (!node || node.nodeType !== 1) {
+                return;
+            }
+            const shape = state.shape;
+            const baseShapeDestroy = shape.destroy;
+            shape.destroy = function () {
+                if (shapeOwnsFocus(node)) {
+                    container.focus();
+                }
+                baseShapeDestroy.apply(this, arguments);
+            };
+            mx.mxEvent.addListener(node, 'keydown', (evt: KeyboardEvent) => {
+                if (evt.key !== 'Enter' && evt.key !== ' ' || !activationAllowed()) {
+                    return;
+                }
+                evt.preventDefault();
+                evt.stopPropagation();
+                const cell = state.cell;
+                if (evt.shiftKey || evt.ctrlKey || evt.metaKey) {
+                    if (self.graph.isCellSelected(cell)) {
+                        self.graph.removeSelectionCell(cell);
+                    } else {
+                        self.graph.addSelectionCell(cell);
+                    }
+                } else {
+                    self.graph.setSelectionCell(cell);
+                }
+            });
+        };
+
+        renderer.redrawLabel = function (state: mxCellState, forced: boolean) {
+            baseRedrawLabel.apply(this, arguments);
+            applyAccessibleState(state);
+        };
+
+        const updatePressed = (cell: mxCell) => {
+            const state = this.graph.view.getState(cell);
+            const node = state && state.shape && state.shape.node;
+            if (node && node.nodeType === 1 && node.getAttribute('role') === 'button') {
+                node.setAttribute('aria-pressed', this.graph.isCellSelected(cell) ? 'true' : 'false');
+            }
+        };
+        this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, (_sender: unknown, evt: mxEventObject) => {
+            for (const cell of [...(evt.getProperty('added') || []), ...(evt.getProperty('removed') || [])] as mxCell[]) {
+                updatePressed(cell);
+            }
+        });
+    }
+
+    protected canvasAccessibleName(cell: mxCell): string | null {
+        if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()
+            || cell.isCircuitContainer() || cell.isModule()) {
+            const info = this.getFromInfoDict(cell.value);
+            if (!info) {
+                return null;
+            }
+            const label = cell.isCircuitContainer() ? 'DNA strand'
+                : cell.isModule() ? 'Module'
+                : info instanceof GlyphInfo ? (info.partRole || info.partType || 'Glyph')
+                : 'Glyph';
+            const name = info.getDisplayName();
+            return name ? `${label} ${name}` : label;
+        }
+        if (cell.isInteraction() || cell.isInteractionNode()) {
+            const info = this.getFromInteractionDict(cell.value);
+            if (!info) {
+                return null;
+            }
+            const interactionType = info.interactionType || 'Interaction';
+            const name = info.getDisplayName();
+            return name ? `${interactionType} ${name}` : interactionType;
+        }
+        if (cell.isEvent()) {
+            const info = this.getFromEventDict(cell.value);
+            if (!info) {
+                return null;
+            }
+            const name = info.getDisplayName();
+            return name ? `Event ${name}` : 'Event';
+        }
+        return null;
+    }
 }
