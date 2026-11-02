@@ -1,7 +1,5 @@
-import { Injectable } from '@angular/core'
-import { GraphService } from './graph.service'
-import { ActivatedRoute } from '@angular/router'
-import { Observable } from 'rxjs'
+import { Injectable, OnDestroy } from '@angular/core'
+import { ReplaySubject } from 'rxjs'
 
 type data = {
     sbol: string,
@@ -12,32 +10,36 @@ type data = {
     providedIn: 'root'
 })
 
-export class EmbeddedService {
+export class EmbeddedService implements OnDestroy {
 
     private parent: any
-    public sbol: Observable<data>
+    private readonly sbolSource = new ReplaySubject<data>(1)
+    public readonly sbol = this.sbolSource.asObservable()
 
-    constructor(private route: ActivatedRoute) {
-
-        // create observable that watches for messages
-        this.sbol = new Observable<data>(observer => {
-            window.addEventListener('message', ({data, source}) => {
+    private readonly messageListener = ({data, source}: MessageEvent) => {
                 // check that message is coming from external window
                 if(source != window) {
                     this.parent = source
 
                     // Check if no sbol, but plasmids panel was open
                     if(data && data.panelType && !data.sbol){
-                        observer.next({sbol: null, panelType: data.panelType})
+                        this.sbolSource.next({sbol: null, panelType: data.panelType})
                     }
                     // check if message includes SBOL
                     if(data && data.sbol) {
                         console.debug('[Embedded] Received SBOL from up above:', data.sbol.substring(0, 20) + '...')
-                        observer.next({sbol: data.sbol, panelType: data.panelType });
+                        this.sbolSource.next({sbol: data.sbol, panelType: data.panelType });
                     }
                 }
-            })
-        })
+    }
+
+    constructor() {
+        window.addEventListener('message', this.messageListener)
+    }
+
+    ngOnDestroy(): void {
+        window.removeEventListener('message', this.messageListener)
+        this.sbolSource.complete()
     }
 
     public isAppEmbedded(): boolean {
