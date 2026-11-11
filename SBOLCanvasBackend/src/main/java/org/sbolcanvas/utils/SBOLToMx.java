@@ -586,6 +586,9 @@ public class SBOLToMx extends Converter {
 	private void migrateLegacyInteractionValues(ModuleDefinition module, Interaction interaction)
 			throws SBOLValidationException {
 		Hashtable<String, Object> data = takeLegacyValues(interaction, SBOLData.INTERACTION_FIELD_CONTEXTS);
+		if (interaction.containsType(SystemsBiologyOntology.NON_COVALENT_BINDING)) {
+			data.putIfAbsent(SBOLData.PARAM_REVERSIBLE, true);
+		}
 		if (data.isEmpty()) {
 			return;
 		}

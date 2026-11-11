@@ -46,8 +46,10 @@ public class ModelHelper {
 
 	public static int formatVersion(SBOLDocument document) {
 		int version = 0;
-		for (GenericTopLevel model : findModels(document)) {
-			Annotation stamp = model.getAnnotation(Converter.createQName("formatVersion"));
+		for (GenericTopLevel record : document.getGenericTopLevels()) {
+			String type = record.getRDFType().getLocalPart();
+			Annotation stamp = "Model".equals(type) || "Layout".equals(type)
+					? record.getAnnotation(Converter.createQName("formatVersion")) : null;
 			if (stamp == null)
 				continue;
 			String text = stamp.isIntegerValue() ? String.valueOf(stamp.getIntegerValue())

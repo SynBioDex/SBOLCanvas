@@ -195,7 +195,7 @@ public class SBOLData {
 		List<LinkedHashMap<String, Object>> bindingAction = Arrays.asList(
 				number(PARAM_KC_F, "Forward rate", 0.05),
 				number(PARAM_KC_R, "Reverse rate", 1.0),
-				field(PARAM_REVERSIBLE, "boolean", "Reversible", true, null));
+				field(PARAM_REVERSIBLE, "boolean", "Reversible", false, null));
 		simulationConfig.put("Non-Covalent Binding", bindingAction);
 		simulationConfig.put("Dissociation", massAction);
 		simulationConfig.put("Process", massAction);
