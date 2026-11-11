@@ -129,7 +129,7 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
     const options = targets.map(target => ({
       value: target.uri,
       label: nameUse.get(target.name) > 1 ? `${target.name} (${target.displayID})` : target.name
-    }));
+    })).sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' }));
     this.speciesOptionsCache = { key, options };
     return options;
   }

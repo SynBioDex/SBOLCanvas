@@ -231,7 +231,7 @@ public class SBOLData {
 	 */
 	public static String[] getTypes() {
 		String[] typeNames = types.keys().toArray(new String[0]);
-		Arrays.sort(typeNames);
+		Arrays.sort(typeNames, String.CASE_INSENSITIVE_ORDER);
 		return typeNames;
 	}
 
@@ -242,7 +242,7 @@ public class SBOLData {
 	 */
 	public static String[] getRoles() {
 		String[] roleNames = roles.keys().toArray(new String[0]);
-		Arrays.sort(roleNames);
+		Arrays.sort(roleNames, String.CASE_INSENSITIVE_ORDER);
 		return roleNames;
 	}
 
@@ -256,7 +256,7 @@ public class SBOLData {
 		if (parentName == null || parentName.equals("")) {
 			parentName = "NGA (No Glyph Assigned)";
 		}
-		TreeSet<String> refinementNames = new TreeSet<String>();
+		TreeSet<String> refinementNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 		if (roles.getValue(parentName) != null) {
 			Set<URI> descendants = so.getDescendantURIsOf(roles.getValue(parentName));
 
@@ -285,7 +285,7 @@ public class SBOLData {
 		if (parentURI == null) {
 			return new String[0];
 		}
-		Set<String> refinementNames = new TreeSet<String>();
+		Set<String> refinementNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 		Set<URI> descendants = sbo.getDescendantURIsOf(parentURI);
 		if (descendants != null) {
 			for (URI uri : descendants) {
@@ -301,7 +301,7 @@ public class SBOLData {
 	 */
 	public static String[] getInteractions() {
 		String[] interactionNames = interactions.keys().toArray(new String[0]);
-		Arrays.sort(interactionNames);
+		Arrays.sort(interactionNames, String.CASE_INSENSITIVE_ORDER);
 		return interactionNames;
 	}
 
