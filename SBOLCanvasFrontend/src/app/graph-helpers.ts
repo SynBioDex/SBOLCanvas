@@ -19,8 +19,8 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
 import { InteractionInfo, ParticipantSide } from './interactionInfo';
-import { CELL_REFERENCE_PREFIX, EventInfo, isCellReference, type SpeciesInstanceRef } from './eventInfo';
-import { checkConnection, isReactionOwner } from './validation/rules';
+import { EventInfo } from './eventInfo';
+import { checkConnection, describeCell, isReactionOwner, type DesignDictionaries } from './validation/rules';
 // import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
@@ -429,6 +429,7 @@ export class GraphHelpers extends GraphBase {
                     for (let cell of coupledMolecSpec) {
                         this.graph.getModel().setValue(cell, newGlyphURI);
                     }
+                    this.retargetEvents(oldGlyphURI, newGlyphURI);
                 }
 
                 this.updateInteractions(oldGlyphURI + "_" + selectedCell.getId(), newGlyphURI + "_" + selectedCell.getId());
@@ -878,6 +879,16 @@ export class GraphHelpers extends GraphBase {
             this.graph.getModel().remove(circuitContainer);
             let cellAdded = this.graph.getModel().add(originalParent, cellClone, originalIndex);
             cellAdded.refreshCircuitContainer(this.graph);
+        }
+    }
+
+    protected retargetEvents(oldURI: string, newURI: string) {
+        const events: Record<string, EventInfo> = this.graph.getModel().getCell(0).value[GraphBase.EVENT_DICT_INDEX] || {};
+        for (const event of Object.values(events)) {
+            if (event.simulationData?.['targetSpecies'] !== oldURI) continue;
+            const copy = event.makeCopy();
+            copy.simulationData['targetSpecies'] = newURI;
+            this.updateEventDict(copy);
         }
     }
 
@@ -1665,10 +1676,6 @@ export class GraphHelpers extends GraphBase {
             if (!source) return;
             const copy = source.makeCopy();
             copy.displayID = new EventInfo().displayID;
-            const target = copy.simulationData['targetSpecies'];
-            if (isCellReference(target) && ids.has(target.slice(CELL_REFERENCE_PREFIX.length))) {
-                copy.simulationData['targetSpecies'] = CELL_REFERENCE_PREFIX + ids.get(target.slice(CELL_REFERENCE_PREFIX.length));
-            }
             this.addToEventDict(copy);
             this.graph.getModel().setValue(to, copy.getFullURI());
         });
@@ -1840,6 +1847,7 @@ export class GraphHelpers extends GraphBase {
                             }
                         }
                     }
+                    this.retargetEvents(checking, info.getFullURI());
                 } else {
                     // update any combinatorials that referenced this one and add their parents to be checked
                     let cell0 = this.graph.getModel().getCell("0");
@@ -2190,21 +2198,16 @@ export class GraphHelpers extends GraphBase {
         return cell0.value[GraphBase.EVENT_DICT_INDEX][eventURI];
     }
 
-    public getSpeciesInstances(): SpeciesInstanceRef[] {
-        const instances: SpeciesInstanceRef[] = [];
-        const model = this.graph.getModel();
-        for (const cell of Object.values(model.cells) as mxCell[]) {
-            if (!cell || !cell.isMolecularSpeciesGlyph || !cell.isMolecularSpeciesGlyph()) {
+    public getSpeciesTargets(): { uri: string; name: string; displayID: string }[] {
+        const targets = new Map<string, { uri: string; name: string; displayID: string }>();
+        for (const cell of Object.values(this.graph.getModel().cells) as mxCell[]) {
+            if (!cell || !cell.isMolecularSpeciesGlyph || !cell.isMolecularSpeciesGlyph() || targets.has(cell.value)) {
                 continue;
             }
             const info = <GlyphInfo>this.getFromInfoDict(cell.value);
-            instances.push({
-                definitionUri: cell.value,
-                cellId: cell.getId(),
-                label: info ? info.getDisplayName() : '',
-            });
-                }
-        return instances;
+            targets.set(cell.value, { uri: cell.value, name: info ? info.getDisplayName() : '', displayID: info ? info.displayID : '' });
+        }
+        return [...targets.values()];
     }
 
     /**
@@ -2418,8 +2421,17 @@ export class GraphHelpers extends GraphBase {
         if (!rules) {
             return null;
         }
-        const issues = checkConnection(interactionType, source, target, rules);
+        const issues = checkConnection(interactionType, source, target, rules, {}, describeCell(this.designDictionaries()));
         return issues.length > 0 ? issues[0].message : null;
+    }
+
+    protected designDictionaries(): DesignDictionaries {
+        const value = this.graph.getModel().getCell(0)?.value || [];
+        return {
+            info: value[GraphBase.INFO_DICT_INDEX] || {},
+            interactions: value[GraphBase.INTERACTION_DICT_INDEX] || {},
+            events: value[GraphBase.EVENT_DICT_INDEX] || {},
+        };
     }
 
     protected initReversibleArrows() {

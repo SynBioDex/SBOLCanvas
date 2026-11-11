@@ -512,25 +512,6 @@ public class SBOLToMx extends Converter {
 		return node;
 	}
 
-	private void remapEventTargetValue(SBOLDocument document, Hashtable<String, Object> simData) {
-		if (!simData.containsKey(SBOLData.PARAM_EVENT_TARGET_SPECIES)) {
-			return;
-		}
-		URI target = (URI) simData.get(SBOLData.PARAM_EVENT_TARGET_SPECIES);
-		for (ModuleDefinition module : document.getModuleDefinitions()) {
-			FunctionalComponent component = module.getFunctionalComponent(target);
-			if (component == null) {
-				continue;
-			}
-			mxCell cell = compToCell.get(component);
-			if (cell != null && cell.getStyle().contains(STYLE_MOLECULAR_SPECIES)) {
-				simData.put(SBOLData.PARAM_EVENT_TARGET_SPECIES, CELL_REFERENCE_PREFIX + cell.getId());
-				return;
-			}
-		}
-		simData.remove(SBOLData.PARAM_EVENT_TARGET_SPECIES);
-	}
-
 	private void setupModuleEvents(SBOLDocument document, mxGraph graph) {
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 		for (GenericTopLevel modelRecord : ModelHelper.findModels(document)) {
@@ -696,15 +677,15 @@ public class SBOLToMx extends Converter {
 				if (!SBOLData.PARAM_EVENT_TARGET_SPECIES.equals(key) && !"name".equals(key))
 					values.add(ModelHelper.entry("", key, data.get(key)));
 			}
-			ModelHelper.Reference reference = target == null ? null : legacyEventTarget(searchOrder, target.trim());
-			if (reference != null)
-				values.add(new ModelHelper.Entry("", SBOLData.PARAM_EVENT_TARGET_SPECIES, "reference", reference));
+			URI targetDefinition = target == null ? null : legacyEventTarget(searchOrder, target.trim());
+			if (targetDefinition != null)
+				values.add(ModelHelper.entry("", SBOLData.PARAM_EVENT_TARGET_SPECIES, targetDefinition));
 			ModelHelper.putEvent(modelHelper.getOrCreateModel(home.getIdentity(), home.getDisplayId()),
 					event.getDisplayId(), fields, values);
 		}
 	}
 
-	private static ModelHelper.Reference legacyEventTarget(List<ModuleDefinition> modules, String stored) {
+	private static URI legacyEventTarget(List<ModuleDefinition> modules, String stored) {
 		for (ModuleDefinition module : modules) {
 			for (FunctionalComponent component : module.getFunctionalComponents()) {
 				ComponentDefinition definition = component.getDefinition();
@@ -712,7 +693,7 @@ public class SBOLToMx extends Converter {
 						|| stored.equals(component.getName()) || (definition != null
 						&& (stored.equals(definition.getIdentity().toString()) || stored.equals(definition.getDisplayId())
 						|| stored.equals(definition.getName())))) {
-					return new ModelHelper.Reference(module.getIdentity(), ModelHelper.path(module, component));
+					return component.getDefinitionIdentity();
 				}
 			}
 		}
@@ -807,18 +788,9 @@ public class SBOLToMx extends Converter {
 		for (ModelHelper.Entry entry : ModelHelper.readEntries(eventRecord)) {
 			try {
 				if (SBOLData.PARAM_EVENT_TARGET_SPECIES.equals(entry.getKey())) {
-					if (!(entry.getValue() instanceof ModelHelper.Reference))
-						throw new IllegalArgumentException("the target is not a species reference");
-					ModelHelper.Reference reference = (ModelHelper.Reference) entry.getValue();
-					Identified target = ModelHelper.resolve(document, reference.getOwner(), reference.getPath());
-					if (target == null)
-						throw new IllegalArgumentException("'" + reference.getPath() + "' names nothing in "
-								+ reference.getOwner());
-					Hashtable<String, Object> remap = new Hashtable<>();
-					remap.put(entry.getKey(), target.getIdentity());
-					remapEventTargetValue(document, remap);
-					if (remap.containsKey(entry.getKey()))
-						event.getSimulationData().put(entry.getKey(), remap.get(entry.getKey()));
+					if (!(entry.getValue() instanceof URI))
+						throw new IllegalArgumentException("the target is not a species URI");
+					event.getSimulationData().put(entry.getKey(), entry.getValue().toString());
 				} else {
 					readValue(event.getSimulationData(), entry.getKey(), entry, "event");
 				}
@@ -861,8 +833,8 @@ public class SBOLToMx extends Converter {
 
 	private void readValue(Hashtable<String, Object> target, String key, ModelHelper.Entry entry,
 			String... contexts) {
-		if ("reference".equals(entry.getType())) {
-			throw new IllegalArgumentException("Unsupported reference-valued parameter: " + key);
+		if ("uri".equals(entry.getType())) {
+			throw new IllegalArgumentException("Unsupported URI-valued parameter: " + key);
 		}
 		target.put(key, checkedValue(key, entry.getValue(), contexts));
 	}

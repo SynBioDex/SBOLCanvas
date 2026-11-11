@@ -1,22 +1,23 @@
-<h1 mat-dialog-title>{{ title }}</h1>
-
-<mat-expansion-panel *ngIf="type === 'error'" [expanded]="true">
+<h1 mat-dialog-title>An issue has occurred.</h1>
+<mat-expansion-panel *ngIf="hasDetails; else plainMessage" [expanded]="true" #details>
     <mat-expansion-panel-header>
 
         <mat-panel-description>
-            Click to see less Details.
+            Click to see {{ details.expanded ? 'less' : 'more' }} details.
         </mat-panel-description>
     </mat-expansion-panel-header>
 
     <div id="error-content-size"></div>
     <ng-template matExpansionPanelContent>
-        <iframe id="error-frame" [srcdoc]="message"></iframe>
+        <iframe id="error-frame" [srcdoc]="message" (load)="fitFrame($event.target)"></iframe>
     </ng-template>
 </mat-expansion-panel>
 
-<div mat-dialog-content *ngIf="type !== 'error'">
-    <p>{{ message }}</p>
-</div>
+<ng-template #plainMessage>
+    <div mat-dialog-content>
+        <p>{{ message }}</p>
+    </div>
+</ng-template>
 
 <div mat-dialog-actions>
     <!-- <button mat-button (click)="onDownloadGraphClick()">Download Raw Design</button> -->

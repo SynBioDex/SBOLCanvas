@@ -3,18 +3,6 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 // import { GraphService } from '../graph.service';
 // import * as FileSaver from 'file-saver';
 
-export type ErrorDialogType = 'refusal' | 'error';
-
-export interface ErrorDialogData {
-  type: ErrorDialogType;
-  message: string;
-}
-
-const DIALOG_TITLES: Record<ErrorDialogType, string> = {
-  refusal: 'That change is not allowed.',
-  error: 'An error has occurred.',
-};
-
 @Component({
   selector: 'app-error',
   templateUrl: './error.component.html',
@@ -22,28 +10,24 @@ const DIALOG_TITLES: Record<ErrorDialogType, string> = {
 })
 export class ErrorComponent implements OnInit {
 
-  type: ErrorDialogType = 'error';
   message: string;
-  title: string;
+  hasDetails: boolean;
 
   constructor(
     public dialogRef: MatDialogRef<ErrorComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: string | ErrorDialogData
-  ) {
-    if (typeof data === 'string') {
-      this.message = data;
-    } else if (data) {
-      this.type = data.type ?? 'error';
-      this.message = data.message ?? String(data);
-    }
-    this.title = DIALOG_TITLES[this.type];
-  }
+    @Inject(MAT_DIALOG_DATA) public data: any
+    ) { this.message = data; this.hasDetails = /<[a-z!][^>]*>/i.test(String(data)); }
 
   ngOnInit() {
   }
 
   onOkClick(){
     this.dialogRef.close();
+  }
+
+  fitFrame(frame: HTMLIFrameElement) {
+    const body = frame.contentDocument?.body;
+    if (body) frame.style.height = Math.min(body.scrollHeight + 16, 400) + 'px';
   }
 
 //   onDownloadGraphClick(){

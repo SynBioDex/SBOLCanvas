@@ -133,7 +133,7 @@ class ConverterCodecTest {
             original.setName("IPTG_High");
             original.setDescription("IPTG set to high level");
             Hashtable<String, Object> simData = new Hashtable<>();
-            simData.put("targetSpecies", "cell:42");
+            simData.put("targetSpecies", "https://sbolcanvas.org/LacI/1");
             simData.put("delay", 100.0);
             simData.put("assignmentValue", 50.0);
             original.setSimulationData(simData);
@@ -151,7 +151,7 @@ class ConverterCodecTest {
             assertNotNull(decodedSimData, "simulationData should not be null after decode");
             assertInstanceOf(Hashtable.class, decodedSimData,
                     "simulationData should be Hashtable, not ArrayList");
-            assertEquals("cell:42", decodedSimData.get("targetSpecies"));
+            assertEquals("https://sbolcanvas.org/LacI/1", decodedSimData.get("targetSpecies"));
             assertEquals(100.0, decodedSimData.get("delay"));
             assertEquals(50.0, decodedSimData.get("assignmentValue"));
         }

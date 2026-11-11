@@ -71,7 +71,8 @@ class EventRoundTripTest {
         for (EventInfo event : converter.eventDict.values()) {
             names.add(event.getName());
             assertNotNull(event.getSimulationData().get("delay"));
-            assertTrue(((String) event.getSimulationData().get("targetSpecies")).startsWith("cell:"));
+            assertTrue(converter.infoDict.get((String) event.getSimulationData().get("targetSpecies")) instanceof GlyphInfo,
+                    "the target is the URI of a species on the canvas");
             mxCell cell = converter.layoutHelper.getGraphicalObject(module.getIdentity(), event.getDisplayID());
             assertNotNull(cell);
             assertTrue(cell.getGeometry().getWidth() > 0);
@@ -112,7 +113,7 @@ class EventRoundTripTest {
             assertEquals(expectedAssignment, assignment);
             assertTrue(afterData.get("targetSpecies") instanceof URI);
             URI target = (URI) afterData.get("targetSpecies");
-            assertNotNull(exportedModule.getFunctionalComponent(target));
+            assertNotNull(exported.getComponentDefinition(target), "the saved target names a species definition");
     }
     }
 
@@ -139,7 +140,7 @@ class EventRoundTripTest {
     }
 
     @Test
-    void targetKeepsItsInstanceAcrossSaveAndReopen() throws Exception {
+    void targetKeepsItsSpeciesUriAcrossSaveAndReopen() throws Exception {
         EventInfo event = GraphModelSupport.eventInfo("event", null);
         mxGraphModel graph = repeatedDefinitionCanvas(event);
         mxCell target = null;
@@ -148,90 +149,24 @@ class EventRoundTripTest {
             if (cell.getGeometry() != null && cell.getGeometry().getX() == 500) target = cell;
         }
         assertNotNull(target);
-        event.getSimulationData().put("targetSpecies", "cell:" + target.getId());
+        String speciesUri = (String) target.getValue();
+        event.getSimulationData().put("targetSpecies", speciesUri);
         SBOLDocument doc = SBOLTestSupport.serializeAndReread(exportSbol(graph));
         URI savedEvent = eventsByName(doc).get("event");
         assertNotNull(savedEvent);
-        URI targetUri = (URI) SBOLTestSupport.modelEntries(doc, savedEvent).get("targetSpecies");
-        assertNotNull(targetUri);
-        ModuleDefinition module = doc.getRootModuleDefinitions().iterator().next();
-        assertNotNull(module.getFunctionalComponent(targetUri));
+        assertEquals(URI.create(speciesUri), SBOLTestSupport.modelEntries(doc, savedEvent).get("targetSpecies"));
+
         SBOLToMx converter = SBOLTestSupport.convertToGraph(doc);
-        EventInfo importedEvent = eventByName(converter, "event");
-        String reference = (String) importedEvent.getSimulationData().get("targetSpecies");
+        assertEquals(speciesUri, eventByName(converter, "event").getSimulationData().get("targetSpecies"));
         mxGraphModel imported = importModel(doc);
-        mxCell importedTarget = (mxCell) imported.getCell(reference.substring("cell:".length()));
-        assertNotNull(importedTarget);
-        assertEquals(500.0, importedTarget.getGeometry().getX());
         Model sbml = GraphModelSupport.toSbmlModel(imported);
         assertEquals(1, sbml.getEventCount());
-        String speciesId = sbml.getEvent(0).getEventAssignment(0).getVariable();
-        org.sbml.jsbml.ext.layout.LayoutModelPlugin plugin =
-                (org.sbml.jsbml.ext.layout.LayoutModelPlugin) sbml.getPlugin("layout");
-        for (org.sbml.jsbml.ext.layout.SpeciesGlyph glyph : plugin.getLayout(0).getListOfSpeciesGlyphs()) {
-            if (speciesId.equals(glyph.getSpecies())) assertEquals(565.0, glyph.getBoundingBox().getPosition().getX());
-        }
-        SBOLDocument secondExport = exportSbol(imported);
-        URI secondTarget = (URI) SBOLTestSupport.modelEntries(secondExport,
-                eventsByName(secondExport).get("event")).get("targetSpecies");
-        FunctionalComponent rebound = secondExport.getRootModuleDefinitions().iterator().next()
-                .getFunctionalComponent(secondTarget);
-        assertNotNull(rebound);
-    }
-
-    @Test
-    void crossViewTargetKeepsItsInstanceAcrossReopen() throws Exception {
-        EventInfo event = GraphModelSupport.eventInfo("event", null);
-        event.setName("event");
-        GlyphInfo protein = GraphModelSupport.glyphInfo("protein", "Protein");
-        ModuleInfo home = GraphModelSupport.moduleInfo("home");
-        ModuleInfo away = GraphModelSupport.moduleInfo("away");
-        mxGraphModel graph = new mxGraphModel();
-        GraphModelSupport.install(graph, GraphModelSupport.dataContainer(
-                Arrays.<Info>asList(protein, home, away),
-                Collections.<InteractionInfo>emptyList(),
-                Collections.singletonList(event)));
-        mxCell homeView = GraphModelSupport.moduleViewCell(graph, home.getFullURI());
-        mxCell awayView = GraphModelSupport.moduleViewCell(graph, away.getFullURI());
-        GraphModelSupport.species(graph, homeView, protein.getFullURI()).getGeometry().setX(10);
-        mxCell awayTarget = GraphModelSupport.species(graph, awayView, protein.getFullURI());
-        awayTarget.getGeometry().setX(500);
-        mxCell eventCell = new mxCell(event.getFullURI(), new mxGeometry(300, 300, 96, 40),
-                Converter.STYLE_EVENT);
-        eventCell.setVertex(true);
-        graph.add(homeView, eventCell, homeView.getChildCount());
-        event.getSimulationData().put("targetSpecies", "cell:" + awayTarget.getId());
-
-        SBOLDocument doc = SBOLTestSupport.serializeAndReread(exportSbol(graph));
-        URI savedEvent = eventsByName(doc).get("event");
-        assertNotNull(savedEvent);
-        URI targetUri = (URI) SBOLTestSupport.modelEntries(doc, savedEvent).get("targetSpecies");
-        assertNotNull(targetUri);
-        ModuleDefinition awayModule = null;
-        for (ModuleDefinition module : doc.getModuleDefinitions()) {
-            if ("away".equals(module.getDisplayId())) awayModule = module;
-        }
-        assertNotNull(awayModule);
-        assertNotNull(awayModule.getFunctionalComponent(targetUri),
-                "the saved reference must name the away instance, not the home one");
-
-        SBOLToMx converter = SBOLTestSupport.convertToGraph(doc);
-        String reference = (String) eventByName(converter, "event").getSimulationData().get("targetSpecies");
-        mxGraphModel imported = importModel(doc);
-        mxCell importedTarget = (mxCell) imported.getCell(reference.substring("cell:".length()));
-        assertNotNull(importedTarget);
-        assertEquals(500.0, importedTarget.getGeometry().getX(),
-                "the reopened event must reference the away view's instance");
+        assertEquals(1, sbml.getNumSpecies(), "both glyphs of one species URI are one pooled species");
+        assertEquals(sbml.getSpecies(0).getId(), sbml.getEvent(0).getEventAssignment(0).getVariable());
 
         SBOLDocument secondExport = exportSbol(imported);
-        URI secondTarget = (URI) SBOLTestSupport.modelEntries(secondExport,
-                eventsByName(secondExport).get("event")).get("targetSpecies");
-        for (ModuleDefinition module : secondExport.getModuleDefinitions()) {
-            if ("away".equals(module.getDisplayId())) awayModule = module;
-        }
-        assertNotNull(awayModule);
-        FunctionalComponent rebound = awayModule.getFunctionalComponent(secondTarget);
-        assertNotNull(rebound, "the re-exported reference resolves to a live away functional component");
+        assertEquals(URI.create(speciesUri), SBOLTestSupport.modelEntries(secondExport,
+                eventsByName(secondExport).get("event")).get("targetSpecies"));
     }
 
     private static mxGraphModel repeatedDefinitionCanvas(EventInfo event) throws Exception {

@@ -31,7 +31,7 @@
       </mat-form-field>
       <mat-checkbox *ngSwitchCase="'boolean'" [id]="field.key" [checked]="fieldValue(field)"
         (change)="fieldChange(field, $event.checked)">{{field.label}}</mat-checkbox>
-      <mat-form-field floatLabel="always" *ngSwitchCase="'species-reference'">
+      <mat-form-field floatLabel="always" *ngSwitchCase="'uri'">
         <mat-label>{{field.label}}</mat-label>
         <mat-select [id]="field.key" [value]="fieldValue(field)" (selectionChange)="fieldChange(field, $event.value)">
           <mat-option [value]="undefined">None</mat-option>

@@ -74,10 +74,11 @@ export class ProblemsComponent implements OnInit, OnDestroy {
         const current = this.graphService.getCurrentRoot()
         const children = (current && current.children) || []
         this.emptyView = children.length === 0
-        this.emptyViewLabel = current && current.isModuleView && current.isModuleView()
+        const kind = current && current.isModuleView && current.isModuleView()
             ? 'Module'
             : current && current.isComponentView && current.isComponentView()
                 ? 'Component'
                 : 'Current view'
+        this.emptyViewLabel = current ? `${kind} '${this.viewLabel(current.getId())}'` : kind
             }
         }

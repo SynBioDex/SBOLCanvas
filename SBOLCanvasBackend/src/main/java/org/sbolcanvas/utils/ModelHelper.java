@@ -104,25 +104,6 @@ public class ModelHelper {
 		return null;
 	}
 
-	public static final class Reference {
-
-		private final URI owner;
-		private final String path;
-
-		public Reference(URI owner, String path) {
-			this.owner = owner;
-			this.path = path;
-		}
-
-		public URI getOwner() {
-			return owner;
-		}
-
-		public String getPath() {
-			return path;
-		}
-	}
-
 	public static final class Entry {
 
 		private String path;
@@ -164,6 +145,8 @@ public class ModelHelper {
 			return "boolean";
 		if (value instanceof String)
 			return "string";
+		if (value instanceof URI)
+			return "uri";
 		throw new IllegalArgumentException("Unsupported typed simulation value: " + value);
 	}
 
@@ -203,10 +186,8 @@ public class ModelHelper {
 		case "string":
 			fields.add(new Annotation(Converter.createQName("stringValue"), (String) entry.getValue()));
 			break;
-		case "reference":
-			Reference reference = (Reference) entry.getValue();
-			fields.add(new Annotation(Converter.createQName("referenceOwner"), reference.getOwner()));
-			fields.add(new Annotation(Converter.createQName("referencePath"), reference.getPath()));
+		case "uri":
+			fields.add(new Annotation(Converter.createQName("uriValue"), (URI) entry.getValue()));
 			break;
 		default:
 			throw new IllegalArgumentException("Unknown entry type: " + entry.getType());
@@ -240,8 +221,6 @@ public class ModelHelper {
 
 	private static Entry readEntry(Annotation annotation) {
 		Entry entry = new Entry();
-		URI referenceOwner = null;
-		String referencePath = null;
 		for (Annotation child : annotation.getAnnotations()) {
 			switch (child.getQName().getLocalPart()) {
 			case "path":
@@ -270,19 +249,13 @@ public class ModelHelper {
 				entry.type = "string";
 				entry.value = text(child);
 				break;
-			case "referenceOwner":
-				referenceOwner = child.isURIValue() ? child.getURIValue() : URI.create(text(child));
-				break;
-			case "referencePath":
-				referencePath = text(child);
+			case "uriValue":
+				entry.type = "uri";
+				entry.value = child.isURIValue() ? child.getURIValue() : URI.create(text(child));
 				break;
 			default:
 				break;
 			}
-		}
-		if (referenceOwner != null) {
-			entry.type = "reference";
-			entry.value = new Reference(referenceOwner, referencePath == null ? "" : referencePath);
 		}
 		if (entry.path == null || entry.key == null || entry.type == null)
 			throw new IllegalArgumentException("entry without path, key or value");

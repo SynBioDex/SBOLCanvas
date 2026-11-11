@@ -1,22 +1,6 @@
 import { Info, valueType } from './info';
 import { environment } from 'src/environments/environment';
 
-export const CELL_REFERENCE_PREFIX = 'cell:';
-
-export interface SpeciesInstanceRef {
-  definitionUri: string;
-  cellId: string;
-  label: string;
-}
-
-export function isCellReference(raw: unknown): raw is string {
-  if (typeof raw !== 'string' || !raw.startsWith(CELL_REFERENCE_PREFIX)) {
-    return false;
-  }
-  const cellId = raw.slice(CELL_REFERENCE_PREFIX.length);
-  return cellId.length > 0 && !/\s/.test(cellId);
-}
-
 export class EventInfo extends Info {
     name: string = '';
     description: string = '';

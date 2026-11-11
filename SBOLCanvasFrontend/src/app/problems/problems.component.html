@@ -28,7 +28,7 @@
     <div *ngIf="emptyView">
         <button mat-menu-item class="problem-item warning">
             <mat-icon class="warning">warning</mat-icon>
-            <span>{{emptyViewLabel}} does not contain any children.</span>
+            <span>{{emptyViewLabel}}: no children.</span>
         </button>
     </div>
     <ng-container *ngFor="let group of groups">

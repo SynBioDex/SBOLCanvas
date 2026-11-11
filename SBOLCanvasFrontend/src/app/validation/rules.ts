@@ -38,6 +38,28 @@ export interface DesignDictionaries {
 
 const isNode = (cell: mxCell | null): boolean => !!cell && cell.isInteractionNode();
 
+export type Describe = (cell: mxCell | null) => string;
+
+export function describeCell(dictionaries: DesignDictionaries): Describe {
+  return cell => {
+    if (!cell) return 'nothing';
+    const interaction = dictionaries.interactions[cell.value];
+    const kind = cell.isMolecularSpeciesGlyph() ? 'Species'
+      : cell.isSequenceFeatureGlyph() ? 'Part'
+        : cell.isCircuitContainer() || cell.isBackbone?.() ? 'Backbone'
+          : cell.isEvent?.() ? 'Event'
+            : cell.isModule?.() ? 'Module'
+              : cell.isInteractionNode() ? `${interaction?.interactionType ?? 'Interaction'} node`
+                : cell.isEdge() ? `${interaction?.interactionType ?? 'Interaction'} edge` : 'Object';
+    const name = (dictionaries.info[cell.value] ?? dictionaries.events[cell.value] ?? interaction)?.displayID;
+    return name ? `${kind} '${name}'` : kind;
+  };
+}
+
+const describeKind: Describe = cell => !cell ? 'nothing'
+  : cell.isMolecularSpeciesGlyph() ? 'a species' : cell.isSequenceFeatureGlyph() ? 'a part'
+    : cell.isInteractionNode() ? 'an interaction node' : cell.isEdge() ? 'an edge' : 'an object';
+
 function acceptsEndpoint(side: InteractionRuleSide, cell: mxCell, moduleEndpoint = false): boolean {
   return (moduleEndpoint && cell.isModule?.()) || !side.endpointTypes || side.endpointTypes.some(endpointType =>
     endpointType === 'species' ? cell.isMolecularSpeciesGlyph()
@@ -50,30 +72,32 @@ export function checkConnection(
   source: mxCell | null,
   target: mxCell | null,
   rules: InteractionRules,
-  moduleEndpoints: { source?: boolean; target?: boolean; } = {}
+  moduleEndpoints: { source?: boolean; target?: boolean; } = {},
+  describe: Describe = describeKind,
+  subject = `${interactionType} edge`
 ): Issue[] {
   const issues: Issue[] = [];
   if (!interactionType) {
     return issues;
   }
   if (!Object.prototype.hasOwnProperty.call(rules, interactionType)) {
-    return [{ code: 'interaction-unknown-type', severity: 'error', message: `Unsupported interaction type '${interactionType}'.` }];
+    return [{ code: 'interaction-unknown-type', severity: 'error', message: `${subject}: unsupported interaction type '${interactionType}'.` }];
   }
   if ((source && source.isEdge()) || (target && target.isEdge())) {
-    issues.push({ code: 'edge-endpoint-edge', severity: 'error', message: 'Edges are disallowed to connect to edges.' });
+    issues.push({ code: 'edge-endpoint-edge', severity: 'error', message: `${subject}: cannot connect to another edge.` });
   }
   if (isNode(source) && isNode(target)) {
-    issues.push({ code: 'edge-node-node', severity: 'error', message: 'Interaction nodes aren\'t allowed to connect.' });
+    issues.push({ code: 'edge-node-node', severity: 'error', message: `${subject}: cannot connect two interaction nodes.` });
   }
   if (source && source.isCircuitContainer()) {
-    issues.push({ code: 'edge-container', severity: 'error', message: 'Edge type disallowed to connect to a circuit container. Please connect to the glyph itself.' });
+    issues.push({ code: 'edge-container', severity: 'error', message: `${subject}: cannot connect to ${describe(source)}; connect to a part on it.` });
   }
   const rule = rules[interactionType];
   if (source && !source.isEdge() && rule.source && !acceptsEndpoint(rule.source, source, moduleEndpoints.source)) {
-    issues.push({ code: 'edge-source-type', severity: 'error', message: `${interactionType} cannot connect from this object.` });
+    issues.push({ code: 'edge-source-type', severity: 'error', message: `${subject}: cannot connect from ${describe(source)}.` });
   }
   if (target && !target.isEdge() && rule.target && !acceptsEndpoint(rule.target, target, moduleEndpoints.target)) {
-    issues.push({ code: 'edge-target-type', severity: 'error', message: `${interactionType} cannot connect to this object.` });
+    issues.push({ code: 'edge-target-type', severity: 'error', message: `${subject}: cannot connect to ${describe(target)}.` });
   }
   if (typeFollowsEndpoints(interactionType) && source && target
     && !isNode(source) && !isNode(target) && !source.isModule?.() && !target.isModule?.()) {
@@ -82,7 +106,7 @@ export function checkConnection(
       issues.push({
         code: 'edge-type-mismatch',
         severity: 'error',
-        message: `These endpoints require a ${derived} edge, not ${interactionType}.`,
+        message: `${subject}: ${describe(source)} and ${describe(target)} need a ${derived} edge.`,
       });
     }
   }
@@ -99,14 +123,16 @@ export interface ReactionParticipant {
 export function checkReaction(
   info: InteractionInfo,
   participants: ReactionParticipant[],
-  rules: InteractionRules
+  rules: InteractionRules,
+  describe: Describe = describeKind
 ): Issue[] {
   const interactionType = info.interactionType;
+  const subject = `${interactionType || 'Interaction'} '${info.displayID}'`;
   if (!interactionType) {
-    return [{ code: 'interaction-unknown-type', severity: 'error', message: 'Interaction is missing its interaction type.' }];
+    return [{ code: 'interaction-unknown-type', severity: 'error', message: `${subject}: no interaction type.` }];
   }
   if (!Object.prototype.hasOwnProperty.call(rules, interactionType)) {
-    return [{ code: 'interaction-unknown-type', severity: 'error', message: `Unsupported interaction type '${interactionType}'.` }];
+    return [{ code: 'interaction-unknown-type', severity: 'error', message: `${subject}: unsupported interaction type.` }];
   }
   const rule = rules[interactionType];
   const issues: Issue[] = [];
@@ -124,14 +150,14 @@ export function checkReaction(
         code: 'participant-role-unrepresentable',
         severity: 'error',
         field: (participant.incoming ? 'sourceRefinement.' : 'targetRefinement.') + participant.edgeId,
-        message: `${interactionType} does not permit '${role}' on this participation.`,
+        message: `${subject}: role '${role}' is not allowed for ${describe(participant.cell)}.`,
       });
     }
     if (participant.cell && (!acceptsEndpoint(side, participant.cell, participant.moduleEndpoint) || (!participant.incoming && rule.targetless))) {
       issues.push({
         code: participant.incoming ? 'edge-source-type' : 'edge-target-type',
         severity: 'error',
-        message: `${interactionType} cannot connect ${participant.incoming ? 'from' : 'to'} this object.`,
+        message: `${subject}: cannot connect ${participant.incoming ? 'from' : 'to'} ${describe(participant.cell)}.`,
       });
     }
     const isModifier = isModifierRole(rule, role);
@@ -148,7 +174,7 @@ export function checkReaction(
     const explicit = coefficients[participant.edgeId];
     if (participant.cell && !isModifier && typeof explicit === 'number') {
       const field = `${participant.incoming ? 'sourceCoefficient' : 'targetCoefficient'}.${participant.edgeId}`;
-      const key = `${participant.cell.getId()}:${participantType}`;
+      const key = `${participant.cell.value}:${participantType}`;
       const prior = explicitCoefficients.get(key);
       if (!prior) {
         explicitCoefficients.set(key, { value: explicit, field });
@@ -157,7 +183,7 @@ export function checkReaction(
           code: 'reaction-coefficient-conflict',
           severity: 'error',
           field,
-          message: `Repeated ${participantType} on this species is set with conflicting coefficients (${prior.value} and ${explicit}).`,
+          message: `${subject}: conflicting ${participantType} coefficients for ${describe(participant.cell)} (${prior.value} and ${explicit}).`,
         });
       }
     }
@@ -170,7 +196,7 @@ export function checkReaction(
           code: 'reaction-fixed-coefficient',
           severity: 'error',
           field: `targetCoefficient.${edgeId}`,
-          message: `${interactionType} keeps the product coefficient fixed at ${rule.target.fixedCoefficient}.`,
+          message: `${subject}: the product coefficient is fixed at ${rule.target.fixedCoefficient}.`,
         });
       }
     }
@@ -179,14 +205,14 @@ export function checkReaction(
     issues.push({
       code: 'reaction-reactant-cap',
       severity: 'error',
-      message: `${interactionType} allows at most ${rule.maxReactants} reactant${rule.maxReactants === 1 ? '' : 's'}.`,
+      message: `${subject}: allows at most ${rule.maxReactants} reactant${rule.maxReactants === 1 ? '' : 's'}.`,
     });
   }
   if (rule.maxProducts !== undefined && products > rule.maxProducts) {
     issues.push({
       code: 'reaction-product-cap',
       severity: 'error',
-      message: `${interactionType} allows at most ${rule.maxProducts} product${rule.maxProducts === 1 ? '' : 's'}.`,
+      message: `${subject}: allows at most ${rule.maxProducts} product${rule.maxProducts === 1 ? '' : 's'}.`,
     });
   }
   return issues;
@@ -194,8 +220,10 @@ export function checkReaction(
 
 export interface SharedRateSet {
   ownerCellId: string;
-  bindingProductCellId: string | null;
-  degradedSpeciesCellId: string | null;
+  ownerLabel: string;
+  sharedSpeciesLabel: string;
+  bindingProductUri: string | null;
+  degradedSpeciesUri: string | null;
   settings: Record<string, number | boolean | string>;
   coefficients: Record<string, { value: number; field: string; }>;
 }
@@ -205,7 +233,8 @@ export function sharedRateValues(
   info: InteractionInfo,
   participants: ReactionParticipant[],
   rules: InteractionRules,
-  config: SimulationConfig
+  config: SimulationConfig,
+  describe: Describe = describeKind
 ): SharedRateSet | null {
   const interactionType = info.interactionType;
   if (!interactionType || !Object.prototype.hasOwnProperty.call(rules, interactionType)) {
@@ -213,8 +242,9 @@ export function sharedRateValues(
   }
   const rule = rules[interactionType];
   const isBinding = interactionType === 'Non-Covalent Binding';
-  let bindingProductCellId: string | null = null;
-  let degradedSpeciesCellId: string | null = null;
+  let bindingProductUri: string | null = null;
+  let degradedSpeciesUri: string | null = null;
+  let sharedSpeciesLabel = '';
   const coefficients: Record<string, { value: number; field: string; }> = {};
   for (const participant of participants) {
     if (!participant.cell) continue;
@@ -224,17 +254,19 @@ export function sharedRateValues(
     const role = suppliedRole === undefined ? side.defaultRole : suppliedRole;
     if (isModifierRole(rule, role)) continue;
     if (participant.incoming) {
-      if (interactionType === 'Degradation' && degradedSpeciesCellId === null) {
-        degradedSpeciesCellId = participant.cell.getId();
+      if (interactionType === 'Degradation' && degradedSpeciesUri === null) {
+        degradedSpeciesUri = participant.cell.value;
+        sharedSpeciesLabel = describe(participant.cell);
       }
       if (isBinding) {
         const explicit = info.sourceCoefficient[participant.edgeId];
         if (typeof explicit === 'number') {
-          coefficients[participant.cell.getId()] = { value: explicit, field: `sourceCoefficient.${participant.edgeId}` };
+          coefficients[participant.cell.value] = { value: explicit, field: `sourceCoefficient.${participant.edgeId}` };
         }
       }
-    } else if (isBinding && bindingProductCellId === null) {
-      bindingProductCellId = participant.cell.getId();
+    } else if (isBinding && bindingProductUri === null) {
+      bindingProductUri = participant.cell.value;
+      sharedSpeciesLabel = describe(participant.cell);
     }
   }
   const fields = isBinding || interactionType === 'Degradation' ? config[interactionType] || [] : [];
@@ -245,10 +277,10 @@ export function sharedRateValues(
       settings[field.key] = value;
     }
   }
-  if (!bindingProductCellId && !degradedSpeciesCellId) {
+  if (!bindingProductUri && !degradedSpeciesUri) {
     return null;
   }
-  return { ownerCellId, bindingProductCellId, degradedSpeciesCellId, settings, coefficients };
+  return { ownerCellId, ownerLabel: `${interactionType} '${info.displayID}'`, sharedSpeciesLabel, bindingProductUri, degradedSpeciesUri, settings, coefficients };
 }
 
 export interface SharedRateConflict {
@@ -260,9 +292,9 @@ export interface SharedRateConflict {
 export function sharedRateConflicts(owners: SharedRateSet[]): SharedRateConflict[] {
   const groups = new Map<string, SharedRateSet[]>();
   for (const owner of owners) {
-    const key = owner.bindingProductCellId
-      ? `binding:${owner.bindingProductCellId}`
-      : owner.degradedSpeciesCellId ? `degradation:${owner.degradedSpeciesCellId}` : null;
+    const key = owner.bindingProductUri
+      ? `binding:${owner.bindingProductUri}`
+      : owner.degradedSpeciesUri ? `degradation:${owner.degradedSpeciesUri}` : null;
     if (!key) continue;
     const members = groups.get(key);
     if (members) members.push(owner);
@@ -284,7 +316,7 @@ export function sharedRateConflicts(owners: SharedRateSet[]): SharedRateConflict
         conflicts.push({
           ownerCellId: member.ownerCellId,
           field: `simulationData.${field}`,
-          message: `Shared ${field} is set to both ${values} across these reactions.`,
+          message: `${member.ownerLabel}: ${field} is ${member.settings[field]}, but other reactions on ${member.sharedSpeciesLabel} use ${values}.`,
         });
       }
     }
@@ -298,7 +330,7 @@ export function sharedRateConflicts(owners: SharedRateSet[]): SharedRateConflict
         conflicts.push({
           ownerCellId: member.ownerCellId,
           field: member.coefficients[key].field,
-          message: `Shared reactant coefficient on a species is set to both ${values} across these reactions.`,
+          message: `${member.ownerLabel}: reactant coefficient is ${member.coefficients[key].value}, but other reactions on ${member.sharedSpeciesLabel} use ${values}.`,
         });
       }
     }
@@ -344,7 +376,7 @@ export function checkComponent(info: GlyphInfo): Issue[] {
       code: 'component-missing-display-id',
       severity: 'error',
       field: 'displayID',
-      message: `${roleLabel} is missing an ID.`,
+      message: `${roleLabel}: missing an ID.`,
     });
   }
 
@@ -356,14 +388,14 @@ export function checkComponent(info: GlyphInfo): Issue[] {
         code: 'component-no-sequence',
         severity: 'warning',
         field: 'sequence',
-        message: `Component '${displayID}' does not have a sequence.`,
+        message: `Component '${displayID}': no sequence.`,
       });
     } else if (!alphabet.pattern.test(sequence)) {
       issues.push({
         code: 'component-illegal-sequence',
         severity: 'error',
         field: 'sequence',
-        message: `Component '${displayID}' has illegal ${alphabet.label} sequence: ${sequence.substring(0, 10)}...`,
+        message: `Component '${displayID}': illegal ${alphabet.label} sequence (${sequence.substring(0, 10)}...).`,
       });
     }
   }
@@ -373,14 +405,14 @@ export function checkComponent(info: GlyphInfo): Issue[] {
       code: 'component-missing-version',
       severity: 'warning',
       field: 'version',
-      message: `Component '${displayID}' does not have a version.`,
+      message: `Component '${displayID}': no version.`,
     });
   } else if (!VERSION_PATTERN.test(info.version)) {
     issues.push({
       code: 'component-incompliant-version',
       severity: 'warning',
       field: 'version',
-      message: `Component '${displayID}' has incompliant version: ${info.version}`,
+      message: `Component '${displayID}': version '${info.version}' is not compliant.`,
     });
   }
   return issues;
@@ -391,14 +423,14 @@ export function checkBackbone(name: string, hasPromoter: boolean, hasProductionT
     return [{
       code: 'backbone-no-promoter',
       severity: 'warning',
-      message: `Backbone '${name}': no promoter (skipped in SBML)`,
+      message: `Backbone '${name}': no promoter (skipped in SBML).`,
     }];
   }
   if (!hasProductionTarget) {
     return [{
       code: 'backbone-no-production-target',
       severity: 'warning',
-      message: `Backbone '${name}': no production target (placeholder mRNA in SBML)`,
+      message: `Backbone '${name}': no production target (placeholder mRNA in SBML).`,
     }];
   }
   return [];

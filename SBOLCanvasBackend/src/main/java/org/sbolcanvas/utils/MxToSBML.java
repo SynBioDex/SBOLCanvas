@@ -205,6 +205,7 @@ public class MxToSBML extends Converter {
 	private HashSet<String> usedIds = new HashSet<>();
 	private LayoutBounds layoutBounds = new LayoutBounds();
 	LinkedHashMap<mxCell, SpeciesData> glyphToSpeciesData = new LinkedHashMap<>();
+	private final HashMap<String, SpeciesData> uriToSpeciesData = new HashMap<>();
 	private final HashSet<mxCell> missingSpeciesCells = new HashSet<>();
 	HashMap<String, EventData> eventIdToEventData = new LinkedHashMap<>();
 	private HashMap<String, String> reactionToPromoterId = new HashMap<>();
@@ -449,10 +450,15 @@ public class MxToSBML extends Converter {
 					.toArray(mxCell[]::new);
 
 			for (mxCell glyph : speciesGlyphs) {
-				Species species = createSpecies(sbmlModel, glyph);
-				if (species == null)
-					continue;
-				glyphToSpeciesData.put(glyph, new SpeciesData(species, glyph.getGeometry()));
+				SpeciesData data = uriToSpeciesData.get((String) glyph.getValue());
+				if (data == null) {
+					Species species = createSpecies(sbmlModel, glyph);
+					if (species == null)
+						continue;
+					data = new SpeciesData(species, glyph.getGeometry());
+					uriToSpeciesData.put((String) glyph.getValue(), data);
+				}
+				glyphToSpeciesData.put(glyph, data);
 			}
 		}
 	}
@@ -1150,7 +1156,7 @@ public class MxToSBML extends Converter {
 				continue;
 			}
 
-			SpeciesData target = resolveEventTarget(graphModel, targetSpecies);
+			SpeciesData target = uriToSpeciesData.get(targetSpecies);
 			if (target == null) {
 				System.err.println("Warning: skipped " + context + ": its target species is not on the canvas");
 				continue;
@@ -1188,18 +1194,6 @@ public class MxToSBML extends Converter {
 			}
 			eventIdToEventData.put(eventId, new EventData(event, geom, speciesId));
 		}
-	}
-
-	private SpeciesData resolveEventTarget(mxGraphModel graphModel, String rawTarget) {
-		if (!rawTarget.startsWith(CELL_REFERENCE_PREFIX)) {
-			return null;
-		}
-		String cellId = rawTarget.substring(CELL_REFERENCE_PREFIX.length());
-		mxCell cell = (mxCell) graphModel.getCell(cellId);
-		if (cell == null || !molecularSpeciesFilter.filter(cell)) {
-			return null;
-		}
-		return glyphToSpeciesData.get(cell);
 	}
 
 	/**

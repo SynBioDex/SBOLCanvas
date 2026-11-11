@@ -46,7 +46,6 @@ public class Converter {
 	// canvas constants
 	public static final String URI_PREFIX = "https://sbolcanvas.org/";
 	public static final String ANN_PREFIX = "SBOLCanvas";
-	public static final String CELL_REFERENCE_PREFIX = "cell:";
 
 	// data constants
 	public static final int INFO_DICT_INDEX = 0;
@@ -207,10 +206,8 @@ public class Converter {
 			return numericValue(value, key, (Double) field.get("min"));
 		if ("boolean".equals(type) && !(value instanceof Boolean))
 			throw new IllegalArgumentException("Invalid boolean: " + key + " = " + value);
-		if ("species-reference".equals(type) && (!(value instanceof String)
-				|| !((String) value).startsWith(CELL_REFERENCE_PREFIX)
-				|| ((String) value).length() == CELL_REFERENCE_PREFIX.length()))
-			throw new IllegalArgumentException("Invalid species instance reference: " + value);
+		if ("uri".equals(type) && (!(value instanceof String) || ((String) value).isEmpty()))
+			throw new IllegalArgumentException("Invalid species URI: " + value);
 		return value;
 	}
 

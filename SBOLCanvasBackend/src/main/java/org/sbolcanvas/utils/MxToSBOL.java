@@ -647,27 +647,8 @@ public class MxToSBOL extends Converter {
 			if (event.getSimulationData() != null) {
 				for (String key : new TreeSet<String>(event.getSimulationData().keySet())) {
 					Object value = event.getSimulationData().get(key);
-					if (SBOLData.PARAM_EVENT_TARGET_SPECIES.equals(key)) {
-						String reference = value.toString();
-						FunctionalComponent component = null;
-						ModuleDefinition targetModule = null;
-						mxCell targetCell = reference.startsWith(CELL_REFERENCE_PREFIX)
-								? (mxCell) model.getCell(reference.substring(CELL_REFERENCE_PREFIX.length())) : null;
-						GlyphInfo targetInfo = targetCell == null ? null
-								: (GlyphInfo) infoDict.get(targetCell.getValue());
-						if (targetInfo != null) {
-							targetModule = document.getModuleDefinition(URI.create(targetCell.getParent().getId()));
-							if (targetModule != null) {
-								component = targetModule.getFunctionalComponent(targetInfo.getDisplayID() + "_" + targetCell.getId());
-							}
-						}
-						if (component != null) {
-							values.add(new ModelHelper.Entry("", key, "reference", new ModelHelper.Reference(
-									targetModule.getIdentity(), ModelHelper.path(targetModule, component))));
-						}
-					} else {
-						values.add(ModelHelper.entry("", key, value));
-					}
+					values.add(ModelHelper.entry("", key,
+							SBOLData.PARAM_EVENT_TARGET_SPECIES.equals(key) ? URI.create(value.toString()) : value));
 				}
 			}
 			ModelHelper.putEvent(eventModel, event.getDisplayID(), children, values);

@@ -147,7 +147,7 @@ class SimulationValueRoundTripTest {
     }
 
     @Test
-    void edgeCoefficientsFollowDistinctInstances() throws Exception {
+    void edgeCoefficientsStayOnTheirEdgeBetweenGlyphsOfOnePool() throws Exception {
         GraphModelSupport.ensureCodecsRegistered();
         GlyphInfo protein = GraphModelSupport.glyphInfo("protein", "Protein");
         ModuleInfo module = GraphModelSupport.moduleInfo("module");
@@ -176,7 +176,8 @@ class SimulationValueRoundTripTest {
         Reaction emitted = GraphModelSupport.toSbmlModel(imported).getReaction(0);
         assertEquals(2.0, emitted.getReactant(0).getStoichiometry());
         assertEquals(5.0, emitted.getProduct(0).getStoichiometry());
-        assertFalse(emitted.getReactant(0).getSpecies().equals(emitted.getProduct(0).getSpecies()));
+        assertEquals(emitted.getReactant(0).getSpecies(), emitted.getProduct(0).getSpecies(),
+                "both glyphs share one species URI, so both ends are the one pooled species");
     }
 
     @Test

@@ -1,8 +1,6 @@
-import { isCellReference } from './eventInfo';
-
 export interface SimulationField {
   key: string;
-  type: 'number' | 'boolean' | 'species-reference';
+  type: 'number' | 'boolean' | 'uri';
   label: string;
   default?: number | boolean;
   min?: number;
@@ -51,8 +49,8 @@ export function parseSimulationValue(raw: unknown, field: SimulationField): Simu
     if (raw === false || raw === 'false') return false;
     throw new Error(`${field.label} must be true or false`);
   }
-  if (!isCellReference(raw)) {
-    throw new Error(`${field.label} must reference a species instance`);
+  if (typeof raw !== 'string' || raw.length === 0) {
+    throw new Error(`${field.label} must be a species URI`);
   }
   return raw;
 }

@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef } from '@an
 import { Subscription } from 'rxjs';
 import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo, ParticipantSide } from '../interactionInfo';
-import { CELL_REFERENCE_PREFIX, EventInfo } from '../eventInfo';
+import { EventInfo } from '../eventInfo';
 import { MetadataService } from '../metadata.service';
 import { GraphService } from '../graph.service';
 import { registerInputSave } from '../input-save.util';
@@ -135,14 +135,14 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
   }
 
   targetSpeciesOptions(): { value: string; label: string }[] {
-    const instances = this.graphService.getSpeciesInstances();
-    const key = JSON.stringify(instances.map(instance => [instance.cellId, instance.label]));
+    const targets = this.graphService.getSpeciesTargets();
+    const key = JSON.stringify(targets);
     if (this.speciesOptionsCache?.key === key) return this.speciesOptionsCache.options;
-    const labelUse = new Map<string, number>();
-    for (const instance of instances) labelUse.set(instance.label, (labelUse.get(instance.label) || 0) + 1);
-    const options = instances.map(instance => ({
-      value: CELL_REFERENCE_PREFIX + instance.cellId,
-      label: labelUse.get(instance.label) > 1 ? `${instance.label} (cell:${instance.cellId})` : instance.label
+    const nameUse = new Map<string, number>();
+    for (const target of targets) nameUse.set(target.name, (nameUse.get(target.name) || 0) + 1);
+    const options = targets.map(target => ({
+      value: target.uri,
+      label: nameUse.get(target.name) > 1 ? `${target.name} (${target.displayID})` : target.name
     }));
     this.speciesOptionsCache = { key, options };
     return options;

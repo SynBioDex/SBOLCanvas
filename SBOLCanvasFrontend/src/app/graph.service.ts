@@ -21,7 +21,7 @@ import { StyleInfo } from './style-info';
 import { ModuleInfo } from './moduleInfo';
 import { Info } from './info';
 import { CombinatorialInfo } from './combinatorialInfo';
-import { CELL_REFERENCE_PREFIX, EventInfo, isCellReference } from './eventInfo';
+import { EventInfo } from './eventInfo';
 import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -203,7 +203,7 @@ export class GraphService extends GraphHelpers {
                 edit.changes[i].execute();
             }
             edit.changes = [];
-            this.dialog.open(ErrorComponent, { data: { type: 'refusal', message: broken.message } });
+            this.dialog.open(ErrorComponent, { data: broken.message });
             this.filterSelectionCells();
         });
     }
@@ -214,13 +214,7 @@ export class GraphService extends GraphHelpers {
     }
 
     private designFindings(): Finding[] {
-        const cell0 = this.graph.getModel().getCell(0);
-        const value = (cell0 && cell0.value) || [];
-        return collectDesignFindings(this.graph, {
-            info: value[GraphBase.INFO_DICT_INDEX] || {},
-            interactions: value[GraphBase.INTERACTION_DICT_INDEX] || {},
-            events: value[GraphBase.EVENT_DICT_INDEX] || {},
-        }, this.metadataService);
+        return collectDesignFindings(this.graph, this.designDictionaries(), this.metadataService);
     }
 
     private installKeyboardShortcuts(): void {
@@ -2342,17 +2336,6 @@ export class GraphService extends GraphHelpers {
                             relinkEdge(infoCopy, stored, originalChild, child);
                             this.updateInteractionDict(infoCopy);
                             }
-                        if (child.isEvent()) {
-                            const eventInfo = this.getFromEventDict(child.value);
-                            const target = eventInfo?.simulationData?.['targetSpecies'];
-                            if (isCellReference(target)) {
-                                const updated = eventInfo.makeCopy();
-                                const cloneId = cloneIdOf(target.slice(CELL_REFERENCE_PREFIX.length));
-                                if (cloneId) updated.simulationData['targetSpecies'] = CELL_REFERENCE_PREFIX + cloneId;
-                                else delete updated.simulationData['targetSpecies'];
-                                this.updateEventDict(updated);
-                            }
-                        }
                     }
                 }
 

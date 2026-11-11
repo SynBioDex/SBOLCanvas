@@ -1,7 +1,7 @@
 import type { mxCell, mxGraph } from 'src/mxgraph';
 import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo } from '../interactionInfo';
-import { EventInfo, CELL_REFERENCE_PREFIX, isCellReference } from '../eventInfo';
+import { EventInfo } from '../eventInfo';
 import { ModuleInfo } from '../moduleInfo';
 import { MetadataService, PROMOTER_ROLE } from '../metadata.service';
 import type { SimulationField } from '../simulation-parameters';
@@ -10,6 +10,7 @@ import {
   CYCLE_MODULE_MESSAGE,
   Finding,
   DesignDictionaries,
+  describeCell,
   Issue,
   ReactionParticipant,
   SharedRateSet,
@@ -32,6 +33,8 @@ export function collectDesignFindings(graph: mxGraph, dictionaries: DesignDictio
   const rateSets: { rateSet: SharedRateSet; viewId: string; }[] = [];
   const located = new Map<string, { viewId: string; cellId: string; }>();
   const views = orderedViews(graph);
+  const speciesUris = new Set((Object.values(graph.getModel().cells) as mxCell[])
+    .filter(cell => cell?.isMolecularSpeciesGlyph?.()).map(cell => cell.value));
   for (const view of viewCells(graph)) {
     for (const cell of descendantsOf(view)) {
       if (cell.value && !located.has(cell.value)) located.set(cell.value, { viewId: view.getId(), cellId: cell.getId() });
@@ -43,19 +46,19 @@ export function collectDesignFindings(graph: mxGraph, dictionaries: DesignDictio
     const add = (issue: Issue, cellId: string, enforced: boolean) =>
       findings.push(toFinding(issue, viewId, cellId, enforced));
     const cells = descendantsOf(view);
+    const describe = describeCell(dictionaries);
     for (const issue of backboneIssues(cells, dictionaries, metadata)) add(issue.issue, issue.cellId, false);
 
     for (const cell of cells) {
       if (cell.isEvent()) {
         if (!view.isModuleView()) {
-          add({ code: 'event-owner', severity: 'error', message: 'An Event must belong to a module view.' }, cell.getId(), true);
+          add({ code: 'event-owner', severity: 'error', message: `${describe(cell)}: must be inside a module view.` }, cell.getId(), true);
         }
         const target = dictionaries.events[cell.value]?.simulationData?.['targetSpecies'];
-        const species = isCellReference(target) ? graph.getModel().getCell(target.slice(CELL_REFERENCE_PREFIX.length)) : null;
-        if (!species || !species.isMolecularSpeciesGlyph()) {
+        if (typeof target !== 'string' || !speciesUris.has(target)) {
           add({
             code: 'event-target-missing', severity: 'warning', field: 'simulationData.targetSpecies',
-            message: 'This Event has no target species, so simulation ignores it.'
+            message: `${describe(cell)}: no target species (skipped in SBML).`
           }, cell.getId(), false);
         }
       }
@@ -68,7 +71,8 @@ export function collectDesignFindings(graph: mxGraph, dictionaries: DesignDictio
       const edgeInfo = dictionaries.interactions[cell.value];
       if (edgeInfo && Object.prototype.hasOwnProperty.call(rules, edgeInfo.interactionType)) {
         for (const issue of checkConnection(edgeInfo.interactionType, cell.source, cell.target, rules,
-          { source: !!cell.source?.isModule(), target: !!cell.target?.isModule() })) add(issue, cell.getId(), true);
+          { source: !!cell.source?.isModule(), target: !!cell.target?.isModule() }, describe,
+          `${edgeInfo.interactionType} '${edgeInfo.displayID}'`)) add(issue, cell.getId(), true);
       }
     }
 
@@ -77,8 +81,8 @@ export function collectDesignFindings(graph: mxGraph, dictionaries: DesignDictio
       const info = dictionaries.interactions[owner.value];
       if (!(info instanceof InteractionInfo)) continue;
       const participants = participantsOf(graph, owner);
-      for (const issue of checkReaction(info, participants, rules)) add(issue, owner.getId(), true);
-      const rateSet = sharedRateValues(owner.getId(), info, participants, rules, metadata.simulationConfig || {});
+      for (const issue of checkReaction(info, participants, rules, describe)) add(issue, owner.getId(), true);
+      const rateSet = sharedRateValues(owner.getId(), info, participants, rules, metadata.simulationConfig || {}, describe);
       if (rateSet) rateSets.push({ rateSet, viewId });
     }
   }
@@ -144,26 +148,22 @@ function connectionWarnings(graph: mxGraph, cell: mxCell, dictionaries: DesignDi
   const info = dictionaries.interactions[cell.value];
   if (!info) return [];
   const type = info.interactionType;
-  const nameOf = (end: mxCell | null) => (end && dictionaries.info[end.value]?.getDisplayName()) || 'unknown';
+  const subject = `${type} '${info.displayID}'`;
   if (cell.isInteraction() && (!cell.source || (!cell.target && type !== 'Degradation'))) {
     return [{
       code: 'edge-free-end', severity: 'warning',
-      message: `${type} edge on '${nameOf(cell.source || cell.target)}': ${!cell.source ? 'no source' : 'no target'}`
+      message: `${subject}: ${!cell.source ? 'no source' : 'no target'} (skipped in SBML).`
     }];
   }
-  if (!cell.isInteractionNode() || (type !== 'Biochemical Reaction' && type !== 'Non-Covalent Binding')) return [];
+  if (!cell.isInteractionNode()) return [];
   const edges = graph.getModel().getEdges(cell) || [];
-  const incoming = edges.filter(edge => edge.target === cell);
-  const outgoing = edges.filter(edge => edge.source === cell);
-  const reactants = incoming.filter(edge => edge.source).map(edge => nameOf(edge.source) === 'unknown' ? '?' : nameOf(edge.source)).join(', ') || 'none';
-  const issues: Issue[] = [];
-  if (outgoing.length === 0 || !outgoing[0].target) {
-    issues.push({ code: 'complex-no-product', severity: 'warning', message: `Complex formation (${reactants}): no product connection` });
+  if (type === 'Non-Covalent Binding' && !edges.some(edge => edge.source === cell && edge.target)) {
+    return [{ code: 'node-no-product', severity: 'warning', message: `${subject}: no product.` }];
   }
-  for (const edge of incoming.filter(edge => !edge.source)) {
-    issues.push({ code: 'complex-loose-reactant', severity: 'warning', message: `Complex formation (${reactants}): disconnected reactant edge` });
+  if (type === 'Dissociation' && !edges.some(edge => edge.target === cell && edge.source)) {
+    return [{ code: 'node-no-reactant', severity: 'warning', message: `${subject}: no reactant.` }];
   }
-  return issues;
+  return [];
 }
 
 function backboneIssues(cells: mxCell[], dictionaries: DesignDictionaries, metadata: MetadataService): { issue: Issue; cellId: string; }[] {
@@ -199,16 +199,23 @@ function valueRangeIssues(dictionaries: DesignDictionaries, metadata: MetadataSe
   const out: { uri: string; issue: Issue; }[] = [];
   const check = (uri: string, value: unknown, field: SimulationField, path: string): void => {
     if (value === undefined) return;
-    let message: string | null = null;
+    let problem: string | null = null;
     if (field.type === 'number') {
-      if (typeof value !== 'number' || !Number.isFinite(value)) message = `${field.label} must be a finite number`;
-      else if (field.min !== undefined && value < field.min) message = `${field.label} must be ≥ ${field.min}`;
+      if (typeof value !== 'number' || !Number.isFinite(value)) problem = `${field.label} must be a finite number`;
+      else if (field.min !== undefined && value < field.min) problem = `${field.label} must be ≥ ${field.min}`;
     } else if (field.type === 'boolean') {
-      if (typeof value !== 'boolean') message = `${field.label} must be true or false`;
-    } else if (!isCellReference(value)) {
-      message = `${field.label} must reference a species instance`;
+      if (typeof value !== 'boolean') problem = `${field.label} must be true or false`;
+    } else if (typeof value !== 'string' || value.length === 0) {
+      problem = `${field.label} must be a species URI`;
     }
-    if (message) out.push({ uri, issue: { code: 'value-range', severity: 'error', field: path, message } });
+    if (problem) out.push({ uri, issue: { code: 'value-range', severity: 'error', field: path, message: `${recordLabel(uri)}: ${problem}.` } });
+  };
+  const recordLabel = (uri: string): string => {
+    const glyph = dictionaries.info[uri];
+    if (glyph) return `Component '${glyph.displayID}'`;
+    const interaction = dictionaries.interactions[uri];
+    if (interaction) return `${interaction.interactionType} '${interaction.displayID}'`;
+    return `Event '${dictionaries.events[uri]?.displayID}'`;
   };
   const interactionFields = new Map<string, SimulationField>();
   for (const interactionType of Object.keys(metadata.interactionRules || {})) {

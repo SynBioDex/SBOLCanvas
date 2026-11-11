@@ -61,8 +61,7 @@ final class SBOLTestSupport {
 
     /**
      * Collects key→value from Model entries that name {@code subject}: a design object resolved
-     * from its record's owner and path, or an Event child ({@link #eventIdentity}). A reference
-     * value comes back as the identity of the object it resolves to (null when it resolves to nothing).
+     * from its record's owner and path, or an Event child ({@link #eventIdentity}).
      */
     static Map<String, Object> modelEntries(SBOLDocument doc, URI subject) {
         Map<String, Object> values = new HashMap<>();
@@ -71,7 +70,7 @@ final class SBOLTestSupport {
             for (ModelHelper.Entry entry : ModelHelper.readEntries(model)) {
                 Identified named = ModelHelper.resolve(doc, owner, entry.getPath());
                 if (named != null && subject.equals(named.getIdentity())) {
-                    values.put(entry.getKey(), entryValue(doc, entry));
+                    values.put(entry.getKey(), entry.getValue());
                 }
             }
             for (Annotation event : ModelHelper.events(model)) {
@@ -79,7 +78,7 @@ final class SBOLTestSupport {
                     continue;
                 }
                 for (ModelHelper.Entry entry : ModelHelper.readEntries(event)) {
-                    values.put(entry.getKey(), entryValue(doc, entry));
+                    values.put(entry.getKey(), entry.getValue());
                 }
             }
         }
@@ -89,15 +88,6 @@ final class SBOLTestSupport {
     /** A test-side name for an Event child: its record's persistent identity plus its displayId. */
     static URI eventIdentity(GenericTopLevel model, Annotation event) {
         return URI.create(model.getPersistentIdentity() + "/" + ModelHelper.eventDisplayId(event));
-    }
-
-    private static Object entryValue(SBOLDocument doc, ModelHelper.Entry entry) {
-        if (!(entry.getValue() instanceof ModelHelper.Reference)) {
-            return entry.getValue();
-        }
-        ModelHelper.Reference reference = (ModelHelper.Reference) entry.getValue();
-        Identified target = ModelHelper.resolve(doc, reference.getOwner(), reference.getPath());
-        return target == null ? null : target.getIdentity();
     }
 
     static void writeAnnotatedSimulationData(org.sbolstandard.core2.Identified parent,

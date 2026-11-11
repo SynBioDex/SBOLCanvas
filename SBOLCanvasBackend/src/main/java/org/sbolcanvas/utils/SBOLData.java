@@ -183,7 +183,7 @@ public class SBOLData {
 		simulationConfig.put("event", Arrays.asList(
 				field(PARAM_EVENT_DELAY, "number", "Delay", 0.0, 0.0),
 				field(PARAM_EVENT_ASSIGNMENT_VALUE, "number", "Assignment value", 0.0, null),
-				field(PARAM_EVENT_TARGET_SPECIES, "species-reference", "Target species", null, null)));
+				field(PARAM_EVENT_TARGET_SPECIES, "uri", "Target species", null, null)));
 		simulationConfig.put("participation", Arrays.asList(
 				field("coefficient", "number", "Stoichiometry", null, 0.0)));
 		simulationConfig.put("Degradation", Arrays.asList(number(PARAM_KD, "Degradation rate", 0.0075)));
