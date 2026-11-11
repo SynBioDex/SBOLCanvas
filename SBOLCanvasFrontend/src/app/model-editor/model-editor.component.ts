@@ -120,20 +120,6 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
     }
   }
 
-  interactionTypeChange(value: string) {
-    if (this.interactionInfo && this.graphService.isInteractionTypeAllowed(value)) {
-      const copy = this.interactionInfo.makeCopy();
-      copy.interactionType = value;
-      this.graphService.setSelectedCellInfo(copy);
-    }
-  }
-
-  massActionTypes(): string[] {
-    const interactionTypes = Object.keys(this.metadataService.interactionRules).filter(interactionType => this.metadataService.interactionRules[interactionType].massAction);
-    const selected = this.graphService.graph?.getSelectionCell();
-    return selected?.isInteractionNode() ? interactionTypes.filter(interactionType => interactionType !== 'Process') : interactionTypes;
-  }
-
   targetSpeciesOptions(): { value: string; label: string }[] {
     const targets = this.graphService.getSpeciesTargets();
     const key = JSON.stringify(targets);

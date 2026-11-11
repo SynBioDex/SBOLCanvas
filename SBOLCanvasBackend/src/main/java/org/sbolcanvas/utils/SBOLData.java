@@ -139,7 +139,6 @@ public class SBOLData {
 		interactions.put("Genetic Production", SystemsBiologyOntology.GENETIC_PRODUCTION);
 		interactions.put("Control", SystemsBiologyOntology.CONTROL);
 		interactions.put("Dissociation", SystemsBiologyOntology.DISSOCIATION);
-		interactions.put("Process", SystemsBiologyOntology.PROCESS);
 
 		interactionRoles = new BiMap<String, URI>();
 		interactionRoles.put("Inhibitor", SystemsBiologyOntology.INHIBITOR);
@@ -161,7 +160,6 @@ public class SBOLData {
 		interactionTargetRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.PRODUCT);
 		interactionTargetRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIED);
 		interactionTargetRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.PRODUCT);
-		interactionTargetRoles.put(SystemsBiologyOntology.PROCESS, SystemsBiologyOntology.PRODUCT);
 
 		interactionSourceRoles = new HashMap<URI, URI>();
 		interactionSourceRoles.put(SystemsBiologyOntology.INHIBITION, SystemsBiologyOntology.INHIBITOR);
@@ -172,7 +170,6 @@ public class SBOLData {
 		interactionSourceRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.TEMPLATE);
 		interactionSourceRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIER);
 		interactionSourceRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.REACTANT);
-		interactionSourceRoles.put(SystemsBiologyOntology.PROCESS, SystemsBiologyOntology.REACTANT);
 
 		// Using values from iBioSim as default values for simulation parameters
 		// LinkedHashMap keeps parameters in order in the UI.
@@ -198,7 +195,6 @@ public class SBOLData {
 				field(PARAM_REVERSIBLE, "boolean", "Reversible", false, null));
 		simulationConfig.put("Non-Covalent Binding", bindingAction);
 		simulationConfig.put("Dissociation", massAction);
-		simulationConfig.put("Process", massAction);
 		simulationConfig.put("Promoter", Arrays.asList(
 				number(PARAM_NG, "Initial promoter count", 2.0),
 				number(PARAM_NP, "Stoichiometry of production", 10.0),
@@ -323,8 +319,8 @@ public class SBOLData {
 			} else if ("Inhibition".equals(interactionType) || "Stimulation".equals(interactionType) || "Control".equals(interactionType)) {
 				source.put("endpointTypes", Arrays.asList("species"));
 				target.put("endpointTypes", Arrays.asList("dna"));
-			} else if ("Process".equals(interactionType) || "Biochemical Reaction".equals(interactionType)) {
-				source.put("endpointTypes", Arrays.asList("species", "dna", "node"));
+			} else if (isMassActionInteraction(interactionType)) {
+				source.put("endpointTypes", Arrays.asList("species", "node"));
 				target.put("endpointTypes", Arrays.asList("species", "node"));
 			} else if ("Genetic Production".equals(interactionType)) {
 				source.put("endpointTypes", Arrays.asList("dna"));
@@ -379,8 +375,7 @@ public class SBOLData {
 	public static boolean isMassActionInteraction(Set<URI> types) {
 		return types.contains(SystemsBiologyOntology.BIOCHEMICAL_REACTION)
 				|| types.contains(SystemsBiologyOntology.NON_COVALENT_BINDING)
-				|| types.contains(SystemsBiologyOntology.DISSOCIATION)
-				|| types.contains(SystemsBiologyOntology.PROCESS);
+				|| types.contains(SystemsBiologyOntology.DISSOCIATION);
 	}
 
 	public static double getParticipantCoefficientDefault(String interactionType, boolean source) {

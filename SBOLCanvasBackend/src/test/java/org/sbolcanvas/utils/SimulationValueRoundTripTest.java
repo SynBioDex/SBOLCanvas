@@ -129,7 +129,7 @@ class SimulationValueRoundTripTest {
         GraphModelSupport.ensureCodecsRegistered();
         GlyphInfo protein = GraphModelSupport.glyphInfo("protein", "Protein");
         ModuleInfo module = GraphModelSupport.moduleInfo("module");
-        InteractionInfo reaction = GraphModelSupport.interactionInfo("reaction", "Process");
+        InteractionInfo reaction = GraphModelSupport.interactionInfo("reaction", "Biochemical Reaction");
         reaction.getSimulationData().put("reversible", true);
         mxGraphModel graph = new mxGraphModel();
         GraphModelSupport.install(graph, GraphModelSupport.dataContainer(Arrays.<Info>asList(protein, module),

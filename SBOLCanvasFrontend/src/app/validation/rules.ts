@@ -80,7 +80,8 @@ export function checkConnection(
   if (!interactionType) {
     return issues;
   }
-  if (!Object.prototype.hasOwnProperty.call(rules, interactionType)) {
+  const ruleType = interactionType === 'Process' ? processEdgeType(source, target) : interactionType;
+  if (!Object.prototype.hasOwnProperty.call(rules, ruleType)) {
     return [{ code: 'interaction-unknown-type', severity: 'error', message: `${subject}: unsupported interaction type '${interactionType}'.` }];
   }
   if ((source && source.isEdge()) || (target && target.isEdge())) {
@@ -92,7 +93,7 @@ export function checkConnection(
   if (source && source.isCircuitContainer()) {
     issues.push({ code: 'edge-container', severity: 'error', message: `${subject}: cannot connect to ${describe(source)}; connect to a part on it.` });
   }
-  const rule = rules[interactionType];
+  const rule = rules[ruleType];
   if (source && !source.isEdge() && rule.source && !acceptsEndpoint(rule.source, source, moduleEndpoints.source)) {
     issues.push({ code: 'edge-source-type', severity: 'error', message: `${subject}: cannot connect from ${describe(source)}.` });
   }

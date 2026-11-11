@@ -117,6 +117,7 @@ public class SBOLToMx extends Converter {
 			System.err.println("Warning: Model format " + formatVersion + " is newer than this SBOLCanvas ("
 					+ ModelHelper.FORMAT_VERSION + "); unknown entries are not shown.");
 		}
+		readProcessType(document);
 
 		// set up the graph and glyphdict
 		mxGraph graph = new mxGraph();
@@ -560,6 +561,20 @@ public class SBOLToMx extends Converter {
 			}
 		}
 		migrateLegacyEvents(document);
+	}
+
+	private static void readProcessType(SBOLDocument document) throws SBOLValidationException {
+		for (ModuleDefinition module : document.getModuleDefinitions()) {
+			for (Interaction interaction : module.getInteractions()) {
+				if (interaction.containsType(SystemsBiologyOntology.PROCESS)) {
+					boolean templated = interaction.getParticipations().stream()
+							.anyMatch(participation -> participation.containsRole(SystemsBiologyOntology.TEMPLATE));
+					interaction.addType(templated ? SystemsBiologyOntology.GENETIC_PRODUCTION
+							: SystemsBiologyOntology.BIOCHEMICAL_REACTION);
+					interaction.removeType(SystemsBiologyOntology.PROCESS);
+				}
+			}
+		}
 	}
 
 	private void migrateLegacyDefinitionValues(SBOLDocument document, ComponentDefinition definition)
