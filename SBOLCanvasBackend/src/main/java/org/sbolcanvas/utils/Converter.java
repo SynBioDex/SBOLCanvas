@@ -6,18 +6,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.Map;
 
 import javax.xml.namespace.QName;
-
-import org.sbolstandard.core2.Annotation;
-import org.sbolstandard.core2.Identified;
-import org.sbolstandard.core2.SBOLValidationException;
-import org.sbolstandard.core2.ComponentDefinition;
-import org.sbolstandard.core2.GenericTopLevel;
-import org.sbolstandard.core2.Interaction;
-import org.sbolstandard.core2.Participation;
 
 import org.w3c.dom.Document;
 

@@ -1,8 +1,7 @@
-import { GlyphInfo } from './glyphInfo';
 import type { mxCell, mxGraphView } from 'src/mxgraph';
 import { GraphService } from './graph.service';
 import { Info } from './info';
-import { mx, GraphBase } from './graph-base';
+import { GraphBase } from './graph-base';
 
 /**
  * Contains all the custom edit objects necessary for mxGraph.

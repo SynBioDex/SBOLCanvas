@@ -54,7 +54,6 @@ import com.mxgraph.view.mxGraph;
 import org.sbolcanvas.data.CanvasAnnotation;
 import org.sbolcanvas.data.CombinatorialInfo;
 import org.sbolcanvas.data.EventInfo;
-import org.sbolcanvas.data.Info;
 import org.sbolcanvas.data.GlyphInfo;
 import org.sbolcanvas.data.IdentifiedInfo;
 import org.sbolcanvas.data.InteractionInfo;

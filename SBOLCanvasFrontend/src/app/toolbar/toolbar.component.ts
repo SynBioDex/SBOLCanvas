@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnInit, QueryList, ViewChild } from '@angular/core';
+import { Component } from '@angular/core';
 import { GraphService } from '../graph.service';
 import { FilesService } from '../files.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -10,9 +10,6 @@ import { ConfirmComponent } from '../confirm/confirm.component';
 import { LoadGraphComponent } from '../load-graph/load-graph.component';
 import { EmbeddedService } from '../embedded.service';
 
-export interface SaveDialogData {
-  filename: string;
-}
 export interface LoadDialogData {
   file: File;
 }
@@ -22,21 +19,10 @@ export interface LoadDialogData {
   templateUrl: './toolbar.component.html',
   styleUrls: ['./toolbar.component.css']
 })
-export class ToolbarComponent implements OnInit, AfterViewInit {
-
-  @ViewChild('backbone') backbone: ElementRef;
-
-  filename: string;
-  users: {};
+export class ToolbarComponent {
 
   constructor(public graphService: GraphService, private filesService: FilesService,
               public dialog: MatDialog, public embeddedService: EmbeddedService) {
-  }
-
-  ngOnInit() {
-  }
-
-  ngAfterViewInit() {
   }
 
   openUploadDialog(): void {
@@ -47,12 +33,6 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
   openDownloadDialog(): void{
     this.dialog.open(DownloadGraphComponent);
-  }
-
-  openImportDialog(): void {
-    this.dialog.open(UploadGraphComponent, {
-      data: {componentMode: this.graphService.isRootAComponentView(), importMode: true }
-    });
   }
 
   openExportImageDialog(): void {
@@ -117,11 +97,5 @@ export class ToolbarComponent implements OnInit, AfterViewInit {
 
   enumerateAvailable(){
     return this.graphService.isRootAComponentView();
-  }
-
-  // make sure to comment out the button in the html when preparing to make a merge request
-  testMethod(){
-    this.graphService.addMolecularSpecies("replacement-glyph");
-    this.graphService.addInteractionNode("replacement-glyph");
   }
 }

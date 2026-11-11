@@ -1,4 +1,3 @@
-import { GlyphInfo } from './glyphInfo';
 import { Info } from './info';
 
 

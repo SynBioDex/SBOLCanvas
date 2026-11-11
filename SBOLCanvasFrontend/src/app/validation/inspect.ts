@@ -3,7 +3,7 @@ import { GlyphInfo } from '../glyphInfo';
 import { InteractionInfo } from '../interactionInfo';
 import { EventInfo } from '../eventInfo';
 import { ModuleInfo } from '../moduleInfo';
-import { MetadataService, PROMOTER_ROLE } from '../metadata.service';
+import { MetadataService } from '../metadata.service';
 import type { SimulationField } from '../simulation-parameters';
 import {
   CYCLE_COMPONENT_MESSAGE,

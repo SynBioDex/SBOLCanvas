@@ -335,14 +335,6 @@ export class GraphService extends GraphHelpers {
         return selected[0].isMolecularSpeciesGlyph();
     }
 
-    isSelectedAnInteractionNode(): boolean {
-        let selected = this.graph.getSelectionCells();
-        if (selected.length != 1) {
-            return false;
-        }
-        return selected[0].isInteractionNode();
-    }
-
     isRootAComponentView(): boolean {
         return this.viewStack[0].isComponentView();
     }
@@ -398,24 +390,6 @@ export class GraphService extends GraphHelpers {
         }
 
         return false;
-    }
-
-    isSelectedTargetEdge(): boolean {
-        let selected = this.graph.getSelectionCells();
-        if (selected.length > 1 || selected.length == 0 || !selected[0].isInteraction()) {
-            return false;
-        }
-
-        return selected[0].target == null || !selected[0].target.isInteractionNode();
-    }
-
-    isSelectedSourceEdge(): boolean {
-        let selected = this.graph.getSelectionCells();
-        if (selected.length > 1 || selected.length == 0 || !selected[0].isInteraction()) {
-            return false;
-        }
-
-        return selected[0].source == null || !selected[0].source.isInteractionNode();
     }
 
     /**
@@ -613,14 +587,6 @@ export class GraphService extends GraphHelpers {
     }
     getSelectedHTMLSet() {
         return this.selectedHTMLStack;
-    }
-    getChildrenLength() {
-
-        let selection = this.graph.getSelectionCells();
-        if (selection[0] && selection[0].isCircuitContainer()) {
-            return selection[0].getCircuitContainer(this.graph).children.length > 1;
-        } return 0;
-
     }
     getTempStack() {
         return this.tempHTMLStack;
