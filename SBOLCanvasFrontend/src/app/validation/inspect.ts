@@ -158,10 +158,10 @@ function connectionWarnings(graph: mxGraph, cell: mxCell, dictionaries: DesignDi
   if (!cell.isInteractionNode()) return [];
   const edges = graph.getModel().getEdges(cell) || [];
   if (type === 'Non-Covalent Binding' && !edges.some(edge => edge.source === cell && edge.target)) {
-    return [{ code: 'node-no-product', severity: 'warning', message: `${subject}: no product.` }];
+    return [{ code: 'node-no-product', severity: 'warning', message: `${subject}: no product (reactants only in SBML).` }];
   }
   if (type === 'Dissociation' && !edges.some(edge => edge.target === cell && edge.source)) {
-    return [{ code: 'node-no-reactant', severity: 'warning', message: `${subject}: no reactant.` }];
+    return [{ code: 'node-no-reactant', severity: 'warning', message: `${subject}: no reactant (products only in SBML).` }];
   }
   return [];
 }
