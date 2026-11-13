@@ -131,13 +131,6 @@ export abstract class GraphBase {
     static unFormatedCells = new Set<string>();
 
     constructor(protected glyphService: GlyphService) {
-        // constructor code is divided into helper methods for organization,
-        // but these methods aren't entirely modular; order of some of
-        // these calls is important
-        this.initDecodeEnv();
-        this.initExtraCellMethods();
-        this.initGroupingRules();
-
         this.graphContainer = document.createElement('div');
         this.graphContainer.id = 'graphContainer';
         this.graphContainer.style.margin = 'auto';
@@ -189,14 +182,12 @@ export abstract class GraphBase {
     /**
      * Sets up environment variables to make decoding new graph models from xml into memory
      */
-    initDecodeEnv() {
+    private static initDecodeEnv() {
         // stuff needed for decoding
         window['mxGraphModel'] = mx.mxGraphModel;
         window['mxGeometry'] = mx.mxGeometry;
         window['mxPoint'] = mx.mxPoint;
         window['mxCell'] = mx.mxCell;
-
-        let graphBaseRef = this; // for use in override methods where you need one of the helpers here
 
         let genericDecode = function (dec, node, into) {
             const meta = node;
@@ -436,7 +427,7 @@ export abstract class GraphBase {
                     let intInfo = interactionDict[cell.value];
                     if (cell.isVertex()) {
                         // interaction node
-                        let name = graphBaseRef.interactionNodeTypeToName(intInfo.interactionType);
+                        let name = GraphBase.interactionNodeTypeToName(intInfo.interactionType);
                         if (!cell.style) {
                             cell.style = GraphBase.STYLE_INTERACTION_NODE + name;
                         } else {
@@ -471,7 +462,7 @@ export abstract class GraphBase {
     /**
      * Gives mxCells new methods related to our circuit/backbone rules
      */
-    initExtraCellMethods() {
+    private static initExtraCellMethods() {
 
         mx.mxCell.prototype.isStyle = function (styleName) {
             if (!this.style)
@@ -775,7 +766,7 @@ export abstract class GraphBase {
     /**
      * Sets up rules for circuits' grouping/selection behavior
      */
-    initGroupingRules() {
+    private static initGroupingRules() {
         // Cells can be moved outside their parent's bounding box without being disowned
         mx.mxGraphHandler.prototype.setRemoveCellsFromParent(false);
         mx.mxGraph.prototype.setConstrainChildren(false);
@@ -1112,15 +1103,6 @@ export abstract class GraphBase {
             };
         };
         mx.mxMarker.addMarker(GraphBase.interactionDegradationName, degradationMarkerDrawFunction);
-
-        let oldGetIndicatorShape = mx.mxGraph.prototype.getIndicatorShape;
-        mx.mxGraph.prototype.getIndicatorShape = function (state) {
-            if (state.cell.isSequenceFeatureGlyph()) {
-                return 'composite';
-            } else {
-                return oldGetIndicatorShape(state);
-            }
-        };
     }
 
     /**
@@ -1417,7 +1399,7 @@ export abstract class GraphBase {
         }
     }
 
-    protected interactionNodeTypeToName(type: string) {
+    protected static interactionNodeTypeToName(type: string) {
         switch (type) {
             case "Non-Covalent Binding":
                 return "association";
@@ -1494,5 +1476,20 @@ export abstract class GraphBase {
             default:
                 return "Protein";
         }
+    }
+
+    static {
+        GraphBase.initDecodeEnv();
+        GraphBase.initExtraCellMethods();
+        GraphBase.initGroupingRules();
+
+        let oldGetIndicatorShape = mx.mxGraph.prototype.getIndicatorShape;
+        mx.mxGraph.prototype.getIndicatorShape = function (state) {
+            if (state.cell.isSequenceFeatureGlyph()) {
+                return 'composite';
+            } else {
+                return oldGetIndicatorShape(state);
+            }
+        };
     }
 }

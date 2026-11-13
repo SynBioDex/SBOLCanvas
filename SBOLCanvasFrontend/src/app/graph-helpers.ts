@@ -1062,7 +1062,7 @@ export class GraphHelpers extends GraphBase {
     protected mutateInteractionNodeGlyph(name: string, cell: mxCell) {
         this.graph.getModel().beginUpdate();
         try {
-            name = GraphBase.STYLE_INTERACTION_NODE + this.interactionNodeTypeToName(name);
+            name = GraphBase.STYLE_INTERACTION_NODE + GraphBase.interactionNodeTypeToName(name);
 
             // Modify the style string
             let styleString = cell.style.slice();
