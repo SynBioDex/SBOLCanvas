@@ -1,4 +1,3 @@
-import { GlyphInfo } from './glyphInfo';
 import { Info } from './info';
 
 
@@ -19,14 +18,6 @@ export class ModuleInfo extends Info{
         copy.version = this.version;
         copy.uriPrefix = this.uriPrefix;
         return copy;
-    }
-
-    copyDataFrom(other: ModuleInfo) {
-        this.displayID = other.displayID;
-        this.name = other.name;
-        this.description = other.description;
-        this.version = other.version;
-        this.uriPrefix = other.uriPrefix;
     }
 
     encode(enc: any) {

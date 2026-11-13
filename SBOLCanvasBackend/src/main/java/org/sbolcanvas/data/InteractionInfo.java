@@ -4,12 +4,11 @@ import java.util.Hashtable;
 
 public class InteractionInfo extends Info {
 
-	private String displayID;
 	private String interactionType;
-	private String fromParticipationType;
-	private String toParticipationType;
 	private Hashtable<String, String> sourceRefinement;
 	private Hashtable<String, String> targetRefinement;
+	private Hashtable<String, Object> sourceCoefficient;
+	private Hashtable<String, Object> targetCoefficient;
 	private Hashtable<String, String> fromURI;
 	private Hashtable<String, String> toURI;
 	private Hashtable<String, Object> simulationData;
@@ -17,17 +16,11 @@ public class InteractionInfo extends Info {
 	public InteractionInfo() {
 		sourceRefinement = new Hashtable<String, String>();
 		targetRefinement = new Hashtable<String, String>();
+		sourceCoefficient = new Hashtable<String, Object>();
+		targetCoefficient = new Hashtable<String, Object>();
 		fromURI = new Hashtable<String, String>();
 		toURI = new Hashtable<String, String>();
 		simulationData = new Hashtable<String, Object>();
-	}
-	
-	public String getDisplayID() {
-		return displayID;
-	}
-
-	public void setDisplayID(String displayID) {
-		this.displayID = displayID;
 	}
 
 	public String getInteractionType() {
@@ -38,22 +31,22 @@ public class InteractionInfo extends Info {
 		this.interactionType = interactionType;
 	}
 
-	public String getFromParticipationType() {
-		return fromParticipationType;
+	public Hashtable<String, Object> getSourceCoefficient() {
+		return sourceCoefficient;
 	}
 
-	public void setFromParticipationType(String fromParticipationType) {
-		this.fromParticipationType = fromParticipationType;
+	public void setSourceCoefficient(Hashtable<String, Object> sourceCoefficient) {
+		this.sourceCoefficient = sourceCoefficient;
 	}
 
-	public String getToParticipationType() {
-		return toParticipationType;
+	public Hashtable<String, Object> getTargetCoefficient() {
+		return targetCoefficient;
 	}
 
-	public void setToParticipationType(String toParticipationType) {
-		this.toParticipationType = toParticipationType;
+	public void setTargetCoefficient(Hashtable<String, Object> targetCoefficient) {
+		this.targetCoefficient = targetCoefficient;
 	}
-	
+
 	public Hashtable<String, String> getSourceRefinement() {
 		return sourceRefinement;
 	}
@@ -94,7 +87,4 @@ public class InteractionInfo extends Info {
 		this.simulationData = simulationData;
 	}
 	
-	public String getFullURI() {
-		return this.uriPrefix + '/' + this.displayID;
-	}
 }

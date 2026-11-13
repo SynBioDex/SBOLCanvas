@@ -1,8 +1,7 @@
-import { GlyphInfo } from './glyphInfo';
 import type { mxCell, mxGraphView } from 'src/mxgraph';
 import { GraphService } from './graph.service';
 import { Info } from './info';
-import { mx, GraphBase } from './graph-base';
+import { GraphBase } from './graph-base';
 
 /**
  * Contains all the custom edit objects necessary for mxGraph.
@@ -16,39 +15,6 @@ export class GraphEdits {
      object in a state such that calling execute again will undo the change. It is important that you don't use
      the graphs model to make changes, as that usually results in a mxgraph edit object.
     */
-
-    /**
-     * Edit object for interaction history. Swaps the interaction cells info.
-     */
-    static interactionEdit = class {
-        cell: mxCell;
-        info: any;
-        previous: any;
-
-        /**
-         * 
-         * @param cell The cell you wish to change the interaction info on. 
-         * @param info The new info you wish to change the info to.
-         */
-        constructor(cell, info) {
-            this.cell = cell;
-            this.info = info;
-            this.previous = info;
-        }
-
-        execute() {
-            if (this.cell != null) {
-                let tmp = this.cell.value.makeCopy();
-                if (this.previous == null) {
-                    this.cell.value = null;
-                } else {
-                    this.cell.value.copyDataFrom(this.previous);
-                }
-
-                this.previous = tmp;
-            }
-        }
-    };
 
     /**
      * Edit object for glyphInfo/moduleInfo history. Replaces glyphInfo's in a dictionary stored in cell0's value variable.

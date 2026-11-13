@@ -1,6 +1,14 @@
 import { Component, OnDestroy, OnInit } from '@angular/core'
+import { Subscription } from 'rxjs'
 import { GraphService } from '../graph.service'
+import type { Finding } from '../validation/rules'
 
+interface ProblemGroup {
+    viewId: string
+    label: string
+    errors: Finding[]
+    warnings: Finding[]
+}
 
 @Component({
     selector: 'app-problems',
@@ -10,198 +18,67 @@ import { GraphService } from '../graph.service'
 
 export class ProblemsComponent implements OnInit, OnDestroy {
 
-    warnings: string[]
-    errors: string[]
-    private intervalId: number
+    groups: ProblemGroup[] = []
+    errorCount = 0
+    warningCount = 0
+
+    emptyView = false
+    emptyViewLabel = 'Current view'
+    tooltip = '0 errors, 0 warnings.'
+
+    private subscription: Subscription | null = null
 
     constructor(private graphService: GraphService) { }
 
     ngOnInit() {
-        this.warnings = []
-        this.errors = []
-
-        this.intervalId = window.setInterval(this.validate.bind(this), 750)
+        this.subscription = this.graphService.designFindings$.subscribe(findings => this.showFindings(findings || []))
     }
 
     ngOnDestroy() {
-        clearInterval(this.intervalId)
-    }
-
-    validate() {
-        const warnings = []
-        const errors = []
-
-        // Validation functions
-        this.validateCurrentView(warnings, errors)
-        this.validateComponents(warnings, errors)
-        this.validateBackbones(warnings)
-        this.validateInteractionsAndEvents(warnings)
-        // more here...
-
-        // Transpose to separate errors and warnings
-        this.warnings = warnings
-        this.errors = errors
-    }
-
-    validateCurrentView(warnings: string[], errors: string[]) {
-        const currentView = this.graphService.getCurrentRoot()
-        const children = currentView.children || []
-
-        // Warning: No children in current view
-        if (!children.length) {
-            const cellType = currentView.isModuleView() ? 'Module' : currentView.isComponentView() ? 'Component' : 'Current view'
-            warnings.push(`${cellType} does not contain any children.`)
+        if (this.subscription) {
+            this.subscription.unsubscribe()
+            this.subscription = null
         }
-
-        // TO DO: other validations
     }
 
-    validateComponents(warnings: string[], errors: string[]) {
-        const currentView = this.graphService.getCurrentRoot()
-        const circuitContainers = currentView.children || []
-        const components = circuitContainers
-            .map(container => container.children || [])
-            .flat()
-            .filter(comp => comp.value)
-
-        components.forEach(comp => this.validateComponent(comp, warnings, errors))
+    private showFindings(findings: Finding[]) {
+        this.groups = this.groupByView(findings)
+        this.updateEmptyView()
+        this.errorCount = findings.filter(finding => finding.severity === 'error').length
+        this.warningCount = findings.filter(finding => finding.severity === 'warning').length + (this.emptyView ? 1 : 0)
+        this.tooltip = `${this.errorCount} error${this.errorCount == 1 ? '' : 's'}, ${this.warningCount} warning${this.warningCount == 1 ? '' : 's'}.`
+            + (this.errorCount || this.warningCount ? ' Click to view more info.' : '')
     }
 
-    validateComponent(component, warnings: string[], errors: string[]) {
-        const info = this.graphService.lookupInfo(component.value)
-        if (!info) return
-        const sequence = (info.sequence || '').toUpperCase()
-        const version = (info.version || '')
-
-        // Error: No ID
-        !info.displayID && errors.push(`${info.partRole} is missing an ID.`)
-
-        // Error: Non-IUPAC compliant sequence
-        const negativeIUPACSequenceRegex = /[^ACGTURYSWKMBDHVN\.\-]/g
-        var compliant = !sequence.match(negativeIUPACSequenceRegex)
-        const sequencePreview = sequence.substring(0, 10)
-        !compliant && errors.push(`Component '${info.displayID}' has illegal sequence: ${sequencePreview}...`)
-
-        // Warning: No sequence
-        !sequence && warnings.push(`Component '${info.displayID}' does not have a sequence.`)
-
-        // Warning: No version
-        !version && warnings.push(`Component '${info.displayID}' does not have a version.`)
-
-        // Warning: Non-Semver compliant version
-        // Got Regex from https://ihateregex.io/expr/semver/#
-        // const semverVersionRegex = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/gm
-
-        // using less strict expression now -- SBOL interpreted Semver improperly and actually intended
-        // to allow versions like 1 or 1.3
-        const versionRegex = /^[0-9]+[\\p{L}0-9_\\.-]*$/
-        compliant = !!version.match(versionRegex)
-        version && !compliant &&
-            warnings.push(`Component '${info.displayID}' has incompliant version: ${version}`)
-    }
-
-    validateBackbones(warnings: string[]) {
-        const currentView = this.graphService.getCurrentRoot()
-        const directChildren = currentView.children || []
-        const containers = directChildren.filter(c => c.isCircuitContainer())
-
-        const nestedChildren = directChildren.map(c => c.children || []).flat()
-        const productionEdges = [...directChildren, ...nestedChildren].filter(c => {
-            if (!c.isInteraction || !c.isInteraction()) return false
-            const info = this.graphService.getFromInteractionDict(c.value)
-            return info && info.interactionType === 'Genetic Production'
-        })
-
-        for (const container of containers) {
-            const children = container.children || []
-            const glyphs = children.filter(c => c.isSequenceFeatureGlyph && c.isSequenceFeatureGlyph())
-            const hasPromoter = glyphs.some(g => {
-                const info = this.graphService.lookupInfo(g.value)
-                return info && info.partRole && info.partRole.includes('Promoter')
-            })
-
-            const containerInfo = this.graphService.lookupInfo(container.value)
-            const name = (containerInfo && containerInfo.displayID) || 'unnamed'
-
-            if (glyphs.length > 0 && !hasPromoter) {
-                warnings.push(`Backbone '${name}': no promoter (skipped in SBML)`)
-                continue
+    private groupByView(findings: Finding[]): ProblemGroup[] {
+        const groups: ProblemGroup[] = []
+        const byView = new Map<string, ProblemGroup>()
+        for (const finding of findings) {
+            let group = byView.get(finding.location.viewId)
+            if (!group) {
+                group = { viewId: finding.location.viewId, label: this.viewLabel(finding.location.viewId), errors: [], warnings: [] }
+                byView.set(finding.location.viewId, group)
+                groups.push(group)
             }
+            ;(finding.severity === 'error' ? group.errors : group.warnings).push(finding)
+        }
+        return groups
+    }
 
-            if (hasPromoter) {
-                const glyphSet = new Set(glyphs)
-                const hasValidProduction = productionEdges.some(e =>
-                    e.source && glyphSet.has(e.source) && e.target)
-                if (!hasValidProduction) {
-                    warnings.push(`Backbone '${name}': no production target (placeholder mRNA in SBML)`)
-                }
+    private viewLabel(viewId: string): string {
+        const info = this.graphService.lookupInfo(viewId)
+        return (info && info.getDisplayName()) || viewId
+    }
+
+    private updateEmptyView() {
+        const current = this.graphService.getCurrentRoot()
+        const children = (current && current.children) || []
+        this.emptyView = children.length === 0
+        const kind = current && current.isModuleView && current.isModuleView()
+            ? 'Module'
+            : current && current.isComponentView && current.isComponentView()
+                ? 'Component'
+                : 'Current view'
+        this.emptyViewLabel = current ? `${kind} '${this.viewLabel(current.getId())}'` : kind
             }
         }
-    }
-
-    validateInteractionsAndEvents(warnings: string[]) {
-        const currentView = this.graphService.getCurrentRoot()
-        const directChildren = currentView.children || []
-        const nestedChildren = directChildren.map(c => c.children || []).flat()
-        const allCells = [...directChildren, ...nestedChildren]
-
-        // Disconnected interaction edges
-        const interactions = allCells.filter(c => c.isInteraction && c.isInteraction())
-
-        for (const edge of interactions) {
-            const info = this.graphService.getFromInteractionDict(edge.value)
-            if (!info) continue
-
-            const type = info.interactionType
-            const isDegradation = type === 'Degradation'
-
-            // Degradation edges naturally have no target (species degrades into nothing)
-            if (!edge.source || (!edge.target && !isDegradation)) {
-                const connectedEnd = edge.source || edge.target
-                const endInfo = connectedEnd ? this.graphService.lookupInfo(connectedEnd.value) : null
-                const endName = endInfo ? endInfo.getDisplayName() : 'unknown'
-                const missing = !edge.source ? 'no source' : 'no target'
-                warnings.push(`${type} edge on '${endName}': ${missing}`)
-            }
-        }
-
-        // Complex formation nodes
-        const interactionNodes = allCells.filter(c => c.isInteractionNode && c.isInteractionNode())
-        for (const node of interactionNodes) {
-            const info = this.graphService.getFromInteractionDict(node.value)
-            if (!info) continue
-            const type = info.interactionType
-            if (type !== 'Biochemical Reaction' && type !== 'Non-Covalent Binding') continue
-
-            const edges = this.graphService.graph.getModel().getEdges(node) || []
-            const incoming = edges.filter(e => e.target === node)
-            const outgoing = edges.filter(e => e.source === node)
-
-            const reactantNames = incoming
-                .filter(e => e.source)
-                .map(e => {
-                    const ri = this.graphService.lookupInfo(e.source.value)
-                    return ri ? ri.getDisplayName() : '?'
-                })
-                .join(', ') || 'none'
-
-            if (outgoing.length === 0 || !outgoing[0].target)
-                warnings.push(`Complex formation (${reactantNames}): no product connection`)
-
-            for (const inEdge of incoming) {
-                if (!inEdge.source)
-                    warnings.push(`Complex formation (${reactantNames}): disconnected reactant edge`)
-            }
-        }
-
-        // Events without target species
-        const events = allCells.filter(c => c.isEvent && c.isEvent())
-        for (const event of events) {
-            const eventInfo = this.graphService.getFromEventDict(event.value)
-            if (!eventInfo) continue
-            const targetSpecies = (eventInfo.simulationData || {})['targetSpecies']
-            if (!targetSpecies)
-                warnings.push(`Event '${eventInfo.displayID || 'unnamed'}': no target species`)
-        }
-    }
-}

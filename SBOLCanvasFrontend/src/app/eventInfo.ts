@@ -1,4 +1,4 @@
-import { Info } from './info';
+import { Info, valueType } from './info';
 import { environment } from 'src/environments/environment';
 
 export class EventInfo extends Info {
@@ -26,23 +26,13 @@ export class EventInfo extends Info {
         return copy;
     }
 
-    copyDataFrom(other: EventInfo) {
-        this.uriPrefix = other.uriPrefix;
-        this.displayID = other.displayID;
-        this.version = other.version;
-        this.name = other.name;
-        this.description = other.description;
-        this.simulationData = other.simulationData ? { ...other.simulationData } : {};
-    }
-
     encode(enc: any) {
         let node = enc.document.createElement('EventInfo');
         if (this.uriPrefix)
             node.setAttribute("uriPrefix", this.uriPrefix);
         if (this.displayID)
             node.setAttribute("displayID", this.displayID);
-        if (this.version && this.version.length > 0)
-            node.setAttribute("version", this.version);
+        node.setAttribute("version", this.version == null ? "" : this.version);
         if (this.name && this.name.length > 0)
             node.setAttribute("name", this.name);
         if (this.description && this.description.length > 0)
@@ -54,6 +44,7 @@ export class EventInfo extends Info {
                 let dataNode = enc.document.createElement("add");
                 dataNode.setAttribute("value", this.simulationData[key]);
                 dataNode.setAttribute("as", key);
+                dataNode.setAttribute("type", valueType(this.simulationData[key]));
                 simulationDataNode.appendChild(dataNode);
             }
             node.appendChild(simulationDataNode);

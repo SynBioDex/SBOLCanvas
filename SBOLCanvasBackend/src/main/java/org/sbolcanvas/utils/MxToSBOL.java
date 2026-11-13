@@ -10,8 +10,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import javax.xml.namespace.QName;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
@@ -39,25 +41,19 @@ import org.sbolstandard.core2.SBOLWriter;
 import org.sbolstandard.core2.Sequence;
 import org.sbolstandard.core2.SequenceAnnotation;
 import org.sbolstandard.core2.StrategyType;
-import org.sbolstandard.core2.SystemsBiologyOntology;
 import org.sbolstandard.core2.TopLevel;
 import org.sbolstandard.core2.VariableComponent;
 import org.synbiohub.frontend.SynBioHubException;
 import org.synbiohub.frontend.SynBioHubFrontend;
-import org.w3c.dom.Document;
 
-import com.mxgraph.io.mxCodec;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGraphModel;
 import com.mxgraph.util.mxConstants;
-import com.mxgraph.util.mxUtils;
-import com.mxgraph.util.mxXmlUtils;
 import com.mxgraph.view.mxGraph;
 
 import org.sbolcanvas.data.CanvasAnnotation;
 import org.sbolcanvas.data.CombinatorialInfo;
 import org.sbolcanvas.data.EventInfo;
-import org.sbolcanvas.data.Info;
 import org.sbolcanvas.data.GlyphInfo;
 import org.sbolcanvas.data.IdentifiedInfo;
 import org.sbolcanvas.data.InteractionInfo;
@@ -149,6 +145,7 @@ public class MxToSBOL extends Converter {
 		}
 
 		layoutHelper = new LayoutHelper(document, graph);
+		modelHelper = new ModelHelper(document);
 
 		// Arrays.stream is the java 8 way to cast Object[] to some other array
 		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
@@ -245,6 +242,10 @@ public class MxToSBOL extends Converter {
 			}
 		}
 
+		for (GenericTopLevel modelRecord : ModelHelper.findModels(document)) {
+			layoutHelper.addLayoutRef(ModelHelper.owner(modelRecord), modelRecord.getIdentity(), "model");
+		}
+
 		// create the combinatorials
 		for (CombinatorialInfo info : combinatorialDict.values()) {
 			try {
@@ -336,8 +337,6 @@ public class MxToSBOL extends Converter {
 					if (molSpeciesInfo.getName() != null && !molSpeciesInfo.getName().trim().isEmpty()) {
 						molSpeciesCD.setName(molSpeciesInfo.getName());
 					}
-					molSpeciesCD.addRole(SystemsBiologyOntology.INHIBITOR); // TODO determine from interaction
-					writeSimulationAnnotations(molSpeciesCD, molSpeciesInfo.getSimulationData(), molSpeciesCD.getDisplayId());
 				}
 				molSpeciesFuncComp = modDef.createFunctionalComponent(molSpeciesCD.getDisplayId() + "_" + molSpeciesCell.getId(),
 						AccessType.PUBLIC, molSpeciesCD.getIdentity(), DirectionType.INOUT);
@@ -354,6 +353,10 @@ public class MxToSBOL extends Converter {
 			// the layout information in the component definition
 			if (molSpeciesFuncComp == null) {
 				throw new NullPointerException("Cannot upload an edited import, it is not owned by you! Create a copy or make a new design.");
+			}
+			if (molSpeciesInfo.getSimulationData() != null && !molSpeciesInfo.getSimulationData().isEmpty()) {
+				addEntries(modelHelper.getOrCreateModel(modDef.getIdentity(), modDef.getDisplayId()),
+						ModelHelper.path(modDef, molSpeciesFuncComp), molSpeciesInfo.getSimulationData());
 			}
 			layoutHelper.addGraphicalNode(modDef.getIdentity(), molSpeciesFuncComp.getDisplayId(), molSpeciesCell);
 		}
@@ -401,6 +404,14 @@ public class MxToSBOL extends Converter {
 			mxCell backboneCell = (mxCell) mxGraphModel.filterCells(containerChildren, backboneFilter)[0];
 			layoutHelper.addGraphicalNode(identity, "container", circuitContainer);
 			layoutHelper.addGraphicalNode(identity, "backbone", backboneCell);
+		}
+
+		if (glyphInfo.getSimulationData() != null && !glyphInfo.getSimulationData().isEmpty()) {
+			addEntries(modelHelper.getOrCreateModel(identity, glyphInfo.getDisplayID()), "",
+					glyphInfo.getSimulationData());
+		}
+		if (document.getComponentDefinition(identity) != null) {
+			return;
 		}
 
 		// if the uri is one of the synbiohub ones, skip the object
@@ -474,9 +485,6 @@ public class MxToSBOL extends Converter {
 		// 		compDef.addWasGeneratedBy(URI.create(generatedBy));
 		// 	}
 		// }
-
-		// persist simulation data as annotation
-		writeSimulationAnnotations(compDef, glyphInfo.getSimulationData(), compDef.getDisplayId());
 	}
 
 	private void createCombinatorial(SBOLDocument document, mxGraph graph, mxGraphModel model,
@@ -530,12 +538,12 @@ public class MxToSBOL extends Converter {
 		}
 		mxCell[] interactionCells = uniqueInteractionCells.toArray(new mxCell[0]);
 
-		ModuleDefinition modDef = document.getModuleDefinition(URI.create((String) viewCell.getId()));
-
-		ModuleInfo modDefInfo = (ModuleInfo) infoDict.get(modDef.getIdentity().toString());
+		ModuleDefinition modDef;
+		boolean layoutOnly = false;
+		modDef = document.getModuleDefinition(URI.create((String) viewCell.getId()));
+		ModuleInfo modDefInfo = (ModuleInfo) infoDict.get((String) viewCell.getId());
 
 		// if the uri is one of the synbiohub ones, just add the layout
-		boolean layoutOnly = false;
 		for (String registry : SBOLRegistries.known()) {
 			if (modDefInfo.getUriPrefix().contains(registry)
 					&& (userTokens.containsKey(registry) || modDefInfo.getUriPrefix().contains("/public/"))) {
@@ -549,10 +557,15 @@ public class MxToSBOL extends Converter {
 		if (!layoutOnly) {
 			for (mxCell moduleCell : modules) {
 				ModuleInfo modInfo = (ModuleInfo) infoDict.get(moduleCell.getValue());
-				modDef.createModule(modInfo.getDisplayID() + "_" + moduleCell.getParent().getIndex(moduleCell),
+				ModuleDefinition childModDef = document.getModuleDefinition(
 						URI.create((String) moduleCell.getValue()));
-				layoutHelper.addGraphicalNode(modDef.getIdentity(),
-						modInfo.getDisplayID() + "_" + moduleCell.getParent().getIndex(moduleCell), moduleCell);
+				String moduleDisplayId = modInfo.getDisplayID() + "_" + moduleCell.getParent().getIndex(moduleCell);
+				modDef.createModule(moduleDisplayId, URI.create((String) moduleCell.getValue()));
+				layoutHelper.addGraphicalNode(modDef.getIdentity(), moduleDisplayId, moduleCell);
+				layoutHelper.createGraphicalLayout(childModDef.getIdentity(), childModDef.getDisplayId() + "_Layout");
+				layoutHelper.addLayoutRef(modDef.getIdentity(),
+						layoutHelper.getGraphicalLayout(childModDef.getIdentity()).getIdentity(),
+						moduleDisplayId + "_LayoutRef");
 			}
 		}
 
@@ -589,7 +602,13 @@ public class MxToSBOL extends Converter {
 			}
 
 			// persist interaction simulation data
-			writeSimulationAnnotations(interaction, intInfo.getSimulationData(), interaction.getDisplayId());
+			if (intInfo.getSimulationData() != null && !intInfo.getSimulationData().isEmpty()) {
+				GenericTopLevel interactionModel = modelHelper.getOrCreateModel(modDef.getIdentity(), modDef.getDisplayId());
+				for (String key : new TreeSet<String>(intInfo.getSimulationData().keySet())) {
+					ModelHelper.addEntry(interactionModel,
+							ModelHelper.entry(ModelHelper.path(modDef, interaction), key, intInfo.getSimulationData().get(key)));
+				}
+			}
 
 			// populate sources and targets
 			if (interactionCell.getStyle().contains(STYLE_INTERACTION_NODE)) {
@@ -607,32 +626,32 @@ public class MxToSBOL extends Converter {
 			}
 		}
 
-		// events: emit one Event GenericTopLevel per event cell in this module view,
-		// with geometry written via the Layout extension (same pattern as interactions)
 		mxCell[] eventCells = Arrays.stream(mxGraphModel.filterCells(viewChildren, eventFilter))
 				.toArray(mxCell[]::new);
+		GenericTopLevel eventModel = eventCells.length > 0
+				? modelHelper.getOrCreateModel(modDef.getIdentity(), modDef.getDisplayId()) : null;
 		for (mxCell eventCell : eventCells) {
-			try {
-				EventInfo event = eventDict.get(eventCell.getValue());
-				if (event == null) {
-					System.err.println("Warning: SBOL export skipped event: no EventInfo for cell value "
-							+ eventCell.getValue());
-					continue;
-				}
-				GenericTopLevel eventTL = document.createGenericTopLevel(
-						event.getUriPrefix(), event.getDisplayID(),
-						event.getVersion() != null ? event.getVersion() : "1", createQName("Event"));
-				if (event.getName() != null && !event.getName().isEmpty()) {
-					eventTL.setName(event.getName());
-				}
-				if (event.getDescription() != null && !event.getDescription().isEmpty()) {
-					eventTL.setDescription(event.getDescription());
-				}
-				writeSimulationAnnotations(eventTL, event.getSimulationData(), eventTL.getDisplayId());
-				layoutHelper.addGraphicalNode(modDef.getIdentity(), event.getDisplayID(), eventCell);
-			} catch (SBOLValidationException e) {
-				System.err.println("Warning: SBOL export skipped event '" + eventCell.getValue() + "': " + e.toString());
+			EventInfo event = eventDict.get(eventCell.getValue());
+			if (event == null) {
+				continue;
 			}
+			List<Annotation> children = new ArrayList<>();
+			if (event.getName() != null && !event.getName().isEmpty()) {
+				children.add(new Annotation(createQName("name"), event.getName()));
+			}
+			if (event.getDescription() != null && !event.getDescription().isEmpty()) {
+				children.add(new Annotation(createQName("description"), event.getDescription()));
+			}
+			List<ModelHelper.Entry> values = new ArrayList<>();
+			if (event.getSimulationData() != null) {
+				for (String key : new TreeSet<String>(event.getSimulationData().keySet())) {
+					Object value = event.getSimulationData().get(key);
+					values.add(ModelHelper.entry("", key,
+							SBOLData.PARAM_EVENT_TARGET_SPECIES.equals(key) ? URI.create(value.toString()) : value));
+				}
+			}
+			ModelHelper.putEvent(eventModel, event.getDisplayID(), children, values);
+			layoutHelper.addGraphicalNode(modDef.getIdentity(), event.getDisplayID(), eventCell);
 		}
 	}
 
@@ -924,6 +943,19 @@ public class MxToSBOL extends Converter {
 
 	}
 
+	private void addEntries(GenericTopLevel modelRecord, String path, Hashtable<String, Object> simulationData)
+			throws SBOLValidationException {
+		Set<String> written = new HashSet<>();
+		for (ModelHelper.Entry existing : ModelHelper.readEntries(modelRecord)) {
+			if (path.equals(existing.getPath()))
+				written.add(existing.getKey());
+		}
+		for (String key : new TreeSet<String>(simulationData.keySet())) {
+			if (!written.contains(key))
+				ModelHelper.addEntry(modelRecord, ModelHelper.entry(path, key, simulationData.get(key)));
+		}
+	}
+
 	private void attachEdgeToParticipant(SBOLDocument document, mxGraphModel model, ModuleDefinition modDef,
 			Interaction interaction, boolean isSource, InteractionInfo intInfo, mxCell interactionEdge)
 			throws URISyntaxException, SBOLValidationException {
@@ -1008,6 +1040,12 @@ public class MxToSBOL extends Converter {
 			Participation participation = interaction.createParticipation(
 					intInfo.getDisplayID() + "_" + interaction.getParticipations().size(), participantFC.getIdentity(),
 					participantRole);
+			Object coefficient = (isSource ? intInfo.getSourceCoefficient() : intInfo.getTargetCoefficient())
+					.get(interactionEdge.getId());
+			if (coefficient != null) {
+				ModelHelper.addEntry(modelHelper.getOrCreateModel(modDef.getIdentity(), modDef.getDisplayId()),
+						ModelHelper.entry(ModelHelper.path(modDef, participation), "coefficient", coefficient));
+			}
 			if ((isSource && interactionEdge.getTarget() != null
 					&& interactionEdge.getTarget().getStyle().contains(STYLE_INTERACTION_NODE))
 					|| (!isSource && interactionEdge.getSource() != null

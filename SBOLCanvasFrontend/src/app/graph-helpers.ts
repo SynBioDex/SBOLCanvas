@@ -3,7 +3,7 @@
 import { GlyphService } from './glyph.service';
 import { GraphEdits } from './graph-edits';
 import { GlyphInfo } from './glyphInfo';
-import type { mxCell, mxDragSource, mxGraph } from 'src/mxgraph';
+import type { mxCell, mxCellState, mxDragSource, mxEventObject, mxGraph } from 'src/mxgraph';
 import { ConfirmComponent } from './confirm/confirm.component';
 import { MatDialog } from '@angular/material/dialog';
 import { GraphBase, mx } from './graph-base';
@@ -18,8 +18,9 @@ import { FuncCompSelectorComponent } from './func-comp-selector/func-comp-select
 import { CombinatorialInfo } from './combinatorialInfo';
 import { VariableComponentInfo } from './variableComponentInfo';
 import { IdentifiedInfo } from './identifiedInfo';
-import { InteractionInfo } from './interactionInfo';
+import { InteractionInfo, ParticipantSide } from './interactionInfo';
 import { EventInfo } from './eventInfo';
+import { checkConnection, describeCell, isReactionOwner, type DesignDictionaries } from './validation/rules';
 // import { SystemJsNgModuleLoader } from '@angular/core';
 
 /**
@@ -64,6 +65,7 @@ export class GraphHelpers extends GraphBase {
         this.updateAngularMetadata(this.graph.getSelectionCells());
 
         this.initLabelDrawing();
+        this.initReversibleArrows();
     }
 
     protected getParentInfo(cell: mxCell): GlyphInfo {
@@ -427,6 +429,7 @@ export class GraphHelpers extends GraphBase {
                     for (let cell of coupledMolecSpec) {
                         this.graph.getModel().setValue(cell, newGlyphURI);
                     }
+                    this.retargetEvents(oldGlyphURI, newGlyphURI);
                 }
 
                 this.updateInteractions(oldGlyphURI + "_" + selectedCell.getId(), newGlyphURI + "_" + selectedCell.getId());
@@ -550,6 +553,7 @@ export class GraphHelpers extends GraphBase {
                 }
 
                 let viewCell = this.graph.getModel().getCell(oldModuleURI);
+                const originalView = viewCell;
                 // if we're decoupling create a clone
                 if (shouldDecouple) {
                     viewCell = this.graph.getModel().cloneCell(viewCell);
@@ -566,6 +570,9 @@ export class GraphHelpers extends GraphBase {
                 } else {
                     // otherwise update the view cell
                     this.updateViewCell(viewCell, newModuleURI);
+                }
+                if (shouldDecouple && !(shouldCouple && !keepSubstructure)) {
+                    this.remapToModuleCopy(originalView, this.graph.getModel().getCell(newModuleURI), moduleZoomed ?? selectedCell);
                 }
 
                 // update the selected module value
@@ -755,6 +762,7 @@ export class GraphHelpers extends GraphBase {
 
         } finally {
             this.graph.getModel().endUpdate();
+            cells.forEach(cell => this.graph.refresh(cell));
         }
     }
 
@@ -871,6 +879,16 @@ export class GraphHelpers extends GraphBase {
             this.graph.getModel().remove(circuitContainer);
             let cellAdded = this.graph.getModel().add(originalParent, cellClone, originalIndex);
             cellAdded.refreshCircuitContainer(this.graph);
+        }
+    }
+
+    protected retargetEvents(oldURI: string, newURI: string) {
+        const events: Record<string, EventInfo> = this.graph.getModel().getCell(0).value[GraphBase.EVENT_DICT_INDEX] || {};
+        for (const event of Object.values(events)) {
+            if (event.simulationData?.['targetSpecies'] !== oldURI) continue;
+            const copy = event.makeCopy();
+            copy.simulationData['targetSpecies'] = newURI;
+            this.updateEventDict(copy);
         }
     }
 
@@ -1044,7 +1062,7 @@ export class GraphHelpers extends GraphBase {
     protected mutateInteractionNodeGlyph(name: string, cell: mxCell) {
         this.graph.getModel().beginUpdate();
         try {
-            name = GraphBase.STYLE_INTERACTION_NODE + this.interactionNodeTypeToName(name);
+            name = GraphBase.STYLE_INTERACTION_NODE + GraphBase.interactionNodeTypeToName(name);
 
             // Modify the style string
             let styleString = cell.style.slice();
@@ -1637,7 +1655,57 @@ export class GraphHelpers extends GraphBase {
         this.graph.getModel().remove(cell);
         // clone it because the previous remove will keep the id change if we don't
         newViewCell.id = newGlyphURI;
+        GraphHelpers.forEachChildPair(cell, newViewCell, (child, clone) => clone.id = child.id);
         this.graph.getModel().add(this.graph.getModel().getCell(1), newViewCell);
+    }
+
+    protected static forEachChildPair(original: mxCell, copy: mxCell, visit: (from: mxCell, to: mxCell) => void) {
+        (original.children || []).forEach((child, i) => {
+            const copied = copy.children && copy.children[i];
+            if (!copied) return;
+            visit(child, copied);
+            GraphHelpers.forEachChildPair(child, copied, visit);
+        });
+    }
+
+    protected remapToModuleCopy(original: mxCell, moduleCopy: mxCell, placement: mxCell) {
+        const ids = new Map<string, string>([[original.getId(), moduleCopy.getId()]]);
+        GraphHelpers.forEachChildPair(original, moduleCopy, (from, to) => ids.set(from.getId(), to.getId()));
+        GraphHelpers.forEachChildPair(original, moduleCopy, (from, to) => {
+            const source = to.isEvent() ? this.getFromEventDict(from.value) : undefined;
+            if (!source) return;
+            const copy = source.makeCopy();
+            copy.displayID = new EventInfo().displayID;
+            this.addToEventDict(copy);
+            this.graph.getModel().setValue(to, copy.getFullURI());
+        });
+        const interactions = this.graph.getModel().getCell(0).value[GraphBase.INTERACTION_DICT_INDEX];
+        for (const uri of Object.keys(interactions)) {
+            const info: InteractionInfo = interactions[uri];
+            const updated = info.makeCopy();
+            let changed = false;
+            for (const field of GraphBase.edgeKeyedFields) {
+                for (const edgeId of Object.keys(info[field])) {
+                    if (ids.has(edgeId)) {
+                        updated[field][ids.get(edgeId)] = info[field][edgeId];
+                        changed = true;
+                    }
+                }
+            }
+            for (const edge of placement.edges || []) {
+                for (const field of ['fromURI', 'toURI']) {
+                    const ref: string = updated[field][edge.getId()];
+                    const cellId = ref ? ref.substring(ref.lastIndexOf('_') + 1) : undefined;
+                    if (cellId && ids.has(cellId)) {
+                        updated[field][edge.getId()] = ref.substring(0, ref.lastIndexOf('_') + 1) + ids.get(cellId);
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) {
+                this.updateInteractionDict(updated);
+            }
+        }
     }
 
     protected removeViewCell(viewCell: mxCell) {
@@ -1779,6 +1847,7 @@ export class GraphHelpers extends GraphBase {
                             }
                         }
                     }
+                    this.retargetEvents(checking, info.getFullURI());
                 } else {
                     // update any combinatorials that referenced this one and add their parents to be checked
                     let cell0 = this.graph.getModel().getCell("0");
@@ -2047,19 +2116,19 @@ export class GraphHelpers extends GraphBase {
         }
         // reverse the info to/from
         let newInfo = this.getFromInteractionDict(cell.value).makeCopy();
-        let oldTo = newInfo.toURI[cell.id];
-        let oldFrom = newInfo.toURI[cell.id];
-        delete newInfo.toURI[cell.id];
-        delete newInfo.fromURI[cell.id];
-        if (oldTo) {
-            newInfo.fromURI[cell.id] = oldTo;
+        for (const [sourceField, targetField] of [['fromURI', 'toURI'], ['sourceRefinement', 'targetRefinement'],
+            ['sourceCoefficient', 'targetCoefficient']] as const) {
+            const oldSource = newInfo[sourceField][cell.id];
+            const oldTarget = newInfo[targetField][cell.id];
+            delete newInfo[sourceField][cell.id];
+            delete newInfo[targetField][cell.id];
+            if (oldTarget !== undefined) {
+                newInfo[sourceField][cell.id] = oldTarget as never;
+            }
+            if (oldSource !== undefined) {
+                newInfo[targetField][cell.id] = oldSource as never;
+            }
         }
-        if (oldFrom) {
-            newInfo.toURI[cell.id] = oldFrom;
-        }
-        // nuke the refinemnets, as source refinements don't match target refinements
-        delete newInfo.sourceRefinement[cell.id];
-        delete newInfo.targetRefinement[cell.id];
         this.updateInteractionDict(newInfo);
         this.updateAngularMetadata(this.graph.getSelectionCells());
     }
@@ -2129,31 +2198,16 @@ export class GraphHelpers extends GraphBase {
         return cell0.value[GraphBase.EVENT_DICT_INDEX][eventURI];
     }
 
-    /**
-     * Resolve a species' display name to the species glyph's full URI.
-     * Returns null unless exactly one species on the canvas has that label.
-     */
-    public getSpeciesURIForLabel(label: string): string {
-        let match: string = null;
-        const model = this.graph.getModel();
-        for (const cell of Object.values(model.cells) as any[]) {
-            if (!cell || !cell.isMolecularSpeciesGlyph || !cell.isMolecularSpeciesGlyph()) {
+    public getSpeciesTargets(): { uri: string; name: string; displayID: string }[] {
+        const targets = new Map<string, { uri: string; name: string; displayID: string }>();
+        for (const cell of Object.values(this.graph.getModel().cells) as mxCell[]) {
+            if (!cell || !cell.isMolecularSpeciesGlyph || !cell.isMolecularSpeciesGlyph() || targets.has(cell.value)) {
                 continue;
             }
-            const info = <GlyphInfo>this.getFromInfoDict(<string>cell.value);
-            if (info && info.getDisplayName() === label) {
-                if (match) {
-                    return null; // ambiguous: two species share the label
-                }
-                match = <string>cell.value;
-            }
+            const info = <GlyphInfo>this.getFromInfoDict(cell.value);
+            targets.set(cell.value, { uri: cell.value, name: info ? info.getDisplayName() : '', displayID: info ? info.displayID : '' });
         }
-        return match;
-    }
-
-    public getSpeciesLabelForURI(uri: string): string {
-        const info = this.getFromInfoDict(uri);
-        return info ? info.getDisplayName() : null;
+        return [...targets.values()];
     }
 
     /**
@@ -2360,5 +2414,212 @@ export class GraphHelpers extends GraphBase {
 
     protected showError(message: string) {
         this.dialog.open(ErrorComponent, { data: message });
+    }
+
+    protected validateInteraction(interactionType: string, source: mxCell, target: mxCell): string | null {
+        const rules = this.metadataService.interactionRules;
+        if (!rules) {
+            return null;
+        }
+        const issues = checkConnection(interactionType, source, target, rules, {}, describeCell(this.designDictionaries()));
+        return issues.length > 0 ? issues[0].message : null;
+    }
+
+    protected designDictionaries(): DesignDictionaries {
+        const value = this.graph.getModel().getCell(0)?.value || [];
+        return {
+            info: value[GraphBase.INFO_DICT_INDEX] || {},
+            interactions: value[GraphBase.INTERACTION_DICT_INDEX] || {},
+            events: value[GraphBase.EVENT_DICT_INDEX] || {},
+        };
+    }
+
+    protected initReversibleArrows() {
+        const helpers = this;
+        const baseGetCellStyle = this.graph.getCellStyle;
+        this.graph.getCellStyle = function (cell: mxCell) {
+            const style = baseGetCellStyle.apply(this, arguments);
+            if (!cell || !cell.isInteraction || !cell.isInteraction()) {
+                return style;
+            }
+            const node = [cell.source, cell.target].find(end => end && end.isInteractionNode());
+            const owner = node ?? cell;
+            const info = helpers.getFromInteractionDict(owner.value);
+            if (!info || !helpers.isReactionReversible(info)
+                || (node && cell.target === node && info.sourceRefinement[cell.getId()] === 'Modifier')) {
+                return style;
+            }
+            return { ...style, startArrow: 'block', startFill: 1, startSize: 10 };
+        };
+    }
+
+    protected isReactionReversible(info: InteractionInfo): boolean {
+        const rules = this.metadataService.interactionRules;
+        const interactionType = info?.interactionType;
+        if (!rules || !interactionType || !Object.prototype.hasOwnProperty.call(rules, interactionType)) {
+            return false;
+        }
+        if (rules[interactionType].massAction === false) {
+            return false;
+        }
+        if (info?.simulationData?.['reversible'] !== undefined) {
+            return info.simulationData['reversible'] === true;
+        }
+        const field = (this.metadataService.simulationConfig?.[interactionType] || [])
+            .find(entry => entry.key === 'reversible');
+        return field?.default === true;
+    }
+
+    isSelectedReactionOwner(): boolean {
+        const selected = this.graph.getSelectionCells();
+        return selected.length === 1 && isReactionOwner(selected[0]);
+    }
+
+    selectedParticipantSides(info: InteractionInfo): ParticipantSide[] {
+        const edge = this.graph.getSelectionCell();
+        if (!info || !edge?.isEdge()) return [];
+        const sides: ParticipantSide[] = [];
+        if (!edge.getTerminal(true)?.isInteractionNode()) sides.push('source');
+        if (!this.metadataService.interactionRules[info.interactionType]?.targetless &&
+            !edge.getTerminal(false)?.isInteractionNode()) sides.push('target');
+        return sides;
+    }
+
+    selectedParticipantRole(info: InteractionInfo, side: ParticipantSide): string {
+        const refinements = side === 'source' ? info.sourceRefinement : info.targetRefinement;
+        return refinements[this.graph.getSelectionCell()?.getId()]
+            || this.metadataService.interactionRules[info.interactionType][side].defaultRole;
+    }
+
+    protected installCanvasAccessibility(): void {
+        const container = this.graphContainer;
+        container.setAttribute('tabindex', '0');
+        container.setAttribute('role', 'group');
+        container.setAttribute('aria-label', 'Circuit design canvas');
+
+        container.addEventListener('pointerdown', (evt: PointerEvent) => {
+            const target = evt.target as Element | null;
+            if (target && (target.closest('input, textarea, select') ||
+                (target instanceof HTMLElement && target.isContentEditable))) {
+                return;
+            }
+            if (this.graph.isEditing()) {
+                return;
+            }
+            container.focus();
+        }, true);
+
+        const shapeOwnsFocus = (node: Element): boolean =>
+            node === document.activeElement || node.contains(document.activeElement);
+        const activationAllowed = (): boolean =>
+            this.graph.isEnabled() && !this.graph.isEditing() && this.dialog.openDialogs.length === 0;
+        const renderer = this.graph.cellRenderer;
+        const self = this;
+        const baseInstallListeners = renderer.installListeners;
+        const baseRedrawLabel = renderer.redrawLabel;
+
+        const applyAccessibleState = (state: mxCellState) => {
+            const node = state && state.shape && state.shape.node;
+            if (!node || node.nodeType !== 1) {
+                return;
+            }
+            const label = self.canvasAccessibleName(state.cell);
+            if (!label) {
+                node.removeAttribute('role');
+                node.removeAttribute('aria-label');
+                node.removeAttribute('tabindex');
+                node.removeAttribute('aria-pressed');
+                return;
+            }
+            node.setAttribute('role', 'button');
+            node.setAttribute('aria-label', label);
+            node.setAttribute('tabindex', '0');
+            node.setAttribute('aria-pressed', self.graph.isCellSelected(state.cell) ? 'true' : 'false');
+        };
+
+        renderer.installListeners = function (state: mxCellState) {
+            baseInstallListeners.apply(this, arguments);
+            const node = state.shape && state.shape.node;
+            if (!node || node.nodeType !== 1) {
+                return;
+            }
+            const shape = state.shape;
+            const baseShapeDestroy = shape.destroy;
+            shape.destroy = function () {
+                if (shapeOwnsFocus(node)) {
+                    container.focus();
+                }
+                baseShapeDestroy.apply(this, arguments);
+            };
+            mx.mxEvent.addListener(node, 'keydown', (evt: KeyboardEvent) => {
+                if (evt.key !== 'Enter' && evt.key !== ' ' || !activationAllowed()) {
+                    return;
+                }
+                evt.preventDefault();
+                evt.stopPropagation();
+                const cell = state.cell;
+                if (evt.shiftKey || evt.ctrlKey || evt.metaKey) {
+                    if (self.graph.isCellSelected(cell)) {
+                        self.graph.removeSelectionCell(cell);
+                    } else {
+                        self.graph.addSelectionCell(cell);
+                    }
+                } else {
+                    self.graph.setSelectionCell(cell);
+                }
+            });
+        };
+
+        renderer.redrawLabel = function (state: mxCellState, forced: boolean) {
+            baseRedrawLabel.apply(this, arguments);
+            applyAccessibleState(state);
+        };
+
+        const updatePressed = (cell: mxCell) => {
+            const state = this.graph.view.getState(cell);
+            const node = state && state.shape && state.shape.node;
+            if (node && node.nodeType === 1 && node.getAttribute('role') === 'button') {
+                node.setAttribute('aria-pressed', this.graph.isCellSelected(cell) ? 'true' : 'false');
+            }
+        };
+        this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, (_sender: unknown, evt: mxEventObject) => {
+            for (const cell of [...(evt.getProperty('added') || []), ...(evt.getProperty('removed') || [])] as mxCell[]) {
+                updatePressed(cell);
+            }
+        });
+    }
+
+    protected canvasAccessibleName(cell: mxCell): string | null {
+        if (cell.isSequenceFeatureGlyph() || cell.isMolecularSpeciesGlyph()
+            || cell.isCircuitContainer() || cell.isModule()) {
+            const info = this.getFromInfoDict(cell.value);
+            if (!info) {
+                return null;
+            }
+            const label = cell.isCircuitContainer() ? 'DNA strand'
+                : cell.isModule() ? 'Module'
+                : info instanceof GlyphInfo ? (info.partRole || info.partType || 'Glyph')
+                : 'Glyph';
+            const name = info.getDisplayName();
+            return name ? `${label} ${name}` : label;
+        }
+        if (cell.isInteraction() || cell.isInteractionNode()) {
+            const info = this.getFromInteractionDict(cell.value);
+            if (!info) {
+                return null;
+            }
+            const interactionType = info.interactionType || 'Interaction';
+            const name = info.getDisplayName();
+            return name ? `${interactionType} ${name}` : interactionType;
+        }
+        if (cell.isEvent()) {
+            const info = this.getFromEventDict(cell.value);
+            if (!info) {
+                return null;
+            }
+            const name = info.getDisplayName();
+            return name ? `Event ${name}` : 'Event';
+        }
+        return null;
     }
 }

@@ -50,20 +50,6 @@ export class CombinatorialInfo extends Info{
         return copy;
     }
 
-    copyDataFrom(info: CombinatorialInfo) {
-        this.displayID = info.displayID;
-        this.uriPrefix = info.uriPrefix;
-        this.templateURI = info.templateURI;
-        this.version = info.version;
-        this.strategy = info.strategy;
-        this.name = info.name;
-        this.description = info.description;
-        this.variableComponents = [];
-        for(let key in info.variableComponents){
-            this.variableComponents[key] = info.variableComponents[key].makeCopy()
-        }
-    }
-
     encode(enc: any) {
         let node = enc.document.createElement('CombinatorialInfo');
         if(this.displayID)

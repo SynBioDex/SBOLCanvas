@@ -1,20 +1,17 @@
 package org.sbolcanvas.utils;
 
-import java.net.URI;
 import java.util.Hashtable;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.sbolstandard.core2.SBOLDocument;
 import org.sbolstandard.core2.ComponentDefinition;
+import org.sbolstandard.core2.Annotation;
+import org.sbolstandard.core2.GenericTopLevel;
 
 import com.mxgraph.io.mxCodec;
 import com.mxgraph.model.mxCell;
@@ -76,8 +73,8 @@ class ConverterCodecTest {
         void simulationDataPreservedAsHashtable() {
             GlyphInfo original = new GlyphInfo();
             Hashtable<String, Object> simData = new Hashtable<>();
-            simData.put("kd", "0.0075");
-            simData.put("initialAmount", "100");
+            simData.put("initialAmount", 100.0);
+            simData.put("boundaryCondition", Boolean.FALSE);
             original.setSimulationData(simData);
 
             Object decoded = encodeDecodeCellValue(original);
@@ -88,8 +85,8 @@ class ConverterCodecTest {
             assertNotNull(decodedSimData, "simulationData should not be null after decode");
             assertInstanceOf(Hashtable.class, decodedSimData,
                     "simulationData should be Hashtable, not ArrayList");
-            assertEquals("0.0075", decodedSimData.get("kd"));
-            assertEquals("100", decodedSimData.get("initialAmount"));
+            assertEquals(100.0, decodedSimData.get("initialAmount"));
+            assertEquals(Boolean.FALSE, decodedSimData.get("boundaryCondition"));
         }
 
     }
@@ -102,10 +99,11 @@ class ConverterCodecTest {
         @DisplayName("simulationData survives encode/decode as Hashtable")
         void simulationDataPreservedAsHashtable() {
             InteractionInfo original = new InteractionInfo();
+            original.setInteractionType("Inhibition");
             Hashtable<String, Object> simData = new Hashtable<>();
-            simData.put("Kr_f", "0.5");
-            simData.put("Kr_r", "1.0");
-            simData.put("nc", "2.0");
+            simData.put("Kr_f", 0.5);
+            simData.put("Kr_r", 1.0);
+            simData.put("cooperativity", 2.0);
             original.setSimulationData(simData);
 
             Object decoded = encodeDecodeCellValue(original);
@@ -117,9 +115,9 @@ class ConverterCodecTest {
             assertInstanceOf(Hashtable.class, decodedSimData,
                     "simulationData should be Hashtable, not ArrayList");
             assertEquals(3, decodedSimData.size());
-            assertEquals("0.5", decodedSimData.get("Kr_f"));
-            assertEquals("1.0", decodedSimData.get("Kr_r"));
-            assertEquals("2.0", decodedSimData.get("nc"));
+            assertEquals(0.5, decodedSimData.get("Kr_f"));
+            assertEquals(1.0, decodedSimData.get("Kr_r"));
+            assertEquals(2.0, decodedSimData.get("cooperativity"));
         }
 
     }
@@ -135,9 +133,9 @@ class ConverterCodecTest {
             original.setName("IPTG_High");
             original.setDescription("IPTG set to high level");
             Hashtable<String, Object> simData = new Hashtable<>();
-            simData.put("targetSpecies", "IPTG");
-            simData.put("delay", "100");
-            simData.put("assignmentValue", "50");
+            simData.put("targetSpecies", "https://sbolcanvas.org/LacI/1");
+            simData.put("delay", 100.0);
+            simData.put("assignmentValue", 50.0);
             original.setSimulationData(simData);
 
             Object decoded = encodeDecodeCellValue(original);
@@ -153,41 +151,79 @@ class ConverterCodecTest {
             assertNotNull(decodedSimData, "simulationData should not be null after decode");
             assertInstanceOf(Hashtable.class, decodedSimData,
                     "simulationData should be Hashtable, not ArrayList");
-            assertEquals("IPTG", decodedSimData.get("targetSpecies"));
-            assertEquals("100", decodedSimData.get("delay"));
-            assertEquals("50", decodedSimData.get("assignmentValue"));
+            assertEquals("https://sbolcanvas.org/LacI/1", decodedSimData.get("targetSpecies"));
+            assertEquals(100.0, decodedSimData.get("delay"));
+            assertEquals(50.0, decodedSimData.get("assignmentValue"));
         }
 
     }
 
-    /** @MethodSource for {@link SBOLAnnotationRoundTrip} (must be static; nested classes are inner). */
-    static Stream<Arguments> emptyOrNullSimulationData() {
-        return Stream.of(
-                Arguments.of("empty Hashtable", new Hashtable<String, Object>()),
-                Arguments.of("null", null)
-        );
-    }
-
-    @Nested
-    @DisplayName("SBOL Annotation Round-Trip")
-    class SBOLAnnotationRoundTrip {
-
-        @ParameterizedTest(name = "{0} simulationData creates no SBOLCanvas annotation child")
-        @MethodSource("org.sbolcanvas.utils.ConverterCodecTest#emptyOrNullSimulationData")
-        void emptyOrNullSimulationDataCreatesNoAnnotation(String label,
-                Hashtable<String, Object> simData) throws Exception {
-            SBOLDocument doc = new SBOLDocument();
-            doc.setDefaultURIprefix("https://sbolcanvas.org/");
-            ComponentDefinition cd = doc.createComponentDefinition(
-                    "part_" + label.replaceAll("\\W", "_"), "1",
-                    new URI("http://www.biopax.org/release/biopax-level3.owl#DnaRegion"));
-
-            Converter.writeSimulationAnnotations(cd, simData, cd.getDisplayId());
-
-            assertTrue(cd.getAnnotations().isEmpty(),
-                    label + " simulationData should not create any SBOLCanvas annotation, got: "
-                            + cd.getAnnotations());
+    @Test
+    void loadingTypesParametersAndCoefficients() throws Exception {
+        GlyphInfo protein = GraphModelSupport.glyphInfo("protein", "Protein");
+        protein.setSimulationData(new Hashtable<String, Object>());
+        protein.getSimulationData().put("initialAmount", 2.5);
+        protein.getSimulationData().put("boundaryCondition", Boolean.TRUE);
+        InteractionInfo reaction = GraphModelSupport.interactionInfo("reaction", "Biochemical Reaction");
+        reaction.getSimulationData().put("Kc_f", 0.05);
+        reaction.getSimulationData().put("reversible", Boolean.FALSE);
+        mxGraphModel graph = new mxGraphModel();
+        java.util.ArrayList<Object> container = GraphModelSupport.dataContainer(
+                java.util.Collections.<org.sbolcanvas.data.Info>singletonList(protein),
+                java.util.Collections.singletonList(reaction));
+        GraphModelSupport.install(graph, container);
+        mxCell view = GraphModelSupport.viewCell(graph);
+        mxCell species = GraphModelSupport.species(graph, view, protein.getFullURI());
+        mxCell edge = GraphModelSupport.processEdge(graph, view, reaction.getFullURI(), species, species);
+        reaction.getSourceCoefficient().put(edge.getId(), 3.5);
+        reaction.getTargetCoefficient().put(edge.getId(), 7.0);
+        reaction.getSourceRefinement().put(edge.getId(), "Modifier");
+        MxToSBML converter = new MxToSBML();
+        converter.loadGraphAndDictionaries(new java.io.ByteArrayInputStream(
+                GraphModelSupport.encodeModel(graph).getBytes("UTF-8")));
+        GlyphInfo decoded = (GlyphInfo) converter.infoDict.get(protein.getFullURI());
+        assertEquals(2.5, decoded.getSimulationData().get("initialAmount"));
+        assertEquals(true, decoded.getSimulationData().get("boundaryCondition"));
+        InteractionInfo decodedReaction = converter.interactionDict.get(reaction.getFullURI());
+        assertEquals(0.05, decodedReaction.getSimulationData().get("Kc_f"));
+        assertEquals(false, decodedReaction.getSimulationData().get("reversible"));
+        assertEquals(3.5, decodedReaction.getSourceCoefficient().get(edge.getId()));
+        assertEquals(7.0, decodedReaction.getTargetCoefficient().get(edge.getId()));
+        assertEquals(reaction.getSourceRefinement(), decodedReaction.getSourceRefinement());
         }
+
+    @Test
+    void explicitZeroAndFalseSurviveLoadWithoutDefaults() throws Exception {
+        GlyphInfo protein = GraphModelSupport.glyphInfo("protein", "Protein");
+        protein.setName("explicit name");
+        protein.setSimulationData(new Hashtable<String, Object>());
+        protein.getSimulationData().put("initialAmount", 0.0);
+        protein.getSimulationData().put("boundaryCondition", Boolean.FALSE);
+        InteractionInfo reaction = GraphModelSupport.interactionInfo("reaction", "Biochemical Reaction");
+        reaction.getSimulationData().put("Kc_f", 0.0);
+        reaction.getSimulationData().put("reversible", Boolean.FALSE);
+        mxGraphModel graph = new mxGraphModel();
+        java.util.ArrayList<Object> container = GraphModelSupport.dataContainer(
+                java.util.Collections.<org.sbolcanvas.data.Info>singletonList(protein),
+                java.util.Collections.singletonList(reaction));
+        GraphModelSupport.install(graph, container);
+        mxCell view = GraphModelSupport.viewCell(graph);
+        mxCell species = GraphModelSupport.species(graph, view, protein.getFullURI());
+        mxCell edge = GraphModelSupport.processEdge(graph, view, reaction.getFullURI(), species, species);
+        reaction.getSourceCoefficient().put(edge.getId(), 0.0);
+        MxToSBML converter = new MxToSBML();
+        converter.loadGraphAndDictionaries(new java.io.ByteArrayInputStream(
+                GraphModelSupport.encodeModel(graph).getBytes("UTF-8")));
+        GlyphInfo decodedGlyph = (GlyphInfo) converter.infoDict.get(protein.getFullURI());
+        assertEquals(0.0, decodedGlyph.getSimulationData().get("initialAmount"));
+        assertEquals(Boolean.FALSE, decodedGlyph.getSimulationData().get("boundaryCondition"));
+        assertEquals("explicit name", decodedGlyph.getName());
+        assertEquals(2, decodedGlyph.getSimulationData().size());
+        InteractionInfo decodedReaction = converter.interactionDict.get(reaction.getFullURI());
+        assertEquals(0.0, decodedReaction.getSimulationData().get("Kc_f"));
+        assertEquals(Boolean.FALSE, decodedReaction.getSimulationData().get("reversible"));
+        assertEquals(0.0, decodedReaction.getSourceCoefficient().get(edge.getId()));
+        assertFalse(decodedReaction.getSimulationData().containsKey("Kc_r"));
     }
 
 }

@@ -53,6 +53,7 @@ public class LayoutHelper {
 			return;
 		GenericTopLevel layout = document.createGenericTopLevel(displayId, Converter.createQName("Layout"));
 		layout.createAnnotation(Converter.createQName("objectRef"), objectRef);
+		layout.createAnnotation(Converter.createQName("formatVersion"), ModelHelper.FORMAT_VERSION);
 		layouts.put(objectRef, layout);
 	}
 	

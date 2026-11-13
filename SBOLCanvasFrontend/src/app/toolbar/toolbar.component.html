@@ -82,16 +82,18 @@
 
         <div class="toolbar-row-section">
 
-            <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Undo'" (click)="graphService.undo()">
+            <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Undo'" aria-label="Undo"
+                (click)="graphService.undo()">
                 <mat-icon>undo</mat-icon>
             </button>
 
-            <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Redo'" (click)="graphService.redo()">
+            <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Redo'" aria-label="Redo"
+                (click)="graphService.redo()">
                 <mat-icon>redo</mat-icon>
             </button>
 
             <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Delete selected parts'"
-                (click)="graphService.delete()">
+                aria-label="Delete selected parts" (click)="graphService.delete()">
                 <mat-icon>delete</mat-icon>
             </button>
 
@@ -102,12 +104,12 @@
 
             <button mat-stroked-button class="toolbar-row-button"
                 [matTooltip]="'Focus in the selected part to view and edit its subparts'"
-                (click)="graphService.enterGlyph()">
+                aria-label="Focus into selected part" (click)="graphService.enterGlyph()">
                 <mat-icon>save_alt</mat-icon>
             </button>
 
             <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Focus out to the parent part'"
-                (click)="graphService.exitGlyph()">
+                aria-label="Focus out to parent part" (click)="graphService.exitGlyph()">
                 <mat-icon>open_in_browser</mat-icon>
             </button>
 
@@ -117,17 +119,17 @@
         <div class="toolbar-row-section">
 
             <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Flip selected part\'s orientation'"
-                (click)="graphService.flipSequenceFeatureGlyph()">
+                aria-label="Flip selected part orientation" (click)="graphService.flipSequenceFeatureGlyph()">
                 <mat-icon>swap_vert</mat-icon>
             </button>
 
             <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Bring selected part to front'"
-                (click)="graphService.sendSelectionToFront()">
+                aria-label="Bring selected part to front" (click)="graphService.sendSelectionToFront()">
                 <mat-icon>flip_to_back</mat-icon>
             </button>
 
             <button mat-stroked-button class="toolbar-row-button" [matTooltip]="'Send selected part to back'"
-                (click)="graphService.sendSelectionToBack()">
+                aria-label="Send selected part to back" (click)="graphService.sendSelectionToBack()">
                 <mat-icon>flip_to_front</mat-icon>
             </button>
 

@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.TreeSet;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 
 import org.sbolstandard.core2.ComponentDefinition;
 import org.sbolstandard.core2.Participation;
@@ -16,11 +19,12 @@ public class SBOLData {
 
 	// Simulation parameter name constants. Used by SBOLData and MxToSBML
 	// Frontend model-editor component uses these same string values.
-	// If a frontend key doesn't match, getParam() silently falls through to defaults.
 	public static final String PARAM_KD = "kd";
 	public static final String PARAM_KC_F = "Kc_f";
 	public static final String PARAM_KC_R = "Kc_r";
+	public static final String PARAM_REVERSIBLE = "reversible";
 	public static final String PARAM_NC = "nc";
+	public static final String PARAM_COOPERATIVITY = "cooperativity";
 	public static final String PARAM_NG = "ng";
 	public static final String PARAM_NP = "np";
 	public static final String PARAM_KO = "ko";
@@ -52,7 +56,8 @@ public class SBOLData {
 	public static BiMap<String, URI> interactionRoles;
 	public static HashMap<URI, URI> interactionSourceRoles;
 	public static HashMap<URI, URI> interactionTargetRoles;
-	public static HashMap<String, LinkedHashMap<String, Object>> simulationConfig;
+	public static LinkedHashMap<String, List<LinkedHashMap<String, Object>>> simulationConfig;
+	public static final String[] INTERACTION_FIELD_CONTEXTS;
 
 	static {
 		so = new SequenceOntology();
@@ -134,7 +139,6 @@ public class SBOLData {
 		interactions.put("Genetic Production", SystemsBiologyOntology.GENETIC_PRODUCTION);
 		interactions.put("Control", SystemsBiologyOntology.CONTROL);
 		interactions.put("Dissociation", SystemsBiologyOntology.DISSOCIATION);
-		interactions.put("Process", SystemsBiologyOntology.PROCESS);
 
 		interactionRoles = new BiMap<String, URI>();
 		interactionRoles.put("Inhibitor", SystemsBiologyOntology.INHIBITOR);
@@ -156,7 +160,6 @@ public class SBOLData {
 		interactionTargetRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.PRODUCT);
 		interactionTargetRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIED);
 		interactionTargetRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.PRODUCT);
-		interactionTargetRoles.put(SystemsBiologyOntology.PROCESS, SystemsBiologyOntology.PRODUCT);
 
 		interactionSourceRoles = new HashMap<URI, URI>();
 		interactionSourceRoles.put(SystemsBiologyOntology.INHIBITION, SystemsBiologyOntology.INHIBITOR);
@@ -167,57 +170,58 @@ public class SBOLData {
 		interactionSourceRoles.put(SystemsBiologyOntology.GENETIC_PRODUCTION, SystemsBiologyOntology.TEMPLATE);
 		interactionSourceRoles.put(SystemsBiologyOntology.CONTROL, SystemsBiologyOntology.MODIFIER);
 		interactionSourceRoles.put(SystemsBiologyOntology.DISSOCIATION, SystemsBiologyOntology.REACTANT);
-		interactionSourceRoles.put(SystemsBiologyOntology.PROCESS, SystemsBiologyOntology.REACTANT);
 
 		// Using values from iBioSim as default values for simulation parameters
 		// LinkedHashMap keeps parameters in order in the UI.
-		simulationConfig = new HashMap<String, LinkedHashMap<String, Object>>();
+		simulationConfig = new LinkedHashMap<>();
+		simulationConfig.put("species", Arrays.asList(
+				field("initialAmount", "number", "Initial amount", 0.0, 0.0),
+				field("boundaryCondition", "boolean", "Boundary condition", false, null)));
+		simulationConfig.put("event", Arrays.asList(
+				field(PARAM_EVENT_DELAY, "number", "Delay", 0.0, 0.0),
+				field(PARAM_EVENT_ASSIGNMENT_VALUE, "number", "Assignment value", 0.0, null),
+				field(PARAM_EVENT_TARGET_SPECIES, "uri", "Target species", null, null)));
+		simulationConfig.put("participation", Arrays.asList(
+				field("coefficient", "number", "Stoichiometry", null, 0.0)));
+		simulationConfig.put("Degradation", Arrays.asList(number(PARAM_KD, "Degradation rate", 0.0075)));
+		List<LinkedHashMap<String, Object>> massAction = Arrays.asList(
+				number(PARAM_KC_F, "Forward rate", 0.1),
+				number(PARAM_KC_R, "Reverse rate", 1.0),
+				field(PARAM_REVERSIBLE, "boolean", "Reversible", false, null));
+		simulationConfig.put("Biochemical Reaction", massAction);
+		List<LinkedHashMap<String, Object>> bindingAction = Arrays.asList(
+				number(PARAM_KC_F, "Forward rate", 0.05),
+				number(PARAM_KC_R, "Reverse rate", 1.0),
+				field(PARAM_REVERSIBLE, "boolean", "Reversible", false, null));
+		simulationConfig.put("Non-Covalent Binding", bindingAction);
+		simulationConfig.put("Dissociation", massAction);
+		simulationConfig.put("Promoter", Arrays.asList(
+				number(PARAM_NG, "Initial promoter count", 2.0),
+				number(PARAM_NP, "Stoichiometry of production", 10.0),
+				number(PARAM_KO, "Open complex production rate", 0.05),
+				number(PARAM_KB, "Basal production rate", 0.0001),
+				number(PARAM_KA, "Activation production rate", 0.25),
+				number(PARAM_KO_F, "Forward RNAP binding rate", 0.033),
+				number(PARAM_KO_R, "Reverse RNAP binding rate", 1.0),
+				number(PARAM_KAO_F, "Forward activated RNAP binding rate", 1.0),
+				number(PARAM_KAO_R, "Reverse activated RNAP binding rate", 1.0),
+				number(PARAM_NR, "Initial RNAP count", 30.0)));
+		simulationConfig.put("Inhibition", Arrays.asList(
+				number(PARAM_KR_F, "Forward repression binding rate", 0.5),
+				number(PARAM_KR_R, "Reverse repression binding rate", 1.0),
+				number(PARAM_COOPERATIVITY, "Stoichiometry of binding", 2.0)));
+		simulationConfig.put("Stimulation", Arrays.asList(
+				number(PARAM_KA_F, "Forward activation binding rate", 0.0033),
+				number(PARAM_KA_R, "Reverse activation binding rate", 1.0),
+				number(PARAM_COOPERATIVITY, "Stoichiometry of binding", 2.0)));
 
-		// Degradation (SBO:0000179)
-		LinkedHashMap<String, Object> degradationParams = new LinkedHashMap<>();
-		degradationParams.put(PARAM_KD, 0.0075); // Default degradation rate
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.DEGRADATION), degradationParams);
-
-		// Complex Formation (SBO:0000177)
-		// Kc_f/Kc_r on node, nc per-reactant on arrows to node
-		// Kc (complex formation) = Kc_f / Kc_r
-		LinkedHashMap<String, Object> complexParams = new LinkedHashMap<>();
-		complexParams.put(PARAM_KC_F, 0.05); // Forward complex formation rate
-		complexParams.put(PARAM_KC_R, 1.0); // Reverse complex formation rate
-		complexParams.put(PARAM_NC, 2.0); // Stoichiometry of binding
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.BIOCHEMICAL_REACTION), complexParams);
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.NON_COVALENT_BINDING), complexParams);
-
-		// Genetic Production (SBO:0000589) - Parameters are on the Promoter
-		LinkedHashMap<String, Object> promoterParams = new LinkedHashMap<>();
-		promoterParams.put(PARAM_NG, 2.0); // Initial promoter count
-		promoterParams.put(PARAM_NP, 10.0); // Stoichiometry of production
-		promoterParams.put(PARAM_KO, 0.05); // Open complex production rate
-		promoterParams.put(PARAM_KB, 0.0001); // Basal production rate
-		promoterParams.put(PARAM_KA, 0.25); // Activation production rate
-		promoterParams.put(PARAM_KO_F, 0.033); // Forward RNAP binding rate (Ko = Ko_f/Ko_r)
-		promoterParams.put(PARAM_KO_R, 1.0); // Reverse RNAP binding rate
-		promoterParams.put(PARAM_KAO_F, 1.0); // Forward activated RNAP binding rate (Kao = Kao_f/Kao_r)
-		promoterParams.put(PARAM_KAO_R, 1.0); // Reverse activated RNAP binding rate
-		promoterParams.put(PARAM_NR, 30.0); // Initial RNAP count
-		simulationConfig.put(roles.getKey(SequenceOntology.PROMOTER), promoterParams);
-
-		// Inhibition (SBO:0000169)
-		// Kr (repression binding) = Kr_f / Kr_r
-		LinkedHashMap<String, Object> inhibitionParams = new LinkedHashMap<>();
-		inhibitionParams.put(PARAM_KR_F, 0.5); // Forward repression binding rate
-		inhibitionParams.put(PARAM_KR_R, 1.0); // Reverse repression binding rate
-		inhibitionParams.put(PARAM_NC, 2.0); // Stoichiometry of binding
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.INHIBITION), inhibitionParams);
-
-		// Stimulation (SBO:0000170)
-		// Ka (activation binding) = Ka_f / Ka_r
-		LinkedHashMap<String, Object> stimulationParams = new LinkedHashMap<>();
-		stimulationParams.put(PARAM_KA_F, 0.0033); // Forward activation binding rate
-		stimulationParams.put(PARAM_KA_R, 1.0); // Reverse activation binding rate
-		stimulationParams.put(PARAM_NC, 2.0); // Stoichiometry of binding
-		simulationConfig.put(interactions.getKey(SystemsBiologyOntology.STIMULATION), stimulationParams);
-
+		List<String> interactionContexts = new ArrayList<>();
+		for (String context : simulationConfig.keySet()) {
+			if (interactions.getValue(context) != null) {
+				interactionContexts.add(context);
+			}
+		}
+		INTERACTION_FIELD_CONTEXTS = interactionContexts.toArray(new String[0]);
 	}
 
 	/**
@@ -227,7 +231,7 @@ public class SBOLData {
 	 */
 	public static String[] getTypes() {
 		String[] typeNames = types.keys().toArray(new String[0]);
-		Arrays.sort(typeNames);
+		Arrays.sort(typeNames, String.CASE_INSENSITIVE_ORDER);
 		return typeNames;
 	}
 
@@ -238,7 +242,7 @@ public class SBOLData {
 	 */
 	public static String[] getRoles() {
 		String[] roleNames = roles.keys().toArray(new String[0]);
-		Arrays.sort(roleNames);
+		Arrays.sort(roleNames, String.CASE_INSENSITIVE_ORDER);
 		return roleNames;
 	}
 
@@ -252,7 +256,7 @@ public class SBOLData {
 		if (parentName == null || parentName.equals("")) {
 			parentName = "NGA (No Glyph Assigned)";
 		}
-		TreeSet<String> refinementNames = new TreeSet<String>();
+		TreeSet<String> refinementNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 		if (roles.getValue(parentName) != null) {
 			Set<URI> descendants = so.getDescendantURIsOf(roles.getValue(parentName));
 
@@ -281,7 +285,7 @@ public class SBOLData {
 		if (parentURI == null) {
 			return new String[0];
 		}
-		Set<String> refinementNames = new TreeSet<String>();
+		Set<String> refinementNames = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 		Set<URI> descendants = sbo.getDescendantURIsOf(parentURI);
 		if (descendants != null) {
 			for (URI uri : descendants) {
@@ -297,30 +301,103 @@ public class SBOLData {
 	 */
 	public static String[] getInteractions() {
 		String[] interactionNames = interactions.keys().toArray(new String[0]);
-		Arrays.sort(interactionNames);
+		Arrays.sort(interactionNames, String.CASE_INSENSITIVE_ORDER);
 		return interactionNames;
 	}
 
-	/**
-	 * Returns a hashmap of interaction name to valid roles
-	 */
-	public static HashMap<String, String[]> getInteractionRoles() {
-		HashMap<String, String[]> result = new HashMap<String, String[]>();
-		for (URI interactionURI : interactions.values()) {
-			String[] roles = new String[2];
-			roles[0] = interactionRoles.getKey(interactionSourceRoles.get(interactionURI));
-			roles[1] = interactionRoles.getKey(interactionTargetRoles.get(interactionURI));
-			result.put(interactions.getKey(interactionURI), roles);
+	public static Map<String, Object> getInteractionRules() {
+		Map<String, Object> result = new LinkedHashMap<>();
+		for (String interactionType : getInteractions()) {
+			Map<String, Object> record = new LinkedHashMap<>();
+			Map<String, Object> source = roleDescriptor(interactionType, true);
+			Map<String, Object> target = roleDescriptor(interactionType, false);
+			if ("Degradation".equals(interactionType)) {
+				source.put("endpointTypes", Arrays.asList("species"));
+				target.put("endpointTypes", Arrays.asList());
+				record.put("targetless", true);
+				record.put("maxReactants", 1);
+			} else if ("Inhibition".equals(interactionType) || "Stimulation".equals(interactionType) || "Control".equals(interactionType)) {
+				source.put("endpointTypes", Arrays.asList("species"));
+				target.put("endpointTypes", Arrays.asList("dna"));
+			} else if (isMassActionInteraction(interactionType)) {
+				source.put("endpointTypes", Arrays.asList("species", "node"));
+				target.put("endpointTypes", Arrays.asList("species", "node"));
+			} else if ("Genetic Production".equals(interactionType)) {
+				source.put("endpointTypes", Arrays.asList("dna"));
+				target.put("endpointTypes", Arrays.asList("species"));
+			}
+			if ("Non-Covalent Binding".equals(interactionType)) {
+				record.put("maxProducts", 1);
+			}
+			if ("Dissociation".equals(interactionType)) record.put("maxReactants", 1);
+			record.put("source", source);
+			record.put("target", target);
+			record.put("massAction", isMassActionInteraction(interactionType));
+			result.put(interactionType, record);
+		}
+		return result;
+	}
+
+	private static Map<String, Object> roleDescriptor(String interactionType, boolean source) {
+		URI type = interactions.getValue(interactionType);
+		URI role = (source ? interactionSourceRoles : interactionTargetRoles).get(type);
+		String name = interactionRoles.getKey(role);
+		List<String> names = new ArrayList<>();
+		names.add(name);
+		names.addAll(Arrays.asList(getInteractionRoleRefinement(name)));
+		boolean hasStrictRoles = "Non-Covalent Binding".equals(interactionType) || "Dissociation".equals(interactionType);
+		if (isMassActionInteraction(interactionType) && !hasStrictRoles) {
+			if (!names.contains("Modifier")) names.add("Modifier");
+			names.addAll(Arrays.asList(getInteractionRoleRefinement("Modifier")));
+		}
+		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("defaultRole", name);
+		result.put("roles", names);
+		if ("Non-Covalent Binding".equals(interactionType) && !source) {
+			result.put("fixedCoefficient", 1.0);
+		}
+		if (isMassActionInteraction(interactionType)) {
+			result.put("coefficientDefault", getParticipantCoefficientDefault(interactionType, source));
 		}
 		return result;
 	}
 
 	public static URI getInteractionRoleRefinementFromName(String name) {
-		return sbo.getURIbyName(name);
+		URI role = interactionRoles.getValue(name);
+		return role != null ? role : sbo.getURIbyName(name);
 	}
 
 	public static String getInteractionRoleRefinementName(URI refinement) {
-		return sbo.getName(refinement);
+		String name = interactionRoles.getKey(refinement);
+		return name != null ? name : sbo.getName(refinement);
+	}
+
+	public static boolean isMassActionInteraction(Set<URI> types) {
+		return types.contains(SystemsBiologyOntology.BIOCHEMICAL_REACTION)
+				|| types.contains(SystemsBiologyOntology.NON_COVALENT_BINDING)
+				|| types.contains(SystemsBiologyOntology.DISSOCIATION);
+	}
+
+	public static double getParticipantCoefficientDefault(String interactionType, boolean source) {
+		return "Non-Covalent Binding".equals(interactionType) && source ? 2.0 : 1.0;
+	}
+
+	public static boolean isMassActionInteraction(String interactionType) {
+		URI uri = interactions.getValue(interactionType);
+		return uri != null && isMassActionInteraction(java.util.Collections.singleton(uri));
+	}
+
+	public static boolean isRoleAllowed(String interactionType, boolean source, URI role) {
+		URI type = interactions.getValue(interactionType);
+		URI parent = (source ? interactionSourceRoles : interactionTargetRoles).get(type);
+		if (parent == null || role == null) {
+			return false;
+		}
+		if (parent.equals(role) || sbo.isDescendantOf(role, parent)) {
+			return true;
+		}
+		return isMassActionInteraction(java.util.Collections.singleton(type))
+				&& isRole(role, SystemsBiologyOntology.MODIFIER);
 	}
 
 	public static boolean isSourceParticipant(Participation participant) {
@@ -335,7 +412,50 @@ public class SBOLData {
 		return false;
 	}
 
-	public static HashMap<String, LinkedHashMap<String, Object>> getSimulationConfig() {
+	public static boolean isRole(URI role, URI parent) {
+		return role != null && parent != null && (role.equals(parent) || sbo.isDescendantOf(role, parent));
+	}
+
+	public static URI getParticipantRole(String interactionType, String refinement, boolean source) {
+		URI type = interactions.getValue(interactionType);
+		URI role = refinement == null || refinement.isEmpty()
+				? (source ? interactionSourceRoles : interactionTargetRoles).get(type)
+				: getInteractionRoleRefinementFromName(refinement);
+		if (!isRoleAllowed(interactionType, source, role)) {
+			throw new IllegalArgumentException("Unsupported " + (source ? "source" : "target") + " role for " + interactionType + ": " + refinement);
+		}
+		return role;
+	}
+
+	public static LinkedHashMap<String, List<LinkedHashMap<String, Object>>> getSimulationConfig() {
 		return simulationConfig;
+	}
+
+	private static LinkedHashMap<String, Object> number(String key, String label, double value) {
+		return field(key, "number", label, value, 0.0);
+	}
+
+	private static LinkedHashMap<String, Object> field(String key, String type, String label, Object value, Double min) {
+		LinkedHashMap<String, Object> field = new LinkedHashMap<>();
+		field.put("key", key);
+		field.put("type", type);
+		field.put("label", label);
+		if (value != null) field.put("default", value);
+		if (min != null) field.put("min", min);
+		return field;
+	}
+
+	public static LinkedHashMap<String, Object> field(String context, String key) {
+		List<LinkedHashMap<String, Object>> fields = simulationConfig.get(context);
+		if (fields == null) return null;
+		for (LinkedHashMap<String, Object> field : fields) {
+			if (key.equals(field.get("key"))) return field;
+		}
+		return null;
+	}
+
+	public static Object getDefault(String context, String key) {
+		LinkedHashMap<String, Object> field = field(context, key);
+		return field == null ? null : field.get("default");
 	}
 }

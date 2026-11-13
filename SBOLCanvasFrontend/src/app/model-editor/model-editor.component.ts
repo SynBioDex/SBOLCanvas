@@ -1,71 +1,13 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { GlyphInfo } from '../glyphInfo';
-import { InteractionInfo } from '../interactionInfo';
+import { InteractionInfo, ParticipantSide } from '../interactionInfo';
 import { EventInfo } from '../eventInfo';
 import { MetadataService } from '../metadata.service';
 import { GraphService } from '../graph.service';
 import { registerInputSave } from '../input-save.util';
-
-/**
- * Type for parameter configuration values (keyed by parameter name, values are numbers)
- */
-interface ParameterConfig {
-  [paramName: string]: number;
-}
-
-/**
- * Type for simulation configuration (keyed by role/interaction type name)
- */
-interface SimulationConfig {
-  [roleOrType: string]: ParameterConfig;
-}
-
-/**
- * Definition for a simulation parameter input field
- */
-interface ParamDef {
-  name: string;
-  label: string;
-}
-
-/**
- * The following simulation parameter names and labels are from iBioSim
- */
-const PROMOTER_PARAMS: ParamDef[] = [
-  { name: 'ng', label: 'Initial promoter count (ng)' },
-  { name: 'np', label: 'Stoichiometry of production (np)' },
-  { name: 'nr', label: 'Initial RNAP count (nr)' },
-  { name: 'ko', label: 'Open complex production rate (ko)' },
-  { name: 'kb', label: 'Basal production rate (kb)' },
-  { name: 'ka', label: 'Activated production rate (ka)' },
-  { name: 'Ko_f', label: 'RNAP binding rate forward (Ko_f)' },
-  { name: 'Ko_r', label: 'RNAP binding rate reverse (Ko_r)' },
-  { name: 'Kao_f', label: 'Activated RNAP binding rate forward (Kao_f)' },
-  { name: 'Kao_r', label: 'Activated RNAP binding rate reverse (Kao_r)' }
-];
-
-const INHIBITION_PARAMS: ParamDef[] = [
-  { name: 'Kr_f', label: 'Repression binding forward (Kr_f)' },
-  { name: 'Kr_r', label: 'Repression binding reverse (Kr_r)' },
-  { name: 'nc', label: 'Stoichiometry of binding (nc)' }
-];
-
-const STIMULATION_PARAMS: ParamDef[] = [
-  { name: 'Ka_f', label: 'Activation binding forward (Ka_f)' },
-  { name: 'Ka_r', label: 'Activation binding reverse (Ka_r)' },
-  { name: 'nc', label: 'Stoichiometry of binding (nc)' }
-];
-
-// params on the arrows to the node (per-reactant)
-const COMPLEX_EDGE_PARAMS: ParamDef[] = [
-  { name: 'nc', label: 'Stoichiometry of binding (nc)' }
-];
-
-// params on the association node (per-reaction)
-const COMPLEX_NODE_PARAMS: ParamDef[] = [
-  { name: 'Kc_f', label: 'Complex formation forward (Kc_f)' },
-  { name: 'Kc_r', label: 'Complex formation reverse (Kc_r)' }
-];
+import { SimulationField, SimulationValue, parseSimulationValue } from '../simulation-parameters';
+import { isModifierRole } from '../validation/rules';
 
 @Component({
   selector: 'app-model-editor',
@@ -77,208 +19,118 @@ export class ModelEditorComponent implements OnInit, OnDestroy {
   glyphInfo: GlyphInfo | null = null;
   interactionInfo: InteractionInfo | null = null;
   eventInfo: EventInfo | null = null;
-  simulationConfig: SimulationConfig | null = null;
-  configLoadError = false;
-
-  validationErrors: { [fieldId: string]: string } = {};
-
-  promoterParams = PROMOTER_PARAMS;
-  inhibitionParams = INHIBITION_PARAMS;
-  stimulationParams = STIMULATION_PARAMS;
-  complexNodeParams = COMPLEX_NODE_PARAMS;
-  complexEdgeParams = COMPLEX_EDGE_PARAMS;
-
+  validationErrors: Record<string, string> = {};
+  private readonly subscriptions = new Subscription();
   private teardownSave: (() => void) | null = null;
+  private speciesOptionsCache: { key: string; options: { value: string; label: string }[] } | null = null;
 
   constructor(
-    private graphService: GraphService,
-    private metadataService: MetadataService,
+    public graphService: GraphService,
+    public metadataService: MetadataService,
     private changeDetector: ChangeDetectorRef,
     private elementRef: ElementRef
   ) { }
 
   ngOnInit() {
-    this.metadataService.selectedGlyphInfo.subscribe(glyphInfo => this.glyphInfoUpdated(glyphInfo));
-    this.metadataService.selectedInteractionInfo.subscribe(interactionInfo => this.interactionInfoUpdated(interactionInfo));
-    this.metadataService.selectedEventInfo.subscribe(eventInfo => this.eventInfoUpdated(eventInfo));
-    this.getSimulationConfig();
-
+    this.subscriptions.add(this.metadataService.selectedGlyphInfo.subscribe(info => {
+      this.glyphInfo = info;
+      this.validationErrors = {};
+      this.changeDetector.detectChanges();
+    }));
+    this.subscriptions.add(this.metadataService.selectedInteractionInfo.subscribe(info => {
+      this.interactionInfo = info;
+      this.validationErrors = {};
+      this.changeDetector.detectChanges();
+    }));
+    this.subscriptions.add(this.metadataService.selectedEventInfo.subscribe(info => {
+      this.eventInfo = info;
+      this.validationErrors = {};
+      this.changeDetector.detectChanges();
+    }));
     this.teardownSave = registerInputSave(this.elementRef);
   }
 
   ngOnDestroy() {
-    if (this.teardownSave) this.teardownSave();
+    this.subscriptions.unsubscribe();
+    this.teardownSave?.();
   }
 
-  getSimulationConfig() {
-    this.metadataService.loadSimulationConfig().subscribe({
-      next: config => { this.simulationConfig = config; this.configLoadError = false; },
-      error: () => {
-        console.warn('Failed to load simulation config from backend');
-        this.simulationConfig = null;
-        this.configLoadError = true;
+  fields(): SimulationField[] {
+    const config = this.metadataService.simulationConfig;
+    if (this.eventInfo) return config.event;
+    if (this.glyphInfo) {
+      const fields = this.graphService.isSelectedAMolecularSpecies() ? config.species || [] : [];
+      return this.metadataService.isPromoter(this.glyphInfo) ? fields.concat(config.Promoter || []) : fields;
       }
-    });
+    if (this.interactionInfo) {
+      const rule = this.metadataService.interactionRules[this.interactionInfo.interactionType];
+      if (rule?.massAction && !this.graphService.isSelectedReactionOwner()) return [];
+      return config[this.interactionInfo.interactionType] || [];
+    }
+    return [];
   }
 
-  getDefaultValue(roleOrType: string, paramName: string): number {
-    if (!this.simulationConfig || !this.simulationConfig[roleOrType]) {
-      return 0;
-    }
-    const value = this.simulationConfig[roleOrType][paramName];
-    return value !== undefined ? value : 0;
+  fieldValue(field: SimulationField): SimulationValue | undefined {
+    const info = this.eventInfo || this.glyphInfo || this.interactionInfo;
+    return info?.simulationData?.[field.key] ?? field.default;
   }
 
-  glyphInfoUpdated(glyphInfo: GlyphInfo | null) {
-    this.glyphInfo = glyphInfo;
-    this.validationErrors = {};
-    if (glyphInfo != null) {
-      if (!glyphInfo.simulationData) glyphInfo.simulationData = {};
-    }
-    this.changeDetector.detectChanges();
-  }
-
-  interactionInfoUpdated(interactionInfo: InteractionInfo | null) {
-    this.interactionInfo = interactionInfo;
-    this.validationErrors = {};
-    if (interactionInfo != null) {
-      if (!interactionInfo.simulationData) interactionInfo.simulationData = {};
-    }
-    this.changeDetector.detectChanges();
-  }
-
-  eventInfoUpdated(eventInfo: EventInfo | null) {
-    this.eventInfo = eventInfo;
-    this.validationErrors = {};
-    if (eventInfo != null) {
-      if (!eventInfo.simulationData) eventInfo.simulationData = {};
-    }
-    this.changeDetector.detectChanges();
-  }
-
-  /** The Target Species field shows the species' canvas label; the stored value is its URI. */
-  getTargetSpeciesLabel(): string {
-    const stored = (this.eventInfo && this.eventInfo.simulationData)
-      ? this.eventInfo.simulationData['targetSpecies'] : null;
-    if (!stored) return '';
-    return this.graphService.getSpeciesLabelForURI(String(stored)) || String(stored);
-  }
-
-  /**
-   * Each reactant's interaction arrow in Complex Formation has its own parameter values.
-   * Example: "nc_<sourceURI>" for the nc parameter on the interaction arrow.
-   * Returns the reactant's parameter key, or the parameter name if it is not a reactant.
-   */
-  private getReactantParamKey(paramName: string): string {
-    if (paramName === 'nc') {
-      const selectedCell = this.graphService.graph.getSelectionCell();
-      if (selectedCell && selectedCell.isEdge && selectedCell.isEdge()) {
-        const target = selectedCell.getTerminal(false);
-        if (target && target.isInteractionNode && target.isInteractionNode()) {
-          const source = selectedCell.getTerminal(true);
-          if (source && source.value) {
-            return paramName + '_' + source.value;
-          }
-        }
-      }
-    }
-    return paramName;
-  }
-
-  /**
-   * Gets an interaction simulation parameter value.
-   */
-  getInteractionParamValue(paramName: string, roleOrType: string): number {
-    const defaultValue = this.getDefaultValue(roleOrType, paramName);
-    const interactionInfo = this.interactionInfo;
-    if (!interactionInfo?.simulationData) {
-      return defaultValue;
-    }
-    const paramKey = this.getReactantParamKey(paramName);
-    const value = interactionInfo.simulationData[paramKey];
-    if (typeof value === 'number') {
-      return value;
-    }
-    if (typeof value === 'string') {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : defaultValue;
-    }
-    return defaultValue;
-  }
-
-  inputChange(event: any, paramName?: string) {
-    const id = paramName || event.target.id;
-    let value: any;
-
-    // Parse value based on field type
-    if (id === 'boundaryCondition') {
-      value = event.checked;
-    } else if (['targetSpecies'].includes(id)) {
-      // store the species' identity, not its label: names are display-only and
-      // may change or collide; the URI is the stable reference
-      const typed = (event.target.value || '').trim();
-      if (typed) {
-        const uri = this.graphService.getSpeciesURIForLabel(typed);
-        if (!uri) {
-          this.validationErrors[id] = `No unique species named '${typed}' on the canvas`;
-          this.changeDetector.detectChanges();
-          return;
-        }
-        value = uri;
-      } else {
-        value = '';
-      }
-    } else {
-      value = parseFloat(event.target.value);
-      const error = this.validateNumericParam(id, value);
-      if (error) {
-        this.validationErrors[id] = error;
-        this.changeDetector.detectChanges();
-        return;
-      }
-    }
-
-    delete this.validationErrors[id];
-
-    const eventInfo = this.eventInfo;
-    const glyphInfo = this.glyphInfo;
-    const interactionInfo = this.interactionInfo;
-
-    if (eventInfo) {
-      if (!eventInfo.simulationData) eventInfo.simulationData = {};
-      eventInfo.simulationData[id] = value;
-      this.graphService.setSelectedCellInfo(eventInfo);
-    } else if (glyphInfo) {
-      // Simulation data properties (glyphs)
-      if (!glyphInfo.simulationData) glyphInfo.simulationData = {};
-      glyphInfo.simulationData[id] = value;
-      this.graphService.setSelectedCellInfo(glyphInfo);
-    } else if (interactionInfo) {
-      // Simulation data properties (interaction lines)
-      if (!interactionInfo.simulationData) interactionInfo.simulationData = {};
-      const paramKey = this.getReactantParamKey(id);
-      interactionInfo.simulationData[paramKey] = value;
-      this.graphService.setSelectedCellInfo(interactionInfo);
+  fieldChange(field: SimulationField, raw: unknown) {
+    const selected = this.eventInfo || this.glyphInfo || this.interactionInfo;
+    if (!selected) return;
+    try {
+      const value = parseSimulationValue(raw, field);
+      const copy = selected.makeCopy();
+      if (value === undefined) delete copy.simulationData[field.key];
+      else copy.simulationData[field.key] = value;
+      delete this.validationErrors[field.key];
+      this.graphService.setSelectedCellInfo(copy);
+    } catch (error) {
+      this.validationErrors[field.key] = error.message;
+      this.changeDetector.detectChanges();
     }
   }
 
-  private validateNumericParam(paramName: string, value: number): string | null {
-    if (isNaN(value)) {
-      return 'Must be a valid number';
+  coefficientValue(side: ParticipantSide): number | undefined {
+    const coefficients = side === 'source' ? this.interactionInfo.sourceCoefficient : this.interactionInfo.targetCoefficient;
+    return coefficients[this.graphService.getSelectedCellID()]
+      ?? this.metadataService.interactionRules[this.interactionInfo.interactionType][side].coefficientDefault;
+  }
+
+  isModifierRole(side: ParticipantSide): boolean {
+    return isModifierRole(this.metadataService.interactionRules[this.interactionInfo.interactionType],
+      this.graphService.selectedParticipantRole(this.interactionInfo, side));
+  }
+
+  coefficientChange(side: ParticipantSide, field: SimulationField, raw: unknown) {
+    if (!this.interactionInfo) return;
+    const errorKey = side + ':' + field.key;
+    try {
+      const value = parseSimulationValue(raw, field);
+      const copy = this.interactionInfo.makeCopy();
+      const coefficients = side === 'source' ? copy.sourceCoefficient : copy.targetCoefficient;
+      const edgeId = this.graphService.getSelectedCellID();
+      if (value === undefined) delete coefficients[edgeId];
+      else coefficients[edgeId] = value as number;
+      delete this.validationErrors[errorKey];
+      this.graphService.setSelectedCellInfo(copy);
+    } catch (error) {
+      this.validationErrors[errorKey] = error.message;
+      this.changeDetector.detectChanges();
     }
-    return null;
   }
 
-  isMolecularSpecies(): boolean {
-    return this.graphService.isSelectedAMolecularSpecies();
-  }
-
-  isComplexFormation(): boolean {
-    return this.interactionInfo?.interactionType === 'Biochemical Reaction'
-      || this.interactionInfo?.interactionType === 'Non-Covalent Binding';
-  }
-
-  isInteractionNode(): boolean {
-    return this.graphService.isSelectedAnInteractionNode();
+  targetSpeciesOptions(): { value: string; label: string }[] {
+    const targets = this.graphService.getSpeciesTargets();
+    const key = JSON.stringify(targets);
+    if (this.speciesOptionsCache?.key === key) return this.speciesOptionsCache.options;
+    const nameUse = new Map<string, number>();
+    for (const target of targets) nameUse.set(target.name, (nameUse.get(target.name) || 0) + 1);
+    const options = targets.map(target => ({
+      value: target.uri,
+      label: nameUse.get(target.name) > 1 ? `${target.name} (${target.displayID})` : target.name
+    })).sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' }));
+    this.speciesOptionsCache = { key, options };
+    return options;
   }
 }

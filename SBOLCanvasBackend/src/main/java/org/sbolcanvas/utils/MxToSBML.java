@@ -23,18 +23,22 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 // JSBML API Docs: https://sbml.org/jsbml/files/doc/api/1.6.1/overview-summary.html
 import org.sbml.jsbml.SBase;
 import org.sbml.jsbml.SBMLDocument;
+import org.sbml.jsbml.TidySBMLWriter;
 import org.sbml.jsbml.Model;
+import org.sbml.jsbml.Parameter;
+import org.sbml.jsbml.ext.comp.CompModelPlugin;
+import org.sbml.jsbml.ext.comp.CompConstants;
+import org.sbml.jsbml.ext.comp.Port;
+import org.sbml.jsbml.ext.fbc.FBCConstants;
+import org.sbml.jsbml.ext.fbc.FBCModelPlugin;
 import org.sbml.jsbml.Species;
 import org.sbml.jsbml.Compartment;
 import org.sbml.jsbml.Reaction;
 import org.sbml.jsbml.KineticLaw;
-import org.sbml.jsbml.LocalParameter;
 import org.sbml.jsbml.SpeciesReference;
 import org.sbml.jsbml.ModifierSpeciesReference;
 import org.sbml.jsbml.ASTNode;
@@ -57,7 +61,6 @@ import org.sbml.jsbml.ext.layout.SpeciesReferenceGlyph;
 import org.sbml.jsbml.ext.layout.SpeciesReferenceRole;
 import org.sbml.jsbml.ext.layout.TextGlyph;
 
-import org.synbiohub.frontend.SynBioHubException;
 
 import com.mxgraph.model.mxCell;
 import com.mxgraph.model.mxGeometry;
@@ -69,8 +72,6 @@ import org.sbolcanvas.data.InteractionInfo;
 import org.sbolcanvas.data.EventInfo;
 
 public class MxToSBML extends Converter {
-
-	private static final Logger log = LogManager.getLogger(MxToSBML.class);
 
 	/** TU = one backbone with one merged promoter species (params summed, names joined). */
 	private static class TUData {
@@ -95,10 +96,6 @@ public class MxToSBML extends Converter {
 			SBOLData.PARAM_KAO_F, SBOLData.PARAM_KAO_R
 	};
 
-	/**
-	 * Helper class to bundle Species with its layout geometry.
-	 * Key is glyph.getValue() (GlyphInfo URI).
-	 */
 	static class SpeciesData {
 		Species species; // JSBML Species object
 		mxGeometry geometry; // For layout position
@@ -122,6 +119,49 @@ public class MxToSBML extends Converter {
 			this.event = event;
 			this.geometry = geometry;
 			this.targetSpeciesId = targetSpeciesId;
+		}
+	}
+
+	private enum Role { REACTANT, PRODUCT, MODIFIER, OMITTED }
+
+	private static class Participant {
+		final SpeciesData data;
+		final Role role;
+		final Double coefficient;
+		final URI roleUri;
+
+		Participant(SpeciesData data, Role role, Double coefficient, URI roleUri) {
+			this.data = data;
+			this.role = role;
+			this.coefficient = coefficient;
+			this.roleUri = roleUri;
+		}
+	}
+
+	private static class BindingGroup {
+		final SpeciesData product;
+		final boolean reversible;
+		Double kcF;
+		Double kcR;
+		final List<Participant> reactants = new ArrayList<>();
+
+		BindingGroup(SpeciesData product, boolean reversible) {
+			this.product = product;
+			this.reversible = reversible;
+		}
+	}
+
+	static class Regulator {
+		final SpeciesData data;
+		final Double rateF;
+		final Double rateR;
+		final Double cooperativity;
+
+		Regulator(SpeciesData data, Double rateF, Double rateR, Double cooperativity) {
+			this.data = data;
+			this.rateF = rateF;
+			this.rateR = rateR;
+			this.cooperativity = cooperativity;
 		}
 	}
 
@@ -164,9 +204,10 @@ public class MxToSBML extends Converter {
 	private HashMap<String, String> userTokens;
 	private HashSet<String> usedIds = new HashSet<>();
 	private LayoutBounds layoutBounds = new LayoutBounds();
-	HashMap<String, SpeciesData> glyphToSpeciesData = new HashMap<>();
+	LinkedHashMap<mxCell, SpeciesData> glyphToSpeciesData = new LinkedHashMap<>();
+	private final HashMap<String, SpeciesData> uriToSpeciesData = new HashMap<>();
+	private final HashSet<mxCell> missingSpeciesCells = new HashSet<>();
 	HashMap<String, EventData> eventIdToEventData = new LinkedHashMap<>();
-	private HashMap<String, String> displayNameToSpeciesId = new HashMap<>();
 	private HashMap<String, String> reactionToPromoterId = new HashMap<>();
 
 	public MxToSBML() {
@@ -178,17 +219,8 @@ public class MxToSBML extends Converter {
 		this.userTokens = userTokens;
 	}
 
-	public void toSBML(InputStream graphStream, OutputStream sbmlStream)
-			throws IOException, URISyntaxException, TransformerFactoryConfigurationError,
-			TransformerException, SynBioHubException, XMLStreamException {
-
-		SBMLDocument document = setupDocument(graphStream);
-
-		org.sbml.jsbml.TidySBMLWriter.write(document, sbmlStream, "SBOLCanvas", "1.0", ' ', (short) 2);
-	}
-
-	private SBMLDocument setupDocument(InputStream graphStream) throws IOException,
-			TransformerFactoryConfigurationError, TransformerException, URISyntaxException {
+	public void toSBML(InputStream graphStream, OutputStream sbmlStream) throws IOException,
+			TransformerFactoryConfigurationError, TransformerException, URISyntaxException, XMLStreamException {
 		mxGraph graph = loadGraphAndDictionaries(graphStream);
 		mxGraphModel model = (mxGraphModel) graph.getModel();
 
@@ -200,10 +232,23 @@ public class MxToSBML extends Converter {
 		Compartment compartment = sbmlModel.createCompartment("Cell");
 		compartment.setName("Cell");
 		compartment.setSize(1.0);
+		compartment.setSpatialDimensions(3);
 		compartment.setConstant(true);
 
-		mxCell[] viewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
+		document.enablePackage(CompConstants.namespaceURI);
+		CompModelPlugin compModel = (CompModelPlugin) sbmlModel.getPlugin("comp");
+		Port compartmentPort = compModel.createPort();
+		compartmentPort.setId("compartment__Cell");
+		compartmentPort.setIdRef("Cell");
+		document.enablePackage(FBCConstants.namespaceURI);
+		((FBCModelPlugin) sbmlModel.getPlugin("fbc")).setStrict(false);
+
+		mxCell[] allViewCells = Arrays.stream(mxGraphModel.getChildCells(model, model.getCell("1"), true, false))
 				.toArray(mxCell[]::new);
+		mxCell[] viewCells = viewsToExport(model, allViewCells);
+
+		usedIds.add("Cell");
+		usedIds.addAll(PARAMETER_IDS);
 
 		// Create species
 		HashMap<mxCell, TUData> tuMap = createPromoterSpecies(sbmlModel, model, viewCells);
@@ -212,13 +257,49 @@ public class MxToSBML extends Converter {
 		// Create reactions and events
 		createProductionReactions(sbmlModel, model, viewCells, tuMap);
 		createDegradationReactions(sbmlModel, model, viewCells);
-		createComplexReactions(sbmlModel, model, viewCells);
-		createEvents(sbmlModel, model);
+		Map<String, BindingGroup> bindings = new LinkedHashMap<>();
+		createInteractionReactions(sbmlModel, model, viewCells, bindings);
+		if (!bindings.isEmpty()) {
+			addParameters(sbmlModel, BINDING_PARAMETERS);
+		}
+		for (BindingGroup group : bindings.values()) {
+			createBindingReaction(sbmlModel, group);
+		}
+		createEvents(sbmlModel, model, viewCells);
 
 		// Create visual layout
 		createVisualLayout(sbmlModel);
 
-		return document;
+		TidySBMLWriter.write(document, sbmlStream, "SBOLCanvas", "1.0", ' ', (short) 2);
+	}
+
+	private static mxCell[] viewsToExport(mxGraphModel graphModel, mxCell[] allViewCells) {
+		Set<String> moduleCellValues = new HashSet<>();
+		for (mxCell viewCell : allViewCells) {
+			if (!isViewCell(viewCell, STYLE_MODULE_VIEW)) {
+				continue;
+			}
+			collectCellValues(graphModel, viewCell, moduleCellValues);
+		}
+		return Arrays.stream(allViewCells)
+				.filter(viewCell -> !isViewCell(viewCell, STYLE_COMPONENT_VIEW)
+				|| !moduleCellValues.contains(viewCell.getId()))
+				.toArray(mxCell[]::new);
+	}
+
+	private static boolean isViewCell(mxCell cell, String style) {
+		return cell != null && cell.getStyle() != null && cell.getStyle().contains(style);
+	}
+
+	private static void collectCellValues(mxGraphModel graphModel, mxCell viewCell,
+			Set<String> identities) {
+		for (Object child : mxGraphModel.getChildCells(graphModel, viewCell, true, false)) {
+			mxCell cell = (mxCell) child;
+			if (cell.getValue() != null) {
+				identities.add((String) cell.getValue());
+			}
+			collectCellValues(graphModel, cell, identities);
+		}
 	}
 
 	private HashMap<mxCell, TUData> createPromoterSpecies(Model sbmlModel, mxGraphModel graphModel,
@@ -252,15 +333,20 @@ public class MxToSBML extends Converter {
 				String mergedId = Identifiers.toSId(mergedName, usedIds);
 
 				Hashtable<String, Object> mergedSimData = new Hashtable<>();
-				for (String param : MERGED_PROMOTER_PARAMS) {
-					double sum = 0.0;
-					for (int i = 0; i < promoterGlyphs.size(); i++) {
-						GlyphInfo info = (GlyphInfo) infoDict.get(promoterGlyphs.get(i).getValue());
-						Hashtable<String, Object> simData = info != null ? info.getSimulationData() : null;
-						sum += getParam(simData, param, SequenceOntology.PROMOTER,
-								"promoter '" + individualNames.get(i) + "'");
+				if (promoterGlyphs.size() == 1) {
+					GlyphInfo info = (GlyphInfo) infoDict.get(promoterGlyphs.get(0).getValue());
+					if (info.getSimulationData() != null) {
+						mergedSimData.putAll(info.getSimulationData());
 					}
-					mergedSimData.put(param, sum);
+				} else {
+					for (String param : MERGED_PROMOTER_PARAMS) {
+						double sum = 0.0;
+						for (mxCell promoterGlyph : promoterGlyphs) {
+							GlyphInfo info = (GlyphInfo) infoDict.get(promoterGlyph.getValue());
+							sum += numberOrDefault(info.getSimulationData(), param, SequenceOntology.PROMOTER);
+						}
+						mergedSimData.put(param, sum);
+					}
 				}
 				GlyphInfo mergedPromoterInfo = new GlyphInfo();
 				mergedPromoterInfo.setSimulationData(mergedSimData);
@@ -268,7 +354,7 @@ public class MxToSBML extends Converter {
 				Species promoterSpecies = sbmlModel.createSpecies(mergedId);
 				promoterSpecies.setCompartment("Cell");
 				promoterSpecies.setSBOTerm(590); // SBO:0000590 Logical element (promoter)
-				promoterSpecies.setInitialAmount(((Number) mergedSimData.get(SBOLData.PARAM_NG)).doubleValue());
+				promoterSpecies.setInitialAmount(numberOrDefault(mergedSimData, SBOLData.PARAM_NG, SequenceOntology.PROMOTER));
 				promoterSpecies.setHasOnlySubstanceUnits(true);
 				promoterSpecies.setConstant(false);
 				promoterSpecies.setBoundaryCondition(false);
@@ -286,11 +372,7 @@ public class MxToSBML extends Converter {
 				mxGeometry backboneGeom = backbone.getGeometry();
 				SpeciesData mergedSpeciesData = new SpeciesData(promoterSpecies, backboneGeom);
 				for (mxCell promoterGlyph : promoterGlyphs) {
-					glyphToSpeciesData.put((String) promoterGlyph.getValue(), mergedSpeciesData);
-				}
-				displayNameToSpeciesId.put(mergedName, mergedId);
-				for (String individualName : individualNames) {
-					displayNameToSpeciesId.put(individualName, mergedId);
+					glyphToSpeciesData.put(promoterGlyph, mergedSpeciesData);
 				}
 				layoutBounds.update(backboneGeom);
 
@@ -299,6 +381,63 @@ public class MxToSBML extends Converter {
 		}
 
 		return tuMap;
+	}
+
+	private static final String[] NC_PARAMETER = {"nc", "Stoichiometry of binding", "Inhibition", SBOLData.PARAM_COOPERATIVITY};
+
+	private static final String[][] PRODUCTION_PARAMETERS = {
+		{"kr_f", "Forward repression binding rate", "Inhibition", SBOLData.PARAM_KR_F},
+		{"kr_r", "Reverse repression binding rate", "Inhibition", SBOLData.PARAM_KR_R},
+		{"ka_f", "Forward activation binding rate", "Stimulation", SBOLData.PARAM_KA_F},
+		{"ka_r", "Reverse activation binding rate", "Stimulation", SBOLData.PARAM_KA_R},
+		{"ko_f", "Forward RNAP binding rate", "Promoter", SBOLData.PARAM_KO_F},
+		{"ko_r", "Reverse RNAP binding rate", "Promoter", SBOLData.PARAM_KO_R},
+		{"kao_f", "Forward activated RNAP binding rate", "Promoter", SBOLData.PARAM_KAO_F},
+		{"kao_r", "Reverse activated RNAP binding rate", "Promoter", SBOLData.PARAM_KAO_R},
+		NC_PARAMETER,
+		{"nr", "Initial RNAP count", "Promoter", SBOLData.PARAM_NR},
+		{"ko", "Open complex production rate", "Promoter", SBOLData.PARAM_KO},
+		{"kb", "Basal production rate", "Promoter", SBOLData.PARAM_KB},
+		{"ng", "Initial promoter count", "Promoter", SBOLData.PARAM_NG},
+		{"np", "Stoichiometry of production", "Promoter", SBOLData.PARAM_NP},
+		{"ka", "Activated production rate", "Promoter", SBOLData.PARAM_KA}
+	};
+
+	private static final String[][] BINDING_PARAMETERS = {
+		{"kc_f", "Forward complex formation rate", "Non-Covalent Binding", SBOLData.PARAM_KC_F},
+		{"kc_r", "Reverse complex formation rate", "Non-Covalent Binding", SBOLData.PARAM_KC_R},
+		NC_PARAMETER
+	};
+
+	private static final String[][] DEGRADATION_PARAMETERS = {
+		{"kd", "Degradation rate", "Degradation", SBOLData.PARAM_KD}
+	};
+
+	private static final Set<String> PARAMETER_IDS = new HashSet<>();
+	static {
+		PARAMETER_IDS.add("k");
+		for (String[][] parameters : new String[][][] {PRODUCTION_PARAMETERS, BINDING_PARAMETERS, DEGRADATION_PARAMETERS}) {
+			for (String[] parameter : parameters) {
+				PARAMETER_IDS.add(parameter[0]);
+			}
+		}
+	}
+
+	private static void addParameters(Model model, String[][] parameters) {
+		for (String[] parameter : parameters) {
+			createGlobalParameter(model, parameter[0], parameter[1],
+					((Number) SBOLData.getDefault(parameter[2], parameter[3])).doubleValue());
+		}
+	}
+
+	private static void createGlobalParameter(Model model, String id, String name, double value) {
+		if (model.getParameter(id) != null) {
+			return;
+		}
+		Parameter parameter = model.createParameter(id);
+		parameter.setName(name);
+		parameter.setValue(value);
+		parameter.setConstant(true);
 	}
 
 	/**
@@ -311,19 +450,19 @@ public class MxToSBML extends Converter {
 					.toArray(mxCell[]::new);
 
 			for (mxCell glyph : speciesGlyphs) {
-				Species species = createSpecies(sbmlModel, glyph);
-				if (species == null)
-					continue;
-				glyphToSpeciesData.put((String) glyph.getValue(),
-						new SpeciesData(species, glyph.getGeometry()));
+				SpeciesData data = uriToSpeciesData.get((String) glyph.getValue());
+				if (data == null) {
+					Species species = createSpecies(sbmlModel, glyph);
+					if (species == null)
+						continue;
+					data = new SpeciesData(species, glyph.getGeometry());
+					uriToSpeciesData.put((String) glyph.getValue(), data);
+				}
+				glyphToSpeciesData.put(glyph, data);
 			}
 		}
 	}
 
-	/**
-	 * Create production reactions for each TU.
-	 * Collect production edges by backbone and creates one reaction per TU with all products.
-	 */
 	private void createProductionReactions(Model sbmlModel, mxGraphModel graphModel, mxCell[] viewCells,
 			HashMap<mxCell, TUData> tuMap) {
 		for (mxCell viewCell : viewCells) {
@@ -357,11 +496,71 @@ public class MxToSBML extends Converter {
 			}
 		}
 
+		if (!tuMap.isEmpty()) {
+			addParameters(sbmlModel, PRODUCTION_PARAMETERS);
+		}
 		// Build one Production reaction per TU
 		// TUs with missing CDS products get a placeholder mRNA (matches iBioSim)
 		for (TUData tuData : tuMap.values()) {
 			GlyphInfo promoterInfo = tuData.mergedPromoterInfo;
 			String promoterId = tuData.promoterSpecies.getId();
+
+			boolean missingModifier = false;
+			List<mxCell> repressorEdges = new ArrayList<>();
+			List<mxCell> activatorEdges = new ArrayList<>();
+			for (mxCell promoterGlyph : tuData.promoterGlyphs) {
+				Object[] incoming = mxGraphModel.getIncomingEdges(graphModel, promoterGlyph);
+				for (Object obj : incoming) {
+					mxCell inEdge = (mxCell) obj;
+					InteractionInfo inInfo = (InteractionInfo) interactionDict.get(inEdge.getValue());
+					if (inInfo == null)
+						continue;
+					URI typeURI = SBOLData.interactions.getValue(inInfo.getInteractionType());
+					boolean inhibition = typeURI != null
+							&& typeURI.equals(SBOLData.interactions.getValue("Inhibition"));
+					boolean stimulation = typeURI != null
+							&& typeURI.equals(SBOLData.interactions.getValue("Stimulation"));
+					if (!inhibition && !stimulation)
+						continue;
+					mxCell modifierCell = (mxCell) inEdge.getSource();
+					SpeciesData modifierData = modifierCell != null ? glyphToSpeciesData.get(modifierCell) : null;
+					if (modifierData == null) {
+						missingModifier |= modifierCell != null && missingSpeciesCells.contains(modifierCell);
+						continue;
+					}
+
+					if (inhibition) {
+						repressorEdges.add(inEdge);
+					} else {
+						activatorEdges.add(inEdge);
+					}
+				}
+			}
+			if (missingModifier) {
+				System.err.println("Warning: skipped the production reaction of promoter '" + promoterId
+						+ "': a regulator has no species record");
+				continue;
+			}
+
+			List<Regulator> repressors = new ArrayList<>();
+			resolveRegulators(repressorEdges, true, repressors);
+			List<Regulator> activators = new ArrayList<>();
+			resolveRegulators(activatorEdges, false, activators);
+
+			boolean missingProduct = false;
+			for (mxCell productionEdge : tuData.productionEdges) {
+				mxCell targetCell = (mxCell) productionEdge.getTarget();
+				if (targetCell != null && glyphToSpeciesData.get(targetCell) == null
+						&& missingSpeciesCells.contains(targetCell)) {
+					missingProduct = true;
+				}
+			}
+			if (missingProduct) {
+				System.err.println("Warning: skipped the production reaction of promoter '" + promoterId
+						+ "': a product has no species record");
+				continue;
+			}
+
 			String reactionId = "Production_" + promoterId;
 			reactionToPromoterId.put(reactionId, promoterId);
 
@@ -373,66 +572,73 @@ public class MxToSBML extends Converter {
 			ModifierSpeciesReference promoterModifier = reaction.createModifier(tuData.promoterSpecies);
 			promoterModifier.setSBOTerm(598); // SBO:0000598 Promoter
 
-			double np = getParam(promoterInfo.getSimulationData(), SBOLData.PARAM_NP, SequenceOntology.PROMOTER, "promoter '" + promoterId + "'");
+			KineticLaw law = reaction.createKineticLaw();
+			addProductionOverrides(law, promoterInfo.getSimulationData());
+
+			double np = numberOrDefault(promoterInfo.getSimulationData(), SBOLData.PARAM_NP, SequenceOntology.PROMOTER);
 			for (mxCell productionEdge : tuData.productionEdges) {
 				mxCell targetCell = (mxCell) productionEdge.getTarget();
-				if (targetCell == null)
+				SpeciesData productData = targetCell != null ? glyphToSpeciesData.get(targetCell) : null;
+				if (productData == null) {
 					continue;
-				SpeciesData productData = glyphToSpeciesData.get((String) targetCell.getValue());
-				if (productData == null)
-					continue;
+				}
 				SpeciesReference product = reaction.createProduct(productData.species);
 				product.setConstant(true);
 				product.setStoichiometry(np);
 			}
 
 			if (reaction.getProductCount() == 0) {
-				Species mRNA = createPlaceholderMRnaSpecies(sbmlModel, promoterId, tuData.promoterSpecies);
+				Species mRNA = createPlaceholderSpecies(sbmlModel, promoterId + "_mRNA", 250,
+						tuData.promoterSpecies);
 				SpeciesReference product = reaction.createProduct(mRNA);
 				product.setConstant(true);
 				product.setStoichiometry(np);
 			}
 
-			List<mxCell> repressorEdges = new ArrayList<>();
-			List<mxCell> activatorEdges = new ArrayList<>();
-
-			for (mxCell promoterGlyph : tuData.promoterGlyphs) {
-				Object[] incoming = mxGraphModel.getIncomingEdges(graphModel, promoterGlyph);
-				for (Object obj : incoming) {
-					mxCell inEdge = (mxCell) obj;
-					InteractionInfo inInfo = (InteractionInfo) interactionDict.get(inEdge.getValue());
-					if (inInfo == null)
-						continue;
-					String type = inInfo.getInteractionType();
-					URI typeURI = SBOLData.interactions.getValue(type);
-					mxCell modifierCell = (mxCell) inEdge.getSource();
-					if (typeURI == null || modifierCell == null)
-						continue;
-					SpeciesData modifierData = glyphToSpeciesData.get((String) modifierCell.getValue());
-					if (modifierData == null)
-						continue;
-
-					if (typeURI.equals(SBOLData.interactions.getValue("Inhibition"))) {
-						repressorEdges.add(inEdge);
-						ModifierSpeciesReference mod = reaction.createModifier(modifierData.species);
-						mod.setSBOTerm(20); // SBO:0000020 Inhibitor
-					} else if (typeURI.equals(SBOLData.interactions.getValue("Stimulation"))) {
-						activatorEdges.add(inEdge);
-						ModifierSpeciesReference mod = reaction.createModifier(modifierData.species);
-						mod.setSBOTerm(459); // SBO:0000459 Stimulator
-					}
-				}
+			for (Regulator repressor : repressors) {
+				ModifierSpeciesReference mod = reaction.createModifier(repressor.data.species);
+				mod.setSBOTerm(20);
+			}
+			for (Regulator activator : activators) {
+				ModifierSpeciesReference mod = reaction.createModifier(activator.data.species);
+				mod.setSBOTerm(459);
 			}
 
-			if (activatorEdges.isEmpty()) {
-				buildRepressionFormula(reaction, promoterId, promoterInfo, repressorEdges);
+			if (activators.isEmpty()) {
+				buildRepressionFormula(reaction, promoterId, law, repressors);
 			} else {
-				buildActivationFormula(reaction, promoterId, promoterInfo, activatorEdges, repressorEdges);
+				buildActivationFormula(reaction, promoterId, law, activators, repressors);
 			}
+		}
+	}
+
+	private static final int SBO_MODIFIER = 19;
+
+	private static void addProductionOverrides(KineticLaw law, Hashtable<String, Object> simData) {
+		for (String[] parameter : PRODUCTION_PARAMETERS) {
+			Double explicit = "Promoter".equals(parameter[2]) && !"ng".equals(parameter[0])
+					? numberOrNull(simData, parameter[3]) : null;
+			if (explicit != null) {
+				law.createLocalParameter(parameter[0]).setValue(explicit);
+			}
+		}
+	}
+
+	private void resolveRegulators(List<mxCell> edges, boolean inhibition, List<Regulator> resolved) {
+		String forwardParam = inhibition ? SBOLData.PARAM_KR_F : SBOLData.PARAM_KA_F;
+		String reverseParam = inhibition ? SBOLData.PARAM_KR_R : SBOLData.PARAM_KA_R;
+		for (mxCell edge : edges) {
+			InteractionInfo info = (InteractionInfo) interactionDict.get(edge.getValue());
+			Hashtable<String, Object> simData = info != null ? info.getSimulationData() : null;
+			resolved.add(new Regulator(glyphToSpeciesData.get((mxCell) edge.getSource()),
+					numberOrNull(simData, forwardParam),
+					numberOrNull(simData, reverseParam),
+					numberOrNull(simData, SBOLData.PARAM_COOPERATIVITY)));
 		}
 	}
 
 	private void createDegradationReactions(Model sbmlModel, mxGraphModel graphModel, mxCell[] viewCells) {
+		Map<String, DegradationGroup> degradations = new LinkedHashMap<>();
 		for (mxCell viewCell : viewCells) {
 			Object[] allChildren = mxGraphModel.getChildCells(graphModel, viewCell, true, true);
 
@@ -442,44 +648,138 @@ public class MxToSBML extends Converter {
 				}
 
 				mxCell cell = (mxCell) child;
-
-				if (cell.isEdge()) {
-					InteractionInfo info = (InteractionInfo) interactionDict.get(cell.getValue());
-					if (info == null)
-						continue;
-
-					String type = info.getInteractionType();
-					URI typeURI = SBOLData.interactions.getValue(type);
-					if (typeURI != null && typeURI.equals(SBOLData.interactions.getValue("Degradation"))) {
-						createDegradationReaction(sbmlModel, cell, info);
-					}
+				if (cell.getValue() == null) {
+					continue;
 				}
+				InteractionInfo info = (InteractionInfo) interactionDict.get(cell.getValue());
+				if (info == null || !isDegradation(info)) {
+					continue;
+				}
+				List<Participant> participants = cell.isEdge() && !endpointIsInteractionNode(cell)
+						? resolveEdgeParticipants(cell, info)
+						: interactionNodeFilter.filter(cell)
+						? resolveNodeParticipants(graphModel, cell, info)
+						: null;
+				if (participants == null) {
+					System.err.println("Warning: skipped interaction '" + info.getDisplayID()
+							+ "': an endpoint is not an exported species");
+					continue;
+				}
+				if (participants.isEmpty()) {
+					continue;
+				}
+				addDegradation(sbmlModel, degradations, info, participants);
+			}
+		}
+		if (!degradations.isEmpty()) {
+			addParameters(sbmlModel, DEGRADATION_PARAMETERS);
+		}
+		for (DegradationGroup group : degradations.values()) {
+			createDegradationReaction(sbmlModel, group);
+		}
+	}
+
+	private static boolean isDegradation(InteractionInfo info) {
+		URI typeURI = SBOLData.interactions.getValue(info.getInteractionType());
+		return typeURI != null && typeURI.equals(SBOLData.interactions.getValue("Degradation"));
+	}
+
+	private void addDegradation(Model sbmlModel, Map<String, DegradationGroup> degradations,
+			InteractionInfo info, List<Participant> participants) {
+		if (participants.size() == 1 && participants.get(0).role == Role.REACTANT) {
+			Participant degraded = participants.get(0);
+			DegradationGroup group = degradations.get(degraded.data.species.getId());
+			if (group == null) {
+				group = new DegradationGroup(degraded.data);
+				degradations.put(degraded.data.species.getId(), group);
+				group.displayId = info.getDisplayID();
+			}
+			group.kd = firstValue(group.kd, numberOrNull(info.getSimulationData(), SBOLData.PARAM_KD));
+			return;
+		}
+		createGenericBiochemicalReaction(sbmlModel, info, participants);
+	}
+
+	private static class DegradationGroup {
+		final SpeciesData source;
+		String displayId;
+		Double kd;
+
+		DegradationGroup(SpeciesData source) {
+			this.source = source;
+		}
+	}
+
+	private void createInteractionReactions(Model sbmlModel, mxGraphModel graphModel, mxCell[] viewCells,
+			Map<String, BindingGroup> bindings) {
+		for (mxCell viewCell : viewCells) {
+			Object[] allChildren = mxGraphModel.getChildCells(graphModel, viewCell, true, true);
+
+			for (Object child : allChildren) {
+				if (!(child instanceof mxCell)) {
+					continue;
+				}
+
+				mxCell cell = (mxCell) child;
+				InteractionInfo info = (InteractionInfo) interactionDict.get(cell.getValue());
+				if (info == null) {
+					continue;
+				}
+
+				List<Participant> participants;
+				if (cell.isEdge()) {
+					if (!makesReaction(cell, info)) {
+						continue;
+					}
+					participants = resolveEdgeParticipants(cell, info);
+				} else {
+					if (!interactionNodeFilter.filter(cell)
+							|| !SBOLData.isMassActionInteraction(info.getInteractionType())) {
+						continue;
+					}
+					participants = resolveNodeParticipants(graphModel, cell, info);
+				}
+				if (participants == null) {
+					System.err.println("Warning: skipped interaction '" + info.getDisplayID()
+							+ "': an endpoint is not an exported species");
+					continue;
+				}
+				createInteractionReaction(sbmlModel, info, participants, bindings);
 			}
 		}
 	}
 
-	private void createComplexReactions(Model sbmlModel, mxGraphModel graphModel, mxCell[] viewCells) {
-		for (mxCell viewCell : viewCells) {
-			Object[] allChildren = mxGraphModel.getChildCells(graphModel, viewCell, true, true);
-
-			for (Object child : allChildren) {
-				if (!(child instanceof mxCell)) {
-					continue;
-				}
-
-				mxCell cell = (mxCell) child;
-
-				if (interactionNodeFilter.filter(cell)) {
-					InteractionInfo iInfo = interactionDict.get(cell.getValue());
-					if (iInfo != null) {
-						String type = iInfo.getInteractionType();
-						if (type != null && (type.equals("Biochemical Reaction") || type.equals("Non-Covalent Binding"))) {
-							createComplexFormationReaction(sbmlModel, cell, iInfo, graphModel);
-						}
-					}
-				}
+	private boolean makesReaction(mxCell cell, InteractionInfo info) {
+		if (info == null) {
+			return false;
+		}
+		if (SBOLData.isMassActionInteraction(info.getInteractionType())) {
+			return cell.getSource() != null && cell.getTarget() != null && !endpointIsInteractionNode(cell);
+		}
+		URI typeURI = SBOLData.interactions.getValue(info.getInteractionType());
+		if (typeURI == null) {
+			return false;
+		}
+		boolean inhibition = typeURI.equals(SBOLData.interactions.getValue("Inhibition"));
+		boolean stimulation = typeURI.equals(SBOLData.interactions.getValue("Stimulation"));
+		boolean control = typeURI.equals(SBOLData.interactions.getValue("Control"));
+		if (!inhibition && !stimulation && !control) {
+			return false;
+		}
+		if (endpointIsInteractionNode(cell)) {
+			return false;
+		}
+		if ((inhibition || stimulation) && cell.getTarget() != null) {
+			SpeciesData targetData = glyphToSpeciesData.get(cell.getTarget());
+			if (targetData != null && targetData.species.getSBOTerm() == 590) {
+				return false;
 			}
 		}
+		return true;
+	}
+
+	private boolean endpointIsInteractionNode(mxCell cell) {
+		return interactionNodeFilter.filter(cell.getSource()) || interactionNodeFilter.filter(cell.getTarget());
 	}
 
 	/**
@@ -487,46 +787,20 @@ public class MxToSBML extends Converter {
 	 * Formula: (P * ko * Ko * nr) / (1 + Ko * nr + SUM_i[(Kr_i * R_i)^nc_i])
 	 * where Ko = ko_f/ko_r, Kr_i = kr_<repId>_f/kr_<repId>_r.
 	 */
-	void buildRepressionFormula(Reaction reaction, String promoterId, GlyphInfo promoterInfo,
-			List<mxCell> repressorEdges) {
-		Model sbmlModel = reaction.getModel();
-
-		List<SpeciesData> repressors = resolveRegulators(repressorEdges, reaction, sbmlModel,
-				"repression formula", promoterId);
-		if (repressors == null)
-			return;
-
-		KineticLaw law = reaction.createKineticLaw();
-
-		Hashtable<String, Object> promoterSimData = promoterInfo.getSimulationData();
-		String promoterContext = "promoter '" + promoterId + "'";
-		double ko = getParam(promoterSimData, SBOLData.PARAM_KO, SequenceOntology.PROMOTER, promoterContext);
-		double Ko_f = getParam(promoterSimData, SBOLData.PARAM_KO_F, SequenceOntology.PROMOTER, promoterContext);
-		double Ko_r = getParam(promoterSimData, SBOLData.PARAM_KO_R, SequenceOntology.PROMOTER, promoterContext);
-		double nr = getParam(promoterSimData, SBOLData.PARAM_NR, SequenceOntology.PROMOTER, promoterContext);
-
-		law.createLocalParameter("ko").setValue(ko);
-		law.createLocalParameter("ko_f").setValue(Ko_f);
-		law.createLocalParameter("ko_r").setValue(Ko_r);
-		law.createLocalParameter("nr").setValue(nr);
+	void buildRepressionFormula(Reaction reaction, String promoterId, KineticLaw law,
+			List<Regulator> repressors) {
+		reaction.setKineticLaw(law);
 
 		String Ko = "(ko_f/ko_r)";
 		StringBuilder repressorTerms = new StringBuilder();
-		for (int i = 0; i < repressorEdges.size(); i++) {
-			repressorTerms.append(" + ").append(buildRepressorTerm(
-					law, repressorEdges.get(i), repressors.get(i), promoterId));
+		for (Regulator repressor : repressors) {
+			repressorTerms.append(" + ").append(regulatorTerm(law, repressor, "kr", "r"));
 		}
 
 		String formula = "(" + promoterId + " * ko * " + Ko + " * nr) / (1 + " + Ko + " * nr"
 				+ repressorTerms.toString() + ")";
 
-		try {
-			law.setMath(ASTNode.parseFormula(formula));
-		} catch (Exception e) {
-			log.warn("repression formula parse failed for " + promoterId + ": " + e.getMessage());
-			if (sbmlModel != null)
-				sbmlModel.removeReaction(reaction);
-		}
+		setMath(law, formula, "promoter '" + promoterId + "'");
 	}
 
 	/**
@@ -536,173 +810,84 @@ public class MxToSBML extends Converter {
 	 * where Ko = ko_f/ko_r, Kao = kao_f/kao_r,
 	 * Ka_j = ka_<actId>_f/ka_<actId>_r, Kr_i = kr_<repId>_f/kr_<repId>_r.
 	 */
-	void buildActivationFormula(Reaction reaction, String promoterId, GlyphInfo promoterInfo,
-			List<mxCell> activatorEdges, List<mxCell> repressorEdges) {
-		Model sbmlModel = reaction.getModel();
-
-		List<SpeciesData> activators = resolveRegulators(activatorEdges, reaction, sbmlModel,
-				"activation formula", promoterId);
-		if (activators == null)
-			return;
-		List<SpeciesData> repressors = resolveRegulators(repressorEdges, reaction, sbmlModel,
-				"activation formula", promoterId);
-		if (repressors == null)
-			return;
-
-		KineticLaw law = reaction.createKineticLaw();
-
-		Hashtable<String, Object> promoterSimData = promoterInfo.getSimulationData();
-		String promoterContext = "promoter '" + promoterId + "'";
-		double kb = getParam(promoterSimData, SBOLData.PARAM_KB, SequenceOntology.PROMOTER, promoterContext);
-		double ka = getParam(promoterSimData, SBOLData.PARAM_KA, SequenceOntology.PROMOTER, promoterContext);
-		double Ko_f = getParam(promoterSimData, SBOLData.PARAM_KO_F, SequenceOntology.PROMOTER, promoterContext);
-		double Ko_r = getParam(promoterSimData, SBOLData.PARAM_KO_R, SequenceOntology.PROMOTER, promoterContext);
-		double Kao_f = getParam(promoterSimData, SBOLData.PARAM_KAO_F, SequenceOntology.PROMOTER, promoterContext);
-		double Kao_r = getParam(promoterSimData, SBOLData.PARAM_KAO_R, SequenceOntology.PROMOTER, promoterContext);
-		double nr = getParam(promoterSimData, SBOLData.PARAM_NR, SequenceOntology.PROMOTER, promoterContext);
-
-		law.createLocalParameter("kb").setValue(kb);
-		law.createLocalParameter("ka").setValue(ka);
-		law.createLocalParameter("ko_f").setValue(Ko_f);
-		law.createLocalParameter("ko_r").setValue(Ko_r);
-		law.createLocalParameter("kao_f").setValue(Kao_f);
-		law.createLocalParameter("kao_r").setValue(Kao_r);
-		law.createLocalParameter("nr").setValue(nr);
+	void buildActivationFormula(Reaction reaction, String promoterId, KineticLaw law,
+			List<Regulator> activators, List<Regulator> repressors) {
+		reaction.setKineticLaw(law);
 
 		String Ko = "(ko_f/ko_r)";
 		String Kao = "(kao_f/kao_r)";
 
 		StringBuilder numeratorActivators = new StringBuilder();
 		StringBuilder denomActivators = new StringBuilder();
-		for (int j = 0; j < activatorEdges.size(); j++) {
-			String Ka_term = buildActivatorTerm(law, activatorEdges.get(j), activators.get(j), promoterId);
+		for (Regulator activator : activators) {
+			String Ka_term = regulatorTerm(law, activator, "ka", "a");
 			numeratorActivators.append(" + ka * ").append(Kao).append(" * nr * ").append(Ka_term);
 			denomActivators.append(" + ").append(Kao).append(" * nr * ").append(Ka_term);
 		}
 
 		StringBuilder denomRepressors = new StringBuilder();
-		for (int i = 0; i < repressorEdges.size(); i++) {
-			denomRepressors.append(" + ").append(buildRepressorTerm(
-					law, repressorEdges.get(i), repressors.get(i), promoterId));
+		for (Regulator repressor : repressors) {
+			denomRepressors.append(" + ").append(regulatorTerm(law, repressor, "kr", "r"));
 		}
 
 		String numerator = "(" + promoterId + " * (kb * " + Ko + " * nr" + numeratorActivators.toString() + "))";
 		String denominator = "(1 + " + Ko + " * nr" + denomActivators.toString() + denomRepressors.toString() + ")";
 		String formula = numerator + " / " + denominator;
 
+		setMath(law, formula, "promoter '" + promoterId + "'");
+	}
+
+	private String regulatorTerm(KineticLaw law, Regulator regulator, String rate, String role) {
+		String id = regulator.data.species.getId();
+		String forward = localOrGlobal(law, regulator.rateF, rate + "_" + id + "_f", rate + "_f");
+		String reverse = localOrGlobal(law, regulator.rateR, rate + "_" + id + "_r", rate + "_r");
+		String cooperativity = localOrGlobal(law, regulator.cooperativity, "nc_" + id + "_" + role, "nc");
+		return "((" + forward + "/" + reverse + ") * " + id + ")^" + cooperativity;
+	}
+
+	private static String localOrGlobal(KineticLaw law, Double explicit, String localId, String globalId) {
+		if (explicit == null)
+			return globalId;
+		if (law.getLocalParameter(localId) == null)
+			law.createLocalParameter(localId).setValue(explicit);
+		return localId;
+	}
+
+	private static void setMath(KineticLaw law, String formula, String owner) {
 		try {
 			law.setMath(ASTNode.parseFormula(formula));
 		} catch (Exception e) {
-			log.warn("activation formula parse failed for " + promoterId + ": " + e.getMessage());
-			if (sbmlModel != null)
-				sbmlModel.removeReaction(reaction);
+			throw new IllegalStateException("Rate law parse failed for " + owner + ": " + e.getMessage(), e);
 		}
 	}
 
-	/** Resolve regulator edges; on failure, removes the reaction and returns null. */
-	private List<SpeciesData> resolveRegulators(List<mxCell> edges, Reaction reaction, Model sbmlModel,
-			String formulaContext, String promoterId) {
-		List<SpeciesData> resolved = new ArrayList<>();
-		for (mxCell edge : edges) {
-			mxCell cell = (mxCell) edge.getSource();
-			if (cell == null) {
-				log.warn(formulaContext + " for '" + promoterId
-						+ "' skipped; regulator edge has no source.");
-				if (sbmlModel != null)
-					sbmlModel.removeReaction(reaction);
-				return null;
-			}
-			SpeciesData data = glyphToSpeciesData.get((String) cell.getValue());
-			if (data == null) {
-				log.warn(formulaContext + " for '" + promoterId
-						+ "' skipped; unresolved regulator species for cell '" + cell.getValue() + "'.");
-				if (sbmlModel != null)
-					sbmlModel.removeReaction(reaction);
-				return null;
-			}
-			resolved.add(data);
+	private static Double firstValue(Double held, Double next) {
+		return held != null ? held : next;
+	}
+
+	private Species createPlaceholderSpecies(Model sbmlModel, String baseId, int sboTerm, Species annotationSource) {
+		String placeholderId = Identifiers.toSId(baseId, usedIds);
+		Species placeholder = sbmlModel.createSpecies(placeholderId);
+		placeholder.setCompartment("Cell");
+		if (sboTerm > 0) {
+			placeholder.setSBOTerm(sboTerm);
 		}
-		return resolved;
-	}
-
-	/**
-	 * Returns `((kr_<id>_f/kr_<id>_r) * <id>)^nc_<id>_r`,
-	 * creating the per-repressor local parameters.
-	 */
-	private String buildRepressorTerm(KineticLaw law, mxCell repressorEdge, SpeciesData repData, String promoterId) {
-		String repId = repData.species.getId();
-		InteractionInfo repInfo = (InteractionInfo) interactionDict.get(repressorEdge.getValue());
-		Hashtable<String, Object> repSimData = repInfo != null ? repInfo.getSimulationData() : null;
-		String repContext = "inhibition from '" + repId + "' to '" + promoterId + "'";
-		double Kr_f = getParam(repSimData, SBOLData.PARAM_KR_F, SystemsBiologyOntology.INHIBITION, repContext);
-		double Kr_r = getParam(repSimData, SBOLData.PARAM_KR_R, SystemsBiologyOntology.INHIBITION, repContext);
-		double nc = getParam(repSimData, SBOLData.PARAM_NC, SystemsBiologyOntology.INHIBITION, repContext);
-
-		String p_Krf = "kr_" + repId + "_f";
-		String p_Krr = "kr_" + repId + "_r";
-		String p_nc = "nc_" + repId + "_r";
-		if (law.getLocalParameter(p_Krf) == null)
-			law.createLocalParameter(p_Krf).setValue(Kr_f);
-		if (law.getLocalParameter(p_Krr) == null)
-			law.createLocalParameter(p_Krr).setValue(Kr_r);
-		if (law.getLocalParameter(p_nc) == null)
-			law.createLocalParameter(p_nc).setValue(nc);
-
-		return "((" + p_Krf + "/" + p_Krr + ") * " + repId + ")^" + p_nc;
-	}
-
-	/**
-	 * Returns `((ka_<id>_f/ka_<id>_r) * <id>)^nc_<id>_a`,
-	 * creating the per-activator local parameters.
-	 */
-	private String buildActivatorTerm(KineticLaw law, mxCell activatorEdge, SpeciesData actData, String promoterId) {
-		String actId = actData.species.getId();
-		InteractionInfo actInfo = (InteractionInfo) interactionDict.get(activatorEdge.getValue());
-		Hashtable<String, Object> actSimData = actInfo != null ? actInfo.getSimulationData() : null;
-		String actContext = "stimulation from '" + actId + "' to '" + promoterId + "'";
-		double Ka_f = getParam(actSimData, SBOLData.PARAM_KA_F, SystemsBiologyOntology.STIMULATION, actContext);
-		double Ka_r = getParam(actSimData, SBOLData.PARAM_KA_R, SystemsBiologyOntology.STIMULATION, actContext);
-		double nc = getParam(actSimData, SBOLData.PARAM_NC, SystemsBiologyOntology.STIMULATION, actContext);
-
-		String p_Kaf = "ka_" + actId + "_f";
-		String p_Kar = "ka_" + actId + "_r";
-		String p_nc = "nc_" + actId + "_a";
-		if (law.getLocalParameter(p_Kaf) == null)
-			law.createLocalParameter(p_Kaf).setValue(Ka_f);
-		if (law.getLocalParameter(p_Kar) == null)
-			law.createLocalParameter(p_Kar).setValue(Ka_r);
-		if (law.getLocalParameter(p_nc) == null)
-			law.createLocalParameter(p_nc).setValue(nc);
-
-		return "((" + p_Kaf + "/" + p_Kar + ") * " + actId + ")^" + p_nc;
-	}
-
-	/**
-	 * TUs without an explicit product are assumed to create an undocumented mRNA.
-	 * Placeholder mRNA created as `<promoterId>_mRNA` species (SBO:0000250, initialAmount 0).
-	 * This matches how iBioSim handles promoter species without products.
-	 * The mRNA is synthetic, so it inherits its promoter's SBOL identity annotations.
-	 */
-	private Species createPlaceholderMRnaSpecies(Model sbmlModel, String promoterId, Species promoterSpecies) {
-		String mRnaId = Identifiers.toSId(promoterId + "_mRNA", usedIds);
-		Species mRNA = sbmlModel.createSpecies(mRnaId);
-		mRNA.setCompartment("Cell");
-		mRNA.setSBOTerm(250); // SBO:0000250 Ribonucleic acid
-		mRNA.setInitialAmount(0);
-		mRNA.setHasOnlySubstanceUnits(true);
-		mRNA.setConstant(false);
-		mRNA.setBoundaryCondition(false);
-		if (promoterSpecies.isSetAnnotation() && promoterSpecies.getAnnotation().isSetNonRDFannotation()) {
+		placeholder.setInitialAmount(0);
+		placeholder.setHasOnlySubstanceUnits(true);
+		placeholder.setConstant(false);
+		placeholder.setBoundaryCondition(false);
+		if (annotationSource != null && annotationSource.isSetAnnotation()
+				&& annotationSource.getAnnotation().isSetNonRDFannotation()) {
 			try {
-				mRNA.appendAnnotation(promoterSpecies.getAnnotation().getNonRDFannotationAsString());
+				placeholder.appendAnnotation(annotationSource.getAnnotation().getNonRDFannotationAsString());
 			} catch (XMLStreamException e) {
-				throw new IllegalStateException("Failed to copy SBOL identity annotations to " + mRnaId, e);
+				throw new IllegalStateException("Failed to copy SBOL identity annotations to " + placeholderId, e);
 			}
 		}
-		return mRNA;
+		return placeholder;
 	}
 
-	private void createEdge(Layout layout, String sourceId, String targetId, String type,
+	private void createEdge(Layout layout, String reactionId, String sourceId, String targetId, String type,
 			Map<String, Point2D> speciesCenter) {
 		Point2D source = speciesCenter.get(sourceId);
 		Point2D target = speciesCenter.get(targetId);
@@ -710,13 +895,15 @@ public class MxToSBML extends Converter {
 		if (source == null || target == null)
 			return;
 
-		String rgId = glyphId(sourceId + "__" + type + "__" + targetId);
+		String rgId = uniqueLayoutId(glyphId(reactionId + "__" + type + "__" + sourceId + "__" + targetId));
 		ReactionGlyph rg = layout.createReactionGlyph(rgId);
-		setBoundingBox(rg, target.getX(), target.getY(), 0, 0);
 
-		String srgId = "ReferenceGlyph__" + sourceId + "__" + type + "__" + targetId;
+		String srgId = uniqueLayoutId(
+				"ReferenceGlyph__" + reactionId + "__" + type + "__" + sourceId + "__" + targetId);
 		SpeciesReferenceGlyph srg = rg.createSpeciesReferenceGlyph(srgId, glyphId(targetId));
 		srg.setSpeciesReferenceRole(SpeciesReferenceRole.PRODUCT);
+
+		setBoundingBox(rg, target.getX(), target.getY(), 0, 0);
 
 		double midX = (source.getX() + target.getX()) / 2.0;
 		double midY = (source.getY() + target.getY()) / 2.0;
@@ -776,6 +963,15 @@ public class MxToSBML extends Converter {
 		return "Glyph__" + entityId;
 	}
 
+	private String uniqueLayoutId(String rawId) {
+		String id = rawId;
+		for (int suffix = 2; usedIds.contains(id); suffix++) {
+			id = rawId + "_" + suffix;
+		}
+		usedIds.add(id);
+		return id;
+	}
+
 	/** TextGlyph labelling a graphical object with its same bounding box. */
 	private void addTextGlyph(Layout layout, String graphicalObjectId, String text,
 			double x, double y, double width, double height) {
@@ -793,7 +989,6 @@ public class MxToSBML extends Converter {
 		for (SpeciesData data : glyphToSpeciesData.values()) {
 			String speciesId = data.species.getId();
 			if (!seenSpeciesIds.add(speciesId)) {
-				// Multiple promoter glyphs map to one merged species; emit one SpeciesGlyph.
 				continue;
 			}
 
@@ -833,7 +1028,7 @@ public class MxToSBML extends Converter {
 		String promoterId = reactionToPromoterId.get(reaction.getId());
 
 		for (SpeciesReference product : reaction.getListOfProducts()) {
-			createEdge(layout, promoterId, product.getSpecies(), "Production", speciesCenter);
+			createEdge(layout, reaction.getId(), promoterId, product.getSpecies(), "Production", speciesCenter);
 		}
 
 		for (ModifierSpeciesReference mod : reaction.getListOfModifiers()) {
@@ -842,20 +1037,27 @@ public class MxToSBML extends Converter {
 				continue;
 
 			String type = (mod.getSBOTerm() == 20) ? "repression" : "activation";
-			createEdge(layout, modId, promoterId, type, speciesCenter);
+			createEdge(layout, reaction.getId(), modId, promoterId, type, speciesCenter);
 		}
 	}
 
-	private void createComplexEdges(Layout layout, Reaction reaction,
+	private void createMassActionEdges(Layout layout, Reaction reaction,
 			Map<String, Point2D> speciesCenter) {
-		if (reaction.getListOfProducts().size() == 0) {
-			return;
-		}
-		String productId = reaction.getProduct(0).getSpecies();
-
 		for (SpeciesReference reactant : reaction.getListOfReactants()) {
-			createEdge(layout, reactant.getSpecies(), productId, "complex", speciesCenter);
+			for (SpeciesReference product : reaction.getListOfProducts()) {
+				createEdge(layout, reaction.getId(), reactant.getSpecies(), product.getSpecies(), "massAction", speciesCenter);
+			}
 		}
+		for (ModifierSpeciesReference modifier : reaction.getListOfModifiers()) {
+			for (SpeciesReference product : reaction.getListOfProducts()) {
+				createEdge(layout, reaction.getId(), modifier.getSpecies(), product.getSpecies(), "massAction", speciesCenter);
+			}
+		}
+	}
+
+	private boolean isMassActionReaction(Reaction reaction) {
+		URI uri = URI.create(SystemsBiologyOntology.NAMESPACE + "SBO:" + String.format("%07d", reaction.getSBOTerm()));
+		return SBOLData.isMassActionInteraction(java.util.Collections.singleton(uri));
 	}
 
 	/**
@@ -870,12 +1072,10 @@ public class MxToSBML extends Converter {
 		Map<String, Point2D> speciesCenter = createSpeciesGlyphs(layout);
 
 		for (Reaction reaction : sbmlModel.getListOfReactions()) {
-			String reactionId = reaction.getId();
-
-			if (reactionId.startsWith("Production_")) {
+			if (reaction.getSBOTerm() == 589) { // SBO:0000589 Genetic Production
 				createProductionEdges(layout, reaction, speciesCenter);
-			} else if (reactionId.startsWith("Complex_")) {
-				createComplexEdges(layout, reaction, speciesCenter);
+			} else if (isMassActionReaction(reaction)) {
+				createMassActionEdges(layout, reaction, speciesCenter);
 			}
 		}
 
@@ -926,26 +1126,28 @@ public class MxToSBML extends Converter {
 	 * Create SBML events get their canvas geometry for layout.
 	 * Each event uses the EventInfo URI for the mxCell lookup.
 	 */
-	private void createEvents(Model sbmlModel, mxGraphModel graphModel) {
+	private void createEvents(Model sbmlModel, mxGraphModel graphModel, mxCell[] viewCells) {
 		if (eventDict == null || eventDict.isEmpty()) {
 			return;
 		}
 
 		// Event cells, like all glyph cells, are keyed by value (fullURI); their ids are auto-generated.
 		Map<String, mxCell> eventCellsByValue = new HashMap<>();
-		mxCell[] eventViewCells = Arrays.stream(mxGraphModel.getChildCells(graphModel, graphModel.getCell("1"), true, false))
-				.toArray(mxCell[]::new);
-		for (mxCell viewCell : eventViewCells) {
+		for (mxCell viewCell : viewCells) {
 			for (Object child : mxGraphModel.getChildCells(graphModel, viewCell, true, false)) {
 				mxCell c = (mxCell) child;
 				String style = c.getStyle();
 				if (style != null && style.contains(STYLE_EVENT) && c.getValue() != null) {
-					eventCellsByValue.put(c.getValue().toString(), c);
+					eventCellsByValue.put((String) c.getValue(), c);
 				}
 			}
 		}
 
 		for (EventInfo eventInfo : eventDict.values()) {
+			mxCell eventCell = eventCellsByValue.get(eventInfo.getFullURI());
+			if (eventCell == null) {
+				continue;
+			}
 			Hashtable<String, Object> simData = eventInfo.getSimulationData();
 			String context = "event '" + eventInfo.getDisplayID() + "'";
 
@@ -954,19 +1156,16 @@ public class MxToSBML extends Converter {
 				continue;
 			}
 
-			// The stored value is the species glyph's full URI when set from the
-			// frontend; older files carry a display name instead
-			String speciesId = null;
-			SpeciesData target = glyphToSpeciesData.get(targetSpecies);
-			if (target != null) {
-				speciesId = target.species.getId();
-			} else {
-				speciesId = resolveSpeciesId(sbmlModel, targetSpecies, displayNameToSpeciesId);
-			}
-			if (speciesId == null) {
-				log.warn(context + ": targetSpecies '" + targetSpecies + "' did not resolve to a species; event skipped");
+			SpeciesData target = uriToSpeciesData.get(targetSpecies);
+			if (target == null) {
+				System.err.println("Warning: skipped " + context + ": its target species is not on the canvas");
 				continue;
 			}
+
+			String speciesId = target.species.getId();
+
+			double delay = numberOrDefault(simData, SBOLData.PARAM_EVENT_DELAY, null);
+			double assignment = numberOrDefault(simData, SBOLData.PARAM_EVENT_ASSIGNMENT_VALUE, null);
 
 			String eventId = Identifiers.toSId(eventInfo.getDisplayName(), usedIds);
 			Event event = sbmlModel.createEvent(eventId);
@@ -982,29 +1181,14 @@ public class MxToSBML extends Converter {
 			trigger.setPersistent(false);
 			trigger.setMath(new ASTNode(ASTNode.Type.CONSTANT_TRUE));
 
-			// Delay: default to 0.0 if not specified
-			double delayVal = 0.0;
-			if (simData != null && simData.containsKey(SBOLData.PARAM_EVENT_DELAY)) {
-				delayVal = extractDouble(simData.get(SBOLData.PARAM_EVENT_DELAY), 0.0,
-						"delay on " + context);
-			}
-			Delay delay = event.createDelay();
-			delay.setMath(numericLiteralAst(delayVal));
+			Delay delayNode = event.createDelay();
+			delayNode.setMath(numericLiteralAst(delay));
 
-			// Assignment value: default to 0.0 if not specified
-			double assignVal = 0.0;
-			if (simData != null && simData.containsKey(SBOLData.PARAM_EVENT_ASSIGNMENT_VALUE)) {
-				assignVal = extractDouble(simData.get(SBOLData.PARAM_EVENT_ASSIGNMENT_VALUE), 0.0,
-						"assignment value on " + context);
-			}
-			EventAssignment assignment = event.createEventAssignment();
-			assignment.setVariable(speciesId);
-			assignment.setMath(numericLiteralAst(assignVal));
+			EventAssignment assignmentNode = event.createEventAssignment();
+			assignmentNode.setVariable(speciesId);
+			assignmentNode.setMath(numericLiteralAst(assignment));
 
-			// Record geometry for layout.
-			// Events imported without position annotations have no cell.
-			mxCell eventCell = eventCellsByValue.get(eventInfo.getFullURI());
-			mxGeometry geom = (eventCell != null) ? eventCell.getGeometry() : null;
+			mxGeometry geom = eventCell.getGeometry();
 			if (geom != null) {
 				layoutBounds.update(geom);
 			}
@@ -1021,14 +1205,17 @@ public class MxToSBML extends Converter {
 	 */
 	private Species createSpecies(Model model, mxCell glyph) {
 		GlyphInfo glyphInfo = (GlyphInfo) infoDict.get(glyph.getValue());
-		if (glyphInfo == null)
+		if (glyphInfo == null) {
+			missingSpeciesCells.add(glyph);
 			return null;
+		}
+
+		double initialAmount = numberOrDefault(glyphInfo.getSimulationData(), "initialAmount", null);
 
 		// SBML ID becomes the label: the species' display name (the same fallback
 		// chain the canvas label uses)
 		String displayName = glyphInfo.getDisplayName();
 		String speciesId = Identifiers.toSId(displayName, usedIds);
-		displayNameToSpeciesId.put(displayName, speciesId);
 
 		Species species = model.createSpecies(speciesId);
 		species.setCompartment("Cell");
@@ -1058,22 +1245,9 @@ public class MxToSBML extends Converter {
 			}
 		}
 
-		boolean boundaryCondition = false;
-		if (glyphInfo.getSimulationData() != null && glyphInfo.getSimulationData().containsKey("boundaryCondition")) {
-			Object bcValue = glyphInfo.getSimulationData().get("boundaryCondition");
-			if (bcValue instanceof Boolean) {
-				boundaryCondition = (Boolean) bcValue;
-			} else if (bcValue instanceof String) {
-				boundaryCondition = Boolean.parseBoolean((String) bcValue);
-			}
-		}
+		boolean boundaryCondition = booleanOrDefault(glyphInfo.getSimulationData(), "boundaryCondition",
+				(Boolean) SBOLData.getDefault("species", "boundaryCondition"));
 		species.setBoundaryCondition(boundaryCondition);
-
-		double initialAmount = 0.0;
-		if (glyphInfo.getSimulationData() != null && glyphInfo.getSimulationData().containsKey("initialAmount")) {
-			initialAmount = extractDouble(glyphInfo.getSimulationData().get("initialAmount"), 0.0,
-					"initialAmount on species '" + glyphInfo.getDisplayID() + "'");
-		}
 		species.setInitialAmount(initialAmount);
 		species.setHasOnlySubstanceUnits(true); // Amount of molecules, not concentration
 		species.setConstant(false);
@@ -1086,137 +1260,325 @@ public class MxToSBML extends Converter {
 	/**
 	 * Creates a degradation reaction for a species.
 	 *
-	 * Formula: kd * [Species] (Mass Action)
 	 */
-	private void createDegradationReaction(Model model, mxCell edge, InteractionInfo info) {
-		mxCell source = (mxCell) edge.getSource();
-		if (source == null)
-			return;
-		SpeciesData sourceData = glyphToSpeciesData.get((String) source.getValue());
-		if (sourceData == null)
-			return;
-
-		String speciesId = sourceData.species.getId();
-		String reactionId = "Degradation_" + speciesId;
+	private void createDegradationReaction(Model model, DegradationGroup group) {
+		String reactionId = Identifiers.toSId(group.displayId, usedIds);
 
 		Reaction reaction = model.createReaction(reactionId);
 		reaction.setReversible(false);
 		reaction.setSBOTerm(179); // SBO:0000179 Degradation
+		reaction.setCompartment("Cell");
 
-		SpeciesReference reactant = reaction.createReactant(sourceData.species);
+		SpeciesReference reactant = reaction.createReactant(group.source.species);
 		reactant.setStoichiometry(1.0);
 		reactant.setConstant(true);
 
 		KineticLaw law = reaction.createKineticLaw();
-		LocalParameter kd = law.createLocalParameter("kd");
-		kd.setValue(getParam(info.getSimulationData(), SBOLData.PARAM_KD, SystemsBiologyOntology.DEGRADATION, "degradation of '" + speciesId + "'"));
-		try {
-			law.setMath(ASTNode.parseFormula("kd * " + speciesId));
-		} catch (Exception e) {
-			log.warn("degradation formula parse failed for " + speciesId + ": " + e.getMessage());
-			model.removeReaction(reaction);
-			return;
+		if (group.kd != null) {
+			law.createLocalParameter("kd").setValue(group.kd);
 		}
+		setMath(law, "kd * " + group.source.species.getId(), "reaction '" + reactionId + "'");
 	}
 
-	/**
-	 * Creates a complex formation reaction from an Association interaction node.
-	 *
-	 * Formula: Kc_f * [A]^nc_A * [B]^nc_B - Kc_r * [Complex]
-	 * Parameters: Kc_f, Kc_r (from node), nc per reactant
-	 */
-	private void createComplexFormationReaction(Model model, mxCell node, InteractionInfo info,
-			mxGraphModel graphModel) {
-		Object[] outgoing = mxGraphModel.getOutgoingEdges(graphModel, node);
-		if (outgoing.length == 0)
-			return;
 
-		mxCell outEdge = (mxCell) outgoing[0];
-		mxCell target = (mxCell) outEdge.getTarget();
-		if (target == null)
-			return;
-		SpeciesData productData = glyphToSpeciesData.get((String) target.getValue());
-		if (productData == null)
-			return;
 
-		String productId = productData.species.getId();
-		String reactionId = "Complex_" + productId;
+	private List<Participant> resolveNodeParticipants(mxGraphModel graphModel, mxCell node, InteractionInfo info) {
+		Object[] incomingEdges = mxGraphModel.getIncomingEdges(graphModel, node);
+		Object[] outgoingEdges = mxGraphModel.getOutgoingEdges(graphModel, node);
+		if (incomingEdges.length == 0 && outgoingEdges.length == 0) {
+			return null;
+		}
 
-		Reaction reaction = model.createReaction(reactionId);
-		reaction.setReversible(true);
-		reaction.setSBOTerm(177); // SBO:0000177 Non-covalent binding
-
-		Object[] incoming = mxGraphModel.getIncomingEdges(graphModel, node);
-		StringBuilder rateLaw = new StringBuilder("kc_f"); // Lowercase for SBML
-
-		KineticLaw law = reaction.createKineticLaw();
-
-		for (Object obj : incoming) {
+		List<Participant> participants = new ArrayList<>();
+		for (Object obj : incomingEdges) {
 			mxCell inEdge = (mxCell) obj;
 			mxCell source = (mxCell) inEdge.getSource();
-			if (source == null)
-				continue;
-			SpeciesData sourceData = glyphToSpeciesData.get((String) source.getValue());
-			if (sourceData == null)
-				continue;
+			SpeciesData sourceData = source != null ? glyphToSpeciesData.get(source) : null;
+			if (sourceData == null) {
+				return null;
+			}
+			participants.add(resolveParticipant(info, sourceData, inEdge, true));
+		}
+		for (Object obj : outgoingEdges) {
+			mxCell outEdge = (mxCell) obj;
+			mxCell target = (mxCell) outEdge.getTarget();
+			SpeciesData targetData = target != null ? glyphToSpeciesData.get(target) : null;
+			if (targetData == null) {
+				return null;
+			}
+			participants.add(resolveParticipant(info, targetData, outEdge, false));
+		}
+		return participants;
+	}
 
-			String speciesId = sourceData.species.getId();
-			SpeciesReference r = reaction.createReactant(sourceData.species);
-			r.setStoichiometry(1.0);
-			r.setConstant(true);
-
-			InteractionInfo edgeInfo = (InteractionInfo) interactionDict.get(inEdge.getValue());
-			Hashtable<String, Object> edgeSimData = edgeInfo != null ? edgeInfo.getSimulationData() : null;
-			String sourceURI = (String) source.getValue();
-			double nc = getKeyedParam(edgeSimData, SBOLData.PARAM_NC, sourceURI, SystemsBiologyOntology.NON_COVALENT_BINDING,
-					"complex formation of '" + productId + "' (reactant '" + speciesId + "')");
-
-			String ncParam = "nc_" + speciesId;
-			law.createLocalParameter(ncParam).setValue(nc);
-			rateLaw.append(" * ").append(speciesId).append("^").append(ncParam);
+	private List<Participant> resolveEdgeParticipants(mxCell edge, InteractionInfo info) {
+		mxCell source = (mxCell) edge.getSource();
+		mxCell target = (mxCell) edge.getTarget();
+		if (source == null && target == null) {
+			return null;
 		}
 
-		SpeciesReference p = reaction.createProduct(productData.species);
-		p.setStoichiometry(1.0);
-		p.setConstant(true);
+		List<Participant> participants = new ArrayList<>();
+		SpeciesData sourceData = source != null ? glyphToSpeciesData.get(source) : null;
+		if (source != null && sourceData == null) {
+			return null;
+		}
+		if (sourceData != null) {
+			participants.add(resolveParticipant(info, sourceData, edge, true));
+		}
+		SpeciesData targetData = target != null ? glyphToSpeciesData.get(target) : null;
+		if (target != null && targetData == null) {
+			return null;
+		}
+		if (targetData != null) {
+			participants.add(resolveParticipant(info, targetData, edge, false));
+		}
+		return participants;
+	}
 
-		rateLaw.append(" - kc_r * ").append(productId);
-
-		law.createLocalParameter(SBOLData.PARAM_KC_F.toLowerCase()).setValue(
-				getParam(info.getSimulationData(), SBOLData.PARAM_KC_F, SystemsBiologyOntology.NON_COVALENT_BINDING,
-						"complex formation of '" + productId + "'"));
-		law.createLocalParameter(SBOLData.PARAM_KC_R.toLowerCase()).setValue(
-				getParam(info.getSimulationData(), SBOLData.PARAM_KC_R, SystemsBiologyOntology.NON_COVALENT_BINDING,
-						"complex formation of '" + productId + "'"));
-
+	private Participant resolveParticipant(InteractionInfo owner, SpeciesData data, mxCell edge, boolean source) {
+		Hashtable<String, Object> coefficients = source ? owner.getSourceCoefficient() : owner.getTargetCoefficient();
+		Object stored = coefficients.get(edge.getId());
+		Double coefficient = stored != null ? ((Number) stored).doubleValue() : null;
+		String refinement = (source ? owner.getSourceRefinement() : owner.getTargetRefinement()).get(edge.getId());
+		URI role;
 		try {
-			law.setMath(ASTNode.parseFormula(rateLaw.toString()));
-		} catch (Exception e) {
-			log.warn("complex formation formula parse failed for " + productId + ": " + e.getMessage());
-			model.removeReaction(reaction);
-			return;
+			role = SBOLData.getParticipantRole(owner.getInteractionType(), refinement, source);
+		} catch (IllegalArgumentException unsupported) {
+			System.err.println("Warning: interaction '" + owner.getDisplayID() + "' leaves out "
+					+ data.species.getId() + ": " + unsupported.getMessage());
+			return new Participant(data, Role.OMITTED, coefficient, null);
+		}
+		if (SBOLData.isRole(role, SystemsBiologyOntology.PRODUCT)) {
+			return new Participant(data, Role.PRODUCT, coefficient, role);
+		}
+		if (SBOLData.isRole(role, SystemsBiologyOntology.MODIFIER)) {
+			return new Participant(data, Role.MODIFIER, coefficient, role);
+		}
+		if (SBOLData.isRole(role, SystemsBiologyOntology.REACTANT)) {
+			return new Participant(data, Role.REACTANT, coefficient, role);
+		}
+		return new Participant(data, Role.OMITTED, coefficient, role);
+	}
+
+	private void createInteractionReaction(Model model, InteractionInfo info, List<Participant> participants,
+			Map<String, BindingGroup> bindings) {
+		if (isBindingReaction(info, participants)) {
+			addBinding(bindings, info, participants);
+		} else {
+			createGenericBiochemicalReaction(model, info, participants);
 		}
 	}
 
-	/**
-	 * Extracts a double from a value that may be a Number, a numeric String,
-	 * or null. Returns defaultVal for null, unparseable strings, or unexpected types.
-	 */
-	private double extractDouble(Object val, double defaultVal, String context) {
-		if (val == null)
-			return defaultVal;
-		if (val instanceof Number)
-			return ((Number) val).doubleValue();
-		if (val instanceof String) {
-			try {
-				return Double.parseDouble((String) val);
-			} catch (NumberFormatException e) {
-				log.warn("non-numeric value for " + context + ": '" + val + "', using default " + defaultVal);
-				return defaultVal;
+	private static boolean isBindingReaction(InteractionInfo info, List<Participant> participants) {
+		if (!"Non-Covalent Binding".equals(info.getInteractionType())) {
+			return false;
+		}
+		int products = 0;
+		int reactants = 0;
+		for (Participant p : participants) {
+			if (p.role == Role.PRODUCT) {
+				products++;
+			} else if (p.role == Role.REACTANT) {
+				reactants++;
+			} else {
+				return false;
 			}
 		}
-		log.warn("unexpected type for " + context + ": " + val.getClass().getSimpleName() + ", using default " + defaultVal);
-		return defaultVal;
+		return products == 1 && reactants >= 1;
+	}
+
+
+	private void addBinding(Map<String, BindingGroup> bindings, InteractionInfo info,
+			List<Participant> participants) {
+		Participant product = null;
+		for (Participant p : participants) {
+			if (p.role == Role.PRODUCT) {
+				product = p;
+				break;
+			}
+		}
+		boolean memberReversible = booleanOrDefault(info.getSimulationData(), SBOLData.PARAM_REVERSIBLE,
+				Boolean.TRUE.equals(SBOLData.getDefault(info.getInteractionType(), SBOLData.PARAM_REVERSIBLE)));
+		BindingGroup group = bindings.get(product.data.species.getId());
+		if (group == null) {
+			group = new BindingGroup(product.data, memberReversible);
+			bindings.put(product.data.species.getId(), group);
+		}
+		for (Participant p : participants) {
+			if (p.role == Role.REACTANT) {
+				group.reactants.add(p);
+			}
+		}
+		group.kcF = firstValue(group.kcF, numberOrNull(info.getSimulationData(), SBOLData.PARAM_KC_F));
+		if (group.reversible) {
+			group.kcR = firstValue(group.kcR, numberOrNull(info.getSimulationData(), SBOLData.PARAM_KC_R));
+		}
+	}
+
+	private void createBindingReaction(Model model, BindingGroup group) {
+		String productId = group.product.species.getId();
+		String reactionId = Identifiers.toSId("Complex_" + productId, usedIds);
+
+		Reaction reaction = model.createReaction(reactionId);
+		reaction.setReversible(group.reversible);
+		reaction.setSBOTerm(177); // SBO:0000177 binding
+		reaction.setCompartment("Cell");
+
+		List<Participant> reactants = mergeSameSpecies(group.reactants);
+		KineticLaw law = reaction.createKineticLaw();
+		StringBuilder rateLaw = new StringBuilder("kc_f");
+		double defaultNc = SBOLData.getParticipantCoefficientDefault("Non-Covalent Binding", true);
+		for (Participant p : reactants) {
+			double stoichiometry = p.coefficient != null ? p.coefficient : defaultNc;
+			String exponent = "nc";
+			if (p.coefficient != null) {
+				exponent = "nc_" + p.data.species.getId();
+				law.createLocalParameter(exponent).setValue(p.coefficient);
+			}
+			SpeciesReference r = reaction.createReactant(p.data.species);
+			r.setStoichiometry(stoichiometry);
+			r.setConstant(true);
+			rateLaw.append("*pow(").append(p.data.species.getId()).append(",").append(exponent).append(")");
+		}
+
+		SpeciesReference productRef = reaction.createProduct(group.product.species);
+		productRef.setStoichiometry(1.0);
+		productRef.setConstant(true);
+
+		if (group.reversible) {
+			rateLaw.append("-kc_r*").append(productId);
+		}
+
+		if (group.kcF != null) {
+			law.createLocalParameter("kc_f").setValue(group.kcF);
+		}
+		if (group.reversible && group.kcR != null) {
+			law.createLocalParameter("kc_r").setValue(group.kcR);
+		}
+
+		setMath(law, rateLaw.toString(), "reaction '" + reactionId + "'");
+	}
+
+	private static List<Participant> mergeSameSpecies(List<Participant> participants) {
+		Map<String, Participant> byRoleSpecies = new LinkedHashMap<>();
+		for (Participant p : participants) {
+			String key = p.role + "#" + p.data.species.getId();
+			Participant first = byRoleSpecies.get(key);
+			if (first == null) {
+				byRoleSpecies.put(key, p);
+				continue;
+			}
+			if (p.coefficient != null) {
+				Double coefficient = firstValue(first.coefficient, p.coefficient);
+				byRoleSpecies.put(key, new Participant(first.data, first.role, coefficient, first.roleUri));
+			}
+		}
+		return new ArrayList<>(byRoleSpecies.values());
+	}
+
+	private void createGenericBiochemicalReaction(Model model, InteractionInfo info, List<Participant> participants) {
+		participants = mergeSameSpecies(participants);
+		Hashtable<String, Object> simData = info.getSimulationData();
+		boolean isMassAction = SBOLData.isMassActionInteraction(info.getInteractionType());
+		URI typeURI = SBOLData.interactions.getValue(info.getInteractionType());
+		boolean reversible = isMassAction && booleanOrDefault(simData, SBOLData.PARAM_REVERSIBLE,
+				Boolean.TRUE.equals(SBOLData.getDefault(info.getInteractionType(), SBOLData.PARAM_REVERSIBLE)));
+
+		String reactionId = Identifiers.toSId(info.getDisplayID(), usedIds);
+		double k = isMassAction
+				? numberOrDefault(simData, SBOLData.PARAM_KC_F, typeURI)
+				: getDefaultValue(SystemsBiologyOntology.BIOCHEMICAL_REACTION, SBOLData.PARAM_KC_F);
+
+		Reaction reaction = model.createReaction(reactionId);
+		reaction.setReversible(reversible);
+		reaction.setSBOTerm(sboTermForType(info.getInteractionType()));
+
+		KineticLaw law = reaction.createKineticLaw();
+		law.createLocalParameter("k").setValue(k);
+
+		StringBuilder rateLaw = new StringBuilder("k");
+		StringBuilder reverseLaw = new StringBuilder();
+		for (Participant p : participants) {
+			double stoichiometry = isMassAction && p.coefficient != null ? p.coefficient : 1.0;
+			switch (p.role) {
+				case OMITTED:
+				break;
+				case REACTANT: {
+					SpeciesReference reactant = reaction.createReactant(p.data.species);
+					reactant.setStoichiometry(stoichiometry);
+					reactant.setConstant(true);
+					reactant.setSBOTerm(10); // SBO:0000010 reactant
+					rateLaw.append("*").append(massActionFactor(p.data.species.getId(), stoichiometry));
+					break;
+				}
+				case MODIFIER: {
+					ModifierSpeciesReference modifier = reaction.createModifier(p.data.species);
+					modifier.setSBOTerm(sboTermForRole(p.roleUri));
+					if (isMassAction) {
+						rateLaw.append("*").append(p.data.species.getId());
+					}
+					break;
+				}
+				case PRODUCT: {
+					SpeciesReference product = reaction.createProduct(p.data.species);
+					product.setStoichiometry(stoichiometry);
+					product.setConstant(true);
+					product.setSBOTerm(11); // SBO:0000011 product
+					reverseLaw.append("*").append(massActionFactor(p.data.species.getId(), stoichiometry));
+					break;
+				}
+			}
+		}
+		if (reversible) {
+			law.createLocalParameter("kc_r")
+					.setValue(numberOrDefault(simData, SBOLData.PARAM_KC_R, typeURI));
+			rateLaw.append("-kc_r").append(reverseLaw);
+		}
+
+		setMath(law, rateLaw.toString(), "reaction '" + reactionId + "'");
+	}
+
+	private static String massActionFactor(String speciesId, double stoichiometry) {
+		if (stoichiometry == 1.0)
+			return speciesId;
+		String exponent = stoichiometry == Math.rint(stoichiometry)
+				? String.valueOf((long) stoichiometry) : String.valueOf(stoichiometry);
+		return "pow(" + speciesId + "," + exponent + ")";
+	}
+
+
+	private boolean booleanOrDefault(Hashtable<String, Object> simData, String key, boolean def) {
+		return simData == null || !simData.containsKey(key) ? def : (Boolean) simData.get(key);
+	}
+
+	private int sboTermForType(String type) {
+		URI uri = SBOLData.interactions.getValue(type);
+		if (uri == null) {
+			throw new IllegalArgumentException("no SBO term for interaction type: " + type);
+		}
+		return Integer.parseInt(uri.toString().substring(uri.toString().lastIndexOf(':') + 1));
+	}
+
+	private static double numberOrDefault(Hashtable<String, Object> simData, String paramName, URI defaultType) {
+		if (simData == null || !simData.containsKey(paramName))
+			return getDefaultValue(defaultType, paramName);
+		return ((Number) simData.get(paramName)).doubleValue();
+	}
+
+	private static Double numberOrNull(Hashtable<String, Object> simData, String paramName) {
+		if (simData == null || !simData.containsKey(paramName)) {
+			return null;
+		}
+		return ((Number) simData.get(paramName)).doubleValue();
+	}
+
+	private static int sboTermForRole(URI role) {
+		if (role == null) {
+			return SBO_MODIFIER;
+		}
+		String uri = role.toString();
+		return Integer.parseInt(uri.substring(uri.lastIndexOf(':') + 1));
 	}
 
 	/** INTEGER for finite whole values in int range; REAL otherwise. Matches iBioSim's MathML. */
@@ -1236,23 +1598,6 @@ public class MxToSBML extends Converter {
 	}
 
 	/**
-	 * Gets a simulation parameter value from simulationData or SBOLData defaults.
-	 *
-	 * @param simData   simulationData hashtable
-	 * @param paramName parameter name to look up
-	 * @param type      URI type for default value lookup
-	 * @param context   human-readable context for error messages (e.g., "promoter 'pTet'")
-	 */
-	private double getParam(Hashtable<String, Object> simData, String paramName, URI type, String context) {
-		if (simData != null && simData.containsKey(paramName)) {
-			// default unreachable -- Hashtable forbids null values
-			return extractDouble(simData.get(paramName), 0.0,
-					"parameter '" + paramName + "' on " + context);
-		}
-		return getDefaultValue(type, paramName, context);
-	}
-
-	/**
 	 * Gets a string simulation parameter from simulationData.
 	 * Returns null if the key is missing or the value is null.
 	 */
@@ -1263,82 +1608,16 @@ public class MxToSBML extends Converter {
 		return val != null ? val.toString() : null;
 	}
 
-	/**
-	 * Gets a per-reactant simulation parameter (e.g., "nc_<sourceURI>") or default.
-	 *
-	 * @param simData   simulationData hashtable
-	 * @param paramName base parameter name (e.g., "nc")
-	 * @param keyURI    source species URI to use as key
-	 * @param type      URI type for default value lookup
-	 * @param context   human-readable context for error messages
-	 */
-	private double getKeyedParam(Hashtable<String, Object> simData, String paramName, String keyURI, URI type,
-			String context) {
-		String keyedParamName = paramName + "_" + keyURI;
-		if (simData != null && simData.containsKey(keyedParamName)) {
-			// default unreachable -- Hashtable forbids null values
-			return extractDouble(simData.get(keyedParamName), 0.0,
-					"parameter '" + keyedParamName + "' on " + context);
-		}
-		return getDefaultValue(type, paramName, context);
-	}
-
-	private double getDefaultValue(URI type, String paramName, String context) {
-		String key = null;
-		if (SBOLData.roles.containsValue(type)) {
-			key = SBOLData.roles.getKey(type);
-		} else if (SBOLData.interactions.containsValue(type)) {
+	private static double getDefaultValue(URI type, String paramName) {
+		String key;
+		if (type == null) {
+			key = "initialAmount".equals(paramName) ? "species" : "event";
+		} else if (SequenceOntology.PROMOTER.equals(type)) {
+			key = "Promoter";
+		} else {
 			key = SBOLData.interactions.getKey(type);
 		}
-
-		if (key == null) {
-			log.warn("no default for '" + paramName + "' on " + context + ": unknown type, using 0.0");
-			return 0.0;
-		}
-
-		LinkedHashMap<String, Object> params = SBOLData.getSimulationConfig().get(key);
-		if (params == null) {
-			log.warn("no default for '" + paramName + "' on " + context + ": no config for type '" + key + "', using 0.0");
-			return 0.0;
-		}
-
-		Object val = params.get(paramName);
-		if (val == null) {
-			log.warn("no default for '" + paramName + "' on " + context + ": missing from config, using 0.0");
-			return 0.0;
-		}
-
-		if (val instanceof Number) {
-			return ((Number) val).doubleValue();
-		}
-		log.warn("invalid default type for '" + paramName + "' on " + context + ": " + val.getClass().getSimpleName() + ", using 0.0");
-		return 0.0;
-	}
-
-	/**
-	 * Resolve a user-entered species name to its SBML species ID.
-	 * Tries: direct SBML ID match, then display name lookup, then SBML name match.
-	 *
-	 * @return The resolved SBML species ID, or null if no match found
-	 */
-	private static String resolveSpeciesId(Model sbmlModel, String targetSpecies,
-			Map<String, String> nameToIdMap) {
-		// Direct SBML ID match (user typed the sanitized ID)
-		if (sbmlModel.getSpecies(targetSpecies) != null) {
-			return targetSpecies;
-		}
-		// Display name -> SBML ID lookup (user typed the display name)
-		String mapped = nameToIdMap.get(targetSpecies);
-		if (mapped != null && sbmlModel.getSpecies(mapped) != null) {
-			return mapped;
-		}
-		// Fallback: match by SBML species name attribute
-		for (Species sp : sbmlModel.getListOfSpecies()) {
-			if (targetSpecies.equals(sp.getName())) {
-				return sp.getId();
-			}
-		}
-		return null;
+		return ((Number) SBOLData.getDefault(key, paramName)).doubleValue();
 	}
 
 	/**

@@ -11,7 +11,7 @@ import type { mxCell } from 'src/mxgraph';
 import { GlyphInfo } from './glyphInfo';
 import { MetadataService } from './metadata.service';
 import { GlyphService } from './glyph.service';
-import { InteractionInfo } from './interactionInfo';
+import { InteractionInfo, processEdgeType } from './interactionInfo';
 import { environment } from 'src/environments/environment';
 import { MatDialog } from '@angular/material/dialog';
 import { GraphEdits } from './graph-edits';
@@ -24,19 +24,34 @@ import { CombinatorialInfo } from './combinatorialInfo';
 import { EventInfo } from './eventInfo';
 import { EmbeddedService } from './embedded.service';
 import { FilesService } from './files.service';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { debounceTime, share } from 'rxjs/operators';
 import { DomSanitizer } from '@angular/platform-browser';
+import { ErrorComponent } from './error/error.component';
+import { collectDesignFindings, participantsOf } from './validation/inspect';
+import { checkReaction, type Finding } from './validation/rules';
+
+function findingKey(finding: Finding): string {
+    const { viewId, cellId, field } = finding.location;
+    return [finding.code, viewId, cellId, field ?? ''].join('|');
+}
 
 @Injectable({
     providedIn: 'root'
 })
 export class GraphService extends GraphHelpers {
 
+    private readonly findings = new BehaviorSubject<Finding[]>([]);
+    public readonly designFindings$ = this.findings.asObservable();
+    private loadingDocument = false;
+    private acceptedViolations = new Set<string>();
+
     constructor(dialog: MatDialog, metadataService: MetadataService, glyphService: GlyphService, embeddedService: EmbeddedService, fileService: FilesService, private sanitizer: DomSanitizer) {
         super(dialog, metadataService, glyphService);
 
-
+        this.installEditCheck();
+        this.installCanvasAccessibility();
+        this.installKeyboardShortcuts();
 
         // handle selection changes
         this.graph.getSelectionModel().addListener(mx.mxEvent.CHANGE, mx.mxUtils.bind(this, this.handleSelectionChange));
@@ -169,6 +184,103 @@ export class GraphService extends GraphHelpers {
         });
     }
 
+    private installEditCheck() {
+        const model = this.graph.getModel();
+        model.addListener(mx.mxEvent.END_EDIT, () => {
+            const edit = model.currentEdit;
+            if (!edit || edit.isEmpty()) {
+                return;
+            }
+            const findings = this.designFindings();
+            const enforced = findings.filter(finding => finding.enforced);
+            const broken = this.loadingDocument ? undefined
+                : enforced.find(finding => !this.acceptedViolations.has(findingKey(finding)));
+            if (!broken) {
+                this.publishFindings(findings);
+                return;
+            }
+            for (let i = edit.changes.length - 1; i >= 0; i--) {
+                edit.changes[i].execute();
+            }
+            edit.changes = [];
+            this.dialog.open(ErrorComponent, { data: broken.message });
+            this.filterSelectionCells();
+        });
+    }
+
+    private publishFindings(findings: Finding[]) {
+        this.acceptedViolations = new Set(findings.filter(finding => finding.enforced).map(findingKey));
+        this.findings.next(findings);
+    }
+
+    private designFindings(): Finding[] {
+        return collectDesignFindings(this.graph, this.designDictionaries(), this.metadataService);
+    }
+
+    private installKeyboardShortcuts(): void {
+        const container = this.graphContainer;
+        const arrows: Record<string, [number, number]> = {
+            ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+        };
+        window.addEventListener('keydown', (evt: KeyboardEvent) => {
+            if (!this.graph.isEnabled() || this.graph.isEditing() || this.dialog.openDialogs.length > 0) {
+                return;
+            }
+            const target = evt.target as HTMLElement | null;
+            const inCanvas = !!target && container.contains(target);
+            if (!inCanvas && target && (['INPUT', 'TEXTAREA', 'DIV'].includes(target.tagName) || target.closest('mat-form-field'))) {
+                return;
+            }
+            const direction = inCanvas && arrows[evt.key];
+            if (direction) {
+                const selected = this.graph.getSelectionCells();
+                if (selected.length === 0) {
+                    return;
+                }
+                evt.preventDefault();
+                evt.stopPropagation();
+                const step = (evt.shiftKey ? 10 : 1) * this.graph.gridSize;
+                this.graph.moveCells(selected, direction[0] * step, direction[1] * step);
+                return;
+            }
+            if (evt.key === 'Delete' || evt.key === 'Backspace') {
+                if (this.graph.getSelectionCells().length === 0) {
+                    return;
+                }
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.delete();
+                return;
+            }
+            if (!(evt.ctrlKey || evt.metaKey)) {
+                return;
+            }
+            const key = evt.key.toLowerCase();
+            if (key === 'z') {
+                evt.preventDefault();
+                evt.stopPropagation();
+                if (evt.shiftKey) {
+                    this.redo();
+                } else {
+                    this.undo();
+                }
+            } else if (key === 'c') {
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.copy();
+            } else if (key === 'v') {
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.paste();
+            } else if (key === 'x' && this.graph.getSelectionCount() > 0) {
+                evt.preventDefault();
+                evt.stopPropagation();
+                this.copy();
+                this.delete();
+            }
+        });
+    }
+
     private getPrimarySelectedCell() {
         const selected = this.graph.getSelectionCells();
         if (!selected || selected.length === 0) {
@@ -223,14 +335,6 @@ export class GraphService extends GraphHelpers {
         return selected[0].isMolecularSpeciesGlyph();
     }
 
-    isSelectedAnInteractionNode(): boolean {
-        let selected = this.graph.getSelectionCells();
-        if (selected.length != 1) {
-            return false;
-        }
-        return selected[0].isInteractionNode();
-    }
-
     isRootAComponentView(): boolean {
         return this.viewStack[0].isComponentView();
     }
@@ -273,28 +377,19 @@ export class GraphService extends GraphHelpers {
         }
 
         if (selected[0].isInteractionNode()) {
-            return interactionType == "Biochemical Reaction" || interactionType == "Dissociation" || interactionType == "Genetic Production" || interactionType == "Non-Covalent Binding";
+            const nodeTypes = ["Biochemical Reaction", "Dissociation", "Non-Covalent Binding"];
+            const node = selected[0];
+            const stored = this.getFromInteractionDict(node.value);
+            const rules = this.metadataService.interactionRules;
+            if (!nodeTypes.includes(interactionType) || !stored || !rules) {
+                return nodeTypes.includes(interactionType);
+            }
+            const candidate = stored.makeCopy();
+            candidate.interactionType = interactionType;
+            return checkReaction(candidate, participantsOf(this.graph, node), rules).length === 0;
         }
 
         return false;
-    }
-
-    isSelectedTargetEdge(): boolean {
-        let selected = this.graph.getSelectionCells();
-        if (selected.length > 1 || selected.length == 0 || !selected[0].isInteraction()) {
-            return false;
-        }
-
-        return selected[0].target == null || !selected[0].target.isInteractionNode();
-    }
-
-    isSelectedSourceEdge(): boolean {
-        let selected = this.graph.getSelectionCells();
-        if (selected.length > 1 || selected.length == 0 || !selected[0].isInteraction()) {
-            return false;
-        }
-
-        return selected[0].source == null || !selected[0].source.isInteractionNode();
     }
 
     /**
@@ -492,14 +587,6 @@ export class GraphService extends GraphHelpers {
     }
     getSelectedHTMLSet() {
         return this.selectedHTMLStack;
-    }
-    getChildrenLength() {
-
-        let selection = this.graph.getSelectionCells();
-        if (selection[0] && selection[0].isCircuitContainer()) {
-            return selection[0].getCircuitContainer(this.graph).children.length > 1;
-        } return 0;
-
     }
     getTempStack() {
         return this.tempHTMLStack;
@@ -815,6 +902,7 @@ export class GraphService extends GraphHelpers {
         // clearing the selection avoids a lot of exceptions from mxgraph code for some reason.
         this.graph.clearSelection();
         this.editor.execute('undo');
+        this.publishFindings(this.designFindings());
 
         this.removeCircularType();
 
@@ -840,6 +928,7 @@ export class GraphService extends GraphHelpers {
 
         this.graph.clearSelection();
         this.editor.execute('redo');
+        this.publishFindings(this.designFindings());
 
         // If the undo caused scars to become visible, we should update
         this.showingScars = this.getScarsVisible();
@@ -1586,7 +1675,7 @@ export class GraphService extends GraphHelpers {
 
             // Default name for a process interaction
             if (name == "Process") {
-                name = "Genetic Production";
+                name = processEdgeType(cell.source, cell.target);
             }
 
             if (addToDictionary) {
@@ -1903,6 +1992,15 @@ export class GraphService extends GraphHelpers {
      * and uses it to replace the current graph
      */
     setGraphToXML(graphString: string) {
+        this.loadingDocument = true;
+        try {
+            this.decodeGraphXML(graphString);
+        } finally {
+            this.loadingDocument = false;
+        }
+    }
+
+    private decodeGraphXML(graphString: string) {
         GraphBase.unFormatedCells.clear();
         this.graph.home();
         this.graph.getModel().clear();
@@ -2143,6 +2241,11 @@ export class GraphService extends GraphHelpers {
                                 this.removeFromInteractionDict(child.value);
                             }
                             this.addToInteractionDict(subGlyphDict[GraphBase.INTERACTION_DICT_INDEX][child.value]);
+                        } else if (child.isEvent() && subGlyphDict[GraphBase.EVENT_DICT_INDEX]?.[child.value]) {
+                            if (this.getFromEventDict(child.value) != null) {
+                                this.removeFromEventDict(child.value);
+                            }
+                            this.addToEventDict(subGlyphDict[GraphBase.EVENT_DICT_INDEX][child.value]);
                         }
                     }
                 }
@@ -2150,49 +2253,40 @@ export class GraphService extends GraphHelpers {
                 // relink the interactions now that their ID's have likely changed
                 for (let i = 1; i < viewCells.length; i++) {
                     let viewClone = this.graph.getModel().getCell(viewCells[i].getId());
+                    const cloneIdOf = (cellRef: string): string | undefined => {
+                        const oldCell = subGraph.getModel().getCell(cellRef);
+                        const oldParentView = oldCell && oldCell.getParent();
+                        const newParentView = oldParentView && this.graph.getModel().getCell(oldParentView.getId());
+                        return newParentView?.children?.[oldParentView.getIndex(oldCell)]?.getId();
+                    };
+                    const relinkEdge = (info: InteractionInfo, from: InteractionInfo, originalEdge: mxCell, edge: mxCell) => {
+                        for (const field of GraphBase.edgeKeyedFields) {
+                            const value = from[field][originalEdge.getId()];
+                            if (value === undefined) continue;
+                            if (field !== 'fromURI' && field !== 'toURI') {
+                                info[field][edge.getId()] = value;
+                                continue;
+                            }
+                            const cloneId = cloneIdOf(value.substring(value.lastIndexOf('_') + 1));
+                            if (cloneId) {
+                                info[field][edge.getId()] = value.substring(0, value.lastIndexOf('_') + 1) + cloneId;
+                            }
+                        }
+                    };
                     for (let j = 0; j < viewClone.children.length; j++) {
                         // for now it seems that cloning the cell keeps the child order in tact
                         let child = viewClone.children[j];
                         let originalChild = viewCells[i].children[j];
                         if (child.isInteractionNode()) {
                             // copy to new dict as new id's may conflict with old
-                            let newTo = [];
-                            let newFrom = [];
-                            let newSource: Record<string, string> = {};
-                            let newTarget: Record<string, string> = {};
-                            let infoCopy = this.getFromInteractionDict(child.value).makeCopy();
-                            for (let k = 0; k < child.edges.length; k++) {
-                                let edge = child.edges[k];
-                                let originalEdge = originalChild.edges[k];
-                                if (infoCopy.toURI[originalEdge.getId()]) {
-                                    // find the original cell
-                                    let cellRef = infoCopy.toURI[originalEdge.getId()];
-                                    let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_") + 1));
-                                    let oldParentView = oldCell.getParent();
-                                    let newParentView = this.graph.getModel().getCell(oldParentView.getId());
-                                    // replace with the new id
-                                    newTo[edge.getId()] = cellRef.substring(0, cellRef.lastIndexOf("_") + 1) + newParentView.children[oldParentView.getIndex(oldCell)].getId();
-                                }
-                                if (infoCopy.fromURI[originalEdge.getId()]) {
-                                    // find the original cell
-                                    let cellRef = infoCopy.fromURI[originalEdge.getId()];
-                                    let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_") + 1));
-                                    let oldParentView = oldCell.getParent();
-                                    let newParentView = this.graph.getModel().getCell(oldParentView.getId());
-                                    // replace with the new id
-                                    newFrom[edge.getId()] = cellRef.substring(0, cellRef.lastIndexOf("_") + 1) + newParentView.children[oldParentView.getIndex(oldCell)].getId();
-                                }
-                                if (infoCopy.sourceRefinement[originalEdge.getId()]) {
-                                    newSource[edge.getId()] = infoCopy.sourceRefinement[originalEdge.getId()];
-                                }
-                                if (infoCopy.targetRefinement[originalEdge.getId()]) {
-                                    newTarget[edge.getId()] = infoCopy.targetRefinement[originalEdge.getId()];
-                                }
+                            const stored = this.getFromInteractionDict(child.value);
+                            let infoCopy = stored.makeCopy();
+                            for (const field of GraphBase.edgeKeyedFields) {
+                                infoCopy[field] = {};
                             }
-                            infoCopy.toURI = newTo;
-                            infoCopy.fromURI = newFrom;
-                            infoCopy.sourceRefinement = newSource;
-                            infoCopy.targetRefinement = newTarget;
+                            for (let k = 0; k < child.edges.length; k++) {
+                                relinkEdge(infoCopy, stored, originalChild.edges[k], child.edges[k]);
+                                }
                             this.updateInteractionDict(infoCopy);
                         }
                         if (child.isInteraction()) {
@@ -2200,35 +2294,14 @@ export class GraphService extends GraphHelpers {
                             if ((child.source && child.source.isInteractionNode()) || (child.target && child.target.isInteractionNode())) {
                                 continue;
                             }
-                            let infoCopy = this.getFromInteractionDict(child.value).makeCopy();
-                            if (infoCopy.fromURI[originalChild.getId()]) {
-                                let cellRef = infoCopy.fromURI[originalChild.getId()];
-                                delete infoCopy.fromURI[originalChild.getId()];
-                                let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_") + 1));
-                                let oldParentView = oldCell.getParent();
-                                let newParentView = this.graph.getModel().getCell(oldParentView.getId());
-                                infoCopy.fromURI[child.getId()] = cellRef.substring(0, cellRef.lastIndexOf("_") + 1) + newParentView.children[oldParentView.getIndex(oldCell)].getId();;
+                            const stored = this.getFromInteractionDict(child.value);
+                            let infoCopy = stored.makeCopy();
+                            for (const field of GraphBase.edgeKeyedFields) {
+                                delete infoCopy[field][originalChild.getId()];
                             }
-                            if (infoCopy.toURI[originalChild.getId()]) {
-                                let cellRef = infoCopy.toURI[originalChild.getId()];
-                                delete infoCopy.toURI[originalChild.getId()];
-                                let oldCell = subGraph.getModel().getCell(cellRef.substring(cellRef.lastIndexOf("_") + 1));
-                                let oldParentView = oldCell.getParent();
-                                let newParentView = this.graph.getModel().getCell(oldParentView.getId());
-                                infoCopy.toURI[child.getId()] = cellRef.substring(0, cellRef.lastIndexOf("_") + 1) + newParentView.children[oldParentView.getIndex(oldCell)].getId();;
-                            }
-                            if (infoCopy.sourceRefinement[originalChild.getId()]) {
-                                let value = infoCopy.sourceRefinement[originalChild.getId()];
-                                delete infoCopy.sourceRefinement[originalChild.getId()];
-                                infoCopy.sourceRefinement[child.getId()] = value;
-                            }
-                            if (infoCopy.targetRefinement[originalChild.getId()]) {
-                                let value = infoCopy.targetRefinement[originalChild.getId()];
-                                delete infoCopy.targetRefinement[originalChild.getId()];
-                                infoCopy.targetRefinement[child.getId()] = value;
-                            }
+                            relinkEdge(infoCopy, stored, originalChild, child);
                             this.updateInteractionDict(infoCopy);
-                        }
+                            }
                     }
                 }
 

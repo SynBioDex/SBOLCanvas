@@ -5,21 +5,15 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.Map;
 
 import javax.xml.namespace.QName;
-
-import org.sbolstandard.core2.Annotation;
-import org.sbolstandard.core2.Identified;
-import org.sbolstandard.core2.SBOLValidationException;
 
 import org.w3c.dom.Document;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import com.mxgraph.io.mxCodec;
 import com.mxgraph.io.mxCodecRegistry;
@@ -66,39 +60,83 @@ public class Converter {
 	protected static final String STYLE_EVENT = "eventGlyph";
 
 	static {
-		// Necessary for encoding/decoding GlyphInfo and InteractionInfo
 		mxCodecRegistry.addPackage("org.sbolcanvas.data");
-
-		// Custom codec for GlyphInfo and InteractionInfo simulation data
-		// Default mxObjectCodec decodes as an ArrayList, losing the keys
-		mxCodecRegistry.register(createSimulationDataCodec(
-				new GlyphInfo(), GlyphInfo.class, GlyphInfo::setSimulationData));
-		mxCodecRegistry.register(createSimulationDataCodec(
-				new InteractionInfo(), InteractionInfo.class, InteractionInfo::setSimulationData));
-		mxCodecRegistry.register(createSimulationDataCodec(
-				new EventInfo(), EventInfo.class, EventInfo::setSimulationData));
+		mxCodecRegistry.register(createInfoCodec(new GlyphInfo()));
+		mxCodecRegistry.register(createInfoCodec(new InteractionInfo()));
+		mxCodecRegistry.register(createInfoCodec(new EventInfo()));
 	};
 
-	/**
-	 * mxObjectCodec that decodes to a Hashtable instead of an ArrayList.
-	 *
-	 * @param template   the template object (e.g., new GlyphInfo())
-	 * @param targetType the expected runtime class of the decoded object
-	 * @param setter     applies the parsed Hashtable to the decoded object
-	 */
-	private static <T> mxObjectCodec createSimulationDataCodec(
-			Object template, Class<T> targetType,
-			java.util.function.BiConsumer<T, Hashtable<String, Object>> setter) {
+	// Custom codec for GlyphInfo, InteractionInfo and EventInfo simulation data and coefficients
+	// Default mxObjectCodec decodes as an ArrayList, losing the keys
+	private static mxObjectCodec createInfoCodec(Info template) {
 		return new mxObjectCodec(template) {
 			@Override
+			protected void writeComplexAttribute(mxCodec enc, Object obj, String attr, Object value, Node node) {
+				if ("simulationData".equals(attr) || "sourceCoefficient".equals(attr)
+						|| "targetCoefficient".equals(attr)) {
+					Document document = node.getOwnerDocument();
+					Element array = document.createElement("Array");
+					array.setAttribute("as", attr);
+					for (Map.Entry<?, ?> entry : ((Map<?, ?>) value).entrySet()) {
+						Element child = document.createElement("add");
+						child.setAttribute("as", entry.getKey().toString());
+						Object v = entry.getValue();
+						child.setAttribute("type", ModelHelper.valueType(v));
+						child.setAttribute("value", v.toString());
+						array.appendChild(child);
+					}
+					node.appendChild(array);
+				} else {
+					super.writeComplexAttribute(enc, obj, attr, value, node);
+				}
+			}
+
+			@Override
 			protected void decodeChild(mxCodec dec, Node child, Object obj) {
-				if (child instanceof Element) {
-					Element elem = (Element) child;
-					if ("Array".equals(child.getNodeName())
-							&& "simulationData".equals(elem.getAttribute("as"))
-							&& targetType.isInstance(obj)) {
-						setter.accept(targetType.cast(obj), parseSimulationDataNode(child));
+				if (child instanceof Element && "Array".equals(child.getNodeName())) {
+					String as = ((Element) child).getAttribute("as");
+					if ("simulationData".equals(as)) {
+						Hashtable<String, Object> data = new Hashtable<>();
+						decodeTypedKeyedArray(child, data);
+						if (obj instanceof GlyphInfo) {
+							readKnownFields(data, "species", "Promoter");
+							((GlyphInfo) obj).setSimulationData(data);
+						} else if (obj instanceof InteractionInfo) {
+							readKnownFields(data, SBOLData.INTERACTION_FIELD_CONTEXTS);
+							((InteractionInfo) obj).setSimulationData(data);
+						} else if (obj instanceof EventInfo) {
+							readKnownFields(data, "event");
+							((EventInfo) obj).setSimulationData(data);
+						}
 						return;
+					}
+					if (obj instanceof InteractionInfo) {
+						InteractionInfo info = (InteractionInfo) obj;
+						if ("sourceCoefficient".equals(as) || "targetCoefficient".equals(as)) {
+							Hashtable<String, Object> data = new Hashtable<>();
+							decodeTypedKeyedArray(child, data);
+							Double min = (Double) SBOLData.field("participation", "coefficient").get("min");
+							for (Map.Entry<String, Object> entry : data.entrySet())
+								entry.setValue(readNumber(entry.getValue(), "coefficient", min));
+							if ("sourceCoefficient".equals(as))
+								info.setSourceCoefficient(data);
+							else
+								info.setTargetCoefficient(data);
+							return;
+						}
+						Hashtable<String, String> map = null;
+						if ("sourceRefinement".equals(as))
+							map = info.getSourceRefinement();
+						else if ("targetRefinement".equals(as))
+							map = info.getTargetRefinement();
+						else if ("fromURI".equals(as))
+							map = info.getFromURI();
+						else if ("toURI".equals(as))
+							map = info.getToURI();
+						if (map != null) {
+							decodeKeyedArray(child, map);
+							return;
+						}
 					}
 				}
 				super.decodeChild(dec, child, obj);
@@ -106,26 +144,77 @@ public class Converter {
 		};
 	}
 
-	/**
-	 * Parses an <Array> XML node with <add value="..." as="key"/> children
-	 * into a Hashtable. The frontend encodes simulationData this way, but the
-	 * default mxCodec decodes <Array> as ArrayList, losing the key names.
-	 */
-	private static Hashtable<String, Object> parseSimulationDataNode(Node arrayNode) {
-		Hashtable<String, Object> data = new Hashtable<>();
-		NodeList children = arrayNode.getChildNodes();
-		for (int i = 0; i < children.getLength(); i++) {
-			Node child = children.item(i);
-			if (child instanceof Element && "add".equals(child.getNodeName())) {
-				Element addElem = (Element) child;
-				String key = addElem.getAttribute("as");
-				String value = addElem.getAttribute("value");
-				if (key != null && !key.isEmpty() && value != null) {
-					data.put(key, value);
-				}
+	private static void decodeKeyedArray(Node arrayNode, Hashtable<String, String> data) {
+		for (Node child = arrayNode.getFirstChild(); child != null; child = child.getNextSibling()) {
+			if (child instanceof Element) {
+				Element entry = (Element) child;
+				data.put(entry.getAttribute("as"), entry.getAttribute("value"));
 			}
 		}
-		return data;
+	}
+
+	private static void decodeTypedKeyedArray(Node arrayNode, Hashtable<String, Object> data) {
+		for (Node child = arrayNode.getFirstChild(); child != null; child = child.getNextSibling()) {
+			if (child instanceof Element) {
+				Element entry = (Element) child;
+				String key = entry.getAttribute("as");
+				String type = entry.getAttribute("type");
+				if (!"number".equals(type) && !"boolean".equals(type) && !"string".equals(type)) {
+					throw new IllegalArgumentException("Unsupported scalar type: " + key + " = " + type);
+				}
+				data.put(key, decodeValue(key, type, entry.getAttribute("value")));
+			}
+		}
+	}
+
+	private static Object decodeValue(String key, String type, String text) {
+		switch (type) {
+		case "number":
+			return numericValue(text, key, null);
+		case "boolean":
+			if ("true".equals(text))
+				return Boolean.TRUE;
+			if ("false".equals(text))
+				return Boolean.FALSE;
+			throw new IllegalArgumentException("Invalid boolean: " + key + " = " + text);
+		default:
+			return text;
+		}
+	}
+
+	private static void readKnownFields(Hashtable<String, Object> data, String... contexts) {
+		for (Map.Entry<String, Object> entry : data.entrySet()) {
+			entry.setValue(checkedValue(entry.getKey(), entry.getValue(), contexts));
+		}
+	}
+
+	protected static Object checkedValue(String key, Object value, String... contexts) {
+		Map<String, Object> field = knownField(key, contexts);
+		if (field == null)
+			return value;
+		String type = (String) field.get("type");
+		if ("number".equals(type))
+			return numericValue(value, key, (Double) field.get("min"));
+		if ("boolean".equals(type) && !(value instanceof Boolean))
+			throw new IllegalArgumentException("Invalid boolean: " + key + " = " + value);
+		if ("uri".equals(type) && (!(value instanceof String) || ((String) value).isEmpty()))
+			throw new IllegalArgumentException("Invalid species URI: " + value);
+		return value;
+	}
+
+	protected static double readNumber(Object value, String key, Double min) {
+		if (!(value instanceof Double))
+			throw new IllegalArgumentException("Invalid number: " + key + " = " + value);
+		return numericValue(value, key, min);
+	}
+
+	protected static Map<String, Object> knownField(String key, String... contexts) {
+		for (String context : contexts) {
+			Map<String, Object> field = SBOLData.field(context, key);
+			if (field != null)
+				return field;
+		}
+		return null;
 	}
 
 	protected Hashtable<String, Info> infoDict;
@@ -133,6 +222,7 @@ public class Converter {
 	protected Hashtable<String, InteractionInfo> interactionDict;
 	protected Hashtable<String, EventInfo> eventDict;
 	protected LayoutHelper layoutHelper;
+	protected ModelHelper modelHelper;
 
 	protected Converter() {
 		infoDict = new Hashtable<>();
@@ -259,7 +349,18 @@ public class Converter {
 		mxGraph graph = new mxGraph();
 		((mxGraphModel) graph.getModel()).setMaintainEdgeParent(false);
 		Document document = mxXmlUtils.parseXml(mxUtils.readInputStream(graphStream));
-		mxCodec codec = new mxCodec(document);
+		mxCodec codec = new mxCodec(document) {
+			@Override
+			public Object decode(Node node, Object into) {
+				if (node != null && node.getNodeType() == Node.ELEMENT_NODE) {
+					mxObjectCodec objectCodec = mxCodecRegistry.getCodec(node.getNodeName());
+					if (objectCodec != null) {
+						return objectCodec.decode(this, node, into);
+					}
+				}
+				return super.decode(node, into);
+			}
+		};
 		codec.decode(document.getDocumentElement(), graph.getModel());
 		return graph;
 	}
@@ -320,44 +421,24 @@ public class Converter {
 		}
 	}
 
-	/**
-	 * Write simulation data as a nested SBOL annotation on the given Identified object.
-	 * Keys are sorted for deterministic output; URI-containing keys are sanitized for XML.
-	 *
-	 * @param identityPrefix the parent's displayId (not full URI) — used to build the
-	 *                       nested annotation's displayId, which must be a valid SBOL
-	 *                       identifier (alphanumeric + underscore, sbol-10204)
-	 */
-	static void writeSimulationAnnotations(Identified parent, Hashtable<String, Object> simulationData,
-			String identityPrefix) throws SBOLValidationException {
-		if (simulationData == null || simulationData.isEmpty())
-			return;
-		List<Annotation> annList = new ArrayList<Annotation>();
-		for (String key : new TreeSet<>(simulationData.keySet())) {
-			annList.add(new Annotation(createQName(Identifiers.toNCName(key)), simulationData.get(key).toString()));
-		}
-		parent.createAnnotation(
-				createQName("simulationData"),
-				createQName("SimulationData"),
-				identityPrefix + "_SimulationData",
-				annList);
-	}
+	private static final java.util.regex.Pattern NUMBER_TEXT = java.util.regex.Pattern.compile("[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?");
 
-	/**
-	 * Read simulation data from a nested SBOL annotation on the given Identified object.
-	 * Returns an empty Hashtable if no simulationData annotation exists.
-	 */
-	static Hashtable<String, Object> readSimulationAnnotations(Identified identified) {
-		for (Annotation annotation : identified.getAnnotations()) {
-			if (annotation.getQName().getLocalPart().equals("simulationData")) {
-				Hashtable<String, Object> simData = new Hashtable<String, Object>();
-				for (Annotation child : annotation.getAnnotations()) {
-					simData.put(Identifiers.fromNCName(child.getQName().getLocalPart()), child.getStringValue());
-				}
-				return simData;
+	static double numericValue(Object value, String key, Double min) {
+		double number;
+		if (value instanceof Number) {
+			number = ((Number) value).doubleValue();
+		} else if (value instanceof String) {
+			String text = ((String) value).trim();
+			if (!NUMBER_TEXT.matcher(text).matches()) {
+				throw new IllegalArgumentException("Invalid number: " + key + " = " + value);
 			}
+			number = Double.parseDouble(text);
+		} else
+			throw new IllegalArgumentException("Invalid number: " + key + " = " + value);
+		if (!Double.isFinite(number) || (min != null && number < min)) {
+			throw new IllegalArgumentException("Invalid number: " + key + " = " + value);
 		}
-		return new Hashtable<>();
+		return number;
 	}
 
 }

@@ -3,12 +3,16 @@ package org.sbolcanvas.utils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.util.regex.Pattern;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.sbolstandard.core2.Annotation;
 import org.sbolstandard.core2.ComponentDefinition;
+import org.sbolstandard.core2.Identified;
+import org.sbolstandard.core2.GenericTopLevel;
 import org.sbolstandard.core2.SBOLDocument;
 import org.sbolstandard.core2.SBOLReader;
 import org.sbolstandard.core2.SBOLWriter;
@@ -18,8 +22,6 @@ final class SBOLTestSupport {
 
     static final String TOGGLE_RESOURCE = "sbolcanvas_sbol-toggle.xml";
 
-    /** XML NCName (no colons): letter/underscore start, then word chars / period / hyphen. */
-    static final Pattern NCNAME = Pattern.compile("^[A-Za-z_][\\w.\\-]*$");
 
     private SBOLTestSupport() {}
 
@@ -57,13 +59,66 @@ final class SBOLTestSupport {
         return null;
     }
 
+    /**
+     * Collects key→value from Model entries that name {@code subject}: a design object resolved
+     * from its record's owner and path, or an Event child ({@link #eventIdentity}).
+     */
+    static Map<String, Object> modelEntries(SBOLDocument doc, URI subject) {
+        Map<String, Object> values = new HashMap<>();
+        for (GenericTopLevel model : ModelHelper.findModels(doc)) {
+            URI owner = ModelHelper.owner(model);
+            for (ModelHelper.Entry entry : ModelHelper.readEntries(model)) {
+                Identified named = ModelHelper.resolve(doc, owner, entry.getPath());
+                if (named != null && subject.equals(named.getIdentity())) {
+                    values.put(entry.getKey(), entry.getValue());
+                }
+            }
+            for (Annotation event : ModelHelper.events(model)) {
+                if (!subject.equals(eventIdentity(model, event))) {
+                    continue;
+                }
+                for (ModelHelper.Entry entry : ModelHelper.readEntries(event)) {
+                    values.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        return values;
+    }
+
+    /** A test-side name for an Event child: its record's persistent identity plus its displayId. */
+    static URI eventIdentity(GenericTopLevel model, Annotation event) {
+        return URI.create(model.getPersistentIdentity() + "/" + ModelHelper.eventDisplayId(event));
+    }
+
+    static void writeAnnotatedSimulationData(org.sbolstandard.core2.Identified parent,
+            java.util.Map<String, Object> values, String identityPrefix) throws Exception {
+        java.util.List<Annotation> annotations = new java.util.ArrayList<>();
+        for (String key : new java.util.TreeSet<>(values.keySet())) {
+            Object value = values.get(key);
+            javax.xml.namespace.QName name = Converter.createQName(Identifiers.toNCName(key));
+            if (value instanceof Boolean)
+                annotations.add(new Annotation(name, (Boolean) value));
+            else if (value instanceof Number)
+                annotations.add(new Annotation(name, ((Number) value).doubleValue()));
+            else if (value instanceof URI)
+                annotations.add(new Annotation(name, (URI) value));
+            else
+                annotations.add(new Annotation(name, value.toString()));
+        }
+        parent.createAnnotation(Converter.createQName("simulationData"), Converter.createQName("SimulationData"),
+                identityPrefix + "_SimulationData", annotations);
+    }
+
     /** Returns the {@code simulationData} annotation, or null. */
     static Annotation findSimulationDataAnnotation(Iterable<Annotation> annotations) {
         for (Annotation ann : annotations) {
-            if (ann.getQName().getLocalPart().equals("simulationData")) {
+            if (ann.getQName().equals(Converter.createQName("simulationData"))) {
                 return ann;
             }
         }
         return null;
     }
+
+    /** XML NCName shape, for asserting sanitized annotation keys. */
+    static final java.util.regex.Pattern NCNAME = java.util.regex.Pattern.compile("^[A-Za-z_][A-Za-z0-9_.\\-]*$");
 }

@@ -44,6 +44,14 @@
     line-height: 28px;
     height: 2.5em;
 }
+
+.problem-group-label {
+    padding: 4px 16px 0;
+    font-size: 12px;
+    font-weight: bolder;
+    opacity: 0.7;
+    text-transform: uppercase;
+}
 ::ng-deep .problems-panel {
     max-width: 500px !important;
 }
