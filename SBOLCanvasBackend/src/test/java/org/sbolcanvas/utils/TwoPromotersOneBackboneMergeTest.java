@@ -142,7 +142,7 @@ class TwoPromotersOneBackboneMergeTest {
     }
 
     @Nested
-    @DisplayName("Layout (regression for SpeciesGlyph dup bug)")
+    @DisplayName("Layout")
     class LayoutTests {
 
         @Test
